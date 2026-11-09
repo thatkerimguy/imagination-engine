@@ -17,6 +17,8 @@ pnpm preview        # serve builds on 127.0.0.1:4173 / 4174 (use this to test of
 pnpm check          # typecheck + lint + unit tests: run before calling any task done
 pnpm e2e            # Playwright smoke tests (uses installed Microsoft Edge)
 pnpm icons          # regenerate PWA icons from tools/icons/*.svg
+run.bat [preview]   # Windows: install if needed, start dev (or build + preview), open the Player
+publish.bat         # build the Player and push it to the `deploy` branch (host files only)
 ```
 
 Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone connects through

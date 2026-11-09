@@ -118,6 +118,9 @@
   font-weight: 600;
 }
 .ie-dialog__body {
+  /* Absolutely positioned content (screen-reader text) must scroll with the body; otherwise it
+     overflows the dialog itself and the sheet gets a second scroll bar. */
+  position: relative;
   min-height: 0;
   padding: var(--space-4);
   overflow: auto;

@@ -26,10 +26,13 @@ Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone 
 
 ```
 packages/core         kernel, modules, action bus, event bus, state store, services, ids, storage
-packages/i18n         locales (en, tr), Turkish-aware casing/collation/search folding, message catalogs
+packages/i18n         locales (en, tr), Turkish casing/collation/search, suffixes, hyphenation, catalogs
+packages/story        story schema, formulas, text markup, the interpreter (no DOM)
+packages/present      DOM presenter: layouts, effects, typewriter, choices (no UI framework)
+packages/samples      sample stories as JSON (The Rain Alley), with an auto-play test
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
-apps/player           vanilla TS reader shell (PWA); no UI framework
+apps/player           vanilla TS reader shell (PWA): story session, saves, rewind, panels; no UI framework
 apps/studio           React 19 + Zustand editor shell (PWA)
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator

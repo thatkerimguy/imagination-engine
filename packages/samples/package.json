@@ -1,0 +1,13 @@
+{
+  "name": "@ie/samples",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sample stories, written as JSON, used by the Player, tests and docs.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@ie/story": "workspace:*"
+  }
+}

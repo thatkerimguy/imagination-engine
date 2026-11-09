@@ -6,5 +6,8 @@
   "description": "Locales (English, Turkish), locale-aware text helpers, typed message catalogs.",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "hyphenopoly": "^6.1.0"
   }
 }

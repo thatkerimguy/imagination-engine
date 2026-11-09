@@ -2,61 +2,59 @@ import type { Translator } from '@ie/i18n';
 import { h } from './dom.ts';
 import type { MessageKey } from './messages.ts';
 
-const LINES: readonly MessageKey[] = ['reader.line1', 'reader.line2', 'reader.line3'];
+/** Taps on these belong to the control, not to the page. */
+const INTERACTIVE = 'button, input, textarea, select, a, label, summary';
 
 /**
- * Placeholder page until the story runtime arrives in Phase 1. It already behaves like the real
- * reader: one tap reveals the next line, and nothing else is on screen.
+ * The reading surface: a scrolling page that holds the story and turns taps into "continue".
+ * Nothing else is on screen.
  */
 export class Reader {
   readonly element: HTMLElement;
-  private readonly page: HTMLElement;
   private readonly hint: HTMLElement;
-  private shown = 1;
   private t: Translator<MessageKey>;
 
-  constructor(t: Translator<MessageKey>) {
+  constructor(t: Translator<MessageKey>, onTap: () => void) {
     this.t = t;
-    this.page = h('article', { class: 'reader__page', 'aria-live': 'polite' });
-    this.hint = h('p', { class: 'reader__hint', 'aria-hidden': 'true' });
-    this.element = h('main', { class: 'reader', 'data-testid': 'reader' }, this.page, this.hint);
-    this.element.addEventListener('click', () => this.advance());
+    this.hint = h('p', { class: 'reader__hint', 'aria-hidden': 'true', 'data-hidden': 'true' });
+    this.element = h('main', { class: 'reader', 'data-testid': 'reader' }, this.hint);
+    this.element.addEventListener('click', (event) => {
+      const target = event.target as Element | null;
+      if (target?.closest(INTERACTIVE)) return;
+      // Selecting text to copy a quote shouldn't turn the page.
+      if (!document.getSelection()?.isCollapsed) return;
+      this.hint.dataset.hidden = 'true';
+      onTap();
+    });
     this.render(t);
   }
 
-  get finished(): boolean {
-    return this.shown > LINES.length;
+  /** Puts the story (or an error) on the page. */
+  mount(content: HTMLElement): void {
+    this.element.replaceChildren(content, this.hint);
   }
 
-  advance(): void {
-    if (this.finished) return;
-    this.shown += 1;
-    this.update();
+  /** "Tap to continue", shown once at the very start of a story. */
+  showHint(): void {
+    this.hint.dataset.hidden = 'false';
+  }
+
+  showError(message: string, details: readonly string[]): void {
+    this.mount(
+      h(
+        'div',
+        { class: 'reader__error', role: 'alert' },
+        h('p', {}, message),
+        ...(details.length
+          ? [h('ul', { class: 'muted' }, ...details.map((d) => h('li', {}, d)))]
+          : []),
+      ),
+    );
+    document.title = this.t('title.empty');
   }
 
   render(t: Translator<MessageKey>): void {
     this.t = t;
-    this.page.replaceChildren(
-      ...LINES.map((key) => h('p', { class: 'reader__line' }, t(key))),
-      h('p', { class: 'reader__end', 'aria-hidden': 'true' }, '⁂'),
-    );
     this.hint.textContent = t('reader.hint');
-    // Lines already revealed appear instantly after a language switch.
-    this.update(true);
-  }
-
-  private update(instant = false): void {
-    const lines = [...this.page.children] as HTMLElement[];
-    lines.forEach((line, index) => {
-      if (instant) line.dataset.instant = 'true';
-      line.dataset.shown = String(index < this.shown);
-    });
-    if (instant) {
-      requestAnimationFrame(() => {
-        for (const line of lines) delete line.dataset.instant;
-      });
-    }
-    this.hint.dataset.hidden = String(this.shown > 1);
-    document.title = this.t('title.empty');
   }
 }

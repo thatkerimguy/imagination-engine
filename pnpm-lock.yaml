@@ -220,6 +220,15 @@ importers:
       '@ie/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ie/present':
+        specifier: workspace:*
+        version: link:../../packages/present
+      '@ie/samples':
+        specifier: workspace:*
+        version: link:../../packages/samples
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../../packages/story
       '@ie/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
@@ -304,7 +313,45 @@ importers:
         specifier: workspace:*
         version: link:../i18n
 
-  packages/i18n: {}
+  packages/i18n:
+    dependencies:
+      hyphenopoly:
+        specifier: ^6.1.0
+        version: 6.1.0
+
+  packages/present:
+    dependencies:
+      '@ie/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ie/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
+    devDependencies:
+      '@ie/samples':
+        specifier: workspace:*
+        version: link:../samples
+
+  packages/samples:
+    devDependencies:
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
+
+  packages/story:
+    dependencies:
+      '@ie/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ie/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/ui-kit:
     dependencies:
@@ -1963,6 +2010,10 @@ packages:
 
   hookified@2.2.0:
     resolution: {integrity: sha512-p/LgFzRN5FeoD3DLS6bkUapeye6E4SI6yJs6KetENd18S+FBthqYq2amJUWpt5z0EQwwHemidjY5OqJGEKm5uA==}
+
+  hyphenopoly@6.1.0:
+    resolution: {integrity: sha512-exXJMFxLaNAHxl5gQ9JSKNak3M4asJpPonHgctniD7d4Ql6Ba1QQaw7tDBzaoJ8Qmpr4QL5Afo98zESBtvQ0qA==}
+    engines: {node: '>=22'}
 
   idb@7.1.1:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
@@ -4633,6 +4684,8 @@ snapshots:
   hookified@1.15.1: {}
 
   hookified@2.2.0: {}
+
+  hyphenopoly@6.1.0: {}
 
   idb@7.1.1: {}
 

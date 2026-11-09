@@ -36,7 +36,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // wasm: hyphenation patterns, so Turkish breaks correctly offline too.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
         navigateFallback: '/index.html',
       },
       devOptions: { enabled: false },

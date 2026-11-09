@@ -96,6 +96,11 @@
   color: var(--color-ink);
   box-shadow: var(--shadow-float);
 }
+.ie-dialog[open] {
+  /* Header stays put; only the body scrolls. */
+  display: flex;
+  flex-direction: column;
+}
 .ie-dialog::backdrop {
   background: var(--color-scrim);
 }
@@ -113,9 +118,23 @@
   font-weight: 600;
 }
 .ie-dialog__body {
+  min-height: 0;
   padding: var(--space-4);
   overflow: auto;
 }
 .ie-field + .ie-field {
   margin-top: var(--space-5);
+}
+
+/* Read by screen readers, invisible on screen. */
+.ie-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

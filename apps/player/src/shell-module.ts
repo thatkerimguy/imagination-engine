@@ -1,10 +1,12 @@
 import { defineAction, defineModule, type EngineModule } from '@ie/core';
 import { LOCALES } from '@ie/i18n';
+import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { z } from 'zod';
 import { TEXT_SIZES, type PlayerSettings } from './settings.ts';
 
-export type Panel = 'settings' | 'diagnostics';
+export const PANELS = ['settings', 'diagnostics', 'history', 'saves'] as const;
+export type Panel = (typeof PANELS)[number];
 
 declare module '@ie/core' {
   interface EngineEvents {
@@ -60,6 +62,22 @@ export function createShellModule(host: ShellHost): EngineModule {
       );
       actions.register(
         defineAction({
+          id: 'ui.textSpeed.set',
+          description: 'How fast lines are typed in.',
+          params: z.object({ speed: z.enum(TEXT_SPEEDS) }),
+          run: ({ speed }) => update({ textSpeed: speed }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.timers.set',
+          description: 'Turn time limits on choices on or off.',
+          params: z.object({ enabled: z.boolean() }),
+          run: ({ enabled }) => update({ timers: enabled }),
+        }),
+      );
+      actions.register(
+        defineAction({
           id: 'ui.hud.set',
           description: 'Show or hide the performance overlay.',
           params: z.object({ visible: z.boolean() }),
@@ -76,7 +94,7 @@ export function createShellModule(host: ShellHost): EngineModule {
       actions.register(
         defineAction({
           id: 'ui.panel.open',
-          params: z.object({ panel: z.enum(['settings', 'diagnostics']) }),
+          params: z.object({ panel: z.enum(PANELS) }),
           run: ({ panel }) => host.openPanel(panel),
         }),
       );

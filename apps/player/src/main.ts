@@ -2,6 +2,7 @@ import '@ie/ui-kit/fonts.css';
 import '@ie/ui-kit/tokens.css';
 import '@ie/ui-kit/primitives.css';
 import '@ie/diagnostics/diagnostics.css';
+import '@ie/present/present.css';
 import './styles.css';
 import { requestPersistentStorage } from '@ie/core';
 import { startPlayer } from './app.ts';

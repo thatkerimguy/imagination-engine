@@ -1,0 +1,51 @@
+import { defineCatalogs } from '@ie/i18n';
+
+/** Words the presenter adds around story text. The story's own text comes from the story. */
+export const presentMessages = defineCatalogs({
+  en: {
+    'lock.atLeast': 'Requires {label} {value}',
+    'lock.atMost': '{label} must be {value} or less',
+    'lock.flag': 'Requires {label}',
+    'lock.equals': 'Requires {label}: {value}',
+    'lock.cost': 'Not enough {label}',
+    'lock.unknown': 'Not available yet',
+    'choice.cost': '{amount} {label}',
+    'choice.seen': 'Chosen before',
+    'choice.choices': 'Choices',
+    'choice.timer': '{seconds} seconds to choose',
+    'check.labelled': '{label} roll: {total}, needed {target}',
+    'check.plain': 'Roll: {total}, needed {target}',
+    'check.success': 'Success',
+    'check.fail': 'Failed',
+    'input.confirm': 'Continue',
+    'end.ending': 'Ending: {title}',
+    'end.plain': 'The End',
+    'end.count': 'Endings found: {count} of {total}',
+    'end.restart': 'Start over',
+    'chat.typing': '{name} is typing',
+  },
+  tr: {
+    'lock.atLeast': '{label} {value} gerekli',
+    'lock.atMost': '{label} en fazla {value} olmalı',
+    'lock.flag': '{label} gerekli',
+    'lock.equals': '{label}: {value} gerekli',
+    'lock.cost': 'Yeterli {label} yok',
+    'lock.unknown': 'Şimdilik seçilemez',
+    'choice.cost': '{amount} {label}',
+    'choice.seen': 'Daha önce seçildi',
+    'choice.choices': 'Seçenekler',
+    'choice.timer': 'Seçmek için {seconds} saniye',
+    'check.labelled': '{label} zarı: {total}, {target} gerekiyordu',
+    'check.plain': 'Zar: {total}, {target} gerekiyordu',
+    'check.success': 'Başarılı',
+    'check.fail': 'Başarısız',
+    'input.confirm': 'Devam',
+    'end.ending': 'Son: {title}',
+    'end.plain': 'Son',
+    'end.count': 'Bulunan sonlar: {count} / {total}',
+    'end.restart': 'Baştan başla',
+    'chat.typing': '{name} yazıyor',
+  },
+});
+
+export type PresentKey = keyof typeof presentMessages.en;

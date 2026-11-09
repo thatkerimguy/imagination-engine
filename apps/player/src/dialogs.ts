@@ -4,17 +4,34 @@ import {
   reportToText,
   type DeviceReport,
 } from '@ie/diagnostics';
-import { LOCALES, LOCALE_INFO, type Translator } from '@ie/i18n';
-import { THEME_PREFERENCES } from '@ie/ui-kit';
-import { h, segmented } from './dom.ts';
+import type { Locale, Translator } from '@ie/i18n';
+import { h } from './dom.ts';
 import type { MessageKey } from './messages.ts';
-import { TEXT_SIZES, type PlayerSettings } from './settings.ts';
+import { fillHistory } from './panels/history-panel.ts';
+import { fillSaves } from './panels/saves-panel.ts';
+import { fillSettings } from './panels/settings-panel.ts';
+import type { PlayerSettings } from './settings.ts';
 import type { Panel } from './shell-module.ts';
+import type { StoryController } from './story/controller.ts';
 
 export interface DialogHandlers {
   readonly getSettings: () => PlayerSettings;
-  readonly run: (actionId: string, params: unknown) => void;
+  readonly run: (actionId: string, params?: unknown) => void;
+  readonly runAsync: (actionId: string, params?: unknown) => Promise<unknown>;
+  /** The running story, if one opened. */
+  readonly story: () => StoryController | null;
+  /** Soft-hyphen inserter, once the patterns have loaded. */
+  readonly hyphenate: () => ((text: string, locale: Locale) => string) | undefined;
+  /** A sheet opened or closed (the story holds its clocks while one is open). */
+  readonly onToggle: () => void;
 }
+
+const TITLES: Readonly<Record<Panel, MessageKey>> = {
+  settings: 'settings.title',
+  diagnostics: 'diagnostics.title',
+  history: 'history.title',
+  saves: 'saves.title',
+};
 
 function dialogShell(title: string, closeLabel: string, testId: string) {
   const body = h('div', { class: 'ie-dialog__body' });
@@ -38,7 +55,7 @@ function dialogShell(title: string, closeLabel: string, testId: string) {
   return { dialog, body };
 }
 
-/** Settings and Diagnostics sheets, built on native <dialog> for focus trapping and Esc. */
+/** The reader's sheets, built on native <dialog> for focus trapping and Esc. */
 export class Dialogs {
   private current: HTMLDialogElement | null = null;
   private currentPanel: Panel | null = null;
@@ -54,24 +71,31 @@ export class Dialogs {
   }
 
   open(panel: Panel): void {
+    if ((panel === 'history' || panel === 'saves') && !this.handlers.story()) return;
     this.current?.close();
-    const { dialog, body } =
-      panel === 'settings'
-        ? dialogShell(this.t('settings.title'), this.t('dialog.close'), 'settings-dialog')
-        : dialogShell(this.t('diagnostics.title'), this.t('dialog.close'), 'diagnostics-dialog');
+    const { dialog, body } = dialogShell(
+      this.t(TITLES[panel]),
+      this.t('dialog.close'),
+      `${panel}-dialog`,
+    );
     dialog.addEventListener('close', () => {
       dialog.remove();
       if (this.current === dialog) {
         this.current = null;
         this.currentPanel = null;
       }
+      this.handlers.onToggle();
     });
     document.body.append(dialog);
     this.current = dialog;
     this.currentPanel = panel;
-    if (panel === 'settings') this.fillSettings(body);
-    else void this.fillDiagnostics(body, false);
+    this.fill(panel, body, false);
     dialog.showModal();
+    this.handlers.onToggle();
+  }
+
+  close(): void {
+    this.current?.close();
   }
 
   /** Re-renders the open sheet in place (after a language or theme change). */
@@ -82,60 +106,36 @@ export class Dialogs {
     const body = this.current.querySelector<HTMLElement>('.ie-dialog__body');
     const title = this.current.querySelector('.ie-dialog__title');
     const close = this.current.querySelector('.ie-dialog__header button');
-    if (title) title.textContent = t(panel === 'settings' ? 'settings.title' : 'diagnostics.title');
+    if (title) title.textContent = t(TITLES[panel]);
     if (close) close.textContent = t('dialog.close');
-    if (!body) return;
-    if (panel === 'settings') this.fillSettings(body);
-    else void this.fillDiagnostics(body, true);
+    if (body) this.fill(panel, body, true);
   }
 
-  private fillSettings(body: HTMLElement): void {
-    const t = this.t;
-    const s = this.handlers.getSettings();
-    const field = (label: string, control: HTMLElement) =>
-      h('div', { class: 'ie-field' }, h('span', { class: 'ie-label' }, label), control);
-    const run = this.handlers.run;
-    body.replaceChildren(
-      field(
-        t('settings.language'),
-        segmented(
-          LOCALES.map((l) => ({ value: l, label: LOCALE_INFO[l].nativeName })),
-          s.locale,
-          (locale) => run('ui.locale.set', { locale }),
-          t('settings.language'),
-        ),
-      ),
-      field(
-        t('settings.theme'),
-        segmented(
-          THEME_PREFERENCES.map((v) => ({ value: v, label: t(`settings.theme.${v}`) })),
-          s.theme,
-          (theme) => run('ui.theme.set', { theme }),
-          t('settings.theme'),
-        ),
-      ),
-      field(
-        t('settings.textSize'),
-        segmented(
-          TEXT_SIZES.map((v) => ({ value: v, label: t(`settings.textSize.${v}`) })),
-          s.textSize,
-          (size) => run('ui.textSize.set', { size }),
-          t('settings.textSize'),
-        ),
-      ),
-      field(
-        t('settings.hud'),
-        segmented(
-          [
-            { value: 'off', label: t('settings.off') },
-            { value: 'on', label: t('settings.on') },
-          ],
-          s.hud ? 'on' : 'off',
-          (v) => run('ui.hud.set', { visible: v === 'on' }),
-          t('settings.hud'),
-        ),
-      ),
-    );
+  private fill(panel: Panel, body: HTMLElement, rerender: boolean): void {
+    const { t } = this;
+    const story = this.handlers.story();
+    const close = () => this.close();
+    switch (panel) {
+      case 'settings':
+        fillSettings(body, t, this.handlers.getSettings(), this.handlers.run);
+        break;
+      case 'diagnostics':
+        void this.fillDiagnostics(body, rerender);
+        break;
+      case 'history':
+        if (story)
+          fillHistory(body, {
+            t,
+            story,
+            run: this.handlers.run,
+            close,
+            hyphenate: this.handlers.hyphenate(),
+          });
+        break;
+      case 'saves':
+        if (story) void fillSaves(body, { t, story, runAsync: this.handlers.runAsync, close });
+        break;
+    }
   }
 
   private async fillDiagnostics(body: HTMLElement, reuse: boolean): Promise<void> {

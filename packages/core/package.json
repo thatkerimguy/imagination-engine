@@ -1,0 +1,14 @@
+{
+  "name": "@ie/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kernel: module registry, action bus, event bus, state store, services, storage.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "idb": "^8.0.4",
+    "zod": "^4.6.7"
+  }
+}

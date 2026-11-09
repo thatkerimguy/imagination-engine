@@ -1,0 +1,33 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "player",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ie/player", "dev"],
+      "port": 5173,
+      "url": "http://127.0.0.1:5173"
+    },
+    {
+      "name": "studio",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ie/studio", "dev"],
+      "port": 5174,
+      "url": "http://127.0.0.1:5174"
+    },
+    {
+      "name": "player-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ie/player", "preview"],
+      "port": 4173,
+      "url": "http://127.0.0.1:4173"
+    },
+    {
+      "name": "studio-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ie/studio", "preview"],
+      "port": 4174,
+      "url": "http://127.0.0.1:4174"
+    }
+  ]
+}

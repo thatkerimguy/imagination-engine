@@ -1,0 +1,80 @@
+import {
+  Activity,
+  AudioLines,
+  Database,
+  PenLine,
+  Play,
+  Settings,
+  Sparkles,
+  Workflow,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
+import type { MessageKey } from './messages.ts';
+
+export const VIEW_IDS = [
+  'write',
+  'flow',
+  'logic',
+  'sound',
+  'stage',
+  'data',
+  'play',
+  'settings',
+  'diagnostics',
+] as const;
+export type ViewId = (typeof VIEW_IDS)[number];
+
+export interface ViewInfo {
+  readonly id: ViewId;
+  readonly icon: LucideIcon;
+  readonly label: MessageKey;
+  /** Roadmap phase that fills this workspace (PLAN.md §13); absent for ready views. */
+  readonly phase?: number;
+  readonly description?: MessageKey;
+}
+
+export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
+  write: { id: 'write', icon: PenLine, label: 'view.write', phase: 2, description: 'desc.write' },
+  flow: { id: 'flow', icon: Workflow, label: 'view.flow', phase: 2, description: 'desc.flow' },
+  logic: { id: 'logic', icon: Zap, label: 'view.logic', phase: 6, description: 'desc.logic' },
+  sound: {
+    id: 'sound',
+    icon: AudioLines,
+    label: 'view.sound',
+    phase: 3,
+    description: 'desc.sound',
+  },
+  stage: { id: 'stage', icon: Sparkles, label: 'view.stage', phase: 4, description: 'desc.stage' },
+  data: { id: 'data', icon: Database, label: 'view.data', phase: 6, description: 'desc.data' },
+  play: { id: 'play', icon: Play, label: 'view.play', phase: 2, description: 'desc.play' },
+  settings: { id: 'settings', icon: Settings, label: 'view.settings' },
+  diagnostics: { id: 'diagnostics', icon: Activity, label: 'view.diagnostics' },
+};
+
+/** Desktop rail: workspaces on top, utilities pinned to the bottom. */
+export const RAIL_MAIN: readonly ViewId[] = [
+  'write',
+  'flow',
+  'logic',
+  'sound',
+  'stage',
+  'data',
+  'play',
+];
+export const RAIL_BOTTOM: readonly ViewId[] = ['settings', 'diagnostics'];
+
+/** Phone tab bar: the three most-used views; everything else lives under More. */
+export const TABS: readonly ViewId[] = ['write', 'flow', 'play'];
+export const MORE: readonly ViewId[] = [
+  'logic',
+  'sound',
+  'stage',
+  'data',
+  'settings',
+  'diagnostics',
+];
+
+export function isViewId(value: unknown): value is ViewId {
+  return typeof value === 'string' && (VIEW_IDS as readonly string[]).includes(value);
+}

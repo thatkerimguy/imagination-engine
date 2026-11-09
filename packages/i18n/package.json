@@ -1,0 +1,10 @@
+{
+  "name": "@ie/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Locales (English, Turkish), locale-aware text helpers, typed message catalogs.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

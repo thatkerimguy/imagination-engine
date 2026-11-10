@@ -11,7 +11,7 @@ test.describe('Player bookshelf', () => {
     await expect(page).toHaveTitle('Bookshelf');
     const books = page.getByTestId('book');
     await expect(books.first()).toHaveAttribute('data-id', 'rain_alley');
-    await expect(books).toHaveCount(5); // the sample and four kit starters
+    await expect(books).toHaveCount(14); // the sample and thirteen kit starters
     await expect(books.first()).toHaveAttribute('data-active', 'true');
 
     await page.getByTestId('shelf-next').click();

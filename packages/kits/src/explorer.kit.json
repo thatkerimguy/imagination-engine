@@ -1,0 +1,633 @@
+{
+  "id": "explorer",
+  "name": {
+    "en": "Explorer",
+    "tr": "Keşif"
+  },
+  "blurb": {
+    "en": "Rooms joined by exits, objects to take and use, and Look, Take, Use and Talk on every page.",
+    "tr": "Çıkışlarla bağlı odalar, alınıp kullanılacak nesneler ve her sayfada Bak, Al, Kullan, Konuş."
+  },
+  "theme": "paper",
+  "layout": "page",
+  "project": {
+    "start": "hall",
+    "variables": [
+      {
+        "id": "turns",
+        "name": {
+          "en": "Turns",
+          "tr": "Tur"
+        },
+        "type": "number",
+        "default": 0,
+        "stat": true
+      }
+    ],
+    "characters": [
+      {
+        "id": "portrait",
+        "name": {
+          "en": "The portrait",
+          "tr": "Portre"
+        }
+      },
+      {
+        "id": "cat",
+        "name": {
+          "en": "The cat",
+          "tr": "Kedi"
+        },
+        "color": "accent"
+      }
+    ],
+    "items": [
+      {
+        "id": "lamp",
+        "name": {
+          "en": "Oil lamp",
+          "tr": "Gaz lambası"
+        },
+        "kind": "item",
+        "description": {
+          "en": "Half full. It will do.",
+          "tr": "Yarısı dolu. İş görür."
+        }
+      },
+      {
+        "id": "key",
+        "name": {
+          "en": "Iron key",
+          "tr": "Demir anahtar"
+        },
+        "kind": "key",
+        "description": {
+          "en": "Heavy, and warm from the desk.",
+          "tr": "Ağır ve masadan ılık."
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "count_turns",
+        "name": "Every room entered is a turn",
+        "on": "entered",
+        "do": [
+          {
+            "id": "ex_1",
+            "type": "set",
+            "var": "turns",
+            "op": "add",
+            "value": 1
+          }
+        ]
+      }
+    ],
+    "screens": [
+      {
+        "id": "title",
+        "name": {
+          "en": "Title screen",
+          "tr": "Başlık ekranı"
+        },
+        "kind": "title",
+        "children": [
+          {
+            "id": "ex_s10",
+            "type": "stack",
+            "direction": "column",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "ex_s2",
+                "type": "text",
+                "text": {
+                  "id": "ex_t3",
+                  "en": "The Shut House",
+                  "tr": "Kapalı Ev"
+                },
+                "style": "title"
+              },
+              {
+                "id": "ex_s4",
+                "type": "text",
+                "text": {
+                  "id": "ex_t5",
+                  "en": "An explorer starter",
+                  "tr": "Keşif başlangıcı"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "ex_s6",
+                "type": "button",
+                "label": {
+                  "id": "ex_t7",
+                  "en": "Start",
+                  "tr": "Başla"
+                },
+                "actions": [
+                  {
+                    "type": "start"
+                  }
+                ]
+              },
+              {
+                "id": "ex_s8",
+                "type": "button",
+                "label": {
+                  "id": "ex_t9",
+                  "en": "Continue",
+                  "tr": "Devam et"
+                },
+                "actions": [
+                  {
+                    "type": "continue"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hud",
+        "name": {
+          "en": "Explorer bar",
+          "tr": "Keşif çubuğu"
+        },
+        "kind": "hud",
+        "edge": "top",
+        "children": [
+          {
+            "id": "ex_s16",
+            "type": "stack",
+            "direction": "row",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "ex_s11",
+                "type": "icon",
+                "icon": "map"
+              },
+              {
+                "id": "ex_s12",
+                "type": "text",
+                "text": {
+                  "id": "ex_t13",
+                  "en": "Turn {turns}",
+                  "tr": "Tur {turns}"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "ex_s14",
+                "type": "button",
+                "label": {
+                  "id": "ex_t15",
+                  "en": "Bag",
+                  "tr": "Çanta"
+                },
+                "actions": [
+                  {
+                    "type": "open",
+                    "screen": "bag"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bag",
+        "name": {
+          "en": "Bag",
+          "tr": "Çanta"
+        },
+        "kind": "panel",
+        "children": [
+          {
+            "id": "ex_s17",
+            "type": "list",
+            "source": "inventory",
+            "empty": {
+              "id": "ex_t18",
+              "en": "Nothing yet.",
+              "tr": "Henüz bir şey yok."
+            }
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": {
+          "en": "The house",
+          "tr": "Ev"
+        },
+        "passages": [
+          {
+            "id": "hall",
+            "name": "Hall",
+            "blocks": [
+              {
+                "id": "ex_19",
+                "type": "narration",
+                "text": {
+                  "id": "ex_19",
+                  "en": "The hall. The front door is locked. Doors lead to the library and the garden.",
+                  "tr": "Hol. Ön kapı kilitli. Kapılar kütüphaneye ve bahçeye açılıyor."
+                }
+              },
+              {
+                "id": "ex_39",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "ex_o22",
+                    "text": {
+                      "id": "ex_t23",
+                      "en": "Look around",
+                      "tr": "Etrafa bak"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_20",
+                        "type": "narration",
+                        "text": {
+                          "id": "ex_20",
+                          "en": "Coats on hooks, a lamp on the table, a keyhole in the front door.",
+                          "tr": "Askılarda paltolar, masada bir lamba, ön kapıda bir anahtar deliği."
+                        }
+                      },
+                      {
+                        "id": "ex_21",
+                        "type": "jump",
+                        "to": "hall"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ex_o26",
+                    "text": {
+                      "id": "ex_t27",
+                      "en": "Take the lamp",
+                      "tr": "Lambayı al"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_24",
+                        "type": "item",
+                        "op": "give",
+                        "item": "lamp"
+                      },
+                      {
+                        "id": "ex_25",
+                        "type": "jump",
+                        "to": "hall"
+                      }
+                    ],
+                    "visibleIf": "owned(\"lamp\") == 0"
+                  },
+                  {
+                    "id": "ex_o31",
+                    "text": {
+                      "id": "ex_t32",
+                      "en": "Use the key on the front door",
+                      "tr": "Anahtarı ön kapıda kullan"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_28",
+                        "type": "narration",
+                        "text": {
+                          "id": "ex_28",
+                          "en": "The lock turns. Cold air and morning.",
+                          "tr": "Kilit dönüyor. Soğuk hava ve sabah."
+                        }
+                      },
+                      {
+                        "id": "ex_29",
+                        "type": "end",
+                        "ending": {
+                          "id": "escaped",
+                          "title": {
+                            "id": "ex_t30",
+                            "en": "Through the front door",
+                            "tr": "Ön kapıdan"
+                          }
+                        }
+                      }
+                    ],
+                    "visibleIf": "owned(\"key\") > 0"
+                  },
+                  {
+                    "id": "ex_o34",
+                    "text": {
+                      "id": "ex_t35",
+                      "en": "Go to the library",
+                      "tr": "Kütüphaneye git"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_33",
+                        "type": "jump",
+                        "to": "library"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ex_o37",
+                    "text": {
+                      "id": "ex_t38",
+                      "en": "Go to the garden",
+                      "tr": "Bahçeye git"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_36",
+                        "type": "jump",
+                        "to": "garden"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "library",
+            "name": "Library",
+            "blocks": [
+              {
+                "id": "ex_42",
+                "type": "if",
+                "branches": [
+                  {
+                    "id": "ex_br43",
+                    "when": "owned(\"lamp\") > 0",
+                    "then": [
+                      {
+                        "id": "ex_40",
+                        "type": "narration",
+                        "text": {
+                          "id": "ex_40",
+                          "en": "Lamplight on shelves, and a glint on the desk.",
+                          "tr": "Raflarda lamba ışığı ve masada bir parıltı."
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "else": [
+                  {
+                    "id": "ex_41",
+                    "type": "narration",
+                    "text": {
+                      "id": "ex_41",
+                      "en": "Too dark to see past the doorway.",
+                      "tr": "Kapı eşiğinin ötesini görmek için fazla karanlık."
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "ex_59",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "ex_o46",
+                    "text": {
+                      "id": "ex_t47",
+                      "en": "Look around",
+                      "tr": "Etrafa bak"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_44",
+                        "type": "narration",
+                        "text": {
+                          "id": "ex_44",
+                          "en": "Dust, ledgers, a portrait that seems to watch you.",
+                          "tr": "Toz, defterler, seni izliyor gibi görünen bir portre."
+                        }
+                      },
+                      {
+                        "id": "ex_45",
+                        "type": "jump",
+                        "to": "library"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ex_o50",
+                    "text": {
+                      "id": "ex_t51",
+                      "en": "Take the key from the desk",
+                      "tr": "Masadaki anahtarı al"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_48",
+                        "type": "item",
+                        "op": "give",
+                        "item": "key"
+                      },
+                      {
+                        "id": "ex_49",
+                        "type": "jump",
+                        "to": "library"
+                      }
+                    ],
+                    "visibleIf": "owned(\"lamp\") > 0 && owned(\"key\") == 0"
+                  },
+                  {
+                    "id": "ex_o54",
+                    "text": {
+                      "id": "ex_t55",
+                      "en": "Talk to the portrait",
+                      "tr": "Portreyle konuş"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_52",
+                        "type": "dialogue",
+                        "speaker": "portrait",
+                        "text": {
+                          "id": "ex_52",
+                          "en": "The garden wall is lower than it looks.",
+                          "tr": "Bahçe duvarı göründüğünden alçak."
+                        }
+                      },
+                      {
+                        "id": "ex_53",
+                        "type": "jump",
+                        "to": "library"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ex_o57",
+                    "text": {
+                      "id": "ex_t58",
+                      "en": "Back to the hall",
+                      "tr": "Hole dön"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_56",
+                        "type": "jump",
+                        "to": "hall"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "garden",
+            "name": "Garden",
+            "blocks": [
+              {
+                "id": "ex_60",
+                "type": "narration",
+                "text": {
+                  "id": "ex_60",
+                  "en": "A walled garden, gone to seed. A cat on the sundial.",
+                  "tr": "Duvarlı, bakımsız bir bahçe. Güneş saatinde bir kedi."
+                }
+              },
+              {
+                "id": "ex_80",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "ex_o63",
+                    "text": {
+                      "id": "ex_t64",
+                      "en": "Look around",
+                      "tr": "Etrafa bak"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_61",
+                        "type": "narration",
+                        "text": {
+                          "id": "ex_61",
+                          "en": "Roses, ivy, a wall with handholds if you squint.",
+                          "tr": "Güller, sarmaşık, dikkatle bakınca tutunacak yerleri olan bir duvar."
+                        }
+                      },
+                      {
+                        "id": "ex_62",
+                        "type": "jump",
+                        "to": "garden"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ex_o67",
+                    "text": {
+                      "id": "ex_t68",
+                      "en": "Talk to the cat",
+                      "tr": "Kediyle konuş"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_65",
+                        "type": "dialogue",
+                        "speaker": "cat",
+                        "text": {
+                          "id": "ex_65",
+                          "en": "Mrrp.",
+                          "tr": "Mırr."
+                        }
+                      },
+                      {
+                        "id": "ex_66",
+                        "type": "jump",
+                        "to": "garden"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ex_o75",
+                    "text": {
+                      "id": "ex_t76",
+                      "en": "Climb the wall",
+                      "tr": "Duvara tırman"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_73",
+                        "type": "check",
+                        "label": {
+                          "id": "ex_t74",
+                          "en": "Climb",
+                          "tr": "Tırman"
+                        },
+                        "dice": "1d20",
+                        "target": 12,
+                        "success": [
+                          {
+                            "id": "ex_69",
+                            "type": "end",
+                            "ending": {
+                              "id": "over_wall",
+                              "title": {
+                                "id": "ex_t70",
+                                "en": "Over the garden wall",
+                                "tr": "Bahçe duvarının üstünden"
+                              }
+                            }
+                          }
+                        ],
+                        "fail": [
+                          {
+                            "id": "ex_71",
+                            "type": "narration",
+                            "text": {
+                              "id": "ex_71",
+                              "en": "You slide back into the roses.",
+                              "tr": "Güllerin içine geri kayıyorsun."
+                            }
+                          },
+                          {
+                            "id": "ex_72",
+                            "type": "jump",
+                            "to": "garden"
+                          }
+                        ]
+                      }
+                    ],
+                    "showOdds": true
+                  },
+                  {
+                    "id": "ex_o78",
+                    "text": {
+                      "id": "ex_t79",
+                      "en": "Back to the hall",
+                      "tr": "Hole dön"
+                    },
+                    "then": [
+                      {
+                        "id": "ex_77",
+                        "type": "jump",
+                        "to": "hall"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

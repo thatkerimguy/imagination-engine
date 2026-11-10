@@ -5,6 +5,8 @@ export * from './minigame.ts';
 export * from './library.ts';
 export * from './playtest.ts';
 export * from './publish.ts';
+export * from './script.ts';
+export * from './script-apply.ts';
 export * from './stage.ts';
 export {
   checkStory,

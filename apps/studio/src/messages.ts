@@ -7,6 +7,7 @@ import { materialMessages } from './messages-material.ts';
 import { minigameStudioMessages } from './messages-minigame.ts';
 import { projectMessages } from './messages-project.ts';
 import { publishMessages } from './messages-publish.ts';
+import { scriptMessages } from './messages-script.ts';
 import { rpgBlockMessages } from './messages-rpg.ts';
 import { sequencerMessages } from './messages-sequencer.ts';
 import { soundMessages } from './messages-sound.ts';
@@ -127,6 +128,7 @@ export const messages = {
     ...minigameStudioMessages.en,
     ...libraryMessages.en,
     ...publishMessages.en,
+    ...scriptMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -143,6 +145,7 @@ export const messages = {
     ...minigameStudioMessages.tr,
     ...libraryMessages.tr,
     ...publishMessages.tr,
+    ...scriptMessages.tr,
   },
 };
 

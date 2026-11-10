@@ -328,3 +328,34 @@
     gap: var(--space-1);
   }
 }
+
+/* Script view: the passage as plain text. */
+.script {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.script__name {
+  margin: 0;
+  font-family: var(--font-prose);
+  font-size: var(--text-lg);
+  font-weight: normal;
+}
+.script__text {
+  min-height: 50vh;
+  resize: vertical;
+  line-height: var(--leading-prose);
+  white-space: pre-wrap;
+}
+.script__status {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.script__help {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.script__help ul {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-5);
+}

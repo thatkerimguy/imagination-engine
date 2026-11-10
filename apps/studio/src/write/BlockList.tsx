@@ -21,6 +21,7 @@ export function useNewBlock(): (type: MenuBlockType) => Block {
       track: doc.audio?.tracks[0]?.id,
       sound: doc.audio?.sounds[0]?.id,
       enemy: doc.enemies?.[0]?.id,
+      sequence: doc.sequences?.find((s) => s.kind === 'scene')?.id,
       item: doc.items?.[0]?.id,
       quest: doc.quests?.[0]?.id,
       routine: doc.routines?.[0]?.id,

@@ -23,6 +23,7 @@ export {
   type FightOptions,
   type LiveNote,
 } from './fight.ts';
+export { chartBars, moveShape, thinShape, type MoveShape, type ShapeNote } from './shapes.ts';
 export { GRADE_VALUE, gradeFor, WIDE_WINDOWS, WINDOWS, type Grade } from './judge.ts';
 export { fightMessages, type FightKey } from './view/messages.ts';
 export { prepareFightMusic, type FightMusic } from './view/fight-music.ts';

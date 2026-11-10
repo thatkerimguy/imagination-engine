@@ -12,6 +12,7 @@ import { BlockList } from '../BlockList.tsx';
 import { useWrite } from '../context.ts';
 import { labelText, nextName, useEditor } from '../edit.ts';
 import { Sentence } from '../Sentence.tsx';
+import { SequencePicker } from './SequenceEditor.tsx';
 
 const NEW = '__new__';
 const BAR_CHOICES = [8, 16, 24, 32, 48, 64] as const;
@@ -189,7 +190,27 @@ export function FightEditor({ block }: { readonly block: FightBlock }) {
           </select>
         </label>
       </div>
-      <p className="hint">{t('fightBlock.musicHint')}</p>
+      <div className="row row--wrap">
+        <label className="inline-field">
+          <span>{t('fightBlock.chart')}</span>
+          <SequencePicker
+            doc={doc}
+            kind="scene"
+            value={block.chart ?? ''}
+            label={t('fightBlock.chart')}
+            none={t('fightBlock.chartAuto')}
+            newLabel={t('sequenceBlock.new')}
+            testId="fight-chart"
+            onChange={(chart) =>
+              set((b) => {
+                const { chart: _old, ...rest } = b;
+                return chart ? { ...rest, chart } : rest;
+              })
+            }
+          />
+        </label>
+      </div>
+      <p className="hint">{t(block.chart ? 'fightBlock.chartHint' : 'fightBlock.musicHint')}</p>
       <div className="branch">
         <span className="branch__label">{t('fightBlock.win')}</span>
         <BlockList listKey={listKey.win(block.id)} blocks={block.win} nested testId="fight-win" />

@@ -4,6 +4,7 @@ import { voiceSchema, type Voice } from './audio.ts';
 import { DIFFICULTIES, FIGHT_BARS, FIGHT_MODES, type Difficulty, type FightMode } from './fight.ts';
 import { logicSchemas, type RoutineBlock } from './logic.ts';
 import { rpgBlockSchemas, type RpgBlock } from './rpg.ts';
+import { sequenceBlockSchema, type SequenceBlock } from './sequence.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
@@ -204,6 +205,8 @@ export interface FightBlock extends BlockBase {
   readonly bars?: number;
   /** A number variable that receives the score (0–100). */
   readonly score?: string;
+  /** A scene sequence whose notes are the whole fight, instead of a generated chart (ADR 0019). */
+  readonly chart?: string;
   readonly win: readonly Block[];
   readonly lose: readonly Block[];
 }
@@ -230,6 +233,7 @@ export type Block =
   | RandomBlock
   | EndBlock
   | FightBlock
+  | SequenceBlock
   | RpgBlock
   | RoutineBlock
   | ActionBlock;
@@ -324,9 +328,11 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
       difficulty: z.enum(DIFFICULTIES).optional(),
       bars: z.number().int().min(FIGHT_BARS.min).max(FIGHT_BARS.max).optional(),
       score: idSchema.optional(),
+      chart: idSchema.optional(),
       win: blocks(),
       lose: blocks(),
     }),
+    sequenceBlockSchema,
     ...rpgBlockSchemas(blocks),
     logic.routineBlock,
     z.object({

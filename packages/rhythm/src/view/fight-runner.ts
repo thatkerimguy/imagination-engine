@@ -22,6 +22,8 @@ export interface FightRunnerOptions {
   /** True when the fight covers `host` instead of the whole viewport (the Studio's Play view). */
   readonly contained?: boolean;
   readonly settings: () => FightRunnerSettings;
+  /** Runs a choreography cue from a move sequence or chart (ADR 0019). */
+  readonly dispatch?: (action: string, params: unknown) => void;
   /** The reader closed the result: resolve the fight on the runtime and show what follows. */
   readonly resolve: (result: FightResult) => void;
 }
@@ -86,7 +88,11 @@ export class FightRunner {
       this.options.resolve({ won: true, score: 0 });
       return;
     }
-    const music = await prepareFightMusic(audio, project.audio, block.track);
+    const chart = block.chart
+      ? project.sequences?.find((s) => s.id === block.chart && s.kind === 'scene')
+      : undefined;
+    // A chart is written to a song, so it brings that song unless the block names another.
+    const music = await prepareFightMusic(audio, project.audio, block.track ?? chart?.track);
     if (this.active !== token) {
       music.release();
       return;
@@ -110,6 +116,9 @@ export class FightRunner {
       assist: s.assist,
       haptics: s.haptics,
       locale: s.locale,
+      ...(project.sequences ? { sequences: project.sequences } : {}),
+      ...(chart ? { chart } : {}),
+      ...(this.options.dispatch ? { dispatch: this.options.dispatch } : {}),
       onDone: (result) => {
         if (this.active === token) this.active = null;
         this.options.resolve(result);

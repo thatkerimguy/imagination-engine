@@ -2,6 +2,7 @@ import type { AudioDirector } from '@ie/audio';
 import type { Locale } from '@ie/i18n';
 import { ScreenHost, StoryPresenter } from '@ie/present';
 import { FightRunner } from '@ie/rhythm';
+import { SequenceRunner } from '@ie/sequencer';
 import type { StageDirector } from '@ie/stage';
 import { StoryRuntime, type CompiledStory, type StoryState } from '@ie/story';
 
@@ -32,6 +33,7 @@ export class PlaySession {
   private runtime: StoryRuntime;
   private readonly history: StoryState[] = [];
   private readonly fights: FightRunner | null;
+  private readonly sequences: SequenceRunner | null;
   private locale: Locale;
 
   constructor(
@@ -44,6 +46,14 @@ export class PlaySession {
     fights?: PlayFights,
   ) {
     this.locale = locale;
+    this.sequences =
+      fights && audio
+        ? new SequenceRunner({
+            audio: fights.audio,
+            dispatch: (id, params) => audio.run(id, params),
+            done: () => this.advance(),
+          })
+        : null;
     this.runtime = this.create();
     this.fights = fights
       ? new FightRunner({
@@ -57,6 +67,7 @@ export class PlaySession {
             haptics: false,
             tapLatency: fights.tapLatency(),
           }),
+          ...(audio ? { dispatch: (id: string, params: unknown) => audio.run(id, params) } : {}),
           resolve: (result) => this.act(() => this.runtime.resolveFight(result)),
         })
       : null;
@@ -68,6 +79,7 @@ export class PlaySession {
         restart: () => this.restart(),
         advance: () => this.advance(),
         fight: (beat) => this.fights?.start(this.runtime, beat),
+        sequence: (beat) => this.sequences?.start(this.runtime, beat),
         buy: (item) => this.act(() => this.runtime.buy(item)),
         sell: (item) => this.act(() => this.runtime.sell(item)),
         leaveShop: () => this.act(() => this.runtime.leaveShop()),
@@ -111,7 +123,7 @@ export class PlaySession {
     this.screens.refresh();
   }
 
-  /** A tap: finish the line being typed, or move on when a line, check or pause waits. */
+  /** A tap: finish the line being typed, or move on when a line, check, pause or sequence waits. */
   tap(): void {
     if (this.screens.covering) return;
     if (this.presenter.busy) return this.presenter.skip();
@@ -120,7 +132,8 @@ export class PlaySession {
 
   advance(): void {
     const kind = this.runtime.waiting?.kind;
-    if (kind === 'line' || kind === 'check' || kind === 'pause') this.act(() => undefined);
+    if (kind === 'line' || kind === 'check' || kind === 'pause' || kind === 'sequence')
+      this.act(() => undefined);
   }
 
   back(): void {
@@ -128,6 +141,7 @@ export class PlaySession {
     if (!state) return;
     this.runtime.restore(state);
     this.fights?.sync(this.runtime);
+    this.sequences?.sync(this.runtime);
     this.presenter.redraw();
     this.screens.refresh();
     this.audio?.applyScene(this.runtime.scene);
@@ -137,6 +151,7 @@ export class PlaySession {
   restart(): void {
     this.history.length = 0;
     this.fights?.stop();
+    this.sequences?.stop();
     this.runtime = this.create();
     this.presenter.attach(this.runtime);
     this.screens.close();
@@ -154,6 +169,7 @@ export class PlaySession {
 
   dispose(): void {
     this.fights?.stop();
+    this.sequences?.stop();
     this.presenter.dispose();
     this.screens.dispose();
     this.audio?.stopAll();
@@ -164,9 +180,19 @@ export class PlaySession {
     return new StoryRuntime(this.story, {
       ...(this.start ? { start: this.start } : {}),
       ...(audio
-        ? { host: { runAction: (id: string, params: unknown) => audio.run(id, params) } }
+        ? { host: { runAction: (id: string, params: unknown) => this.runAction(id, params) } }
         : {}),
     });
+  }
+
+  /** Story actions go to the action bus; a sequence that doesn't wait plays here. */
+  private runAction(id: string, params: unknown): void {
+    if (id === 'sequence.play' && this.sequences) {
+      const sequence = (params as { sequence?: unknown }).sequence;
+      if (typeof sequence === 'string') this.sequences.play(this.story.project, sequence);
+      return;
+    }
+    this.audio?.run(id, params);
   }
 
   private act(change: () => void): void {

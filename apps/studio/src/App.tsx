@@ -16,6 +16,7 @@ import { EmptyView } from './views/EmptyView.tsx';
 import { LogicView } from './views/LogicView.tsx';
 import { FlowView } from './views/FlowView.tsx';
 import { PlayView } from './views/PlayView.tsx';
+import { SequencerView } from './views/SequencerView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
 import { SoundView } from './views/SoundView.tsx';
 import { StageView } from './views/StageView.tsx';
@@ -97,6 +98,7 @@ function CurrentView() {
   if (view === 'data') return <DataView />;
   if (view === 'sound') return <SoundView />;
   if (view === 'stage') return <StageView />;
+  if (view === 'sequencer') return <SequencerView />;
   if (view === 'logic') return <LogicView />;
   if (view === 'design') return <DesignView />;
   return <EmptyView key={view} info={VIEWS[view]} />;

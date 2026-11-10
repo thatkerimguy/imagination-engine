@@ -8,6 +8,7 @@ import type { RuntimeCore } from './runtime-core.ts';
 import { ENDINGS_KEY } from './runtime-options.ts';
 import type { Block } from './schema.ts';
 import { rememberScene, type OptionView } from './state.ts';
+import { sequenceSceneChanges, type SequenceBlock } from './sequence.ts';
 
 /** Runs one block. Returns true when a beat now waits for the reader. */
 export function runBlock(core: RuntimeCore, block: Block): boolean {
@@ -102,6 +103,8 @@ export function runBlock(core: RuntimeCore, block: Block): boolean {
       return core.finish(block);
     case 'fight':
       return core.wait({ kind: 'fight', blockId: block.id });
+    case 'sequence':
+      return runSequence(core, block);
     case 'action':
       core.s.scene = rememberScene(core.s.scene, block.action, block.params ?? {});
       core.host.runAction?.(block.action, block.params ?? {});
@@ -122,4 +125,23 @@ export function runBlock(core: RuntimeCore, block: Block): boolean {
     case 'note':
       return false;
   }
+}
+
+/**
+ * A sequence leaves its last background and look as scene state, so a load or rewind shows the
+ * same picture without replaying it (ADR 0019). Waiting hands the host a beat to play.
+ */
+function runSequence(core: RuntimeCore, block: SequenceBlock): boolean {
+  const sequence = core.story.project.sequences?.find((q) => q.id === block.sequence);
+  if (!sequence) return false;
+  // Its song keeps playing afterwards, so it becomes the scene's music.
+  if (sequence.track)
+    core.s.scene = rememberScene(core.s.scene, 'audio.music.set', { track: sequence.track });
+  for (const clip of sequenceSceneChanges(sequence))
+    core.s.scene = rememberScene(core.s.scene, clip.action, clip.params ?? {});
+  if (block.wait === false) {
+    core.host.runAction?.('sequence.play', { sequence: sequence.id });
+    return false;
+  }
+  return core.wait({ kind: 'sequence', blockId: block.id });
 }

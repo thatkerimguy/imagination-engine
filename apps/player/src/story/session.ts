@@ -81,10 +81,10 @@ export class StorySession {
     return this.history.length > 0;
   }
 
-  /** True when a tap should move the story on (a line, a check or a pause is waiting). */
+  /** True when a tap should move the story on (a line, check, pause or sequence is waiting). */
   get canAdvance(): boolean {
     const kind = this.runtime.waiting?.kind;
-    return kind === 'line' || kind === 'check' || kind === 'pause';
+    return kind === 'line' || kind === 'check' || kind === 'pause' || kind === 'sequence';
   }
 
   /**

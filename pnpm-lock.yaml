@@ -235,6 +235,9 @@ importers:
       '@ie/samples':
         specifier: workspace:*
         version: link:../../packages/samples
+      '@ie/sequencer':
+        specifier: workspace:*
+        version: link:../../packages/sequencer
       '@ie/stage':
         specifier: workspace:*
         version: link:../../packages/stage
@@ -284,6 +287,9 @@ importers:
       '@ie/samples':
         specifier: workspace:*
         version: link:../../packages/samples
+      '@ie/sequencer':
+        specifier: workspace:*
+        version: link:../../packages/sequencer
       '@ie/stage':
         specifier: workspace:*
         version: link:../../packages/stage
@@ -403,6 +409,9 @@ importers:
       '@ie/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@ie/sequencer':
+        specifier: workspace:*
+        version: link:../sequencer
       '@ie/stage':
         specifier: workspace:*
         version: link:../stage
@@ -415,6 +424,21 @@ importers:
       '@ie/story':
         specifier: workspace:*
         version: link:../story
+
+  packages/sequencer:
+    dependencies:
+      '@ie/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@ie/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/stage:
     dependencies:

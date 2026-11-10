@@ -14,6 +14,8 @@ export interface PresenterHost extends PromptHandlers, RpgHandlers {
   typed?(speaker: string | null, text: string): void;
   /** A fight waits: the host plays it and resolves it on the runtime. Called again on a redraw. */
   fight?(beat: Extract<Beat, { kind: 'fight' }>): void;
+  /** A sequence waits: the host plays it and advances when it ends. Called again on a redraw. */
+  sequence?(beat: Extract<Beat, { kind: 'sequence' }>): void;
 }
 
 export interface PresenterOptions {
@@ -264,6 +266,8 @@ export class StoryPresenter {
       shown = buildEnd(beat, { runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'fight') {
       handlers.fight?.(beat);
+    } else if (beat.kind === 'sequence') {
+      handlers.sequence?.(beat);
     } else if (beat.kind === 'shop') {
       shown = buildShop({ runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'battle') {

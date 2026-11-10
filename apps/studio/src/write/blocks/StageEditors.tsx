@@ -111,7 +111,14 @@ const STRENGTHS = [
 ] as const;
 
 /** Background, look, screen effect, particles, title and transition blocks as sentences. */
-export function StageEditor({ block }: { readonly block: ActionBlock }) {
+export function StageEditor({
+  block,
+  timed = true,
+}: {
+  readonly block: ActionBlock;
+  /** False on the timeline, where a title's length on the track sets its time (ADR 0019). */
+  readonly timed?: boolean;
+}) {
   const t = useT();
   const { doc, editor } = useWrite();
   const kind = stageKind(block);
@@ -215,18 +222,22 @@ export function StageEditor({ block }: { readonly block: ActionBlock }) {
             </label>
           ))}
           <Sentence
-            template={t('stageBlock.titleTiming')}
+            template={t(timed ? 'stageBlock.titleTiming' : 'seq.titleExit')}
             slots={{
-              seconds: (
-                <Seconds
-                  value={num(params.seconds, 3)}
-                  min={0.5}
-                  max={20}
-                  step={0.5}
-                  label={t('stageBlock.seconds')}
-                  onChange={(seconds) => set({ seconds })}
-                />
-              ),
+              ...(timed
+                ? {
+                    seconds: (
+                      <Seconds
+                        value={num(params.seconds, 3)}
+                        min={0.5}
+                        max={20}
+                        step={0.5}
+                        label={t('stageBlock.seconds')}
+                        onChange={(seconds) => set({ seconds })}
+                      />
+                    ),
+                  }
+                : {}),
               exit: (
                 <Choice
                   choices={['fade', 'shatter']}

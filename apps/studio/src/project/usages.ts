@@ -20,6 +20,8 @@ export interface Usages {
   readonly items: ReadonlyMap<string, number>;
   readonly quests: ReadonlyMap<string, number>;
   readonly routines: ReadonlyMap<string, number>;
+  /** Sequences, from Sequence blocks, fight charts and enemy moves. */
+  readonly sequences: ReadonlyMap<string, number>;
 }
 
 function formulasOf(block: Block): Formula[] {
@@ -54,6 +56,7 @@ export function countUsages(doc: StoryProject): Usages {
   const items = new Map<string, number>();
   const quests = new Map<string, number>();
   const routines = new Map<string, number>();
+  const sequences = new Map<string, number>();
   const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
 
   walkBlocks(doc, ({ block }) => {
@@ -73,7 +76,9 @@ export function countUsages(doc: StoryProject): Usages {
       bump(enemies, block.enemy);
       if (block.track) bump(audio, block.track);
       if (block.score) bump(variables, block.score);
+      if (block.chart) bump(sequences, block.chart);
     }
+    if (block.type === 'sequence') bump(sequences, block.sequence);
     if (block.type === 'choice')
       for (const o of block.options) if (o.cost) bump(variables, o.cost.var);
     if (block.type === 'item') bump(items, block.item);
@@ -116,5 +121,8 @@ export function countUsages(doc: StoryProject): Usages {
     else if (rule.on === 'gained' || rule.on === 'lost') bump(items, rule.target);
     else if (rule.on === 'quest') bump(quests, rule.target);
   }
-  return { variables, characters, audio, enemies, items, quests, routines };
+  for (const enemy of doc.enemies ?? [])
+    for (const move of enemy.moves) if (move.sequence) bump(sequences, move.sequence);
+  for (const sequence of doc.sequences ?? []) if (sequence.track) bump(audio, sequence.track);
+  return { variables, characters, audio, enemies, items, quests, routines, sequences };
 }

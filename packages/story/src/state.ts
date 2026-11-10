@@ -72,6 +72,7 @@ export type Beat =
       readonly values: Readonly<Record<string, Value>>;
     }
   | { readonly kind: 'fight'; readonly blockId: string }
+  | { readonly kind: 'sequence'; readonly blockId: string }
   | {
       readonly kind: 'fought';
       readonly blockId: string;
@@ -192,6 +193,7 @@ export const beatSchema: z.ZodType<Beat> = z.discriminatedUnion('kind', [
     values,
   }),
   z.object({ kind: z.literal('fight'), blockId: z.string() }),
+  z.object({ kind: z.literal('sequence'), blockId: z.string() }),
   z.object({ kind: z.literal('fought'), blockId: z.string(), won: z.boolean(), score: z.number() }),
   ...rpgBeatSchemas,
   z.object({

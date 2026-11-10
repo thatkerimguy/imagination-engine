@@ -31,6 +31,8 @@ export interface EnemyMove {
   readonly answer: MoveAnswer;
   /** Multiplies the enemy's attack for each note of this move that lands. */
   readonly power?: number;
+  /** A move sequence whose notes and choreography replace the pattern (ADR 0019). */
+  readonly sequence?: string;
 }
 export const enemyMoveSchema = z.object({
   id,
@@ -38,6 +40,7 @@ export const enemyMoveSchema = z.object({
   pattern: z.enum(MOVE_PATTERNS),
   answer: z.enum(MOVE_ANSWERS),
   power: z.number().min(0.25).max(4).optional(),
+  sequence: id.optional(),
 });
 
 export interface EnemyDef {

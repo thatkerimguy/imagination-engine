@@ -16,6 +16,7 @@ import {
   type PresenterOptions,
 } from '@ie/present';
 import { FightRunner, type Assist } from '@ie/rhythm';
+import { createSequenceModule, SequenceRunner } from '@ie/sequencer';
 import { createStageHost, createStageModule } from '@ie/stage';
 import { StoryLoadError, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
@@ -102,7 +103,14 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       haptics: settings.haptics,
       tapLatency: 0, // the Player has no tap-timing test yet
     }),
+    dispatch: (id, params) => run(id, params, 'story'),
     resolve: (result) => run('story.fight', result),
+  });
+  // Sequences the story plays (ADR 0019); their cues go through the action bus like blocks.
+  const sequences = new SequenceRunner({
+    audio,
+    dispatch: (id, params) => run(id, params, 'story'),
+    done: () => run('story.advance'),
   });
   let hyphenate: PresenterOptions['hyphenate'];
   const hyphenation = loadHyphenators().then(
@@ -210,6 +218,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   kernel.use(createStoryModule(() => story));
   kernel.use(createAudioModule(audio));
   kernel.use(createStageModule(stage));
+  kernel.use(createSequenceModule(sequences, () => story?.session.story.project));
   await kernel.start();
 
   root.replaceChildren(reader.element, menu.trigger, menu.element);
@@ -237,11 +246,13 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         battle: (action) => run('story.battle', action),
         typed: (speaker, text) => audio.typed(speaker, text),
         fight: (beat) => fights.start(session.runtime, beat),
+        sequence: (beat) => sequences.start(session.runtime, beat),
       },
       presenterOptions(settings),
     );
     story = new StoryController(session, presenter, kernel.events, (scene) => {
       fights.sync(session.runtime);
+      sequences.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
     });

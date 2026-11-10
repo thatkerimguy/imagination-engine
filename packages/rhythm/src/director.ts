@@ -4,10 +4,19 @@ import {
   type EnemyDef,
   type EnemyMove,
   type FightMode,
+  type SequenceDef,
 } from '@ie/story';
-import { FILL, MIN_GAP, PATTERNS, pickSubdivision, thin } from './density.ts';
+import { FILL, MIN_GAP, pickSubdivision, thin } from './density.ts';
+import {
+  chartBars,
+  moveShape,
+  thinShape,
+  type MoveShape,
+  type NoteKind,
+  type ShapeNote,
+} from './shapes.ts';
 
-export type NoteKind = 'strike' | 'parry' | 'dodge';
+export type { NoteKind } from './shapes.ts';
 
 export interface ChartNote {
   /** `bar:index`, stable for a given seed. */
@@ -33,6 +42,8 @@ export interface BarPlan {
   /** The first enemy move in the bar, for the HUD to name. */
   readonly move?: EnemyMove;
   readonly notes: readonly ChartNote[];
+  /** Sequences whose choreography starts in this bar, at fight beats (ADR 0019). */
+  readonly cues?: readonly { readonly beat: number; readonly sequence: string }[];
 }
 
 export interface DirectorOptions {
@@ -46,6 +57,10 @@ export interface DirectorOptions {
   readonly seed: number;
   /** Fight bars where the song's sections start (mixed mode). Every 8 bars without them. */
   readonly sectionBars?: readonly number[];
+  /** The project's sequences, for moves that name a move sequence. */
+  readonly sequences?: readonly SequenceDef[];
+  /** A hand-made chart: its notes are the fight, and its length sets the bars. */
+  readonly chart?: SequenceDef;
 }
 
 /** How likely a free bar is to carry an enemy attack. */
@@ -73,21 +88,29 @@ export class FightDirector {
   /** Grid step of the reader's strikes, in beats. */
   readonly grid: number;
   readonly secondsPerBeat: number;
+  /** Fight bars, not counting the count-in. */
+  readonly bars: number;
   private readonly sections: readonly number[];
+  private readonly shapes = new Map<string, MoveShape>();
+  private readonly chart: readonly ShapeNote[][] | null;
 
   constructor(readonly options: DirectorOptions) {
     this.grid = pickSubdivision(options.bpm, options.difficulty);
     this.secondsPerBeat = 60 / options.bpm;
-    const given = [...(options.sectionBars ?? [])].filter((b) => b > 0 && b < options.bars);
+    this.chart = options.chart ? chartBars(options.chart, options.beatsPerBar) : null;
+    this.bars = this.chart?.length ?? options.bars;
+    for (const move of options.enemy.moves)
+      this.shapes.set(move.id, moveShape(move, options.sequences, options.beatsPerBar));
+    const given = [...(options.sectionBars ?? [])].filter((b) => b > 0 && b < this.bars);
     this.sections =
       given.length > 0
         ? [0, ...new Set(given.sort((a, b) => a - b))]
-        : Array.from({ length: Math.ceil(options.bars / 8) }, (_, i) => i * 8);
+        : Array.from({ length: Math.ceil(this.bars / 8) }, (_, i) => i * 8);
   }
 
   /** Bars including the count-in. */
   get totalBars(): number {
-    return this.options.bars + 1;
+    return this.bars + 1;
   }
 
   get totalBeats(): number {
@@ -107,6 +130,8 @@ export class FightDirector {
 
   turnAt(bar: number): Turn {
     if (bar <= 0) return 'count';
+    if (this.chart)
+      return this.chart[bar - 1]?.some((n) => n.kind === 'strike') ? 'player' : 'enemy';
     const { mode, since } = this.modeAt(bar);
     if (mode === 'free') return 'free';
     return (bar - 1 - since) % 4 < 2 ? 'enemy' : 'player';
@@ -116,18 +141,42 @@ export class FightDirector {
   plan(bar: number, enemyHp = 1): BarPlan {
     const turn = this.turnAt(bar);
     if (turn === 'count' || bar >= this.totalBars) return { bar, turn, notes: [] };
+    if (this.chart) return this.chartPlan(bar, turn);
     const random = barRandom(this.options.seed, bar);
     if (turn === 'player') return { bar, turn, notes: this.strikes(bar, random) };
     const attack = turn === 'enemy' || random() < FREE_ATTACK[this.options.difficulty];
     if (!attack) return { bar, turn, notes: [] };
     const from = turn === 'enemy' ? 0 : Math.floor(this.options.beatsPerBar / 2);
-    const { notes, first } = this.attacks(bar, from, enemyHp, random);
-    return first ? { bar, turn, move: first, notes } : { bar, turn, notes };
+    const { notes, first, cues } = this.attacks(bar, from, enemyHp, random);
+    const plan: BarPlan = cues.length > 0 ? { bar, turn, notes, cues } : { bar, turn, notes };
+    return first ? { ...plan, move: first } : plan;
+  }
+
+  /** A bar of a hand-made chart; bar 1 also starts the chart's own choreography. */
+  private chartPlan(bar: number, turn: Turn): BarPlan {
+    const { beatsPerBar, chart } = this.options;
+    const start = bar * beatsPerBar;
+    const notes = (this.chart?.[bar - 1] ?? []).map((n, i): ChartNote => {
+      const a = i * 1.3;
+      const strike = n.kind === 'strike';
+      return {
+        id: `${bar}:${i}`,
+        beat: start + n.offset,
+        kind: n.kind,
+        power: n.power,
+        x: n.x ?? (strike ? 0.2 + 0.6 * ((i % 4) / 3) : 0.5 + Math.cos(a) * 0.28),
+        y: n.y ?? (strike ? 0.64 + (i % 2) * 0.1 : 0.32 + Math.sin(a) * 0.12),
+      };
+    });
+    if (bar === 1 && chart)
+      return { bar, turn, notes, cues: [{ beat: start, sequence: chart.id }] };
+    return { bar, turn, notes };
   }
 
   /** Strike notes that land in a full fight played well, for sizing how hard each one hits. */
   expectedStrikes(): number {
     const steps = this.options.beatsPerBar / this.grid;
+    if (this.chart) return Math.max(1, this.chart.flat().filter((n) => n.kind === 'strike').length);
     let total = 0;
     for (let bar = 1; bar < this.totalBars; bar++) {
       const turn = this.turnAt(bar);
@@ -159,10 +208,11 @@ export class FightDirector {
     from: number,
     enemyHp: number,
     random: () => number,
-  ): { notes: ChartNote[]; first?: EnemyMove } {
+  ): { notes: ChartNote[]; first?: EnemyMove; cues: { beat: number; sequence: string }[] } {
     const { beatsPerBar, difficulty, enemy } = this.options;
     const start = bar * beatsPerBar;
     const notes: ChartNote[] = [];
+    const cues: { beat: number; sequence: string }[] = [];
     let first: EnemyMove | undefined;
     let cursor = from;
     // One walk around the ellipse per bar, so a new move never starts on top of the last note.
@@ -172,27 +222,28 @@ export class FightDirector {
       const move = this.pickMove(enemy.moves, room, enemyHp, random);
       if (!move) break;
       first ??= move;
-      const pattern = PATTERNS[move.pattern];
-      const offsets = thin(pattern.offsets, this.secondsPerBeat, MIN_GAP[difficulty]);
+      const shape = this.shape(move);
+      const kept = thinShape(shape.notes, this.secondsPerBeat, MIN_GAP[difficulty]);
+      if (shape.sequence) cues.push({ beat: start + cursor, sequence: shape.sequence });
       angle += random() * 0.4;
-      for (const offset of offsets) {
+      for (const note of kept) {
         const a = angle;
         angle += 1;
         notes.push({
           id: `${bar}:${notes.length}`,
-          beat: start + cursor + offset,
-          kind: move.answer,
+          beat: start + cursor + note.offset,
+          kind: note.kind,
           move: move.id,
-          power: move.power ?? 1,
-          x: 0.5 + Math.cos(a) * 0.28,
-          y: 0.32 + Math.sin(a) * 0.12,
+          power: note.power,
+          x: note.x ?? 0.5 + Math.cos(a) * 0.28,
+          y: note.y ?? 0.32 + Math.sin(a) * 0.12,
         });
       }
       // Easy fights leave a beat to breathe between moves; free bars hold one move at most.
-      cursor += pattern.span + (difficulty === 'easy' ? 1 : 0);
+      cursor += shape.span + (difficulty === 'easy' ? 1 : 0);
       if (from > 0) break;
     }
-    return first ? { notes, first } : { notes };
+    return first ? { notes, first, cues } : { notes, cues };
   }
 
   private pickMove(
@@ -201,15 +252,21 @@ export class FightDirector {
     enemyHp: number,
     random: () => number,
   ): EnemyMove | undefined {
-    const fitting = moves.filter((m) => PATTERNS[m.pattern].span <= room);
+    const fitting = moves.filter((m) => this.shape(m).span <= room);
     if (fitting.length === 0) return undefined;
     // Below half HP the enemy favours moves with more notes: its second phase.
-    const weight = (m: EnemyMove) =>
-      enemyHp < 0.5
-        ? PATTERNS[m.pattern].offsets.length
-        : 1 + 1 / PATTERNS[m.pattern].offsets.length;
+    const weight = (m: EnemyMove) => {
+      const count = this.shape(m).notes.length;
+      return enemyHp < 0.5 ? count : 1 + 1 / count;
+    };
     const total = fitting.reduce((sum, m) => sum + weight(m), 0);
     let roll = random() * total;
     return fitting.find((m) => (roll -= weight(m)) < 0) ?? fitting.at(-1);
+  }
+
+  private shape(move: EnemyMove): MoveShape {
+    return (
+      this.shapes.get(move.id) ?? moveShape(move, this.options.sequences, this.options.beatsPerBar)
+    );
   }
 }

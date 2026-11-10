@@ -58,6 +58,7 @@ export const BLOCK_MENU = [
   'sfx',
   'ambience',
   ...STAGE_KIND_LIST,
+  'sequence',
 ] as const satisfies readonly (BlockType | AudioKind | StageKind)[];
 /** Action blocks are made through their kinds (audio, stage), never bare. */
 export type MenuBlockType = Exclude<BlockType, 'action'> | AudioKind | StageKind;
@@ -85,6 +86,7 @@ export interface BlockDefaults extends RpgDefaults {
   readonly track?: string;
   readonly sound?: string;
   readonly enemy?: string;
+  readonly sequence?: string;
 }
 
 /** A new block of a type, filled with sensible defaults so it is valid straight away. */
@@ -103,6 +105,8 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
       return { id, type, dice: '1d20', target: 10, success: [], fail: [] };
     case 'fight':
       return { id, type, enemy: defaults.enemy ?? '', win: [], lose: [] };
+    case 'sequence':
+      return { id, type, sequence: defaults.sequence ?? '' };
     case 'input':
       return { id, type, var: defaults.textVariable ?? '', prompt: newText() };
     case 'set':

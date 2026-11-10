@@ -1,5 +1,5 @@
 import type { EngineEvents, EventBus } from '@ie/core';
-import type { StoryPresenter } from '@ie/present';
+import type { ScreenHost, StoryPresenter } from '@ie/present';
 import type { BattleAction, Beat, FightResult } from '@ie/story';
 import type { StoryActionsHost } from './module.ts';
 import type { SlotId } from './saves.ts';
@@ -7,6 +7,8 @@ import type { StorySession } from './session.ts';
 
 /** Joins the session (what happens) to the presenter (what is drawn), and reports story events. */
 export class StoryController implements StoryActionsHost {
+  private screens: ScreenHost | null = null;
+
   constructor(
     readonly session: StorySession,
     readonly presenter: StoryPresenter,
@@ -15,9 +17,16 @@ export class StoryController implements StoryActionsHost {
     private readonly onScene: (scene: Readonly<Record<string, unknown>>) => void = () => {},
   ) {}
 
+  /** Keeps the story's HUDs and open screen in step with every change from here on. */
+  useScreens(screens: ScreenHost): void {
+    this.screens = screens;
+  }
+
   /** Plays what the current point of the story says should be playing. */
   syncScene(): void {
     this.onScene(this.session.runtime.scene);
+    // Restart and load swap the runtime; attach follows it and redraws the values.
+    this.screens?.attach(this.session.runtime);
   }
 
   /** Opens on the reader's last page, or types the first line of a new story. Returns true if new. */
@@ -98,6 +107,7 @@ export class StoryController implements StoryActionsHost {
 
   private show(beats: readonly Beat[]): void {
     this.presenter.show(beats);
+    this.screens?.attach(this.session.runtime);
     for (const beat of beats) {
       if (beat.kind === 'passage')
         this.events.emit('story.passageEntered', { passageId: beat.passageId });

@@ -84,6 +84,15 @@ export function fillSettings(
       ),
     ),
     field(
+      t('settings.storyLook'),
+      onOff(
+        t,
+        s.storyLook,
+        (enabled) => run('ui.storyLook.set', { enabled }),
+        t('settings.storyLook'),
+      ),
+    ),
+    field(
       t('settings.textSize'),
       segmented(
         TEXT_SIZES.map((v) => ({ value: v, label: t(`settings.textSize.${v}`) })),

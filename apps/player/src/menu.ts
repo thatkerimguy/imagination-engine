@@ -9,6 +9,9 @@ export interface MenuHandlers {
   openPanel(panel: Panel): void;
   /** Whether the story has a character sheet to offer. */
   hasSheet(): boolean;
+  /** The story's own panel screens (a journal, a map), by name. */
+  screens(): readonly { readonly id: string; readonly label: string }[];
+  openScreen(id: string): void;
 }
 
 /**
@@ -71,6 +74,9 @@ export class Menu {
       ...(this.handlers.hasSheet()
         ? [item(t('menu.sheet'), () => this.handlers.openPanel('sheet'), 'menu-sheet')]
         : []),
+      ...this.handlers
+        .screens()
+        .map((s) => item(s.label, () => this.handlers.openScreen(s.id), `menu-screen-${s.id}`)),
       item(t('menu.settings'), () => this.handlers.openPanel('settings'), 'menu-settings'),
       item(t('menu.diagnostics'), () => this.handlers.openPanel('diagnostics'), 'menu-diagnostics'),
     ];

@@ -9,6 +9,31 @@ body {
   overscroll-behavior: none;
 }
 
+/* The page, with a story's HUD strips above and below it when it has them (ADR 0018). */
+#app {
+  display: flex;
+  flex-direction: column;
+}
+#app > .reader {
+  flex: 1;
+  min-height: 0;
+}
+/* The top strip sits below the menu's pull zone, so both stay tappable. */
+#app > .screen-hud[data-edge='top'] {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 2.5rem);
+}
+#app > .screen-hud[data-edge='bottom'] {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
+}
+#app > .screen-hud[data-edge='top']:not([hidden]) ~ .reader {
+  padding-top: var(--space-6);
+}
+#app > .screen-overlay {
+  position: fixed;
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--space-5));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
+}
+
 /* Reader: nothing on screen but the text. */
 .reader {
   height: 100%;

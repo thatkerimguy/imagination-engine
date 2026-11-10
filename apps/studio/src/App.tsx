@@ -11,6 +11,7 @@ import { useStudio, useT } from './store.ts';
 import { VIEWS } from './views.ts';
 import { DiagnosticsView } from './views/DiagnosticsView.tsx';
 import { DataView } from './views/DataView.tsx';
+import { DesignView } from './views/DesignView.tsx';
 import { EmptyView } from './views/EmptyView.tsx';
 import { LogicView } from './views/LogicView.tsx';
 import { FlowView } from './views/FlowView.tsx';
@@ -97,6 +98,7 @@ function CurrentView() {
   if (view === 'sound') return <SoundView />;
   if (view === 'stage') return <StageView />;
   if (view === 'logic') return <LogicView />;
+  if (view === 'design') return <DesignView />;
   return <EmptyView key={view} info={VIEWS[view]} />;
 }
 

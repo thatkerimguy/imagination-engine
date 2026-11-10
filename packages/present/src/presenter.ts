@@ -139,7 +139,7 @@ export class StoryPresenter {
     let steps: ReturnType<typeof buildLine> = null;
     for (const beat of beats) {
       if (beat.kind === 'passage') {
-        this.enterPassage(beat);
+        this.enterPassage(beat, true);
         continue;
       }
       const built = buildLine(
@@ -201,10 +201,28 @@ export class StoryPresenter {
     };
   }
 
-  private enterPassage(beat: Extract<Beat, { kind: 'passage' }>): void {
-    if (!beat.keepPage) this.page.replaceChildren();
+  private enterPassage(beat: Extract<Beat, { kind: 'passage' }>, turn = false): void {
+    if (!beat.keepPage) {
+      this.page.replaceChildren();
+      if (turn) this.turnPage();
+    }
     this.layout = beat.layout;
     this.element.dataset.layout = beat.layout;
+  }
+
+  /** The story theme's page transition (ADR 0018): one compositor-only animation per new page. */
+  private turnPage(): void {
+    const kind = this.element.closest<HTMLElement>('[data-transition]')?.dataset.transition;
+    if (!kind || kind === 'none' || reducedMotion() || typeof this.page.animate !== 'function')
+      return;
+    const frames =
+      kind === 'rise'
+        ? [
+            { opacity: 0, transform: 'translateY(0.75rem)' },
+            { opacity: 1, transform: 'none' },
+          ]
+        : [{ opacity: 0 }, { opacity: 1 }];
+    this.page.animate(frames, { duration: 320, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' });
   }
 
   private appendLine(line: HTMLElement, scroll = true): void {

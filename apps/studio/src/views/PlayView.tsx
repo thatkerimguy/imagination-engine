@@ -1,7 +1,8 @@
 import { LOCALES, upper, type Locale } from '@ie/i18n';
+import { applyStoryTheme, resolveStoryTheme } from '@ie/present';
 import { compileStory, StoryLoadError, type CompiledStory, type StoryProblem } from '@ie/story';
 import { RotateCcw, Undo2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Segmented } from '../components/Segmented.tsx';
 import { runAction } from '../kernel.ts';
 import { director } from '../audio/studio-audio.ts';
@@ -67,6 +68,10 @@ export function PlayView() {
     });
     session.current = play;
     host.current.replaceChildren(play.presenter.element);
+    // HUDs sit above and below the page; the title screen and panels cover the whole frame.
+    panel.insertBefore(play.screens.hudTop, host.current);
+    host.current.after(play.screens.hudBottom);
+    panel.append(play.screens.overlay);
     const detach = attachStage(frame.current, play.presenter.element, locale);
     play.begin();
     return () => {
@@ -77,6 +82,12 @@ export function PlayView() {
     // The language changes through setLocale below, without restarting the playthrough.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, start]);
+
+  // The story's own look, as readers get it (the Player can turn it off; Play always shows it).
+  const theme = doc.theme;
+  useLayoutEffect(() => {
+    if (frame.current) applyStoryTheme(frame.current, resolveStoryTheme(theme));
+  }, [theme, result]);
 
   useEffect(() => {
     setStageLocale(locale);
@@ -89,6 +100,7 @@ export function PlayView() {
       if (
         !play ||
         play.fighting ||
+        play.screens.covering ||
         (event.target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')
       )
         return;

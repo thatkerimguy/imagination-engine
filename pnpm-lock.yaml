@@ -223,6 +223,9 @@ importers:
       '@ie/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ie/kits':
+        specifier: workspace:*
+        version: link:../../packages/kits
       '@ie/present':
         specifier: workspace:*
         version: link:../../packages/present
@@ -269,6 +272,9 @@ importers:
       '@ie/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ie/kits':
+        specifier: workspace:*
+        version: link:../../packages/kits
       '@ie/present':
         specifier: workspace:*
         version: link:../../packages/present
@@ -360,6 +366,18 @@ importers:
       hyphenopoly:
         specifier: ^6.1.0
         version: 6.1.0
+
+  packages/kits:
+    dependencies:
+      '@ie/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/present:
     dependencies:

@@ -13,6 +13,8 @@ import {
   type QuestDef,
   type SkillDef,
 } from './rpg.ts';
+import { screenSchema, type ScreenDef } from './screens.ts';
+import { themeSchema, type StoryTheme } from './theme.ts';
 import {
   blockSchema,
   chapterSchema,
@@ -54,6 +56,10 @@ export interface StoryProject {
   readonly hero?: HeroDef;
   readonly rules?: readonly RuleDef[];
   readonly routines?: readonly RoutineDef[];
+  readonly theme?: StoryTheme;
+  readonly screens?: readonly ScreenDef[];
+  /** The kits this project was made from or mixed with (ADR 0018). */
+  readonly kits?: readonly string[];
 }
 export const storyProjectSchema = z.object({
   format: z.literal(STORY_FORMAT),
@@ -75,4 +81,7 @@ export const storyProjectSchema = z.object({
   hero: heroSchema.optional(),
   rules: z.array(logic.rule).optional(),
   routines: z.array(logic.routine).optional(),
+  theme: themeSchema.optional(),
+  screens: z.array(screenSchema).max(40).optional(),
+  kits: z.array(z.string().max(40)).max(12).optional(),
 });

@@ -2,13 +2,14 @@
  * Story presenter. Colours, type, spacing and motion come from @ie/ui-kit tokens only.
  * Layout is chosen per passage through [data-layout] on .story.
  */
+@import './screens.css';
 
 .story {
   width: min(var(--measure), 100%);
   min-height: 100%;
   margin-inline: auto;
   font-family: var(--font-prose);
-  font-size: calc(var(--text-prose) * var(--reader-scale, 1));
+  font-size: calc(var(--text-prose) * var(--reader-scale, 1) * var(--theme-scale, 1));
   line-height: var(--leading-prose);
 }
 
@@ -397,7 +398,7 @@
   flex-direction: column;
   gap: var(--space-2);
   font-family: var(--font-ui);
-  font-size: calc(var(--text-md) * var(--reader-scale, 1));
+  font-size: calc(var(--text-md) * var(--reader-scale, 1) * var(--theme-scale, 1));
   line-height: 1.45;
 }
 .story[data-layout='chat'] .line {

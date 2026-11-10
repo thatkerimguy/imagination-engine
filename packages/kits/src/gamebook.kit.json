@@ -1,0 +1,552 @@
+{
+  "id": "gamebook",
+  "name": {
+    "en": "Gamebook",
+    "tr": "Oyun kitabı"
+  },
+  "blurb": {
+    "en": "Book pages, dice checks, stats, a pack, and an adventure sheet. A HUD shows stamina and gold.",
+    "tr": "Kitap sayfaları, zar atışları, özellikler, bir çanta ve macera kâğıdı. Göstergede dayanıklılık ve altın."
+  },
+  "theme": "parchment",
+  "layout": "page",
+  "project": {
+    "start": "gate",
+    "variables": [
+      {
+        "id": "stamina",
+        "name": {
+          "en": "Stamina",
+          "tr": "Dayanıklılık"
+        },
+        "type": "number",
+        "default": 12,
+        "min": 0,
+        "max": 12,
+        "stat": true
+      },
+      {
+        "id": "skill",
+        "name": {
+          "en": "Skill",
+          "tr": "Beceri"
+        },
+        "type": "number",
+        "default": 7,
+        "stat": true
+      },
+      {
+        "id": "luck",
+        "name": {
+          "en": "Luck",
+          "tr": "Şans"
+        },
+        "type": "number",
+        "default": 6,
+        "stat": true
+      },
+      {
+        "id": "gold",
+        "name": {
+          "en": "Gold",
+          "tr": "Altın"
+        },
+        "type": "number",
+        "default": 5,
+        "min": 0,
+        "stat": true
+      }
+    ],
+    "characters": [],
+    "items": [
+      {
+        "id": "rope",
+        "name": {
+          "en": "Rope",
+          "tr": "Halat"
+        },
+        "description": {
+          "en": "Twenty feet, a little damp.",
+          "tr": "Yirmi adım, biraz nemli."
+        }
+      },
+      {
+        "id": "provisions",
+        "name": {
+          "en": "Provisions",
+          "tr": "Erzak"
+        },
+        "kind": "consumable",
+        "description": {
+          "en": "Bread and hard cheese. Restores 4 Stamina.",
+          "tr": "Ekmek ve sert peynir. 4 Dayanıklılık verir."
+        },
+        "effects": [
+          {
+            "var": "stamina",
+            "amount": 4
+          }
+        ]
+      }
+    ],
+    "screens": [
+      {
+        "id": "title",
+        "name": {
+          "en": "Title screen",
+          "tr": "Başlık ekranı"
+        },
+        "kind": "title",
+        "children": [
+          {
+            "id": "gb_title_stack",
+            "type": "stack",
+            "direction": "column",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "gb_title",
+                "type": "text",
+                "text": {
+                  "id": "gb_title",
+                  "en": "The Sunken Keep",
+                  "tr": "Batık Kale"
+                },
+                "style": "title"
+              },
+              {
+                "id": "gb_subtitle",
+                "type": "text",
+                "text": {
+                  "id": "gb_subtitle",
+                  "en": "A gamebook starter",
+                  "tr": "Oyun kitabı başlangıcı"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "gb_start",
+                "type": "button",
+                "label": {
+                  "id": "gb_start",
+                  "en": "Start",
+                  "tr": "Başla"
+                },
+                "actions": [
+                  {
+                    "type": "start"
+                  }
+                ]
+              },
+              {
+                "id": "gb_continue",
+                "type": "button",
+                "label": {
+                  "id": "gb_continue",
+                  "en": "Continue",
+                  "tr": "Devam et"
+                },
+                "actions": [
+                  {
+                    "type": "continue"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hud",
+        "name": {
+          "en": "Status bar",
+          "tr": "Durum çubuğu"
+        },
+        "kind": "hud",
+        "edge": "top",
+        "children": [
+          {
+            "id": "gb_hud_row",
+            "type": "stack",
+            "direction": "row",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "gb_hud_icon",
+                "type": "icon",
+                "icon": "heart"
+              },
+              {
+                "id": "gb_hud_stamina",
+                "type": "bar",
+                "var": "stamina"
+              },
+              {
+                "id": "gb_hud_gold",
+                "type": "text",
+                "text": {
+                  "id": "gb_hud_gold",
+                  "en": "Gold {gold}",
+                  "tr": "Altın {gold}"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "gb_hud_sheet",
+                "type": "button",
+                "label": {
+                  "id": "gb_hud_sheet",
+                  "en": "Sheet",
+                  "tr": "Kâğıt"
+                },
+                "actions": [
+                  {
+                    "type": "open",
+                    "screen": "sheet"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sheet",
+        "name": {
+          "en": "Adventure sheet",
+          "tr": "Macera kâğıdı"
+        },
+        "kind": "panel",
+        "children": [
+          {
+            "id": "gb_tabs",
+            "type": "tabs",
+            "tabs": [
+              {
+                "id": "gb_tab_stats",
+                "label": {
+                  "id": "gb_tab_stats_l",
+                  "en": "Stats",
+                  "tr": "Özellikler"
+                },
+                "children": [
+                  {
+                    "id": "gb_stats",
+                    "type": "list",
+                    "source": "stats"
+                  }
+                ]
+              },
+              {
+                "id": "gb_tab_pack",
+                "label": {
+                  "id": "gb_tab_pack_l",
+                  "en": "Pack",
+                  "tr": "Çanta"
+                },
+                "children": [
+                  {
+                    "id": "gb_pack",
+                    "type": "list",
+                    "source": "inventory",
+                    "empty": {
+                      "id": "gb_pack_empty",
+                      "en": "Your pack is empty.",
+                      "tr": "Çantan boş."
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": {
+          "en": "The Keep",
+          "tr": "Kale"
+        },
+        "passages": [
+          {
+            "id": "gate",
+            "name": "1. The gate",
+            "blocks": [
+              {
+                "id": "gb_1",
+                "type": "narration",
+                "text": {
+                  "id": "gb_1",
+                  "en": "[b]1.[/b] The keep rises from black water. The drawbridge is long gone.",
+                  "tr": "[b]1.[/b] Kale kara sudan yükseliyor. Asma köprü çoktan yok olmuş."
+                }
+              },
+              {
+                "id": "gb_rope",
+                "type": "item",
+                "op": "give",
+                "item": "rope"
+              },
+              {
+                "id": "gb_food",
+                "type": "item",
+                "op": "give",
+                "item": "provisions"
+              },
+              {
+                "id": "gb_choice",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "gb_climb",
+                    "text": {
+                      "id": "gb_climb",
+                      "en": "Climb the wall with your rope",
+                      "tr": "Halatınla duvara tırman"
+                    },
+                    "then": [
+                      {
+                        "id": "gb_check",
+                        "type": "check",
+                        "label": {
+                          "id": "gb_check_l",
+                          "en": "Test your Skill",
+                          "tr": "Becerini sına"
+                        },
+                        "dice": "2d6",
+                        "modifier": "skill",
+                        "target": 12,
+                        "success": [
+                          {
+                            "id": "gb_up",
+                            "type": "jump",
+                            "to": "hall"
+                          }
+                        ],
+                        "fail": [
+                          {
+                            "id": "gb_fall",
+                            "type": "narration",
+                            "text": {
+                              "id": "gb_fall",
+                              "en": "The rope slips. You hit the water hard.",
+                              "tr": "Halat kayıyor. Suya sertçe çarpıyorsun."
+                            }
+                          },
+                          {
+                            "id": "gb_hurt",
+                            "type": "set",
+                            "var": "stamina",
+                            "op": "subtract",
+                            "value": 4
+                          },
+                          {
+                            "id": "gb_fall_go",
+                            "type": "jump",
+                            "to": "moat"
+                          }
+                        ]
+                      }
+                    ],
+                    "showOdds": true
+                  },
+                  {
+                    "id": "gb_wade",
+                    "text": {
+                      "id": "gb_wade",
+                      "en": "Wade through the moat",
+                      "tr": "Hendeği yürüyerek geç"
+                    },
+                    "then": [
+                      {
+                        "id": "gb_wade_go",
+                        "type": "jump",
+                        "to": "moat"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "moat",
+            "name": "2. The moat",
+            "blocks": [
+              {
+                "id": "gb_2",
+                "type": "narration",
+                "text": {
+                  "id": "gb_2",
+                  "en": "[b]2.[/b] Cold to the bone. Something brushes your leg.",
+                  "tr": "[b]2.[/b] Kemiklerine işleyen bir soğuk. Bir şey bacağına sürtünüyor."
+                }
+              },
+              {
+                "id": "gb_cold",
+                "type": "set",
+                "var": "stamina",
+                "op": "subtract",
+                "value": 2
+              },
+              {
+                "id": "gb_2_go",
+                "type": "jump",
+                "to": "hall"
+              }
+            ]
+          },
+          {
+            "id": "hall",
+            "name": "3. The hall",
+            "blocks": [
+              {
+                "id": "gb_3",
+                "type": "narration",
+                "text": {
+                  "id": "gb_3",
+                  "en": "[b]3.[/b] A drowned hall. On a throne of coral sits a crown, and a sleeping eel the size of a boat.",
+                  "tr": "[b]3.[/b] Sular altında bir salon. Mercandan bir tahtta bir taç duruyor, yanında tekne boyunda uyuyan bir yılanbalığı."
+                }
+              },
+              {
+                "id": "gb_3_go",
+                "type": "jump",
+                "to": "throne"
+              }
+            ]
+          },
+          {
+            "id": "throne",
+            "name": "4. The throne",
+            "blocks": [
+              {
+                "id": "gb_hall",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "gb_eat",
+                    "text": {
+                      "id": "gb_eat",
+                      "en": "Eat your provisions first",
+                      "tr": "Önce erzağını ye"
+                    },
+                    "then": [
+                      {
+                        "id": "gb_use",
+                        "type": "item",
+                        "op": "use",
+                        "item": "provisions"
+                      },
+                      {
+                        "id": "gb_eat_go",
+                        "type": "jump",
+                        "to": "throne"
+                      }
+                    ],
+                    "once": true,
+                    "enabledIf": "owned(\"provisions\") > 0"
+                  },
+                  {
+                    "id": "gb_take",
+                    "text": {
+                      "id": "gb_take",
+                      "en": "Take the crown",
+                      "tr": "Tacı al"
+                    },
+                    "then": [
+                      {
+                        "id": "gb_luck",
+                        "type": "check",
+                        "label": {
+                          "id": "gb_luck_l",
+                          "en": "Test your Luck",
+                          "tr": "Şansını sına"
+                        },
+                        "dice": "2d6",
+                        "modifier": "luck",
+                        "target": 10,
+                        "success": [
+                          {
+                            "id": "gb_gold",
+                            "type": "set",
+                            "var": "gold",
+                            "op": "add",
+                            "value": 50
+                          },
+                          {
+                            "id": "gb_end_crown",
+                            "type": "end",
+                            "ending": {
+                              "id": "crown",
+                              "title": {
+                                "id": "gb_end_crown_t",
+                                "en": "The crown of the deep",
+                                "tr": "Derinlerin tacı"
+                              }
+                            }
+                          }
+                        ],
+                        "fail": [
+                          {
+                            "id": "gb_wake",
+                            "type": "narration",
+                            "text": {
+                              "id": "gb_wake",
+                              "en": "The eel opens one eye.",
+                              "tr": "Yılanbalığı bir gözünü açıyor."
+                            }
+                          },
+                          {
+                            "id": "gb_end_flee",
+                            "type": "end",
+                            "ending": {
+                              "id": "flee",
+                              "title": {
+                                "id": "gb_end_flee_t",
+                                "en": "Out of the keep, empty-handed",
+                                "tr": "Kaleden eli boş çıkış"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "showOdds": true
+                  },
+                  {
+                    "id": "gb_leave",
+                    "text": {
+                      "id": "gb_leave",
+                      "en": "Leave the crown where it is",
+                      "tr": "Tacı olduğu yerde bırak"
+                    },
+                    "then": [
+                      {
+                        "id": "gb_end_wise",
+                        "type": "end",
+                        "ending": {
+                          "id": "wise",
+                          "title": {
+                            "id": "gb_end_wise_t",
+                            "en": "Some crowns should stay drowned",
+                            "tr": "Bazı taçlar suda kalmalı"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keepPage": true
+          }
+        ]
+      }
+    ]
+  }
+}

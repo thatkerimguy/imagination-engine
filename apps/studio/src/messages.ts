@@ -1,4 +1,5 @@
 import { defineCatalogs } from '@ie/i18n';
+import { designMessages } from './messages-design.ts';
 import { fightStudioMessages } from './messages-fight.ts';
 import { logicMessages } from './messages-logic.ts';
 import { projectMessages } from './messages-project.ts';
@@ -115,6 +116,7 @@ export const messages = {
     ...fightStudioMessages.en,
     ...rpgBlockMessages.en,
     ...logicMessages.en,
+    ...designMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -125,6 +127,7 @@ export const messages = {
     ...fightStudioMessages.tr,
     ...rpgBlockMessages.tr,
     ...logicMessages.tr,
+    ...designMessages.tr,
   },
 };
 

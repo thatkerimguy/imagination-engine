@@ -13,6 +13,7 @@
     "@ie/core": "workspace:*",
     "@ie/diagnostics": "workspace:*",
     "@ie/i18n": "workspace:*",
+    "@ie/kits": "workspace:*",
     "@ie/present": "workspace:*",
     "@ie/rhythm": "workspace:*",
     "@ie/samples": "workspace:*",

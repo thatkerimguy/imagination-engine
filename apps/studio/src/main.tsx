@@ -12,6 +12,7 @@ import './styles/blocks.css';
 import './styles/views.css';
 import './styles/sound.css';
 import './styles/stage.css';
+import './styles/design.css';
 import { createAudioModule } from '@ie/audio';
 import { createStageModule } from '@ie/stage';
 import { requestPersistentStorage } from '@ie/core';

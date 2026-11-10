@@ -3,6 +3,7 @@ import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
 import { checkEnemies, checkFightBlock } from './analyze-fight.ts';
 import { checkReferences, type PendingRefs } from './analyze-refs.ts';
 import { checkRpgBlock, checkRpgData, type RpgCheckContext } from './analyze-rpg.ts';
+import { checkScreens } from './analyze-screens.ts';
 import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
@@ -378,6 +379,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   checkRpgData(rpg);
   checkAudioLibrary(project, report);
   checkEnemies(project, report);
+  checkScreens({ project, report, needVar, useFormula, useText });
 
   checkReferences({ project, passages, options, targets, pendingRefs, leaves, report });
 

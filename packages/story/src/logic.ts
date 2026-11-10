@@ -7,6 +7,8 @@ import type { Block, Formula, Label } from './schema.ts';
  */
 
 const id = z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'IDs use letters, digits and _');
+/** A reference; empty means not chosen yet (see refSchema in schema.ts). */
+const ref = z.union([id, z.literal('')]);
 const label = z.object({ en: z.string().optional(), tr: z.string().optional() });
 const formula = z.union([z.string(), z.number(), z.boolean()]);
 
@@ -85,7 +87,7 @@ export function logicSchemas(blocks: () => z.ZodType<readonly Block[]>) {
   const routineBlock = z.object({
     id,
     type: z.literal('routine'),
-    routine: id,
+    routine: ref,
     args: z.record(z.string(), formula).optional(),
   });
   return { rule, routine, routineBlock };

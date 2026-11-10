@@ -816,7 +816,7 @@ Every phase ends with something you can use. Sizes are relative (S < M < L < XL)
 | 4 | **Stage & VFX**: WebGL2 stage (ADR 0015), SDF glyph renderer, GPU titles, particles, screen FX, looks, transitions, quality tiers, stage blocks and the Stage view | L | A cinematic scene holds 60 fps on the Redmi Note 12 within the §11.1 budget |
 | 5 | **Rhythm combat** (ADR 0016): Fight block and enemies, generated charts, judge, director, BPM-adaptive density, **both modes (call & response, free beat, mixed)**, choreography on the stage, HUD, assists, procedural music that builds with the combo (stems later), results to the story | XL | ⭐ **Milestone B:** a conversation, then a choice, then a fight on your song, then a branch on the result |
 | 6 | **Logic & kits I** (ADR 0017): Rules, Routines, formulas; RPG kit (stats, inventory, checks, quests, shops); turn-based combat; Data editor | L | An RPG chapter is built entirely in the Studio |
-| 7 | **Screens & themes**: screen builder, theme editor, kit system, new-project wizard, starter kits (VN, Gamebook, Chat, Mystery) | L | You can start a project in a different genre in a few clicks |
+| 7 | **Screens & themes** (ADR 0018): screen builder, theme editor, kit system, new-project wizard, starter kits (VN, Gamebook, Chat, Mystery) | L | You can start a project in a different genre in a few clicks |
 | 8 | **Sequencer** | XL | Fight moves and cinematic scenes are authored on a beat-snapped timeline |
 | 9 | **Material graph** | XL | Text and post effects are built from nodes and animated by the sequencer |
 | 10 | **Minigames**: framework + 8 templates; Library and packs | M | Minigames launched from the story feed their results back |

@@ -107,6 +107,14 @@ export function problemMessage(
       return t('problem.inputClash', { name: id });
     case 'enum-values':
       return t('problem.enumValues', { name: variableName });
+    case 'unknown-screen':
+      return id ? t('problem.unknownScreen', { name: id }) : t('problem.noScreen');
+    case 'title-only-action':
+      return t('problem.titleOnly');
+    case 'two-titles':
+      return t('problem.twoTitles');
+    case 'list-needs-var':
+      return t('problem.listNeedsVar');
     default:
       return problem.message;
   }

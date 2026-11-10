@@ -14,10 +14,10 @@ import { PassagePicker, VariablePicker } from '../pickers.tsx';
 import { Sentence } from '../Sentence.tsx';
 import { ValueField } from '../ValueField.tsx';
 
-type SetOp = (typeof SET_OPS)[number];
+export type SetOp = (typeof SET_OPS)[number];
 
 /** Which changes make sense for each variable type. */
-const OPS_FOR: Readonly<Record<VariableType, readonly SetOp[]>> = {
+export const OPS_FOR: Readonly<Record<VariableType, readonly SetOp[]>> = {
   number: ['set', 'add', 'subtract'],
   text: ['set'],
   bool: ['set', 'toggle'],

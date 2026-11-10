@@ -22,6 +22,7 @@ import {
   type RpgBlockType,
   type RpgDefaults,
 } from './factory-rpg.ts';
+import { MEDIA_KIND_LIST, newMediaBlock, type MediaKind } from './media-kinds.ts';
 import { newStageBlock, STAGE_KIND_LIST, type StageKind } from './stage-kinds.ts';
 
 /** A new, empty line in both languages. The line ID is its translation key. */
@@ -60,10 +61,11 @@ export const BLOCK_MENU = [
   'sfx',
   'ambience',
   ...STAGE_KIND_LIST,
+  ...MEDIA_KIND_LIST,
   'sequence',
-] as const satisfies readonly (BlockType | AudioKind | StageKind)[];
-/** Action blocks are made through their kinds (audio, stage), never bare. */
-export type MenuBlockType = Exclude<BlockType, 'action'> | AudioKind | StageKind;
+] as const satisfies readonly (BlockType | AudioKind | StageKind | MediaKind)[];
+/** Action blocks are made through their kinds (audio, stage, media), never bare. */
+export type MenuBlockType = Exclude<BlockType, 'action'> | AudioKind | StageKind | MediaKind;
 
 /** Audio blocks are action blocks; the menu shows each as a block of its own. */
 export const AUDIO_KINDS = {
@@ -162,6 +164,9 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
     case 'battle':
     case 'routine':
       return newRpgBlock(type satisfies RpgBlockType, id, defaults);
+    case 'picture':
+    case 'video':
+      return newMediaBlock(id, type);
     default:
       return newStageBlock(id, type);
   }

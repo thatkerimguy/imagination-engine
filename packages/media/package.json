@@ -1,0 +1,16 @@
+{
+  "name": "@ie/media",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional media behind the text: a picture or a muted video. No UI framework.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./media.css": "./src/media.css"
+  },
+  "dependencies": {
+    "@ie/core": "workspace:*",
+    "@ie/i18n": "workspace:*",
+    "@ie/story": "workspace:*"
+  }
+}

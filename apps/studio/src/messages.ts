@@ -4,6 +4,7 @@ import { fightStudioMessages } from './messages-fight.ts';
 import { logicMessages } from './messages-logic.ts';
 import { libraryMessages } from './messages-library.ts';
 import { materialMessages } from './messages-material.ts';
+import { mediaMessages } from './messages-media.ts';
 import { builtMessages } from './messages-built.ts';
 import { minigameStudioMessages } from './messages-minigame.ts';
 import { projectMessages } from './messages-project.ts';
@@ -120,6 +121,7 @@ export const messages = {
     ...projectMessages.en,
     ...soundMessages.en,
     ...stageMessages.en,
+    ...mediaMessages.en,
     ...fightStudioMessages.en,
     ...rpgBlockMessages.en,
     ...logicMessages.en,
@@ -138,6 +140,7 @@ export const messages = {
     ...projectMessages.tr,
     ...soundMessages.tr,
     ...stageMessages.tr,
+    ...mediaMessages.tr,
     ...fightStudioMessages.tr,
     ...rpgBlockMessages.tr,
     ...logicMessages.tr,

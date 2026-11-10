@@ -1,4 +1,4 @@
-import { isAudioAction, isStageAction, type Block } from '@ie/story';
+import { isAudioAction, isMediaAction, isStageAction, type Block } from '@ie/story';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { MenuButton } from '../components/Menu.tsx';
@@ -7,6 +7,7 @@ import { useT } from '../store.ts';
 import { BLOCK_ICON, blockKind, blockName } from './blockInfo.ts';
 import { AudioEditor } from './blocks/AudioEditors.tsx';
 import { StageEditor } from './blocks/StageEditors.tsx';
+import { MediaEditor } from './blocks/MediaEditor.tsx';
 import { focusBlock, useWrite } from './context.ts';
 import { ChoiceEditor } from './blocks/ChoiceEditor.tsx';
 import { FightEditor } from './blocks/FightEditor.tsx';
@@ -84,6 +85,7 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
     case 'action':
       if (isAudioAction(block.action)) return <AudioEditor block={block} />;
       if (isStageAction(block.action)) return <StageEditor block={block} />;
+      if (isMediaAction(block.action)) return <MediaEditor block={block} />;
       return <FlowEditor block={block} />;
   }
 }

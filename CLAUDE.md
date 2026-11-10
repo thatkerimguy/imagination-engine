@@ -35,6 +35,7 @@ packages/story        story schema, formulas, text markup, the interpreter, rule
 packages/present      DOM presenter: layouts, effects, typewriter, choices (no UI framework)
 packages/audio        mixer, music + conductor, beat analysis worker, sfxr, voices, ambience, catalogues, Spotify/YouTube
 packages/stage        GPU stage on WebGL2: SDF glyph atlas, particles, titles, screen FX, looks, tiers
+packages/media        optional media: a picture or muted video behind the text (ADR 0026)
 packages/rhythm       rhythm fights: chart director, judge, fight state (pure), and the fight presenter
 packages/sequencer    sequence playback: compiled cues, allocation-free cursor, audio-clock player and runner
 packages/material     material graphs: node table, GLSL compiler (pure), starter templates

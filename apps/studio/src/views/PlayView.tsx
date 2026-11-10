@@ -13,7 +13,7 @@ import { allPassages } from '../project/tree.ts';
 import { useStudio, useT } from '../store.ts';
 import { ProblemText } from '../write/ProblemText.tsx';
 import { readLatency } from '../sound/format.ts';
-import { attachStage, setStageLocale, stage } from '../stage/studio-stage.ts';
+import { attachStage, media, setStageLocale, stage } from '../stage/studio-stage.ts';
 
 const INTERACTIVE = 'button, input, textarea, select, a, label';
 
@@ -24,10 +24,12 @@ const playAudio: PlayAudio = {
   applyScene: (scene) => {
     director.applyScene(scene);
     stage.applyScene(scene);
+    media.applyScene(scene);
   },
   stopAll: () => {
     director.stopAll();
     stage.applyScene({});
+    media.applyScene({});
   },
 };
 

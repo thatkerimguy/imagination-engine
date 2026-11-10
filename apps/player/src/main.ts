@@ -4,6 +4,7 @@ import '@ie/ui-kit/primitives.css';
 import '@ie/diagnostics/diagnostics.css';
 import '@ie/present/present.css';
 import '@ie/stage/stage.css';
+import '@ie/media/media.css';
 import '@ie/rhythm/fight.css';
 import '@ie/minigame/minigame.css';
 import './styles.css';

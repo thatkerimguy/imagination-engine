@@ -9,6 +9,7 @@ export * from './publish.ts';
 export * from './script.ts';
 export * from './script-apply.ts';
 export * from './stage.ts';
+export * from './media.ts';
 export {
   checkStory,
   compileStory,

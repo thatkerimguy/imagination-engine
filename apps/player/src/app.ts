@@ -17,6 +17,7 @@ import {
 } from '@ie/present';
 import type { Assist } from '@ie/rhythm';
 import { createSequenceModule, SequenceRunner } from '@ie/sequencer';
+import { createMediaModule, MediaLayer } from '@ie/media';
 import { createStageHost, createStageModule } from '@ie/stage';
 import { StoryLoadError, type Beat, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
@@ -100,6 +101,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     beat: () => audio.beatInfo(),
     materials: () => story?.session.story.project.materials,
   });
+  // Pictures and video behind the text; the layer exists only while a scene shows one (ADR 0026).
+  const media = new MediaLayer({ locale: () => settings.locale });
   // Fights and minigames load their code on first use (ADR 0022).
   const fights = new LazyRunner<FightBeat>(async () => {
     const { FightRunner } = await import('@ie/rhythm');
@@ -216,6 +219,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     document.documentElement.lang = LOCALE_INFO[next.locale].tag;
     applyAccess(document.documentElement, next);
     hud.setLocale(next.locale);
+    media.refreshLocale();
     for (const bus of VOLUME_BUSES) engine.setVolume(bus, next.volumes[bus]);
     if (next.hud && !hud.mounted) hud.mount();
     if (!next.hud && hud.mounted) hud.unmount();
@@ -246,6 +250,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   kernel.use(createStoryModule(() => story));
   kernel.use(createAudioModule(audio));
   kernel.use(createStageModule(stage));
+  kernel.use(createMediaModule(media));
   kernel.use(createSequenceModule(sequences, () => story?.session.story.project));
   await kernel.start();
 
@@ -292,6 +297,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       sequences.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
+      media.applyScene(scene);
     });
     const begin = () => {
       story?.begin();

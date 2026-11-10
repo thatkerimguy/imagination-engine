@@ -7,6 +7,7 @@ import {
   Spline,
   Palette,
   PenLine,
+  Rocket,
   Play,
   Settings,
   Sparkles,
@@ -27,6 +28,7 @@ export const VIEW_IDS = [
   'design',
   'data',
   'library',
+  'publish',
   'play',
   'settings',
   'diagnostics',
@@ -68,6 +70,7 @@ export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
     label: 'view.library',
     description: 'desc.library',
   },
+  publish: { id: 'publish', icon: Rocket, label: 'view.publish', description: 'desc.publish' },
   play: { id: 'play', icon: Play, label: 'view.play', description: 'desc.play' },
   settings: { id: 'settings', icon: Settings, label: 'view.settings' },
   diagnostics: { id: 'diagnostics', icon: Activity, label: 'view.diagnostics' },
@@ -85,6 +88,7 @@ export const RAIL_MAIN: readonly ViewId[] = [
   'design',
   'data',
   'library',
+  'publish',
   'play',
 ];
 export const RAIL_BOTTOM: readonly ViewId[] = ['settings', 'diagnostics'];
@@ -100,6 +104,7 @@ export const MORE: readonly ViewId[] = [
   'design',
   'data',
   'library',
+  'publish',
   'settings',
   'diagnostics',
 ];

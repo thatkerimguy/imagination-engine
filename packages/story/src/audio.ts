@@ -115,6 +115,8 @@ export interface Track {
   readonly calibration?: TrackCalibration;
   /** Loop between these times (seconds) when the track loops. */
   readonly loop?: { readonly start: number; readonly end?: number };
+  /** Another track that replaces this one in public builds (PLAN §5, ADR 0022). */
+  readonly publicFallback?: string;
 }
 export const trackSchema = z.object({
   id,
@@ -125,6 +127,7 @@ export const trackSchema = z.object({
   analysis: trackAnalysisSchema.optional(),
   calibration: trackCalibrationSchema.optional(),
   loop: z.object({ start: z.number().min(0), end: z.number().positive().optional() }).optional(),
+  publicFallback: id.optional(),
 });
 
 export const SFXR_WAVES = ['square', 'saw', 'sine', 'noise'] as const;

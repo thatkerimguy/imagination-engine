@@ -3,6 +3,8 @@ export * from './audio.ts';
 export * from './fight.ts';
 export * from './minigame.ts';
 export * from './library.ts';
+export * from './playtest.ts';
+export * from './publish.ts';
 export * from './stage.ts';
 export {
   checkStory,

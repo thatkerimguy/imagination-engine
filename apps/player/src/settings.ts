@@ -9,6 +9,17 @@ export type TextSize = (typeof TEXT_SIZES)[number];
 export const FIGHT_ASSISTS = ['off', 'wide', 'noFail', 'auto'] as const;
 export type FightAssist = (typeof FIGHT_ASSISTS)[number];
 
+/** Accessibility (ADR 0022): motion, contrast, line spacing and plainer letters. */
+export const MOTIONS = ['system', 'reduce', 'full'] as const;
+export const CONTRASTS = ['normal', 'high'] as const;
+export const SPACINGS = ['normal', 'relaxed', 'wide'] as const;
+export const LETTERS = ['book', 'plain'] as const;
+export const SPACING_SCALE: Readonly<Record<(typeof SPACINGS)[number], number>> = {
+  normal: 1,
+  relaxed: 1.15,
+  wide: 1.3,
+};
+
 export const TEXT_SCALE: Readonly<Record<TextSize, number>> = {
   small: 0.9,
   medium: 1,
@@ -34,7 +45,15 @@ export interface PlayerSettings {
   readonly haptics: boolean;
   /** 0..1 per bus. */
   readonly volumes: Readonly<Record<VolumeBus, number>>;
+  readonly motion: (typeof MOTIONS)[number];
+  readonly contrast: (typeof CONTRASTS)[number];
+  readonly spacing: (typeof SPACINGS)[number];
+  /** Plain: the sans-serif for prose, easier for some readers (dyslexia). */
+  readonly letters: (typeof LETTERS)[number];
 }
+
+/** The accessibility settings, as one patch. */
+export type AccessSettings = Pick<PlayerSettings, 'motion' | 'contrast' | 'spacing' | 'letters'>;
 
 const KEYS = {
   locale: 'ie.player.locale',
@@ -46,6 +65,10 @@ const KEYS = {
   hud: 'ie.player.hud',
   fightAssist: 'ie.player.fightAssist',
   haptics: 'ie.player.haptics',
+  motion: 'ie.player.motion',
+  contrast: 'ie.player.contrast',
+  spacing: 'ie.player.spacing',
+  letters: 'ie.player.letters',
 } as const;
 
 function readVolume(bus: VolumeBus): number {
@@ -64,7 +87,15 @@ export function loadSettings(search: string = location.search): PlayerSettings {
   const textSize = readPref(KEYS.textSize);
   const textSpeed = readPref(KEYS.textSpeed);
   const fightAssist = readPref(KEYS.fightAssist);
+  const motion = readPref(KEYS.motion);
+  const contrast = readPref(KEYS.contrast);
+  const spacing = readPref(KEYS.spacing);
+  const letters = readPref(KEYS.letters);
   return {
+    motion: oneOf(MOTIONS, motion) ? motion : 'system',
+    contrast: oneOf(CONTRASTS, contrast) ? contrast : 'normal',
+    spacing: oneOf(SPACINGS, spacing) ? spacing : 'normal',
+    letters: oneOf(LETTERS, letters) ? letters : 'book',
     locale: isLocale(locale) ? locale : detectLocale(),
     theme: isThemePreference(theme) ? theme : 'system',
     textSize: oneOf(TEXT_SIZES, textSize) ? textSize : 'medium',
@@ -91,6 +122,10 @@ export function saveSettings(settings: PlayerSettings): void {
   writePref(KEYS.hud, settings.hud ? 'on' : 'off');
   writePref(KEYS.fightAssist, settings.fightAssist);
   writePref(KEYS.haptics, settings.haptics ? 'on' : 'off');
+  writePref(KEYS.motion, settings.motion);
+  writePref(KEYS.contrast, settings.contrast);
+  writePref(KEYS.spacing, settings.spacing);
+  writePref(KEYS.letters, settings.letters);
   for (const bus of VOLUME_BUSES)
     writePref(`ie.player.volume.${bus}`, String(Math.round(settings.volumes[bus] * 100) / 100));
 }

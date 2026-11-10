@@ -55,3 +55,9 @@ export {
   requestPersistentStorage,
   type StorageStatus,
 } from './storage/persist.ts';
+export {
+  prefersReducedMotion,
+  setMotionPreference,
+  watchReducedMotion,
+  type MotionPreference,
+} from './motion.ts';

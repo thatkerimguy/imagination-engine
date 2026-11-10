@@ -12,6 +12,8 @@ export interface MenuHandlers {
   /** The story's own panel screens (a journal, a map), by name. */
   screens(): readonly { readonly id: string; readonly label: string }[];
   openScreen(id: string): void;
+  /** Back to the bookshelf (ADR 0022). */
+  shelf(): void;
 }
 
 /**
@@ -78,6 +80,8 @@ export class Menu {
         .screens()
         .map((s) => item(s.label, () => this.handlers.openScreen(s.id), `menu-screen-${s.id}`)),
       item(t('menu.settings'), () => this.handlers.openPanel('settings'), 'menu-settings'),
+      item(t('menu.shelf'), () => this.handlers.shelf(), 'menu-shelf'),
+      item(t('menu.credits'), () => this.handlers.openPanel('credits'), 'menu-credits'),
       item(t('menu.diagnostics'), () => this.handlers.openPanel('diagnostics'), 'menu-diagnostics'),
     ];
     if (typeof document.documentElement.requestFullscreen === 'function') {

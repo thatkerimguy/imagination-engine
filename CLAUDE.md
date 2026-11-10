@@ -19,6 +19,8 @@ pnpm e2e            # Playwright smoke tests (uses installed Microsoft Edge)
 pnpm icons          # regenerate PWA icons from tools/icons/*.svg
 run.bat [preview]   # Windows: install if needed, start dev (or build + preview), open the Player
 publish.bat         # build the Player and push it to the `deploy` branch (host files only)
+pnpm publish:novel <f.story.json> [--zip] [--pages p]   # public Player build with novels (ADR 0022)
+pnpm publish:studio [--pages p]   # private Studio for Cloudflare Pages + Access
 ```
 
 Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone connects through
@@ -41,10 +43,11 @@ packages/samples      sample stories as JSON (The Rain Alley), with an auto-play
 packages/kits         genre kits as data (VN, Gamebook, Chat, Mystery): createFromKit, applyKit
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
-apps/player           vanilla TS reader shell (PWA): story session, saves, rewind, panels; no UI framework
-apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Materials, Library, Play
+apps/player           vanilla TS reader shell (PWA): bookshelf, story session, saves, rewind, panels; no UI framework
+apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Materials, Library, Publish, Play
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator
+tools/publish         public novel builds, itch.io zips, the hosted Studio and its audio relay
 e2e                   Playwright smoke tests (desktop + Redmi Note 12 viewport)
 docs/adr              architecture decision records
 ```

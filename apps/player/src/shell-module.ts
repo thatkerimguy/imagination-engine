@@ -3,9 +3,18 @@ import { LOCALES } from '@ie/i18n';
 import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { z } from 'zod';
-import { FIGHT_ASSISTS, TEXT_SIZES, VOLUME_BUSES, type PlayerSettings } from './settings.ts';
+import {
+  CONTRASTS,
+  FIGHT_ASSISTS,
+  LETTERS,
+  MOTIONS,
+  SPACINGS,
+  TEXT_SIZES,
+  VOLUME_BUSES,
+  type PlayerSettings,
+} from './settings.ts';
 
-export const PANELS = ['settings', 'diagnostics', 'history', 'saves', 'sheet'] as const;
+export const PANELS = ['settings', 'diagnostics', 'history', 'saves', 'sheet', 'credits'] as const;
 export type Panel = (typeof PANELS)[number];
 
 declare module '@ie/core' {
@@ -98,6 +107,20 @@ export function createShellModule(host: ShellHost): EngineModule {
           description: 'Turn vibration in fights on or off.',
           params: z.object({ enabled: z.boolean() }),
           run: ({ enabled }) => update({ haptics: enabled }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.access.set',
+          description: 'Change motion, contrast, line spacing or letters.',
+          params: z.object({
+            motion: z.enum(MOTIONS).optional(),
+            contrast: z.enum(CONTRASTS).optional(),
+            spacing: z.enum(SPACINGS).optional(),
+            letters: z.enum(LETTERS).optional(),
+          }),
+          run: (patch) =>
+            update(Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined))),
         }),
       );
       actions.register(

@@ -271,3 +271,21 @@ body {
   margin: var(--space-4) 0 0;
   font-size: var(--text-sm);
 }
+
+/* Credits (ADR 0022). */
+.credits {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.credits a {
+  color: inherit;
+}
+.credits__license {
+  margin-inline-start: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-caps);
+}

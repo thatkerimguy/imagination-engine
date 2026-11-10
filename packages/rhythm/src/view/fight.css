@@ -141,8 +141,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ie-fight__judgement.is-shown {
+  :root:not([data-motion='full']) .ie-fight__judgement.is-shown {
     animation: none;
     opacity: 1;
   }
+}
+:root[data-motion='reduce'] .ie-fight__judgement.is-shown {
+  animation: none;
+  opacity: 1;
 }

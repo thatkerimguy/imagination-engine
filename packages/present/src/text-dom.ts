@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '@ie/core';
 import type { Effect, Piece } from '@ie/story';
 import type { RevealStep } from './typewriter.ts';
 
@@ -125,8 +126,7 @@ const SCRAMBLE_GLYPHS = 'abcdefghijklmnoprstuvyzçğıöşü#%&*+=?/';
 
 /** Letters tumble through random glyphs and settle left to right. Skipped with reduced motion. */
 function scramble(node: Text, text: string): void {
-  if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
-    return;
+  if (prefersReducedMotion()) return;
   const chars = Array.from(text);
   const frames = 14;
   let frame = 0;

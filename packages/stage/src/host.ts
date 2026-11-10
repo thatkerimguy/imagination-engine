@@ -1,3 +1,4 @@
+import { prefersReducedMotion, watchReducedMotion } from '@ie/core';
 import type { Label, MaterialDef } from '@ie/story';
 import { parseCssColor } from './color.ts';
 import { StageDirector } from './director.ts';
@@ -28,8 +29,7 @@ export function themePalette(): StagePalette {
   };
 }
 
-const reducedMotion = () =>
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = () => prefersReducedMotion();
 
 /**
  * The stage as both apps use it: a director whose canvas sits over the page, a live region that
@@ -74,9 +74,6 @@ export function createStageHost(options: StageHostOptions): StageDirector {
     ...(options.beat ? { beat: options.beat } : {}),
     ...(options.materials ? { materials: options.materials } : {}),
   });
-  if (typeof matchMedia === 'function')
-    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) =>
-      director.setReducedMotion(e.matches),
-    );
+  watchReducedMotion((reduce) => director.setReducedMotion(reduce));
   return director;
 }

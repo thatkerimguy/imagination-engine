@@ -17,6 +17,7 @@ import { useT } from '../store.ts';
 import { BeatStrip } from './BeatStrip.tsx';
 import { BeatDots, TrackSummary } from './TrackSummary.tsx';
 import { TapCalibration } from './TapCalibration.tsx';
+import { TrackPublish } from './TrackPublish.tsx';
 import { useBeatClock } from './useBeatClock.ts';
 
 /** Plays a stored or catalogue track with its beats shown and, optionally, clicked. */
@@ -130,6 +131,7 @@ export function TrackDetail({ track, uses }: { readonly track: Track; readonly u
           {license.attribution ? ` · ${license.attribution}` : ''}
         </p>
       )}
+      <TrackPublish track={track} />
       <TrackSummary track={track} job={job} />
       {tracker && !job && (
         <p className="hint" data-testid="track-tracker">

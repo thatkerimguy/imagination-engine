@@ -129,18 +129,39 @@ textarea {
   color: inherit;
 }
 
+/* Reduced motion: the system setting, unless the reader chose otherwise in the app (ADR 0022). */
 @media (prefers-reduced-motion: reduce) {
-  :root {
+  :root:not([data-motion='full']) {
     --duration-fast: 0ms;
     --duration: 0ms;
     --duration-slow: 0ms;
   }
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+:root[data-motion='reduce'] {
+  --duration-fast: 0ms;
+  --duration: 0ms;
+  --duration-slow: 0ms;
+}
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* High contrast: muted text and hairlines take the full ink and strong line colours. */
+:root[data-contrast='high'] {
+  --color-ink-muted: var(--color-ink);
+  --color-ink-faint: var(--color-ink);
+  --color-line: var(--color-line-strong);
 }

@@ -1,6 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-export const PLAYER = 'http://127.0.0.1:5173/';
+/** The Rain Alley straight away; the bare address shows the bookshelf (ADR 0022). */
+export const PLAYER = 'http://127.0.0.1:5173/?novel=rain_alley';
+export const SHELF = 'http://127.0.0.1:5173/';
 
 /** Taps the empty lower part of the page, like a reader moving on. */
 export async function tap(page: Page): Promise<void> {

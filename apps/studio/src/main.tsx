@@ -17,6 +17,7 @@ import './styles/design.css';
 import './styles/sequencer.css';
 import './styles/material.css';
 import './styles/minigame.css';
+import './styles/publish.css';
 import { createAudioModule } from '@ie/audio';
 import { createStageModule } from '@ie/stage';
 import { requestPersistentStorage } from '@ie/core';

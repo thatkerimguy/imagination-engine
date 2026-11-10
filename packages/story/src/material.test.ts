@@ -80,11 +80,7 @@ describe('material checks', () => {
       name: { en: 'Bad' },
       nodes: [{ id: 'p', type: 'param', x: 0, y: 0, param: 'gone' }],
     };
-    expect(codes([end], [broken])).toEqual([
-      'material-name',
-      'material-output',
-      'material-param',
-    ]);
+    expect(codes([end], [broken])).toEqual(['material-name', 'material-output', 'material-param']);
   });
 
   it('remembers the post material as scene state', () => {

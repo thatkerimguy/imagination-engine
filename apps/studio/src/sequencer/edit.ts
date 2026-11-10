@@ -96,9 +96,10 @@ export function newClip(
       at,
       length: 4,
       action: 'stage.material.param',
-      params: material && param
-        ? { material: material.id, param: param.id, value: param.min, to: param.max }
-        : { material: '', param: '', value: 0 },
+      params:
+        material && param
+          ? { material: material.id, param: param.id, value: param.min, to: param.max }
+          : { material: '', param: '', value: 0 },
     };
   }
   if (kind === 'post') {

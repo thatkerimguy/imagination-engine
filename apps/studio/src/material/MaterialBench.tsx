@@ -102,7 +102,11 @@ export function MaterialBench({ material }: { readonly material: MaterialDef }) 
             <span className="hint" role="status" data-testid="mat-armed">
               {t('mat.armed', { name: t(nodeName(armedNode.type)) })}
             </span>
-            <button type="button" className="ie-button ie-button--quiet" onClick={() => ui.arm(null)}>
+            <button
+              type="button"
+              className="ie-button ie-button--quiet"
+              onClick={() => ui.arm(null)}
+            >
               {t('cancel')}
             </button>
           </>

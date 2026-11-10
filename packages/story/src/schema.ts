@@ -2,6 +2,7 @@ import { valueSchema, type Value } from '@ie/core';
 import { z } from 'zod';
 import { voiceSchema, type Voice } from './audio.ts';
 import { DIFFICULTIES, FIGHT_BARS, FIGHT_MODES, type Difficulty, type FightMode } from './fight.ts';
+import { minigameBlockShape, type MinigameGame } from './minigame.ts';
 import { logicSchemas, type RoutineBlock } from './logic.ts';
 import { rpgBlockSchemas, type RpgBlock } from './rpg.ts';
 import { sequenceBlockSchema, type SequenceBlock } from './sequence.ts';
@@ -210,6 +211,18 @@ export interface FightBlock extends BlockBase {
   readonly win: readonly Block[];
   readonly lose: readonly Block[];
 }
+/** A minigame (ADR 0021). The story waits until it is won or lost. */
+export interface MinigameBlock extends BlockBase {
+  readonly type: 'minigame';
+  readonly game: MinigameGame;
+  readonly title?: Label;
+  /** A number variable that receives the score (0–100). */
+  readonly score?: string;
+  /** Number variables that receive the template's result values, by value name. */
+  readonly store?: Readonly<Record<string, string>>;
+  readonly win: readonly Block[];
+  readonly lose: readonly Block[];
+}
 export interface ActionBlock extends BlockBase {
   readonly type: 'action';
   /** A kernel action id, such as `audio.play`. */
@@ -233,6 +246,7 @@ export type Block =
   | RandomBlock
   | EndBlock
   | FightBlock
+  | MinigameBlock
   | SequenceBlock
   | RpgBlock
   | RoutineBlock
@@ -332,6 +346,7 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
       win: blocks(),
       lose: blocks(),
     }),
+    z.object({ id: idSchema, ...minigameBlockShape, win: blocks(), lose: blocks() }),
     sequenceBlockSchema,
     ...rpgBlockSchemas(blocks),
     logic.routineBlock,

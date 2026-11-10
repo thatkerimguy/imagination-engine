@@ -70,7 +70,11 @@ export function Params({
             ))}
           </div>
           <div className="row row--wrap">
-            <Num value={p.default} label={t('mat.default')} onChange={(v) => patch(p, { default: v }, 'd')} />
+            <Num
+              value={p.default}
+              label={t('mat.default')}
+              onChange={(v) => patch(p, { default: v }, 'd')}
+            />
             <Num value={p.min} label={t('mat.min')} onChange={(v) => patch(p, { min: v }, 'min')} />
             <Num value={p.max} label={t('mat.max')} onChange={(v) => patch(p, { max: v }, 'max')} />
           </div>

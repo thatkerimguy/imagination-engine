@@ -76,7 +76,11 @@ export function NodeCard(props: NodeCardProps) {
       {ports.outputs.map((o) => {
         const active = armed?.node === node.id && armed.port === o.name;
         return (
-          <div key={`o:${o.name}`} className="mg-node__row mg-node__row--out" style={{ height: ROW }}>
+          <div
+            key={`o:${o.name}`}
+            className="mg-node__row mg-node__row--out"
+            style={{ height: ROW }}
+          >
             <span className="mg-node__label">{t(portName(o.name))}</span>
             <button
               type="button"
@@ -102,9 +106,7 @@ export function NodeCard(props: NodeCardProps) {
               onClick={() => props.onInput(i.name)}
             />
             <span className="mg-node__label">{t(portName(i.name))}</span>
-            {!linked && (
-              <span className="mg-node__value">{shortValue(value ?? i.default)}</span>
-            )}
+            {!linked && <span className="mg-node__value">{shortValue(value ?? i.default)}</span>}
           </div>
         );
       })}

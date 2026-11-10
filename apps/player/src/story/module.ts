@@ -1,5 +1,12 @@
 import { defineAction, defineModule, type EngineModule } from '@ie/core';
-import { BATTLE_ACTS, fightResultSchema, type BattleAction, type FightResult } from '@ie/story';
+import {
+  BATTLE_ACTS,
+  fightResultSchema,
+  minigameResultSchema,
+  type BattleAction,
+  type FightResult,
+  type MinigameResult,
+} from '@ie/story';
 import { z } from 'zod';
 import type { SlotId } from './saves.ts';
 
@@ -16,6 +23,7 @@ export interface StoryActionsHost {
   choose(optionId: string): void;
   submit(answer: string): void;
   fight(result: FightResult): void;
+  minigame(result: MinigameResult): void;
   buy(itemId: string): void;
   sell(itemId: string): void;
   leaveShop(): void;
@@ -73,6 +81,14 @@ export function createStoryModule(host: () => StoryActionsHost | null): EngineMo
           description: 'End the fight on screen with a result.',
           params: fightResultSchema,
           run: (result) => call((s) => s.fight(result)),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.minigame',
+          description: 'End the minigame on screen with a result.',
+          params: minigameResultSchema,
+          run: (result) => call((s) => s.minigame(result)),
         }),
       );
       const item = z.object({ itemId: z.string().min(1) });

@@ -155,6 +155,16 @@ export function problemMessage(
       return t('problem.sequenceName', {
         language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
       });
+    case 'minigame-value':
+      return t('problem.minigameValue', { name: p.name ?? '' });
+    case 'minigame-text':
+      return t('problem.minigameText', {
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
+    case 'minigame-short':
+      return t('problem.minigameShort');
+    case 'minigame-odds':
+      return t('problem.minigameOdds');
     case 'unknown-material':
     case 'material-domain':
     case 'material-param':

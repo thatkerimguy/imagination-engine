@@ -11,7 +11,11 @@ const STEP = 24;
 const toHex = (rgb: readonly number[]) =>
   `#${rgb
     .slice(0, 3)
-    .map((c) => Math.round(Math.min(1, Math.max(0, c)) * 255).toString(16).padStart(2, '0'))
+    .map((c) =>
+      Math.round(Math.min(1, Math.max(0, c)) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
     .join('')}`;
 const fromHex = (hex: string): number[] =>
   [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -56,8 +60,15 @@ function Numbers({
 }
 
 const sizeOf = (port: InputPort, value: MaterialValue | undefined): number =>
-  port.type === 'vec3' ? 3 : port.type === 'vec2' ? 2 : port.type === 'float' ? 1
-    : typeof value === 'number' || value === undefined ? 1 : value.length;
+  port.type === 'vec3'
+    ? 3
+    : port.type === 'vec2'
+      ? 2
+      : port.type === 'float'
+        ? 1
+        : typeof value === 'number' || value === undefined
+          ? 1
+          : value.length;
 
 /** The selected node: its values, links, parameter, place and removal (ADR 0020). */
 export function NodeInspector({
@@ -74,15 +85,18 @@ export function NodeInspector({
   const t = useT();
   const locale = useStudio((s) => s.locale);
   const spec = NODES[node.type];
-  const inputs = node.type === 'output' && material.domain === 'post'
-    ? spec.inputs.filter((p) => p.name !== 'offset')
-    : spec.inputs;
+  const inputs =
+    node.type === 'output' && material.domain === 'post'
+      ? spec.inputs.filter((p) => p.name !== 'offset')
+      : spec.inputs;
   const nameOf = (id: string) => {
     const source = material.nodes.find((n) => n.id === id);
     return source ? t(nodeName(source.type)) : id;
   };
   const constant = node.type === 'number' || node.type === 'vector' || node.type === 'color';
-  const constantValue = node.values?.value ?? (node.type === 'number' ? 1 : node.type === 'vector' ? [0.5, 0.5] : [1, 1, 1]);
+  const constantValue =
+    node.values?.value ??
+    (node.type === 'number' ? 1 : node.type === 'vector' ? [0.5, 0.5] : [1, 1, 1]);
 
   return (
     <div className="mat-inspector" data-testid="mat-inspector">
@@ -115,7 +129,10 @@ export function NodeInspector({
               data-testid="mat-node-color"
               value={toHex(typeof constantValue === 'number' ? [constantValue] : constantValue)}
               onChange={(e) =>
-                onEdit((m) => setValue(m, node.id, 'value', fromHex(e.target.value)), `v:${node.id}`)
+                onEdit(
+                  (m) => setValue(m, node.id, 'value', fromHex(e.target.value)),
+                  `v:${node.id}`,
+                )
               }
             />
           ) : (

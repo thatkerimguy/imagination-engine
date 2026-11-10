@@ -5,6 +5,7 @@ import '@ie/diagnostics/diagnostics.css';
 import '@ie/present/present.css';
 import '@ie/stage/stage.css';
 import '@ie/rhythm/fight.css';
+import '@ie/minigame/minigame.css';
 import './styles.css';
 import { requestPersistentStorage } from '@ie/core';
 import { startPlayer } from './app.ts';

@@ -170,6 +170,20 @@ export function buildLine(beat: Beat, ctx: LineContext, mode: LineMode): BuiltLi
       line.textContent = ctx.t(beat.won ? 'fight.won' : 'fight.lost', { name, score: beat.score });
       return { element: line, steps: [] };
     }
+    case 'played': {
+      const block = story.blocks.get(beat.blockId)?.block;
+      const game = block?.type === 'minigame' ? block : undefined;
+      const name =
+        pickLabel(game?.title, ctx.locale) ||
+        ctx.t(game ? `minigame.${game.game.template}` : 'minigame.name');
+      const line = el('p', 'line line--check line--played');
+      line.dataset.result = beat.won ? 'success' : 'fail';
+      line.textContent = ctx.t(beat.won ? 'minigame.won' : 'minigame.lost', {
+        name,
+        score: beat.score,
+      });
+      return { element: line, steps: [] };
+    }
     case 'item':
     case 'quest':
     case 'traded':

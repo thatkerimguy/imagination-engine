@@ -146,7 +146,10 @@ export function setNodeParam(def: MaterialDef, node: string, param: string): Mat
   return mapNode(def, node, (n) => (n.param === param ? n : { ...n, param }));
 }
 
-export function addParam(def: MaterialDef, name: Label): { material: MaterialDef; id: string | null } {
+export function addParam(
+  def: MaterialDef,
+  name: Label,
+): { material: MaterialDef; id: string | null } {
   if (def.params.length >= MATERIAL_LIMITS.params) return { material: def, id: null };
   const id = createId('mp');
   const param: MaterialParam = { id, name, default: 0.5, min: 0, max: 1 };

@@ -13,6 +13,7 @@ import { DiagnosticsView } from './views/DiagnosticsView.tsx';
 import { DataView } from './views/DataView.tsx';
 import { DesignView } from './views/DesignView.tsx';
 import { EmptyView } from './views/EmptyView.tsx';
+import { LibraryView } from './views/LibraryView.tsx';
 import { LogicView } from './views/LogicView.tsx';
 import { FlowView } from './views/FlowView.tsx';
 import { PlayView } from './views/PlayView.tsx';
@@ -103,6 +104,7 @@ function CurrentView() {
   if (view === 'materials') return <MaterialsView />;
   if (view === 'logic') return <LogicView />;
   if (view === 'design') return <DesignView />;
+  if (view === 'library') return <LibraryView />;
   return <EmptyView key={view} info={VIEWS[view]} />;
 }
 

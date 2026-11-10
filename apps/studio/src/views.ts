@@ -3,6 +3,7 @@ import {
   AudioLines,
   Database,
   Film,
+  LibraryBig,
   Spline,
   Palette,
   PenLine,
@@ -25,6 +26,7 @@ export const VIEW_IDS = [
   'materials',
   'design',
   'data',
+  'library',
   'play',
   'settings',
   'diagnostics',
@@ -60,6 +62,12 @@ export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
   },
   design: { id: 'design', icon: Palette, label: 'view.design', description: 'desc.design' },
   data: { id: 'data', icon: Database, label: 'view.data', description: 'desc.data' },
+  library: {
+    id: 'library',
+    icon: LibraryBig,
+    label: 'view.library',
+    description: 'desc.library',
+  },
   play: { id: 'play', icon: Play, label: 'view.play', description: 'desc.play' },
   settings: { id: 'settings', icon: Settings, label: 'view.settings' },
   diagnostics: { id: 'diagnostics', icon: Activity, label: 'view.diagnostics' },
@@ -76,6 +84,7 @@ export const RAIL_MAIN: readonly ViewId[] = [
   'materials',
   'design',
   'data',
+  'library',
   'play',
 ];
 export const RAIL_BOTTOM: readonly ViewId[] = ['settings', 'diagnostics'];
@@ -90,6 +99,7 @@ export const MORE: readonly ViewId[] = [
   'materials',
   'design',
   'data',
+  'library',
   'settings',
   'diagnostics',
 ];

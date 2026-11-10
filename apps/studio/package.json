@@ -16,6 +16,7 @@
     "@ie/kits": "workspace:*",
     "@ie/material": "workspace:*",
     "@ie/present": "workspace:*",
+    "@ie/minigame": "workspace:*",
     "@ie/rhythm": "workspace:*",
     "@ie/samples": "workspace:*",
     "@ie/sequencer": "workspace:*",

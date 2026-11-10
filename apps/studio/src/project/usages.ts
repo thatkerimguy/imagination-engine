@@ -81,6 +81,10 @@ export function countUsages(doc: StoryProject): Usages {
       if (block.score) bump(variables, block.score);
       if (block.chart) bump(sequences, block.chart);
     }
+    if (block.type === 'minigame') {
+      if (block.score) bump(variables, block.score);
+      for (const id of Object.values(block.store ?? {})) bump(variables, id);
+    }
     if (block.type === 'sequence') bump(sequences, block.sequence);
     if (block.type === 'choice')
       for (const o of block.options) if (o.cost) bump(variables, o.cost.var);

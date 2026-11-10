@@ -53,7 +53,10 @@ test.describe('Studio materials', () => {
     await expect(page.getByTestId('mat-problems')).toContainText('The graph compiles.');
 
     // The inspector edits an unlinked input; a parameter can be added.
-    await page.getByTestId('mg-node-noise').getByRole('button', { name: 'Noise', exact: true }).click();
+    await page
+      .getByTestId('mg-node-noise')
+      .getByRole('button', { name: 'Noise', exact: true })
+      .click();
     await expect(page.getByTestId('mat-inspector')).toBeVisible();
     await page.getByTestId('mat-input-scale').fill('3');
     await expect(page.getByTestId('mg-node-noise')).toContainText('3');

@@ -1,0 +1,342 @@
+/*
+ * The minigame screen covers the page like the fight screen does (ADR 0021). Everything is DOM
+ * and design tokens; the only things that move are markers and bars, by transform alone, so a
+ * frame never causes layout.
+ */
+.ie-mini {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow-y: auto;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ie-mini--contained {
+  position: absolute;
+}
+
+.ie-mini__top {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+}
+.ie-mini__label {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+.ie-mini__title {
+  margin: 0;
+  font-family: var(--font-prose);
+  font-size: var(--text-lg);
+  font-weight: normal;
+}
+.ie-mini__help {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.ie-mini__status {
+  min-height: 1lh;
+  margin: 0;
+  font-size: var(--text-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.ie-mini__clock,
+.ie-mini__meter {
+  height: var(--space-1);
+  background: var(--color-line);
+  border-radius: var(--radius-1);
+  overflow: hidden;
+}
+.ie-mini__clock[hidden] {
+  display: none;
+}
+.ie-mini__meter {
+  width: 100%;
+  height: var(--space-2);
+}
+.ie-mini__clock-fill,
+.ie-mini__meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-ink);
+  transform-origin: left center;
+}
+.ie-mini__meter-fill {
+  background: var(--color-accent);
+  transform: scaleX(0);
+}
+
+.ie-mini__field {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+}
+.ie-mini__field[data-template='tension'] {
+  touch-action: none;
+}
+.ie-mini__primary {
+  min-width: 10rem;
+  min-height: var(--touch-target);
+}
+
+/* A track, the zone on it and the marker that moves along it (lockpick, tension). */
+.ie-mini__track {
+  position: relative;
+  width: 100%;
+  height: var(--space-6);
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-1);
+  overflow: hidden;
+}
+.ie-mini__runner {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+.ie-mini__zone {
+  display: block;
+  height: 100%;
+  background: var(--color-selection);
+}
+.ie-mini__marker {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-accent);
+}
+.ie-mini__pins {
+  display: flex;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+}
+
+/* Square buttons that hold one glyph: pads, dice, tiles, letters and direction keys. */
+.ie-mini__pad,
+.ie-mini__die,
+.ie-mini__tile,
+.ie-mini__letter,
+.ie-mini__key {
+  display: grid;
+  place-items: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+.ie-mini__pad:focus-visible,
+.ie-mini__die:focus-visible,
+.ie-mini__tile:focus-visible,
+.ie-mini__letter:focus-visible,
+.ie-mini__key:focus-visible,
+.ie-mini__input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.ie-mini__pads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 18rem;
+}
+.ie-mini__pads[data-count='3'],
+.ie-mini__pads[data-count='5'],
+.ie-mini__pads[data-count='6'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ie-mini__pad {
+  aspect-ratio: 1;
+  font-size: var(--text-xl);
+  color: var(--color-ink-faint);
+}
+.ie-mini__pad[data-lit='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+.ie-mini__dice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.ie-mini__die {
+  width: var(--space-8);
+  height: var(--space-8);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+.ie-mini__die[data-held='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-selection);
+}
+.ie-mini__dice[data-tumbling='true'] .ie-mini__die[data-held='false'] {
+  color: var(--color-ink-faint);
+}
+
+.ie-mini__tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--mini-size), minmax(0, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 18rem;
+}
+.ie-mini__tile {
+  aspect-ratio: 1;
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+.ie-mini__tile[data-gap='true'] {
+  border-style: dashed;
+  border-color: var(--color-line);
+  background: transparent;
+}
+
+.ie-mini__slots,
+.ie-mini__letters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.ie-mini__slot {
+  display: grid;
+  place-items: center;
+  width: var(--space-6);
+  height: var(--touch-target);
+  border-bottom: 2px solid var(--color-line-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+}
+.ie-mini__letter[data-used='true'] {
+  border-color: var(--color-line);
+  background: transparent;
+  color: var(--color-ink-faint);
+}
+
+.ie-mini__phrase {
+  margin: 0;
+  font-family: var(--font-prose);
+  font-size: var(--text-lg);
+  line-height: var(--leading-prose);
+  text-align: center;
+}
+.ie-mini__typed {
+  color: var(--color-accent);
+}
+.ie-mini__rest {
+  color: var(--color-ink-muted);
+}
+.ie-mini__input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-1);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  /* Under 16px, phones zoom the page when the field takes focus. */
+  font-size: max(1rem, var(--text-md));
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ie-mini__prompt {
+  display: grid;
+  place-items: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  color: var(--color-ink-faint);
+}
+.ie-mini__prompt:not([data-dir='']) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.ie-mini__dpad {
+  display: grid;
+  grid-template-areas:
+    '. up .'
+    'left down right';
+  gap: var(--space-2);
+}
+.ie-mini__key {
+  width: var(--space-8);
+  height: var(--space-7);
+}
+.ie-mini__key[data-dir='up'] {
+  grid-area: up;
+}
+.ie-mini__key[data-dir='right'] {
+  grid-area: right;
+}
+.ie-mini__key[data-dir='down'] {
+  grid-area: down;
+}
+.ie-mini__key[data-dir='left'] {
+  grid-area: left;
+}
+
+.ie-mini__result {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  background: var(--color-bg);
+  text-align: center;
+}
+.ie-mini__result[hidden] {
+  display: none;
+}
+.ie-mini__result-title {
+  margin: 0;
+  font-family: var(--font-prose);
+  font-size: var(--text-xl);
+  font-weight: normal;
+}
+.ie-mini__result[data-result='won'] .ie-mini__result-title {
+  color: var(--color-accent);
+}
+.ie-mini__result-score {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}

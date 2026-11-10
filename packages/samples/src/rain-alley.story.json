@@ -646,73 +646,113 @@
               }
             },
             {
-              "id": "cr_find",
-              "type": "random",
-              "branches": [
+              "id": "cr_lock_line",
+              "type": "narration",
+              "text": {
+                "id": "cr_lock_line",
+                "en": "One crate has a letter lock, the kind with a word for a key.",
+                "tr": "Sandıklardan birinde harfli bir kilit var; anahtarı bir sözcük olanlardan."
+              }
+            },
+            {
+              "id": "cr_lock",
+              "type": "minigame",
+              "game": {
+                "template": "cipher",
+                "words": [
+                  {
+                    "en": "RAIN",
+                    "tr": "YAĞMUR"
+                  }
+                ],
+                "seconds": 60
+              },
+              "title": {
+                "en": "Letter lock",
+                "tr": "Harf kilidi"
+              },
+              "win": [
                 {
-                  "id": "cr_lamp",
-                  "weight": 2,
-                  "then": [
+                  "id": "cr_find",
+                  "type": "random",
+                  "branches": [
                     {
-                      "id": "cr_lamp_set",
-                      "type": "set",
-                      "var": "has_lamp",
-                      "value": true
+                      "id": "cr_lamp",
+                      "weight": 2,
+                      "then": [
+                        {
+                          "id": "cr_lamp_set",
+                          "type": "set",
+                          "var": "has_lamp",
+                          "value": true
+                        },
+                        {
+                          "id": "cr_lamp_bag",
+                          "type": "set",
+                          "var": "bag",
+                          "op": "append",
+                          "value": "'lamp'"
+                        },
+                        {
+                          "id": "cr_lamp_line",
+                          "type": "narration",
+                          "text": {
+                            "id": "cr_lamp_line",
+                            "en": "An old oil lamp, still half full.",
+                            "tr": "Eski bir gaz lambası, yarısı hâlâ dolu."
+                          }
+                        }
+                      ]
                     },
                     {
-                      "id": "cr_lamp_bag",
-                      "type": "set",
-                      "var": "bag",
-                      "op": "append",
-                      "value": "'lamp'"
+                      "id": "cr_coins",
+                      "weight": 1,
+                      "then": [
+                        {
+                          "id": "cr_coins_set",
+                          "type": "set",
+                          "var": "gold",
+                          "op": "add",
+                          "value": 5
+                        },
+                        {
+                          "id": "cr_coins_line",
+                          "type": "narration",
+                          "text": {
+                            "id": "cr_coins_line",
+                            "en": "A few coins. You now carry {gold} gold.",
+                            "tr": "Birkaç sikke. Kesende artık {gold} altın var."
+                          }
+                        }
+                      ]
                     },
                     {
-                      "id": "cr_lamp_line",
-                      "type": "narration",
-                      "text": {
-                        "id": "cr_lamp_line",
-                        "en": "An old oil lamp, still half full.",
-                        "tr": "Eski bir gaz lambası, yarısı hâlâ dolu."
-                      }
+                      "id": "cr_none",
+                      "weight": 1,
+                      "then": [
+                        {
+                          "id": "cr_none_line",
+                          "type": "narration",
+                          "text": {
+                            "id": "cr_none_line",
+                            "en": "Nothing but rats.",
+                            "tr": "Farelerden başka bir şey yok."
+                          }
+                        }
+                      ]
                     }
                   ]
-                },
+                }
+              ],
+              "lose": [
                 {
-                  "id": "cr_coins",
-                  "weight": 1,
-                  "then": [
-                    {
-                      "id": "cr_coins_set",
-                      "type": "set",
-                      "var": "gold",
-                      "op": "add",
-                      "value": 5
-                    },
-                    {
-                      "id": "cr_coins_line",
-                      "type": "narration",
-                      "text": {
-                        "id": "cr_coins_line",
-                        "en": "A few coins. You now carry {gold} gold.",
-                        "tr": "Birkaç sikke. Kesende artık {gold} altın var."
-                      }
-                    }
-                  ]
-                },
-                {
-                  "id": "cr_none",
-                  "weight": 1,
-                  "then": [
-                    {
-                      "id": "cr_none_line",
-                      "type": "narration",
-                      "text": {
-                        "id": "cr_none_line",
-                        "en": "Nothing but rats.",
-                        "tr": "Farelerden başka bir şey yok."
-                      }
-                    }
-                  ]
+                  "id": "cr_lock_fail",
+                  "type": "narration",
+                  "text": {
+                    "id": "cr_lock_fail",
+                    "en": "The lock holds. Whatever is inside stays there.",
+                    "tr": "Kilit açılmıyor. İçinde ne varsa orada kalıyor."
+                  }
                 }
               ]
             }

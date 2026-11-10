@@ -83,7 +83,9 @@ test.describe('Studio sound', () => {
     const errors = watchErrors(page);
     await openSound(page, isMobile);
     await page.getByRole('button', { name: 'Setup' }).click();
-    await expect(page.getByTestId('beat-this-download')).toHaveText(/Download the model \(191 MB\)/);
+    await expect(page.getByTestId('beat-this-download')).toHaveText(
+      /Download the model \(191 MB\)/,
+    );
     expect(errors).toEqual([]);
   });
 

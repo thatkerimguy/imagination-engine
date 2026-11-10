@@ -1,4 +1,6 @@
+export { analyzeProject, leaves } from './analyze.ts';
 export {
+  checkStory,
   compileStory,
   defaultValue,
   listKey,
@@ -24,6 +26,7 @@ export {
   type FunctionName,
   type Requirement,
 } from './formula.ts';
+export { printFormula } from './formula-print.ts';
 export {
   EFFECTS,
   MarkupError,

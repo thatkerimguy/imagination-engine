@@ -35,7 +35,7 @@ packages/samples      sample stories as JSON (The Rain Alley), with an auto-play
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
 apps/player           vanilla TS reader shell (PWA): story session, saves, rewind, panels; no UI framework
-apps/studio           React 19 + Zustand editor shell (PWA)
+apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Data, Play
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator
 e2e                   Playwright smoke tests (desktop + Redmi Note 12 viewport)

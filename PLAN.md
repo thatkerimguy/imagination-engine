@@ -93,7 +93,7 @@ It isn't tied to one genre or look: every system is optional, and every style is
 | Language / build | TypeScript (strict), Vite, pnpm workspaces | Typed, fast, and safe for AI-written code |
 | Player runtime | Vanilla TS | Small and fast, and it runs everywhere |
 | Studio UI | React 19 + Zustand, Radix primitives, own CSS tokens | Richest editor ecosystem. Headless primitives keep the look ours |
-| Manuscript editor | **TipTap (ProseMirror)** with custom blocks | Notion-style blocks and slash menu, rich text marks, mobile support |
+| Manuscript editor | Block cards with plain-text fields and markup chips (ADR 0011; replaces TipTap) | Blocks stay typed data with stable IDs; Android keyboards keep the native input path |
 | Graph editors | React Flow (@xyflow/react) + ELK.js auto-layout | Mature. Tap-to-connect works on touch screens |
 | Code/formula fields | CodeMirror 6 | Works on mobile |
 | Docking | dockview (desktop only) | NLE/IDE-style layouts (an NLE is a non-linear video editor like Premiere) |

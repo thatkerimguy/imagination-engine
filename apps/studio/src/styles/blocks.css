@@ -1,0 +1,322 @@
+/* Manuscript blocks. Lines read like prose; logic blocks sit in quiet frames. */
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.blocks--nested {
+  padding-left: var(--space-3);
+  border-left: var(--hairline) solid var(--color-line-strong);
+}
+
+.blocks__add {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  color: var(--color-ink-muted);
+}
+
+.blocks__add .menu__button {
+  color: inherit;
+  font-size: var(--text-sm);
+}
+
+.block {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-2);
+  transition: background-color var(--duration) var(--ease-out);
+}
+
+.block[data-revealed] {
+  background: var(--color-selection);
+}
+
+.block__icon {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-2);
+  color: var(--color-ink-faint);
+}
+
+.block__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Lines show the icon and menu only on hover or focus, so the page reads like a page. */
+.block--narration .block__icon,
+.block--narration .block__menu {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.block--narration:hover .block__icon,
+.block--narration:hover .block__menu,
+.block--narration:focus-within .block__icon,
+.block--narration:focus-within .block__menu {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .block--narration .block__icon,
+  .block--narration .block__menu {
+    opacity: 1;
+  }
+}
+
+.block:not(.block--narration, .block--dialogue, .block--note) > .block__body {
+  padding: var(--space-3);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-2);
+}
+
+.block__menu .menu__button {
+  color: var(--color-ink-faint);
+}
+
+.block__problems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.block__problems li {
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-line-strong);
+}
+
+.block__problems li[data-severity='error'] {
+  border-left-color: var(--color-accent);
+}
+
+/* Lines (not .line: the presenter owns that class for the reader's lines) */
+.line-editor {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.line-editor--dialogue {
+  gap: 0;
+}
+
+.picker--speaker {
+  align-self: flex-start;
+  min-height: 1.75rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.picker--speaker:hover {
+  border-color: var(--color-line-strong);
+}
+
+.line-editor__picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.note {
+  width: 100%;
+  min-height: 2.25rem;
+  border-style: dashed;
+  background: transparent;
+  color: var(--color-ink-muted);
+  font-style: italic;
+}
+
+/* Choices */
+.choice-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.option__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.option__key {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: var(--space-1);
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: 999px;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.option__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding-left: calc(1.5rem + var(--space-2));
+  color: var(--color-ink-faint);
+  font-size: var(--text-xs);
+}
+
+.option__settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-left: calc(1.5rem + var(--space-2));
+  padding: var(--space-3);
+  border-radius: var(--radius-2);
+  background: var(--color-surface-raised);
+}
+
+.option > .blocks {
+  margin-left: calc(0.75rem);
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.setting .ie-label {
+  margin: 0;
+}
+
+/* Small text fields inside settings get an underline so they read as fields. */
+.setting .tf__input {
+  border-bottom: var(--hairline) solid var(--color-line-strong);
+}
+
+/* Conditions */
+.condition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.condition__join {
+  align-self: flex-start;
+}
+
+.condition__always {
+  margin: 0;
+  color: var(--color-ink-faint);
+  font-size: var(--text-sm);
+}
+
+.condition__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.condition__parts {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.condition__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.condition__formula {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* If / check / random branches */
+.branches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.branch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.branch__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.branch__label {
+  min-width: 4.5rem;
+  padding-top: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .block {
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    gap: var(--space-1);
+  }
+
+  .block:not(.block--narration, .block--dialogue, .block--note) > .block__body {
+    padding: var(--space-2);
+  }
+
+  .blocks--nested {
+    padding-left: var(--space-2);
+  }
+
+  .option__settings,
+  .option__flags {
+    margin-left: 0;
+    padding-left: var(--space-2);
+  }
+}

@@ -40,7 +40,11 @@ export function buildCommands(t: Translator<MessageKey>, ctx: CommandContext): C
     action: 'ui.hud.set',
     params: { visible: !ctx.hud },
   };
-  return [...views, ...themes, ...languages, hud];
+  const editing = [
+    { id: 'edit.undo', label: t('edit.undo'), action: 'project.undo', params: {} },
+    { id: 'edit.redo', label: t('edit.redo'), action: 'project.redo', params: {} },
+  ];
+  return [...views, ...editing, ...themes, ...languages, hud];
 }
 
 /** Turkish-aware, accent-insensitive filter: "akis" finds "Akış", "diger" finds "Diğer". */

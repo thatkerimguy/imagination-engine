@@ -8,7 +8,9 @@ test.describe('Studio', () => {
     const errors = watchErrors(page);
     await page.goto(STUDIO);
     await expect(page.getByTestId('view-write')).toBeVisible();
-    await expect(page.getByTestId('view-write')).toContainText('Arrives in phase 2');
+    // A first visit makes a new novel with one empty passage, ready to write in.
+    await expect(page.getByTestId('passage-list')).toContainText('Beginning');
+    await expect(page.getByTestId('line-text')).toHaveCount(1);
     await expect(page).toHaveTitle('Write · Studio');
     expect(errors).toEqual([]);
   });
@@ -30,7 +32,8 @@ test.describe('Studio', () => {
     await page.keyboard.type('akis');
     await expect(palette.getByRole('option')).toHaveText(['Akış görünümüne git']);
     await page.keyboard.press('Enter');
-    await expect(page.getByTestId('view-flow')).toContainText('Aşama 2 ile geliyor');
+    await expect(page.getByTestId('view-flow')).toBeVisible();
+    await expect(page.getByTestId('flow-node')).toHaveText(/Başlangıç|Beginning/);
     expect(errors).toEqual([]);
   });
 

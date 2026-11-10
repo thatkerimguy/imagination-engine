@@ -111,7 +111,8 @@ function tokenize(source: string): Token[] {
   return tokens;
 }
 
-const BINDING: Readonly<Record<string, number>> = {
+/** How tightly each binary operator binds (higher binds tighter). */
+export const BINDING: Readonly<Record<string, number>> = {
   or: 1,
   and: 2,
   '==': 3,

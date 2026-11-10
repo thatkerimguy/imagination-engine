@@ -257,6 +257,15 @@ importers:
       '@ie/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ie/present':
+        specifier: workspace:*
+        version: link:../../packages/present
+      '@ie/samples':
+        specifier: workspace:*
+        version: link:../../packages/samples
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../../packages/story
       '@ie/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit

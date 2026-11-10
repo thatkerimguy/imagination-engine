@@ -337,3 +337,19 @@ describe('StoryRuntime', () => {
     expect(rt.advance().at(-1)?.kind).toBe('end');
   });
 });
+
+describe('StoryRuntime start option', () => {
+  it('begins a new playthrough at the given passage', () => {
+    const rt = new StoryRuntime(
+      compileStory(
+        project([
+          { id: 'start', blocks: [say('First.'), { id: 'j1', type: 'jump', to: 'later' }] },
+          { id: 'later', blocks: [say('Later.'), { id: 'e1', type: 'end' }] },
+        ]),
+      ),
+      { seed: 1, start: 'later' },
+    );
+    rt.advance();
+    expect(lines(rt)).toEqual(['Later.']);
+  });
+});

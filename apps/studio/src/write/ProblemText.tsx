@@ -1,0 +1,68 @@
+import type { Translator } from '@ie/i18n';
+import type { StoryProblem, StoryProject } from '@ie/story';
+import type { MessageKey } from '../messages.ts';
+import { useDoc } from '../project/store.ts';
+import { useStudio, useT } from '../store.ts';
+import { labelText } from './edit.ts';
+
+/** A validator problem in the Studio's language (the validator's own message is English). */
+export function problemMessage(
+  t: Translator<MessageKey>,
+  problem: StoryProblem,
+  doc: StoryProject,
+): string {
+  const p = problem.params;
+  const id = p.id ?? '';
+  const variableName = labelText(doc.variables.find((v) => v.id === id)?.name, t.locale, id);
+  switch (problem.code) {
+    case 'unknown-variable':
+      return id ? t('problem.unknownVariable', { name: id }) : t('problem.noVariable');
+    case 'unknown-character':
+      return id ? t('problem.unknownCharacter', { name: id }) : t('problem.noCharacter');
+    case 'unknown-passage':
+      return id ? t('problem.unknownPassage', { name: id }) : t('problem.noPassage');
+    case 'unknown-option':
+      return t('problem.unknownOption');
+    case 'missing-translation':
+      return t('problem.missingTranslation', {
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
+    case 'markup':
+      return t('problem.markup');
+    case 'formula':
+      return t('problem.formula', { formula: p.formula ?? '' });
+    case 'duplicate-id':
+    case 'duplicate-line':
+      return t('problem.duplicate');
+    case 'timer-default':
+      return t('problem.timerDefault');
+    case 'odds-without-check':
+      return t('problem.oddsWithoutCheck');
+    case 'dice':
+      return t('problem.dice', { dice: p.dice ?? '' });
+    case 'variable-type':
+      return t('problem.variableType', {
+        name: variableName,
+        type: t(`type.${p.type ?? 'number'}` as MessageKey),
+      });
+    case 'set-value':
+      return t('problem.setValue');
+    case 'start':
+      return t('problem.start');
+    case 'unreachable':
+      return t('problem.unreachable', { name: p.name ?? '' });
+    case 'dead-end':
+      return t('problem.deadEnd', { name: p.name ?? '' });
+    case 'enum-values':
+      return t('problem.enumValues', { name: variableName });
+    default:
+      return problem.message;
+  }
+}
+
+export function ProblemText({ problem }: { readonly problem: StoryProblem }) {
+  const t = useT();
+  const doc = useDoc();
+  useStudio((s) => s.locale);
+  return <>{problemMessage(t, problem, doc)}</>;
+}

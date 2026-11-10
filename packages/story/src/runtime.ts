@@ -28,6 +28,8 @@ export interface RuntimeOptions {
   readonly state?: StoryState;
   readonly persistent?: Readonly<Record<string, Value>>;
   readonly seed?: number;
+  /** Passage to begin a new playthrough at (the Studio's "Play from here"); the story start if unset. */
+  readonly start?: string;
   readonly host?: StoryHost;
 }
 
@@ -58,7 +60,7 @@ export class StoryRuntime {
     this.persistent = { ...options.persistent };
     this.s = options.state
       ? this.reconcile(structuredClone(options.state))
-      : this.fresh(options.seed);
+      : this.fresh(options.seed, options.start);
     // A restored state is redrawn from page(); only a fresh story still has beats to hand out.
     this.delivered = options.state ? this.s.log.length : 0;
     this.evalContext = {
@@ -428,7 +430,7 @@ export class StoryRuntime {
     this.delivered = Math.max(0, this.delivered - drop);
   }
 
-  private fresh(seed?: number): Mutable<StoryState> {
+  private fresh(seed?: number, start?: string): Mutable<StoryState> {
     const s: Mutable<StoryState> = {
       v: 1,
       frames: [],
@@ -442,7 +444,7 @@ export class StoryRuntime {
       ended: false,
     };
     this.s = s;
-    this.enter(this.story.project.start);
+    this.enter(start ?? this.story.project.start);
     return this.s;
   }
 

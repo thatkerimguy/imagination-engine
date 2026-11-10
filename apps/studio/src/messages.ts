@@ -1,6 +1,9 @@
 import { defineCatalogs } from '@ie/i18n';
+import { projectMessages } from './messages-project.ts';
+import { writeMessages } from './messages-write.ts';
 
-export const messages = defineCatalogs({
+/** The shell: workspaces, palette, settings and diagnostics. */
+const shellMessages = defineCatalogs({
   en: {
     'app.name': 'Studio',
     'app.untitled': 'Untitled novel',
@@ -96,4 +99,13 @@ export const messages = defineCatalogs({
   },
 });
 
+/** Each catalog checks its own en/tr keys; together they are the Studio's whole vocabulary. */
+export const messages = {
+  en: { ...shellMessages.en, ...writeMessages.en, ...projectMessages.en },
+  tr: { ...shellMessages.tr, ...writeMessages.tr, ...projectMessages.tr },
+};
+
 export type MessageKey = keyof typeof messages.en;
+
+/** A new novel's title, in both languages. */
+export const UNTITLED = { en: messages.en['app.untitled'], tr: messages.tr['app.untitled'] };

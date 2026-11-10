@@ -137,7 +137,7 @@ export function Workbench({ sequence }: { readonly sequence: SequenceDef }) {
             sequence.kind === 'move' && ui.noteKind === 'strike' ? 'parry' : ui.noteKind,
             beat,
           )
-        : newClip(CLIP_KINDS[track.kind][0], beat, doc.audio?.sounds[0]?.id);
+        : newClip(CLIP_KINDS[track.kind][0], beat, doc.audio?.sounds[0]?.id, doc.materials);
     change((s) => addItem(s, track.id, item));
     ui.select(item.id);
   };

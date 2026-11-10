@@ -1,6 +1,8 @@
 export { analyzeProject, leaves } from './analyze.ts';
 export * from './audio.ts';
 export * from './fight.ts';
+export * from './minigame.ts';
+export * from './library.ts';
 export * from './stage.ts';
 export {
   checkStory,
@@ -75,3 +77,4 @@ export * from './state-rpg.ts';
 export * from './screens.ts';
 export * from './theme.ts';
 export * from './sequence.ts';
+export * from './material.ts';

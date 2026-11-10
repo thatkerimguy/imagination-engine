@@ -1,6 +1,7 @@
 import type { AudioDirector } from '@ie/audio';
 import type { Locale } from '@ie/i18n';
 import { ScreenHost, StoryPresenter } from '@ie/present';
+import { MinigameRunner } from '@ie/minigame';
 import { FightRunner } from '@ie/rhythm';
 import { SequenceRunner } from '@ie/sequencer';
 import type { StageDirector } from '@ie/stage';
@@ -33,6 +34,7 @@ export class PlaySession {
   private runtime: StoryRuntime;
   private readonly history: StoryState[] = [];
   private readonly fights: FightRunner | null;
+  private readonly minigames: MinigameRunner | null;
   private readonly sequences: SequenceRunner | null;
   private locale: Locale;
 
@@ -71,6 +73,14 @@ export class PlaySession {
           resolve: (result) => this.act(() => this.runtime.resolveFight(result)),
         })
       : null;
+    this.minigames = fights
+      ? new MinigameRunner({
+          host: fights.host,
+          contained: true,
+          settings: () => ({ locale: this.locale, relaxed: false, haptics: false }),
+          resolve: (result) => this.act(() => this.runtime.resolveMinigame(result)),
+        })
+      : null;
     this.presenter = new StoryPresenter(
       this.runtime,
       {
@@ -79,6 +89,7 @@ export class PlaySession {
         restart: () => this.restart(),
         advance: () => this.advance(),
         fight: (beat) => this.fights?.start(this.runtime, beat),
+        minigame: (beat) => this.minigames?.start(this.runtime, beat),
         sequence: (beat) => this.sequences?.start(this.runtime, beat),
         buy: (item) => this.act(() => this.runtime.buy(item)),
         sell: (item) => this.act(() => this.runtime.sell(item)),
@@ -103,9 +114,9 @@ export class PlaySession {
     );
   }
 
-  /** True while a fight has the screen (its keys are its own). */
+  /** True while a fight or a minigame has the screen (its keys are its own). */
   get fighting(): boolean {
-    return this.fights?.running ?? false;
+    return (this.fights?.running ?? false) || (this.minigames?.running ?? false);
   }
 
   get canBack(): boolean {
@@ -141,6 +152,7 @@ export class PlaySession {
     if (!state) return;
     this.runtime.restore(state);
     this.fights?.sync(this.runtime);
+    this.minigames?.sync(this.runtime);
     this.sequences?.sync(this.runtime);
     this.presenter.redraw();
     this.screens.refresh();
@@ -151,6 +163,7 @@ export class PlaySession {
   restart(): void {
     this.history.length = 0;
     this.fights?.stop();
+    this.minigames?.stop();
     this.sequences?.stop();
     this.runtime = this.create();
     this.presenter.attach(this.runtime);
@@ -169,6 +182,7 @@ export class PlaySession {
 
   dispose(): void {
     this.fights?.stop();
+    this.minigames?.stop();
     this.sequences?.stop();
     this.presenter.dispose();
     this.screens.dispose();

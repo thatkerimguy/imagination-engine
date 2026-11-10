@@ -2,6 +2,9 @@ import { defineCatalogs } from '@ie/i18n';
 import { designMessages } from './messages-design.ts';
 import { fightStudioMessages } from './messages-fight.ts';
 import { logicMessages } from './messages-logic.ts';
+import { libraryMessages } from './messages-library.ts';
+import { materialMessages } from './messages-material.ts';
+import { minigameStudioMessages } from './messages-minigame.ts';
 import { projectMessages } from './messages-project.ts';
 import { rpgBlockMessages } from './messages-rpg.ts';
 import { sequencerMessages } from './messages-sequencer.ts';
@@ -119,6 +122,9 @@ export const messages = {
     ...logicMessages.en,
     ...designMessages.en,
     ...sequencerMessages.en,
+    ...materialMessages.en,
+    ...minigameStudioMessages.en,
+    ...libraryMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -131,6 +137,9 @@ export const messages = {
     ...logicMessages.tr,
     ...designMessages.tr,
     ...sequencerMessages.tr,
+    ...materialMessages.tr,
+    ...minigameStudioMessages.tr,
+    ...libraryMessages.tr,
   },
 };
 

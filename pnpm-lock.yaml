@@ -226,6 +226,9 @@ importers:
       '@ie/kits':
         specifier: workspace:*
         version: link:../../packages/kits
+      '@ie/minigame':
+        specifier: workspace:*
+        version: link:../../packages/minigame
       '@ie/present':
         specifier: workspace:*
         version: link:../../packages/present
@@ -278,6 +281,12 @@ importers:
       '@ie/kits':
         specifier: workspace:*
         version: link:../../packages/kits
+      '@ie/material':
+        specifier: workspace:*
+        version: link:../../packages/material
+      '@ie/minigame':
+        specifier: workspace:*
+        version: link:../../packages/minigame
       '@ie/present':
         specifier: workspace:*
         version: link:../../packages/present
@@ -385,6 +394,21 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
+  packages/material:
+    dependencies:
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
+
+  packages/minigame:
+    dependencies:
+      '@ie/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
+
   packages/present:
     dependencies:
       '@ie/core':
@@ -445,6 +469,9 @@ importers:
       '@ie/core':
         specifier: workspace:*
         version: link:../core
+      '@ie/material':
+        specifier: workspace:*
+        version: link:../material
       '@ie/story':
         specifier: workspace:*
         version: link:../story

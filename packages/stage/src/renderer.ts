@@ -1,4 +1,6 @@
+import type { CompiledMaterial } from '@ie/material';
 import type { GlyphAtlas } from './atlas.ts';
+import { MATERIAL_PARAMS, postMaterialShaders, textMaterialShaders } from './material-shaders.ts';
 import { OVERLAY_FS, OVERLAY_VS, SPRITE_FS, SPRITE_VS } from './shaders.ts';
 
 /** Floats per sprite instance: centre 2, half-size 2, angle 1, uv 4, colour 4, params 4. */
@@ -14,6 +16,15 @@ export interface OverlayUniforms {
   readonly scanlines: number;
   readonly cover: readonly [number, number, number, number];
   readonly coverKind: number;
+}
+
+/** What a material reads each frame besides its parameters (ADR 0020). */
+export interface MaterialFrame {
+  readonly time: number;
+  readonly beat: number;
+  readonly beatPhase: number;
+  readonly barPhase: number;
+  readonly pulse: number;
 }
 
 export interface Camera {
@@ -58,6 +69,12 @@ export class Renderer {
   private atlasVersion = -1;
   private atlasHeight = 0;
   private readonly uniforms = new Map<string, WebGLUniformLocation | null>();
+  private readonly materialUniforms = new WeakMap<
+    WebGLProgram,
+    Map<string, WebGLUniformLocation | null>
+  >();
+  /** One program per generated source; null for a material that failed to build. */
+  private readonly materials = new Map<string, WebGLProgram | null>();
   drawCalls = 0;
 
   constructor(readonly gl: WebGL2RenderingContext) {
@@ -70,6 +87,7 @@ export class Renderer {
     this.sprite = compile(gl, SPRITE_VS, SPRITE_FS);
     this.overlay = compile(gl, OVERLAY_VS, OVERLAY_FS);
     this.uniforms.clear();
+    this.materials.clear();
     this.buffer = gl.createBuffer();
     this.vao = gl.createVertexArray();
     this.empty = gl.createVertexArray();
@@ -101,6 +119,53 @@ export class Renderer {
     const key = `${program === this.sprite ? 's' : 'o'}:${name}`;
     if (!this.uniforms.has(key)) this.uniforms.set(key, this.gl.getUniformLocation(program, name));
     return this.uniforms.get(key) ?? null;
+  }
+
+  /**
+   * The program for a compiled material, built the first time its source is seen. A driver that
+   * rejects it gets null, and the stage draws without the material (ADR 0020).
+   */
+  materialProgram(material: CompiledMaterial): WebGLProgram | null {
+    const cached = this.materials.get(material.key);
+    if (cached !== undefined) return cached;
+    let program: WebGLProgram | null = null;
+    try {
+      const { vs, fs } =
+        material.domain === 'text' ? textMaterialShaders(material) : postMaterialShaders(material);
+      program = compile(this.gl, vs, fs);
+    } catch (error) {
+      console.warn(`The material "${material.id}" could not be built.`, error);
+    }
+    this.materials.set(material.key, program);
+    return program;
+  }
+
+  private materialUniform(program: WebGLProgram, name: string): WebGLUniformLocation | null {
+    let map = this.materialUniforms.get(program);
+    if (!map) {
+      map = new Map();
+      this.materialUniforms.set(program, map);
+    }
+    if (!map.has(name)) map.set(name, this.gl.getUniformLocation(program, name));
+    return map.get(name) ?? null;
+  }
+
+  private setMaterialUniforms(
+    program: WebGLProgram,
+    frame: MaterialFrame,
+    params: Float32Array,
+    aspect: number,
+    glyphCount: number,
+  ): void {
+    const { gl } = this;
+    gl.uniform1f(this.materialUniform(program, 'u_time'), frame.time);
+    gl.uniform1f(this.materialUniform(program, 'u_beat'), frame.beat);
+    gl.uniform1f(this.materialUniform(program, 'u_beatPhase'), frame.beatPhase);
+    gl.uniform1f(this.materialUniform(program, 'u_barPhase'), frame.barPhase);
+    gl.uniform1f(this.materialUniform(program, 'u_pulse'), frame.pulse);
+    gl.uniform1f(this.materialUniform(program, 'u_aspect'), aspect);
+    gl.uniform1f(this.materialUniform(program, 'u_glyphCount'), glyphCount);
+    gl.uniform1fv(this.materialUniform(program, 'u_params[0]'), params, 0, MATERIAL_PARAMS);
   }
 
   /** Uploads the atlas when it changed (new letters, or a fresh context). */
@@ -147,14 +212,7 @@ export class Renderer {
     if (count === 0) return;
     const { gl } = this;
     gl.useProgram(this.sprite);
-    gl.bindVertexArray(this.vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    const used = data.subarray(0, count * SPRITE_FLOATS);
-    if (count > this.capacity) {
-      this.capacity = Math.max(count, this.capacity * 2, 256);
-      gl.bufferData(gl.ARRAY_BUFFER, this.capacity * SPRITE_FLOATS * 4, gl.DYNAMIC_DRAW);
-    }
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, used);
+    this.upload(data, count);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.uniform1i(this.uniform(this.sprite, 'u_atlas'), 0);
@@ -168,6 +226,64 @@ export class Renderer {
     );
     gl.uniform1f(this.uniform(this.sprite, 'u_aberration'), aberration);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+    gl.bindVertexArray(null);
+    this.drawCalls++;
+  }
+
+  private upload(data: Float32Array, count: number): void {
+    const { gl } = this;
+    gl.bindVertexArray(this.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    if (count > this.capacity) {
+      this.capacity = Math.max(count, this.capacity * 2, 256);
+      gl.bufferData(gl.ARRAY_BUFFER, this.capacity * SPRITE_FLOATS * 4, gl.DYNAMIC_DRAW);
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, count * SPRITE_FLOATS));
+  }
+
+  /** One instanced draw of a material title's glyphs (the sprite layout, another program). */
+  materialSprites(
+    program: WebGLProgram,
+    data: Float32Array,
+    count: number,
+    view: { w: number; h: number },
+    camera: Camera,
+    frame: MaterialFrame,
+    params: Float32Array,
+  ): void {
+    if (count === 0) return;
+    const { gl } = this;
+    gl.useProgram(program);
+    this.upload(data, count);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.uniform1i(this.materialUniform(program, 'u_atlas'), 0);
+    gl.uniform2f(this.materialUniform(program, 'u_view'), view.w, view.h);
+    gl.uniform4f(
+      this.materialUniform(program, 'u_camera'),
+      camera.x,
+      camera.y,
+      camera.angle,
+      camera.zoom,
+    );
+    this.setMaterialUniforms(program, frame, params, view.w / view.h, count);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+    gl.bindVertexArray(null);
+    this.drawCalls++;
+  }
+
+  /** The post material over the whole screen. */
+  materialPass(
+    program: WebGLProgram,
+    size: { w: number; h: number },
+    frame: MaterialFrame,
+    params: Float32Array,
+  ): void {
+    const { gl } = this;
+    gl.useProgram(program);
+    gl.bindVertexArray(this.empty);
+    this.setMaterialUniforms(program, frame, params, size.w / size.h, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.bindVertexArray(null);
     this.drawCalls++;
   }

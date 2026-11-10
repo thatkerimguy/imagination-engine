@@ -149,7 +149,7 @@ export function Inspector(props: InspectorProps) {
                   const next = kinds.find((k) => k === e.target.value);
                   if (!next) return;
                   const sound = doc.audio?.sounds[0]?.id;
-                  const fresh = newClip(next, item.at, sound);
+                  const fresh = newClip(next, item.at, sound, doc.materials);
                   change((i) => ({ ...fresh, id: i.id }));
                 }}
               >

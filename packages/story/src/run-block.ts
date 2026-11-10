@@ -103,6 +103,8 @@ export function runBlock(core: RuntimeCore, block: Block): boolean {
       return core.finish(block);
     case 'fight':
       return core.wait({ kind: 'fight', blockId: block.id });
+    case 'minigame':
+      return core.wait({ kind: 'minigame', blockId: block.id });
     case 'sequence':
       return runSequence(core, block);
     case 'action':

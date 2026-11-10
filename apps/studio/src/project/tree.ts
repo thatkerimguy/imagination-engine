@@ -31,6 +31,7 @@ export function childLists(block: Block): [string, Blocks][] {
         [listKey.fail(block.id), block.fail],
       ];
     case 'fight':
+    case 'minigame':
       return [
         [listKey.win(block.id), block.win],
         [listKey.lose(block.id), block.lose],
@@ -77,7 +78,8 @@ function mapChildren(block: Block, map: ListMapper): Block {
       const fail = mapList(listKey.fail(block.id), block.fail, map);
       return success === block.success && fail === block.fail ? block : { ...block, success, fail };
     }
-    case 'fight': {
+    case 'fight':
+    case 'minigame': {
       const win = mapList(listKey.win(block.id), block.win, map);
       const lose = mapList(listKey.lose(block.id), block.lose, map);
       return win === block.win && lose === block.lose ? block : { ...block, win, lose };

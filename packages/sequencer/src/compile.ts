@@ -32,6 +32,7 @@ export function steadyTime(bpm: number): BeatTime {
 }
 
 const TITLE_SECONDS = { min: 0.5, max: 20 } as const;
+const RAMP_SECONDS = { min: 0, max: 30 } as const;
 
 /**
  * Turns a sequence into cues sorted by beat (ADR 0019). Work that depends on the tempo, like a
@@ -41,10 +42,12 @@ export function compileSequence(sequence: SequenceDef, time?: BeatTime): Compile
   const at = time ?? steadyTime(sequence.bpm ?? SEQUENCE_LIMITS.bpm.default);
   const cues = sequenceClips(sequence).map((clip): SequenceCue => {
     const params = clip.params ?? {};
-    if (clip.action !== 'stage.title' || !clip.length)
-      return { beat: clip.at, action: clip.action, params };
+    const timed = clip.action === 'stage.title' || clip.action === 'stage.material.param';
+    if (!timed || !clip.length) return { beat: clip.at, action: clip.action, params };
     const seconds = at(clip.at + clip.length) - at(clip.at);
-    const clamped = Math.min(TITLE_SECONDS.max, Math.max(TITLE_SECONDS.min, seconds));
+    // A title stays up for its length; a parameter ramps over it (ADR 0020).
+    const range = clip.action === 'stage.title' ? TITLE_SECONDS : RAMP_SECONDS;
+    const clamped = Math.min(range.max, Math.max(range.min, seconds));
     return { beat: clip.at, action: clip.action, params: { ...params, seconds: clamped } };
   });
   return { id: sequence.id, length: sequence.length, beatsPerBar: beatsPerBarOf(sequence), cues };

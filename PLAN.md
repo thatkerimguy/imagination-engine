@@ -97,7 +97,7 @@ It isn't tied to one genre or look: every system is optional, and every style is
 | Graph editors | React Flow (@xyflow/react) + ELK.js auto-layout | Mature. Tap-to-connect works on touch screens |
 | Code/formula fields | CodeMirror 6 | Works on mobile |
 | Docking | dockview (desktop only) | NLE/IDE-style layouts (an NLE is a non-linear video editor like Premiere) |
-| Rendering | **Own WebGL2 renderer** (ADR 0015): one instanced sprite draw plus one full-screen pass. three.js + TSL may return for the material graph | Two draw calls a frame and a tiny bundle on the Adreno 610 |
+| Rendering | **Own WebGL2 renderer** (ADR 0015): one instanced sprite draw plus one full-screen pass. Material graphs compile to GLSL for it (ADR 0020) | Two draw calls a frame and a tiny bundle on the Adreno 610 |
 | GPU text | Custom instanced SDF glyphs, generated at runtime from the page's font (TinySDF-style); MSDF later if large sizes need sharper corners | Gives per-glyph shader control |
 | Audio | Web Audio API + Tone.js (synths and effects) | Our own Conductor owns the clock |
 | Beat analysis | **Beat This!** ONNX (onnxruntime-web, WebGPU with WASM fallback), **Meyda** (features), optional **demucs-web** (stems) | Beats and downbeats, onsets, energy, key. All MIT-compatible |
@@ -818,8 +818,8 @@ Every phase ends with something you can use. Sizes are relative (S < M < L < XL)
 | 6 | **Logic & kits I** (ADR 0017): Rules, Routines, formulas; RPG kit (stats, inventory, checks, quests, shops); turn-based combat; Data editor | L | An RPG chapter is built entirely in the Studio |
 | 7 | **Screens & themes** (ADR 0018): screen builder, theme editor, kit system, new-project wizard, starter kits (VN, Gamebook, Chat, Mystery) | L | You can start a project in a different genre in a few clicks |
 | 8 | **Sequencer** (ADR 0019): sequence data (scenes and fight moves), beat-snapped timeline with scrubbing, playhead and preview, audio-clock playback, the Sequence block, timeline enemy moves and fight charts feeding the director | XL | Fight moves and cinematic scenes are authored on a beat-snapped timeline |
-| 9 | **Material graph** | XL | Text and post effects are built from nodes and animated by the sequencer |
-| 10 | **Minigames**: framework + 8 templates; Library and packs | M | Minigames launched from the story feed their results back |
+| 9 | **Material graph** (ADR 0020): material data (text and post domains), a GLSL compiler of our own, material programs on the stage, `stage.post.set` and `stage.material.param`, a material track in the sequencer, the Materials workspace with tap-to-connect and a live preview | XL | Text and post effects are built from nodes and animated by the sequencer |
+| 10 | **Minigames** (ADR 0021): the Minigame block and `@ie/minigame` (lockpick, memory, cipher, typing duel, quick time, dice, slider puzzle, tension) by touch and keyboard, results into variables and branches, a block editor with a live try-out; the Library (effects, sequences, materials, enemies, themes, screens) with pack import and export | M | Minigames launched from the story feed their results back |
 | 11 | **Polish & publish**: auto-playtester, accessibility pass, publish check + auto credits, public fallbacks, public builds (itch.io / Cloudflare Pages), private Studio on Cloudflare Pages + Access, performance pass | L | A finished novel is live at a public URL, and the Studio runs from your private one |
 | — | **Later**: Script view, device sync, live AI music (Lyria), stem separation, remaining kits, minigame builder, optional media modules, ink/Twine import | — | — |
 

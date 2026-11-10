@@ -12,7 +12,7 @@ const label = z.object({ en: z.string().optional(), tr: z.string().optional() })
 export const SEQUENCE_KINDS = ['scene', 'move'] as const;
 export type SequenceKind = (typeof SEQUENCE_KINDS)[number];
 
-export const TRACK_KINDS = ['stage', 'text', 'sound', 'notes'] as const;
+export const TRACK_KINDS = ['stage', 'text', 'sound', 'material', 'notes'] as const;
 export type TrackKind = (typeof TRACK_KINDS)[number];
 export type ClipTrackKind = Exclude<TrackKind, 'notes'>;
 
@@ -30,9 +30,12 @@ export const TRACK_ACTIONS = {
     'stage.hitstop',
     'stage.burst',
     'stage.transition',
+    'stage.post.set',
   ],
   text: ['stage.title'],
   sound: ['audio.sfx.play', 'audio.ambience.set'],
+  /** Material parameters set or ramped over the clip's length (ADR 0020). */
+  material: ['stage.material.param'],
 } as const satisfies Record<ClipTrackKind, readonly string[]>;
 
 export const SEQUENCE_LIMITS = {
@@ -104,7 +107,7 @@ export type SequenceTrack =
 export const sequenceTrackSchema = z.discriminatedUnion('kind', [
   z.object({
     id,
-    kind: z.enum(['stage', 'text', 'sound']),
+    kind: z.enum(['stage', 'text', 'sound', 'material']),
     muted: z.boolean().optional(),
     clips: z.array(sequenceClipSchema).max(SEQUENCE_LIMITS.clips),
   }),

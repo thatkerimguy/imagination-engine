@@ -13,6 +13,24 @@ function dataName(doc: StoryProject, id: string, locale: Translator<MessageKey>[
   return labelText(entry?.name, locale, id);
 }
 
+/** Problems about materials (ADR 0020), named by the material's own name. */
+function materialProblem(
+  t: Translator<MessageKey>,
+  code: string,
+  p: Readonly<Record<string, string>>,
+  doc: StoryProject,
+): string {
+  const id = p.id ?? '';
+  const name = labelText(doc.materials?.find((m) => m.id === id)?.name, t.locale, id);
+  const domain = t(p.domain === 'post' ? 'mat.domain.post' : 'mat.domain.text');
+  const language = t(p.locale === 'tr' ? 'language.tr' : 'language.en');
+  if (code === 'unknown-material') return t('problem.unknownMaterial', { name });
+  if (code === 'material-domain') return t('problem.materialDomain', { name, domain });
+  if (code === 'material-param') return t('problem.materialParam', { name });
+  if (code === 'material-name') return t('problem.materialName', { name, language });
+  return t('problem.materialOutput', { name });
+}
+
 /** A validator problem in the Studio's language (the validator's own message is English). */
 export function problemMessage(
   t: Translator<MessageKey>,
@@ -137,6 +155,24 @@ export function problemMessage(
       return t('problem.sequenceName', {
         language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
       });
+    case 'minigame-value':
+      return t('problem.minigameValue', { name: p.name ?? '' });
+    case 'minigame-text':
+      return t('problem.minigameText', {
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
+    case 'minigame-short':
+      return t('problem.minigameShort');
+    case 'minigame-odds':
+      return t('problem.minigameOdds');
+    case 'unknown-material':
+    case 'material-domain':
+    case 'material-param':
+    case 'material-name':
+    case 'material-output':
+      return materialProblem(t, problem.code, p, doc);
+    case 'material-missing':
+      return t('problem.noMaterial');
     default:
       return problem.message;
   }

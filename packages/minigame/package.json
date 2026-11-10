@@ -1,0 +1,15 @@
+{
+  "name": "@ie/minigame",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Minigames: eight data-driven templates, their screen and the runner. No UI framework.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./minigame.css": "./src/view/minigame.css"
+  },
+  "dependencies": {
+    "@ie/i18n": "workspace:*",
+    "@ie/story": "workspace:*"
+  }
+}

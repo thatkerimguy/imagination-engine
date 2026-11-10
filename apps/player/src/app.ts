@@ -15,6 +15,7 @@ import {
   resolveStoryTheme,
   type PresenterOptions,
 } from '@ie/present';
+import { MinigameRunner } from '@ie/minigame';
 import { FightRunner, type Assist } from '@ie/rhythm';
 import { createSequenceModule, SequenceRunner } from '@ie/sequencer';
 import { createStageHost, createStageModule } from '@ie/stage';
@@ -92,6 +93,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     root: () => story?.presenter.element ?? null,
     locale: () => settings.locale,
     beatPhase: () => audio.beatPhase(),
+    beat: () => audio.beatInfo(),
+    materials: () => story?.session.story.project.materials,
   });
   const fights = new FightRunner({
     audio,
@@ -105,6 +108,16 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     }),
     dispatch: (id, params) => run(id, params, 'story'),
     resolve: (result) => run('story.fight', result),
+  });
+  // Minigames (ADR 0021); the fight-assist setting eases them too.
+  const minigames = new MinigameRunner({
+    host: () => document.body,
+    settings: () => ({
+      locale: settings.locale,
+      relaxed: settings.fightAssist !== 'off',
+      haptics: settings.haptics,
+    }),
+    resolve: (result) => run('story.minigame', result),
   });
   // Sequences the story plays (ADR 0019); their cues go through the action bus like blocks.
   const sequences = new SequenceRunner({
@@ -246,12 +259,14 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         battle: (action) => run('story.battle', action),
         typed: (speaker, text) => audio.typed(speaker, text),
         fight: (beat) => fights.start(session.runtime, beat),
+        minigame: (beat) => minigames.start(session.runtime, beat),
         sequence: (beat) => sequences.start(session.runtime, beat),
       },
       presenterOptions(settings),
     );
     story = new StoryController(session, presenter, kernel.events, (scene) => {
       fights.sync(session.runtime);
+      minigames.sync(session.runtime);
       sequences.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
@@ -307,8 +322,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       else run('ui.menu.set', { open: !menu.isOpen });
       return;
     }
-    // A fight reads its own keys (arrows dodge there, not step back).
-    if (menu.isOpen || fights.running || screens?.covering) return;
+    // A fight or a minigame reads its own keys (arrows act there, not step back).
+    if (menu.isOpen || fights.running || minigames.running || screens?.covering) return;
     if (target?.closest('input, textarea, select')) return;
     if (event.key === '`') {
       run('ui.hud.set', { visible: !settings.hud });

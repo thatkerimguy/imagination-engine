@@ -37,7 +37,10 @@ test.describe('Studio stage', () => {
     expect(errors).toEqual([]);
   });
 
-  test('stage blocks are sentences and a title needs both languages', async ({ page, isMobile }) => {
+  test('stage blocks are sentences and a title needs both languages', async ({
+    page,
+    isMobile,
+  }) => {
     const errors = watchErrors(page);
     await open(page, isMobile, 'Write');
 

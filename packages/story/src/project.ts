@@ -13,6 +13,7 @@ import {
   type QuestDef,
   type SkillDef,
 } from './rpg.ts';
+import { materialSchema, type MaterialDef } from './material.ts';
 import { screenSchema, type ScreenDef } from './screens.ts';
 import { sequenceSchema, type SequenceDef } from './sequence.ts';
 import { themeSchema, type StoryTheme } from './theme.ts';
@@ -61,6 +62,8 @@ export interface StoryProject {
   readonly screens?: readonly ScreenDef[];
   /** Timelines of stage, sound and fight notes (ADR 0019). */
   readonly sequences?: readonly SequenceDef[];
+  /** Node graphs for text and post effects (ADR 0020). */
+  readonly materials?: readonly MaterialDef[];
   /** The kits this project was made from or mixed with (ADR 0018). */
   readonly kits?: readonly string[];
 }
@@ -87,5 +90,6 @@ export const storyProjectSchema = z.object({
   theme: themeSchema.optional(),
   screens: z.array(screenSchema).max(40).optional(),
   sequences: z.array(sequenceSchema).max(100).optional(),
+  materials: z.array(materialSchema).max(60).optional(),
   kits: z.array(z.string().max(40)).max(12).optional(),
 });

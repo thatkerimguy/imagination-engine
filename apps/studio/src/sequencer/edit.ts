@@ -4,6 +4,7 @@ import {
   SEQUENCE_LIMITS,
   type ClipTrackKind,
   type Label,
+  type MaterialDef,
   type SequenceClip,
   type SequenceDef,
   type SequenceKind,
@@ -69,15 +70,42 @@ export function newTrack(kind: TrackKind): SequenceTrack {
 
 /** The kinds a clip on each track can be; the first is what a tap adds. */
 export const CLIP_KINDS = {
-  stage: ['effect', 'burst', 'background', 'look', 'transition'],
+  stage: ['effect', 'burst', 'background', 'look', 'transition', 'post'],
   text: ['title'],
   sound: ['sfx', 'ambience'],
+  material: ['param'],
 } as const satisfies Record<ClipTrackKind, readonly string[]>;
 export type ClipKind = (typeof CLIP_KINDS)[ClipTrackKind][number];
 
-/** A clip of `kind` at `at` with settings that show something at once (as new blocks do). */
-export function newClip(kind: ClipKind, at: number, sound?: string): SequenceClip {
+/**
+ * A clip of `kind` at `at` with settings that show something at once (as new blocks do): the
+ * first sound, and the first material that fits.
+ */
+export function newClip(
+  kind: ClipKind,
+  at: number,
+  sound?: string,
+  materials?: readonly MaterialDef[],
+): SequenceClip {
   const id = createId('cl');
+  if (kind === 'param') {
+    const material = materials?.find((m) => m.params.length > 0);
+    const param = material?.params[0];
+    return {
+      id,
+      at,
+      length: 4,
+      action: 'stage.material.param',
+      params:
+        material && param
+          ? { material: material.id, param: param.id, value: param.min, to: param.max }
+          : { material: '', param: '', value: 0 },
+    };
+  }
+  if (kind === 'post') {
+    const material = materials?.find((m) => m.domain === 'post');
+    return { id, at, action: 'stage.post.set', params: { material: material?.id ?? '' } };
+  }
   if (kind === 'sfx') return { id, at, action: 'audio.sfx.play', params: { sound: sound ?? '' } };
   if (kind === 'ambience')
     return { id, at, action: 'audio.ambience.set', params: { slot: 'rain', volume: 0.6, fade: 2 } };

@@ -22,6 +22,7 @@ export interface Usages {
   readonly routines: ReadonlyMap<string, number>;
   /** Sequences, from Sequence blocks, fight charts and enemy moves. */
   readonly sequences: ReadonlyMap<string, number>;
+  readonly materials: ReadonlyMap<string, number>;
 }
 
 function formulasOf(block: Block): Formula[] {
@@ -57,6 +58,7 @@ export function countUsages(doc: StoryProject): Usages {
   const quests = new Map<string, number>();
   const routines = new Map<string, number>();
   const sequences = new Map<string, number>();
+  const materials = new Map<string, number>();
   const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
 
   walkBlocks(doc, ({ block }) => {
@@ -70,6 +72,7 @@ export function countUsages(doc: StoryProject): Usages {
             ? p.sound
             : null;
       if (typeof id === 'string') bump(audio, id);
+      if (typeof p.material === 'string' && p.material) bump(materials, p.material);
     }
     if (block.type === 'set' || block.type === 'input') bump(variables, block.var);
     if (block.type === 'fight') {
@@ -77,6 +80,10 @@ export function countUsages(doc: StoryProject): Usages {
       if (block.track) bump(audio, block.track);
       if (block.score) bump(variables, block.score);
       if (block.chart) bump(sequences, block.chart);
+    }
+    if (block.type === 'minigame') {
+      if (block.score) bump(variables, block.score);
+      for (const id of Object.values(block.store ?? {})) bump(variables, id);
     }
     if (block.type === 'sequence') bump(sequences, block.sequence);
     if (block.type === 'choice')
@@ -123,6 +130,14 @@ export function countUsages(doc: StoryProject): Usages {
   }
   for (const enemy of doc.enemies ?? [])
     for (const move of enemy.moves) if (move.sequence) bump(sequences, move.sequence);
-  for (const sequence of doc.sequences ?? []) if (sequence.track) bump(audio, sequence.track);
-  return { variables, characters, audio, enemies, items, quests, routines, sequences };
+  for (const sequence of doc.sequences ?? []) {
+    if (sequence.track) bump(audio, sequence.track);
+    for (const track of sequence.tracks)
+      if (track.kind !== 'notes')
+        for (const clip of track.clips) {
+          const material = clip.params?.material;
+          if (typeof material === 'string' && material) bump(materials, material);
+        }
+  }
+  return { variables, characters, audio, enemies, items, quests, routines, sequences, materials };
 }

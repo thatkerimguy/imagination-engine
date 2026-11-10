@@ -1,10 +1,12 @@
 import { parseDice } from './dice.ts';
 import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
 import { checkEnemies, checkFightBlock } from './analyze-fight.ts';
+import { checkMinigameBlock } from './analyze-minigame.ts';
 import { checkReferences, type PendingRefs } from './analyze-refs.ts';
 import { checkRpgBlock, checkRpgData, type RpgCheckContext } from './analyze-rpg.ts';
 import { checkScreens } from './analyze-screens.ts';
 import { checkFightChart, checkSequenceBlock, checkSequences } from './analyze-sequence.ts';
+import { checkMaterials } from './analyze-material.ts';
 import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
@@ -87,6 +89,7 @@ export function leaves(list: readonly Block[]): boolean {
       case 'check':
         return leaves(block.success) && leaves(block.fail);
       case 'fight':
+      case 'minigame':
         return leaves(block.win) && leaves(block.lose);
       case 'battle':
         return (
@@ -345,6 +348,11 @@ export function analyzeProject(project: StoryProject): Analysis {
           walk(block.win, listKey.win(block.id), passageId);
           walk(block.lose, listKey.lose(block.id), passageId);
           break;
+        case 'minigame':
+          checkMinigameBlock(block, project, report, needVar);
+          walk(block.win, listKey.win(block.id), passageId);
+          walk(block.lose, listKey.lose(block.id), passageId);
+          break;
         case 'item':
         case 'quest':
         case 'shop':
@@ -385,6 +393,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   checkAudioLibrary(project, report);
   checkEnemies(project, report);
   checkSequences(project, report);
+  checkMaterials(project, report);
   checkScreens({ project, report, needVar, useFormula, useText });
 
   checkReferences({ project, passages, options, targets, pendingRefs, leaves, report });

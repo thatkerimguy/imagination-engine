@@ -5,6 +5,7 @@ import { optionView } from './choices.ts';
 import { listKey, type CompiledStory } from './compile.ts';
 import { truthy, valueText } from './formula.ts';
 import type { FightResult } from './fight.ts';
+import { MINIGAME_VALUES, type MinigameResult } from './minigame.ts';
 import type { Formula, LocalText } from './schema.ts';
 import type { ScreenAction } from './screens.ts';
 import { reconcileState } from './reconcile.ts';
@@ -122,8 +123,9 @@ export class StoryRuntime {
     if (s.ended) return this.takeBeats();
     const current = this.waiting;
     if (current?.kind === 'shop' || current?.kind === 'battle') return this.takeBeats();
-    if (current?.kind === 'choice' || current?.kind === 'input' || current?.kind === 'fight') {
-      throw new Error('The story is waiting for a choice, an answer or a fight.');
+    const kind = current?.kind;
+    if (kind === 'choice' || kind === 'input' || kind === 'fight' || kind === 'minigame') {
+      throw new Error('The story is waiting for a choice, an answer, a fight or a minigame.');
     }
     s.waiting = null;
     for (let steps = 0; ; steps++) {
@@ -210,6 +212,29 @@ export class StoryRuntime {
     const score = Math.round(Math.max(0, Math.min(100, result.score)));
     if (info.block.score) core.write(info.block.score, score);
     core.record({ kind: 'fought', blockId: beat.blockId, won: result.won, score });
+    core.s.waiting = null;
+    core.push({
+      list: result.won ? listKey.win(beat.blockId) : listKey.lose(beat.blockId),
+      index: 0,
+    });
+  }
+
+  /** Ends the waiting minigame: stores its score and values, then plays its win or lose blocks. */
+  resolveMinigame(result: MinigameResult): void {
+    const core = this.core;
+    const beat = this.waiting;
+    if (beat?.kind !== 'minigame') throw new Error('There is no minigame waiting.');
+    const block = this.story.blocks.get(beat.blockId)?.block;
+    if (block?.type !== 'minigame') throw new Error('The minigame is no longer in the story.');
+    const score = Math.round(Math.max(0, Math.min(100, result.score)));
+    if (block.score) core.write(block.score, score);
+    const names: readonly string[] = MINIGAME_VALUES[block.game.template];
+    for (const [name, variable] of Object.entries(block.store ?? {})) {
+      const value = result.values?.[name];
+      if (names.includes(name) && typeof value === 'number' && Number.isFinite(value))
+        core.write(variable, value);
+    }
+    core.record({ kind: 'played', blockId: beat.blockId, won: result.won, score });
     core.s.waiting = null;
     core.push({
       list: result.won ? listKey.win(beat.blockId) : listKey.lose(beat.blockId),

@@ -53,6 +53,28 @@ describe('compileSequence', () => {
     expect(compiled.cues[5]?.params).toMatchObject({ seconds: 20 });
   });
 
+  it('turns the length of a material clip into ramp seconds', () => {
+    const compiled = compileSequence({
+      ...sequence,
+      tracks: [
+        {
+          id: 'm',
+          kind: 'material',
+          clips: [
+            {
+              id: 'r',
+              at: 0,
+              length: 2,
+              action: 'stage.material.param',
+              params: { material: 'glow', param: 'amount', value: 0, to: 1 },
+            },
+          ],
+        },
+      ],
+    });
+    expect(compiled.cues[0]?.params).toMatchObject({ seconds: 1, to: 1 });
+  });
+
   it('follows the tempo it is given', () => {
     const compiled = compileSequence(sequence, steadyTime(60));
     expect(compiled.cues[1]?.params).toMatchObject({ seconds: 4 });

@@ -1,5 +1,6 @@
 import { createId } from '@ie/core';
 import {
+  defaultGame,
   STORY_FORMAT,
   STORY_SCHEMA_VERSION,
   type Block,
@@ -44,6 +45,7 @@ export const BLOCK_MENU = [
   'if',
   'check',
   'fight',
+  'minigame',
   'input',
   ...RPG_BLOCKS,
   'set',
@@ -107,6 +109,8 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
       return { id, type, enemy: defaults.enemy ?? '', win: [], lose: [] };
     case 'sequence':
       return { id, type, sequence: defaults.sequence ?? '' };
+    case 'minigame':
+      return { id, type, game: defaultGame('lockpick'), win: [], lose: [] };
     case 'input':
       return { id, type, var: defaults.textVariable ?? '', prompt: newText() };
     case 'set':
@@ -269,6 +273,7 @@ export function cloneBlock(block: Block): Block {
         fail: list(block.fail),
       };
     case 'fight':
+    case 'minigame':
       return { ...block, id, win: list(block.win), lose: list(block.lose) };
     case 'battle':
       return cloneBattle(block, id, list);

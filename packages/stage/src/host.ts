@@ -1,4 +1,4 @@
-import type { Label } from '@ie/story';
+import type { Label, MaterialDef } from '@ie/story';
 import { parseCssColor } from './color.ts';
 import { StageDirector } from './director.ts';
 import type { FxState } from './fx.ts';
@@ -9,6 +9,9 @@ export interface StageHostOptions {
   readonly root: () => HTMLElement | null;
   readonly locale: () => 'en' | 'tr';
   readonly beatPhase?: () => number | null;
+  readonly beat?: () => { beat: number; beatsPerBar: number } | null;
+  /** The project's materials (ADR 0020). */
+  readonly materials?: () => readonly MaterialDef[] | undefined;
   /** Where the canvas goes; the window by default. */
   readonly mount?: () => HTMLElement | null;
   /** Fill the mount (a positioned panel) instead of the window. */
@@ -68,6 +71,8 @@ export function createStageHost(options: StageHostOptions): StageDirector {
     announce,
     onFx: moveText,
     ...(options.beatPhase ? { beatPhase: options.beatPhase } : {}),
+    ...(options.beat ? { beat: options.beat } : {}),
+    ...(options.materials ? { materials: options.materials } : {}),
   });
   if (typeof matchMedia === 'function')
     matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) =>

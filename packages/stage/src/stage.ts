@@ -1,4 +1,5 @@
-import type { StageBackground, StageLook } from '@ie/story';
+import type { CompiledMaterial } from '@ie/material';
+import type { MaterialParam, StageBackground, StageLook } from '@ie/story';
 import { AMBIENTS, TitleActor, type Rgb } from './actors.ts';
 import { GlyphAtlas, BASE_CHARS } from './atlas.ts';
 import { ScreenFx, type FxState } from './fx.ts';
@@ -6,7 +7,10 @@ import { PARTICLE_PRESETS, ParticleSystem, type ParticlePreset } from './particl
 import { createPen, type StageLayer, type StagePen } from './layer.ts';
 import { COVER, LOOKS, overlayUniforms, type Cover } from './looks.ts';
 import { SpriteBatch } from './batch.ts';
-import { Renderer, SHAPE } from './renderer.ts';
+import { StageMaterials } from './materials.ts';
+import { drawMaterials } from './material-draw.ts';
+import { Renderer } from './renderer.ts';
+import { pushTitle } from './title-draw.ts';
 import { FrameGovernor, TIERS, type TierName } from './tiers.ts';
 
 export interface StagePalette {
@@ -26,6 +30,8 @@ export interface StageOptions {
   readonly onFx?: (fx: FxState) => void;
   /** Where the current song's beat is, 0..1 (0 = on the beat), or null without music. */
   readonly beatPhase?: () => number | null;
+  /** The song's beat count and bar length, for materials; null without music. */
+  readonly beat?: () => { beat: number; beatsPerBar: number } | null;
 }
 
 export interface StageStats {
@@ -52,6 +58,11 @@ export class Stage {
   private readonly autoTier: TierName;
   private pinned = false;
   private readonly batch: SpriteBatch;
+  /** Glyphs of one material title at a time, drawn with that material's program. */
+  private readonly materialBatch: SpriteBatch;
+  readonly materials = new StageMaterials();
+  /** Reused each frame for the material uniforms. */
+  private readonly materialFrame = { time: 0, beat: 0, beatPhase: 0, barPhase: 0, pulse: 0 };
   private readonly pen: StagePen;
   private layer: StageLayer | null = null;
   private titles: TitleActor[] = [];
@@ -91,6 +102,7 @@ export class Stage {
     this.palette = options.palette();
     this.atlas = new GlyphAtlas({ family: options.family, size: 48 });
     this.batch = new SpriteBatch(this.atlas);
+    this.materialBatch = new SpriteBatch(this.atlas);
     this.pen = createPen(
       this.batch,
       () => this.view,
@@ -174,9 +186,26 @@ export class Stage {
     this.wake();
   }
 
+  /** Adds or updates a material (ADR 0020); the program is rebuilt only if its source changed. */
+  useMaterial(compiled: CompiledMaterial, params: readonly MaterialParam[]): void {
+    this.materials.use(compiled, params);
+    this.wake();
+  }
+
+  /** The post material over the whole screen, or none. */
+  setPost(id: string | null): void {
+    this.materials.setPost(id);
+    this.wake();
+  }
+
+  setMaterialParam(id: string, param: string, value: number, to?: number, seconds?: number): void {
+    this.materials.setParam(id, param, value, to, seconds);
+    this.wake();
+  }
+
   title(
     text: string,
-    options: { seconds?: number; exit?: 'fade' | 'shatter'; color?: Rgb } = {},
+    options: { seconds?: number; exit?: 'fade' | 'shatter'; color?: Rgb; material?: string } = {},
   ): void {
     for (const t of this.titles) t.leave(this.particles, this.fx.reducedMotion);
     if (text.trim())
@@ -188,6 +217,7 @@ export class Stage {
           options.color ?? this.palette.ink,
           options.seconds ?? 3,
           options.exit ?? 'fade',
+          options.material ?? null,
         ),
       );
     this.wake();
@@ -255,12 +285,17 @@ export class Stage {
       this.titles.length > 0 ||
       this.cover !== null ||
       this.fx.active ||
-      this.layer !== null
+      this.layer !== null ||
+      this.materials.animating
     );
   }
 
   private get ambient(): boolean {
-    return this.background.preset !== 'none' || LOOKS[this.look].grain > 0;
+    return (
+      this.background.preset !== 'none' ||
+      LOOKS[this.look].grain > 0 ||
+      this.materials.postEntry !== undefined
+    );
   }
 
   /** Starts the frame loop if it isn't running. */
@@ -319,6 +354,7 @@ export class Stage {
       }
     }
     this.particles.update(storyDt);
+    this.materials.update(dt);
     for (const t of this.titles) t.update(storyDt, this.particles, this.fx.reducedMotion);
     this.titles = this.titles.filter((t) => !t.done);
     if (this.cover) {
@@ -355,26 +391,13 @@ export class Stage {
     const pulse = phase === null || this.fx.reducedMotion ? 0 : (1 - phase) ** 3;
     const look = LOOKS[this.look];
     const glow = look.glow;
-    for (const title of this.titles)
-      title.each(this.fx.reducedMotion, pulse, (g, alpha, lift, scale) => {
-        const { width, height } = this.atlas;
-        this.batch.push(
-          g.x,
-          g.y + lift,
-          g.hw * scale,
-          g.hh * scale,
-          0,
-          g.glyph.x / width,
-          g.glyph.y / height,
-          (g.glyph.x + g.glyph.w) / width,
-          (g.glyph.y + g.glyph.h) / height,
-          title.color,
-          alpha,
-          SHAPE.glyph,
-          0,
-          glow,
-        );
-      });
+    const reduced = this.fx.reducedMotion;
+    // A material title is drawn with its own program; one that failed to build stays plain.
+    for (const title of this.titles) {
+      const entry = this.materials.get(title.material, 'text');
+      if (!entry || !this.renderer.materialProgram(entry.compiled))
+        pushTitle(this.batch, this.atlas, title, reduced, pulse, glow);
+    }
 
     this.renderer.syncAtlas(this.atlas);
     this.renderer.begin(this.canvas.width, this.canvas.height);
@@ -388,6 +411,23 @@ export class Stage {
       { x: fx.offsetX, y: fx.offsetY, angle: fx.angle, zoom: fx.zoom },
       rich ? look.aberration : 0,
     );
+    drawMaterials({
+      renderer: this.renderer,
+      materials: this.materials,
+      titles: this.titles,
+      batch: this.materialBatch,
+      atlas: this.atlas,
+      frame: this.materialFrame,
+      view: this.view,
+      size: { w: this.canvas.width, h: this.canvas.height },
+      camera: { x: fx.offsetX, y: fx.offsetY, angle: fx.angle, zoom: fx.zoom },
+      time: this.time,
+      beat: this.options.beat?.() ?? null,
+      phase,
+      pulse,
+      glow,
+      reducedMotion: reduced,
+    });
     const overlay = overlayUniforms(this.look, fx, this.cover, this.palette.accent, rich);
     this.renderer.overlayPass(overlay, { w: this.canvas.width, h: this.canvas.height }, this.time);
   }

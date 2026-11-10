@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { checkMaterialRef } from './analyze-material.ts';
 import type { ActionBlock, StoryProject } from './schema.ts';
 import { isStageAction, STAGE_ACTIONS, type Title } from './stage.ts';
 
@@ -25,6 +26,7 @@ export function checkStageAction(block: ActionBlock, project: StoryProject, repo
     );
     return;
   }
+  checkMaterialRef(block.action, block.params ?? {}, project, report, block.id);
   if (block.action !== 'stage.title') return;
   const text = (parsed.data as Title).text;
   const written = project.languages.filter((l) => text[l]?.trim());

@@ -62,6 +62,7 @@ describe('reader labels', () => {
   it('lists every ending once', () => {
     expect(endingIds(story).sort()).toEqual([
       'dark',
+      'duelist',
       'family',
       'frozen',
       'scar',

@@ -14,6 +14,8 @@ export interface Usages {
   readonly characters: ReadonlyMap<string, number>;
   /** Tracks and sounds, by ID, from the audio blocks. */
   readonly audio: ReadonlyMap<string, number>;
+  /** Enemies, by ID, from the fight blocks. */
+  readonly enemies: ReadonlyMap<string, number>;
 }
 
 function formulasOf(block: Block): Formula[] {
@@ -40,6 +42,7 @@ export function countUsages(doc: StoryProject): Usages {
   const variables = new Map<string, number>();
   const characters = new Map<string, number>();
   const audio = new Map<string, number>();
+  const enemies = new Map<string, number>();
   const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
 
   walkBlocks(doc, ({ block }) => {
@@ -55,6 +58,11 @@ export function countUsages(doc: StoryProject): Usages {
       if (typeof id === 'string') bump(audio, id);
     }
     if (block.type === 'set' || block.type === 'input') bump(variables, block.var);
+    if (block.type === 'fight') {
+      bump(enemies, block.enemy);
+      if (block.track) bump(audio, block.track);
+      if (block.score) bump(variables, block.score);
+    }
     if (block.type === 'choice')
       for (const o of block.options) if (o.cost) bump(variables, o.cost.var);
     for (const formula of formulasOf(block)) {
@@ -77,5 +85,5 @@ export function countUsages(doc: StoryProject): Usages {
       }
     }
   });
-  return { variables, characters, audio };
+  return { variables, characters, audio, enemies };
 }

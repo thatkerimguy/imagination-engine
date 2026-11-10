@@ -30,6 +30,11 @@ export function childLists(block: Block): [string, Blocks][] {
         [listKey.success(block.id), block.success],
         [listKey.fail(block.id), block.fail],
       ];
+    case 'fight':
+      return [
+        [listKey.win(block.id), block.win],
+        [listKey.lose(block.id), block.lose],
+      ];
     case 'random':
       return block.branches.map((b) => [listKey.branch(b.id), b.then]);
     default:
@@ -65,6 +70,11 @@ function mapChildren(block: Block, map: ListMapper): Block {
       const success = mapList(listKey.success(block.id), block.success, map);
       const fail = mapList(listKey.fail(block.id), block.fail, map);
       return success === block.success && fail === block.fail ? block : { ...block, success, fail };
+    }
+    case 'fight': {
+      const win = mapList(listKey.win(block.id), block.win, map);
+      const lose = mapList(listKey.lose(block.id), block.lose, map);
+      return win === block.win && lose === block.lose ? block : { ...block, win, lose };
     }
     case 'random': {
       let changed = false;

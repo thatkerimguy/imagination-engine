@@ -46,3 +46,17 @@ describe('sfxr', () => {
     expect(sfxrParamsSchema.safeParse(p).success).toBe(true);
   });
 });
+
+describe('procedural drums', () => {
+  it('render finite, audible, short voices', async () => {
+    const { renderDrums } = await import('./procedural.ts');
+    const drums = renderDrums();
+    for (const [name, samples] of Object.entries(drums)) {
+      expect(samples.length, name).toBeGreaterThan(500);
+      expect(samples.every(Number.isFinite), name).toBe(true);
+      const peak = samples.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+      expect(peak, name).toBeGreaterThan(0.05);
+      expect(peak, name).toBeLessThanOrEqual(1);
+    }
+  });
+});

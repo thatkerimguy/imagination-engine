@@ -9,6 +9,7 @@ import { AudioEditor } from './blocks/AudioEditors.tsx';
 import { StageEditor } from './blocks/StageEditors.tsx';
 import { focusBlock, useWrite } from './context.ts';
 import { ChoiceEditor } from './blocks/ChoiceEditor.tsx';
+import { FightEditor } from './blocks/FightEditor.tsx';
 import { CheckEditor, IfEditor, RandomEditor } from './blocks/BranchEditors.tsx';
 import { FlowEditor, SetEditor } from './blocks/LogicEditors.tsx';
 import {
@@ -47,6 +48,8 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
       return <IfEditor block={block} />;
     case 'check':
       return <CheckEditor block={block} />;
+    case 'fight':
+      return <FightEditor block={block} />;
     case 'random':
       return <RandomEditor block={block} />;
     case 'set':

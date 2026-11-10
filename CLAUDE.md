@@ -33,6 +33,7 @@ packages/story        story schema, formulas, text markup, the interpreter (no D
 packages/present      DOM presenter: layouts, effects, typewriter, choices (no UI framework)
 packages/audio        mixer, music + conductor, beat analysis worker, sfxr, voices, ambience, catalogues, Spotify/YouTube
 packages/stage        GPU stage on WebGL2: SDF glyph atlas, particles, titles, screen FX, looks, tiers
+packages/rhythm       rhythm fights: chart director, judge, fight state (pure), and the fight presenter
 packages/samples      sample stories as JSON (The Rain Alley), with an auto-play test
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD

@@ -90,6 +90,17 @@
       "type": "number",
       "scope": "persistent",
       "description": "Counts playthroughs, so the story can remember earlier ones."
+    },
+    {
+      "id": "duel",
+      "name": {
+        "en": "Duel score",
+        "tr": "Düello puanı"
+      },
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 100
     }
   ],
   "characters": [
@@ -881,6 +892,82 @@
                   ]
                 },
                 {
+                  "id": "f_duel",
+                  "text": {
+                    "id": "f_duel",
+                    "en": "Meet them blow for blow",
+                    "tr": "Darbeye darbeyle karşılık ver"
+                  },
+                  "then": [
+                    {
+                      "id": "f_duel_line",
+                      "type": "narration",
+                      "text": {
+                        "id": "f_duel_line",
+                        "en": "You find the rhythm of the rain, and the stranger's.",
+                        "tr": "Yağmurun ritmini buluyorsun, yabancınınkini de."
+                      }
+                    },
+                    {
+                      "id": "f_duel_fight",
+                      "type": "fight",
+                      "enemy": "stranger_foe",
+                      "mode": "call",
+                      "difficulty": "easy",
+                      "bars": 12,
+                      "score": "duel",
+                      "win": [
+                        {
+                          "id": "f_duel_sparks",
+                          "type": "action",
+                          "action": "stage.burst",
+                          "params": {
+                            "preset": "sparks",
+                            "color": "gold"
+                          }
+                        },
+                        {
+                          "id": "f_duel_won",
+                          "type": "narration",
+                          "text": {
+                            "id": "f_duel_won",
+                            "en": "The stranger's blade skids across the cobbles. They raise empty hands. Your score: {duel}.",
+                            "tr": "Yabancının kılıcı parke taşlarında kayıyor. Boş ellerini kaldırıyor. Puanın: {duel}."
+                          }
+                        },
+                        {
+                          "id": "f_duel_win_end",
+                          "type": "end",
+                          "ending": {
+                            "id": "duelist",
+                            "title": {
+                              "id": "end_duelist",
+                              "en": "In time with the rain",
+                              "tr": "Yağmurla aynı ritimde"
+                            }
+                          }
+                        }
+                      ],
+                      "lose": [
+                        {
+                          "id": "f_duel_lost",
+                          "type": "narration",
+                          "text": {
+                            "id": "f_duel_lost",
+                            "en": "You lose the beat, and then your footing.",
+                            "tr": "Ritmi kaybediyorsun, ardından dengeni."
+                          }
+                        },
+                        {
+                          "id": "f_duel_lose_end",
+                          "type": "jump",
+                          "to": "escaped"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
                   "id": "f_freeze",
                   "text": {
                     "id": "f_freeze",
@@ -1082,6 +1169,84 @@
               }
             }
           ]
+        }
+      ]
+    }
+  ],
+  "enemies": [
+    {
+      "id": "stranger_foe",
+      "name": {
+        "en": "The stranger",
+        "tr": "Yabancı"
+      },
+      "hp": 100,
+      "attack": 12,
+      "color": "red",
+      "presence": [
+        {
+          "en": "rain",
+          "tr": "yağmur"
+        },
+        {
+          "en": "steel",
+          "tr": "çelik"
+        },
+        {
+          "en": "hood",
+          "tr": "kukuleta"
+        },
+        {
+          "en": "breath",
+          "tr": "nefes"
+        }
+      ],
+      "moves": [
+        {
+          "id": "cut",
+          "name": {
+            "en": "Overhead cut",
+            "tr": "Yukarıdan kesik"
+          },
+          "pattern": "jab",
+          "answer": "parry"
+        },
+        {
+          "id": "twin",
+          "name": {
+            "en": "Twin cut",
+            "tr": "Çifte kesik"
+          },
+          "pattern": "double",
+          "answer": "parry"
+        },
+        {
+          "id": "feint",
+          "name": {
+            "en": "Feint",
+            "tr": "Aldatma"
+          },
+          "pattern": "feint",
+          "answer": "parry",
+          "power": 1.5
+        },
+        {
+          "id": "sweep",
+          "name": {
+            "en": "Low sweep",
+            "tr": "Alçak süpürme"
+          },
+          "pattern": "sweep",
+          "answer": "dodge"
+        },
+        {
+          "id": "flurry",
+          "name": {
+            "en": "Flurry",
+            "tr": "Kesik yağmuru"
+          },
+          "pattern": "flurry",
+          "answer": "parry"
         }
       ]
     }

@@ -1,4 +1,5 @@
 import { defineAction, defineModule, type EngineModule } from '@ie/core';
+import { fightResultSchema, type FightResult } from '@ie/story';
 import { z } from 'zod';
 import type { SlotId } from './saves.ts';
 
@@ -14,6 +15,7 @@ export interface StoryActionsHost {
   advance(): void;
   choose(optionId: string): void;
   submit(answer: string): void;
+  fight(result: FightResult): void;
   back(): void;
   rewind(to: number): void;
   restart(): void;
@@ -59,6 +61,14 @@ export function createStoryModule(host: () => StoryActionsHost | null): EngineMo
           description: 'Answer the question on screen.',
           params: z.object({ answer: z.string().max(200) }),
           run: ({ answer }) => call((s) => s.submit(answer)),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.fight',
+          description: 'End the fight on screen with a result.',
+          params: fightResultSchema,
+          run: (result) => call((s) => s.fight(result)),
         }),
       );
       actions.register(

@@ -3,7 +3,7 @@ import { LOCALES } from '@ie/i18n';
 import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { z } from 'zod';
-import { TEXT_SIZES, VOLUME_BUSES, type PlayerSettings } from './settings.ts';
+import { FIGHT_ASSISTS, TEXT_SIZES, VOLUME_BUSES, type PlayerSettings } from './settings.ts';
 
 export const PANELS = ['settings', 'diagnostics', 'history', 'saves'] as const;
 export type Panel = (typeof PANELS)[number];
@@ -74,6 +74,22 @@ export function createShellModule(host: ShellHost): EngineModule {
           description: 'Turn time limits on choices on or off.',
           params: z.object({ enabled: z.boolean() }),
           run: ({ enabled }) => update({ timers: enabled }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.fightAssist.set',
+          description: 'Choose how much help rhythm fights give.',
+          params: z.object({ assist: z.enum(FIGHT_ASSISTS) }),
+          run: ({ assist }) => update({ fightAssist: assist }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.haptics.set',
+          description: 'Turn vibration in fights on or off.',
+          params: z.object({ enabled: z.boolean() }),
+          run: ({ enabled }) => update({ haptics: enabled }),
         }),
       );
       actions.register(

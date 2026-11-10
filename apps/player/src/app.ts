@@ -9,6 +9,7 @@ import {
 import { PerfHud } from '@ie/diagnostics';
 import { LOCALE_INFO, createTranslator, loadHyphenators, type Locale } from '@ie/i18n';
 import { StoryPresenter, type PresenterOptions } from '@ie/present';
+import { FightRunner, type Assist } from '@ie/rhythm';
 import { samples } from '@ie/samples';
 import { createStageHost, createStageModule } from '@ie/stage';
 import { StoryLoadError, compileStory, type CompiledStory } from '@ie/story';
@@ -22,12 +23,20 @@ import {
   VOLUME_BUSES,
   loadSettings,
   saveSettings,
+  type FightAssist,
   type PlayerSettings,
 } from './settings.ts';
 import { createShellModule } from './shell-module.ts';
 import { StoryController } from './story/controller.ts';
 import { createStoryModule } from './story/module.ts';
 import { StorySession } from './story/session.ts';
+
+const ASSISTS: Readonly<Record<FightAssist, Assist>> = {
+  off: {},
+  wide: { wide: true },
+  noFail: { noFail: true },
+  auto: { auto: true },
+};
 
 const ADVANCE_KEYS = new Set([' ', 'Enter', 'ArrowRight', 'ArrowDown', 'PageDown']);
 const BACK_KEYS = new Set(['ArrowLeft', 'Backspace', 'PageUp']);
@@ -84,6 +93,18 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     root: () => story?.presenter.element ?? null,
     locale: () => settings.locale,
     beatPhase: () => audio.beatPhase(),
+  });
+  const fights = new FightRunner({
+    audio,
+    stage,
+    host: () => document.body,
+    settings: () => ({
+      locale: settings.locale,
+      assist: ASSISTS[settings.fightAssist],
+      haptics: settings.haptics,
+      tapLatency: 0, // the Player has no tap-timing test yet
+    }),
+    resolve: (result) => run('story.fight', result),
   });
   let hyphenate: PresenterOptions['hyphenate'];
   const hyphenation = loadHyphenators().then(
@@ -194,10 +215,12 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         advance: () => run('story.advance'),
         restart: () => run('story.restart'),
         typed: (speaker, text) => audio.typed(speaker, text),
+        fight: (beat) => fights.start(session.runtime, beat),
       },
       presenterOptions(settings),
     );
     story = new StoryController(session, presenter, kernel.events, (scene) => {
+      fights.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
     });
@@ -229,7 +252,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       run('ui.menu.set', { open: !menu.isOpen });
       return;
     }
-    if (menu.isOpen || target?.closest('input, textarea, select')) return;
+    // A fight reads its own keys (arrows dodge there, not step back).
+    if (menu.isOpen || fights.running || target?.closest('input, textarea, select')) return;
     if (event.key === '`') {
       run('ui.hud.set', { visible: !settings.hud });
     } else if (story?.presenter.handleKey(event.key)) {

@@ -13,6 +13,7 @@ import {
 import type { Rgb } from './actors.ts';
 import type { FxState } from './fx.ts';
 import { Stage, type StagePalette } from './stage.ts';
+import type { StageLayer } from './layer.ts';
 import { detectTier, type TierName } from './tiers.ts';
 
 export interface StageDirectorOptions {
@@ -46,6 +47,13 @@ const NAMED: Readonly<Record<Exclude<StageColor, 'ink' | 'accent'>, Rgb>> = {
   blue: [0.35, 0.6, 1],
 };
 
+/** A named stage colour: the theme's ink or accent, or a fixed hue. */
+export function stageColor(name: StageColor, palette: StagePalette): Rgb {
+  if (name === 'ink') return palette.ink;
+  if (name === 'accent') return palette.accent;
+  return NAMED[name];
+}
+
 /**
  * Turns stage actions into stage calls, and builds the stage only when a novel first uses it, so a
  * novel without stage blocks never creates a GPU context. Backgrounds and looks are scene state:
@@ -63,10 +71,7 @@ export class StageDirector {
   }
 
   private color(name: StageColor | undefined, palette: StagePalette): Rgb | undefined {
-    if (!name) return undefined;
-    if (name === 'ink') return palette.ink;
-    if (name === 'accent') return palette.accent;
-    return NAMED[name];
+    return name ? stageColor(name, palette) : undefined;
   }
 
   /** The stage, created on first use; null where WebGL2 is missing (the story goes on without it). */
@@ -169,6 +174,13 @@ export class StageDirector {
     if (!this.canvas) return;
     if (parent) parent.append(this.canvas);
     else this.canvas.remove();
+  }
+
+  /** Draws a layer every frame (a rhythm fight); false when there is no stage to draw on. */
+  setLayer(layer: StageLayer | null): boolean {
+    const stage = layer ? this.ensure() : this.current;
+    stage?.setLayer(layer);
+    return stage !== null;
   }
 
   /** Pins a quality tier for previewing, or returns to automatic with null. */

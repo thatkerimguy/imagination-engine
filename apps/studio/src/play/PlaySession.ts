@@ -1,5 +1,8 @@
+import type { AudioDirector } from '@ie/audio';
 import type { Locale } from '@ie/i18n';
 import { StoryPresenter } from '@ie/present';
+import { FightRunner } from '@ie/rhythm';
+import type { StageDirector } from '@ie/stage';
 import { StoryRuntime, type CompiledStory, type StoryState } from '@ie/story';
 
 /** What a playthrough needs from the Studio's sound (see audio/studio-audio.ts). */
@@ -10,6 +13,14 @@ export interface PlayAudio {
   stopAll(): void;
 }
 
+/** What fights need in Play: the sound, the stage, and the panel the fight screen covers. */
+export interface PlayFights {
+  readonly audio: AudioDirector;
+  readonly stage: StageDirector;
+  readonly host: () => HTMLElement | null;
+  readonly tapLatency: () => number;
+}
+
 /**
  * A throwaway playthrough for the Studio's Play view: the same runtime and presenter the Player
  * uses, without saves. Back steps through an in-memory list of states.
@@ -18,6 +29,8 @@ export class PlaySession {
   readonly presenter: StoryPresenter;
   private runtime: StoryRuntime;
   private readonly history: StoryState[] = [];
+  private readonly fights: FightRunner | null;
+  private locale: Locale;
 
   constructor(
     private readonly story: CompiledStory,
@@ -26,8 +39,25 @@ export class PlaySession {
     /** Called after every step with whether Back can go further. */
     private readonly onChange: (canBack: boolean) => void,
     private readonly audio?: PlayAudio,
+    fights?: PlayFights,
   ) {
+    this.locale = locale;
     this.runtime = this.create();
+    this.fights = fights
+      ? new FightRunner({
+          audio: fights.audio,
+          stage: fights.stage,
+          host: fights.host,
+          contained: true,
+          settings: () => ({
+            locale: this.locale,
+            assist: {},
+            haptics: false,
+            tapLatency: fights.tapLatency(),
+          }),
+          resolve: (result) => this.act(() => this.runtime.resolveFight(result)),
+        })
+      : null;
     this.presenter = new StoryPresenter(
       this.runtime,
       {
@@ -35,12 +65,18 @@ export class PlaySession {
         submit: (answer) => this.act(() => this.runtime.submit(answer)),
         restart: () => this.restart(),
         advance: () => this.advance(),
+        fight: (beat) => this.fights?.start(this.runtime, beat),
         ...(audio
           ? { typed: (speaker: string | null, text: string) => audio.typed(speaker, text) }
           : {}),
       },
       { locale, speed: 'normal', timers: true },
     );
+  }
+
+  /** True while a fight has the screen (its keys are its own). */
+  get fighting(): boolean {
+    return this.fights?.running ?? false;
   }
 
   get canBack(): boolean {
@@ -66,6 +102,7 @@ export class PlaySession {
     const state = this.history.pop();
     if (!state) return;
     this.runtime.restore(state);
+    this.fights?.sync(this.runtime);
     this.presenter.redraw();
     this.audio?.applyScene(this.runtime.scene);
     this.onChange(this.canBack);
@@ -73,6 +110,7 @@ export class PlaySession {
 
   restart(): void {
     this.history.length = 0;
+    this.fights?.stop();
     this.runtime = this.create();
     this.presenter.attach(this.runtime);
     this.audio?.applyScene({});
@@ -81,10 +119,12 @@ export class PlaySession {
   }
 
   setLocale(locale: Locale): void {
+    this.locale = locale;
     this.presenter.setOptions({ locale, speed: 'normal', timers: true });
   }
 
   dispose(): void {
+    this.fights?.stop();
     this.presenter.dispose();
     this.audio?.stopAll();
   }

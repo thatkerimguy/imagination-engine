@@ -3,7 +3,13 @@ import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { h, segmented } from '../dom.ts';
 import type { MessageKey } from '../messages.ts';
-import { TEXT_SIZES, VOLUME_BUSES, type PlayerSettings, type VolumeBus } from '../settings.ts';
+import {
+  FIGHT_ASSISTS,
+  TEXT_SIZES,
+  VOLUME_BUSES,
+  type PlayerSettings,
+  type VolumeBus,
+} from '../settings.ts';
 
 type Run = (actionId: string, params: unknown) => void;
 
@@ -98,6 +104,19 @@ export function fillSettings(
     field(
       t('settings.timers'),
       onOff(t, s.timers, (enabled) => run('ui.timers.set', { enabled }), t('settings.timers')),
+    ),
+    field(
+      t('settings.fightAssist'),
+      segmented(
+        FIGHT_ASSISTS.map((v) => ({ value: v, label: t(`settings.fightAssist.${v}`) })),
+        s.fightAssist,
+        (assist) => run('ui.fightAssist.set', { assist }),
+        t('settings.fightAssist'),
+      ),
+    ),
+    field(
+      t('settings.haptics'),
+      onOff(t, s.haptics, (enabled) => run('ui.haptics.set', { enabled }), t('settings.haptics')),
     ),
     ...VOLUME_BUSES.map((bus) => volume(t, s, bus, run)),
     field(

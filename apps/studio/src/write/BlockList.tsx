@@ -19,6 +19,7 @@ export function useNewBlock(): (type: MenuBlockType) => Block {
       passage: allPassages(doc).find((p) => p.id !== doc.start)?.id ?? doc.start,
       track: doc.audio?.tracks[0]?.id,
       sound: doc.audio?.sounds[0]?.id,
+      enemy: doc.enemies?.[0]?.id,
     });
 }
 

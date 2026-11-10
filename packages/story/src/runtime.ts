@@ -4,9 +4,12 @@ import { defaultValue, listKey, type CompiledStory } from './compile.ts';
 import { optionView, timerFor, type OptionContext } from './choices.ts';
 import { nextRandom, parseDice } from './dice.ts';
 import { evaluate, truthy, valueText, type EvalContext } from './formula.ts';
+import type { FightResult } from './fight.ts';
 import type { Block, Formula, LocalText, Scope } from './schema.ts';
 import { reconcileState } from './reconcile.ts';
+import { ENDINGS_KEY, type RuntimeOptions, type StoryHost } from './runtime-options.ts';
 import {
+  emptyState,
   pageStart,
   rememberScene,
   type Beat,
@@ -18,26 +21,10 @@ import {
 import { applyOperation, coerceValue } from './variables.ts';
 import { renderMarkup, type Piece, type TextContext } from './text.ts';
 
-export interface StoryHost {
-  /** Runs a module action from an Action block (through the kernel's action bus). */
-  runAction?(id: string, params: unknown): void;
-  /** Persistent variables or unlocked endings changed; store them outside the save slots. */
-  onPersistentChange?(values: Readonly<Record<string, Value>>): void;
-}
-
-export interface RuntimeOptions {
-  readonly state?: StoryState;
-  readonly persistent?: Readonly<Record<string, Value>>;
-  readonly seed?: number;
-  /** Passage to begin a new playthrough at (the Studio's "Play from here"); the story start if unset. */
-  readonly start?: string;
-  readonly host?: StoryHost;
-}
+export { ENDINGS_KEY, type RuntimeOptions, type StoryHost } from './runtime-options.ts';
 
 const LOG_LIMIT = 400;
 const STEP_LIMIT = 10_000;
-/** Persistent key that lists the endings reached in any playthrough. */
-export const ENDINGS_KEY = '__endings';
 
 /**
  * The story interpreter. Pure and DOM-free: the Player, the Studio's Play view and an
@@ -106,7 +93,7 @@ export class StoryRuntime {
     return this.s.log.slice(pageStart(this.s.log));
   }
 
-  /** The beat waiting for the reader (a line, choice, input, pause, check or the end). */
+  /** The beat waiting for the reader (a line, choice, input, pause, check, fight or the end). */
   get waiting(): Beat | null {
     return this.s.waiting === null ? null : (this.s.log[this.s.waiting] ?? null);
   }
@@ -147,8 +134,8 @@ export class StoryRuntime {
   advance(): Beat[] {
     if (this.s.ended) return this.takeBeats();
     const current = this.waiting;
-    if (current?.kind === 'choice' || current?.kind === 'input') {
-      throw new Error('The story is waiting for a choice or an answer.');
+    if (current?.kind === 'choice' || current?.kind === 'input' || current?.kind === 'fight') {
+      throw new Error('The story is waiting for a choice, an answer or a fight.');
     }
     this.s.waiting = null;
     for (let steps = 0; ; steps++) {
@@ -207,6 +194,22 @@ export class StoryRuntime {
     this.resetScope('temp');
     this.record({ kind: 'answered', blockId: beat.blockId, value });
     this.s.waiting = null;
+  }
+
+  /** Ends the waiting fight: stores the score, then plays its win or lose blocks. */
+  resolveFight(result: FightResult): void {
+    const beat = this.waiting;
+    if (beat?.kind !== 'fight') throw new Error('There is no fight waiting.');
+    const info = this.story.blocks.get(beat.blockId);
+    if (info?.block.type !== 'fight') throw new Error('The fight is no longer in the story.');
+    const score = Math.round(Math.max(0, Math.min(100, result.score)));
+    if (info.block.score) this.write(info.block.score, score);
+    this.record({ kind: 'fought', blockId: beat.blockId, won: result.won, score });
+    this.s.waiting = null;
+    this.push({
+      list: result.won ? listKey.win(beat.blockId) : listKey.lose(beat.blockId),
+      index: 0,
+    });
   }
 
   // --- execution -------------------------------------------------------------------------
@@ -322,6 +325,8 @@ export class StoryRuntime {
             this.writePersistent(ENDINGS_KEY, [...list, block.ending.id]);
         }
         return this.finish(block);
+      case 'fight':
+        return this.wait({ kind: 'fight', blockId: block.id });
       case 'action':
         this.s.scene = rememberScene(this.s.scene, block.action, block.params ?? {});
         this.host.runAction?.(block.action, block.params ?? {});
@@ -438,19 +443,7 @@ export class StoryRuntime {
   }
 
   private fresh(seed?: number, start?: string): Mutable<StoryState> {
-    const s: Mutable<StoryState> = {
-      v: 1,
-      frames: [],
-      vars: {},
-      visits: {},
-      chosen: {},
-      rng: (seed ?? Math.floor(Math.random() * 2 ** 32)) >>> 0,
-      chapter: null,
-      log: [],
-      waiting: null,
-      ended: false,
-    };
-    this.s = s;
+    this.s = emptyState(seed);
     this.enter(start ?? this.story.project.start);
     return this.s;
   }

@@ -11,6 +11,7 @@ import { useDoc, useProject } from '../project/store.ts';
 import { allPassages } from '../project/tree.ts';
 import { useStudio, useT } from '../store.ts';
 import { ProblemText } from '../write/ProblemText.tsx';
+import { readLatency } from '../sound/format.ts';
 import { attachStage, setStageLocale, stage } from '../stage/studio-stage.ts';
 
 const INTERACTIVE = 'button, input, textarea, select, a, label';
@@ -57,7 +58,13 @@ export function PlayView() {
 
   useEffect(() => {
     if (!('story' in result) || !host.current || !frame.current) return;
-    const play = new PlaySession(result.story, start, locale, setCanBack, playAudio);
+    const panel = frame.current;
+    const play = new PlaySession(result.story, start, locale, setCanBack, playAudio, {
+      audio: director,
+      stage,
+      host: () => panel,
+      tapLatency: readLatency,
+    });
     session.current = play;
     host.current.replaceChildren(play.presenter.element);
     const detach = attachStage(frame.current, play.presenter.element, locale);
@@ -81,6 +88,7 @@ export function PlayView() {
       const play = session.current;
       if (
         !play ||
+        play.fighting ||
         (event.target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')
       )
         return;

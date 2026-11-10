@@ -1,4 +1,5 @@
 import { defineCatalogs } from '@ie/i18n';
+import { fightStudioMessages } from './messages-fight.ts';
 import { projectMessages } from './messages-project.ts';
 import { soundMessages } from './messages-sound.ts';
 import { stageMessages } from './messages-stage.ts';
@@ -109,6 +110,7 @@ export const messages = {
     ...projectMessages.en,
     ...soundMessages.en,
     ...stageMessages.en,
+    ...fightStudioMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -116,6 +118,7 @@ export const messages = {
     ...projectMessages.tr,
     ...soundMessages.tr,
     ...stageMessages.tr,
+    ...fightStudioMessages.tr,
   },
 };
 

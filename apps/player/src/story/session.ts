@@ -1,5 +1,11 @@
 import type { KeyValueStore, Value } from '@ie/core';
-import { StoryRuntime, type Beat, type CompiledStory, type StoryState } from '@ie/story';
+import {
+  StoryRuntime,
+  type Beat,
+  type CompiledStory,
+  type FightResult,
+  type StoryState,
+} from '@ie/story';
 import { RewindHistory } from './history.ts';
 import {
   readPersistent,
@@ -91,6 +97,11 @@ export class StorySession {
 
   submit(answer: string): Beat[] {
     return this.act(() => this.runtime.submit(answer));
+  }
+
+  /** Ends the waiting fight with its result; the story branches on it. */
+  fight(result: FightResult): Beat[] {
+    return this.act(() => this.runtime.resolveFight(result));
   }
 
   /** Steps back one reader action. */

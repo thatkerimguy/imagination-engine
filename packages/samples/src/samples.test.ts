@@ -18,6 +18,10 @@ function playthrough(seed: number) {
       runtime.choose(open[Math.floor(roll.value * open.length)]?.id ?? '');
     } else if (beat.kind === 'input') {
       runtime.submit(seed % 2 ? 'Ayşe' : '');
+    } else if (beat.kind === 'fight') {
+      const roll = nextRandom(pick);
+      pick = roll.state;
+      runtime.resolveFight({ won: roll.value < 0.5, score: Math.round(roll.value * 100) });
     }
   }
   throw new Error(`Seed ${seed} never reached an ending.`);
@@ -38,6 +42,14 @@ describe('The Rain Alley sample', () => {
       endings.add(ending ?? '');
       expect(runtime.persistentValues[ENDINGS_KEY]).toEqual([ending]);
     }
-    expect([...endings].sort()).toEqual(['dark', 'family', 'frozen', 'scar', 'victory', 'words']);
+    expect([...endings].sort()).toEqual([
+      'dark',
+      'duelist',
+      'family',
+      'frozen',
+      'scar',
+      'victory',
+      'words',
+    ]);
   });
 });

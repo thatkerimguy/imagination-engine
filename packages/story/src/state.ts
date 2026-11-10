@@ -64,6 +64,13 @@ export type Beat =
       readonly success: boolean;
       readonly values: Readonly<Record<string, Value>>;
     }
+  | { readonly kind: 'fight'; readonly blockId: string }
+  | {
+      readonly kind: 'fought';
+      readonly blockId: string;
+      readonly won: boolean;
+      readonly score: number;
+    }
   | { readonly kind: 'end'; readonly blockId: string | null; readonly endingId?: string };
 
 /** One level of the execution stack: a block list and the next block to run in it. */
@@ -163,6 +170,8 @@ export const beatSchema: z.ZodType<Beat> = z.discriminatedUnion('kind', [
     success: z.boolean(),
     values,
   }),
+  z.object({ kind: z.literal('fight'), blockId: z.string() }),
+  z.object({ kind: z.literal('fought'), blockId: z.string(), won: z.boolean(), score: z.number() }),
   z.object({
     kind: z.literal('end'),
     blockId: z.string().nullable(),
@@ -198,4 +207,20 @@ export function pageStart(log: readonly Beat[]): number {
     if (beat?.kind === 'passage' && !beat.keepPage) return i;
   }
   return 0;
+}
+
+/** A playthrough before its first passage; `seed` fixes its dice (a random seed when unset). */
+export function emptyState(seed?: number): Mutable<StoryState> {
+  return {
+    v: 1,
+    frames: [],
+    vars: {},
+    visits: {},
+    chosen: {},
+    rng: (seed ?? Math.floor(Math.random() * 2 ** 32)) >>> 0,
+    chapter: null,
+    log: [],
+    waiting: null,
+    ended: false,
+  };
 }

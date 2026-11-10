@@ -14,15 +14,16 @@
     "@ie/diagnostics": "workspace:*",
     "@ie/i18n": "workspace:*",
     "@ie/present": "workspace:*",
+    "@ie/rhythm": "workspace:*",
     "@ie/samples": "workspace:*",
+    "@ie/stage": "workspace:*",
     "@ie/story": "workspace:*",
     "@ie/ui-kit": "workspace:*",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zod": "^4.6.7",
-    "zustand": "^5.1.0",
-    "@ie/stage": "workspace:*"
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

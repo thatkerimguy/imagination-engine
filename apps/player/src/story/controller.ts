@@ -1,6 +1,6 @@
 import type { EngineEvents, EventBus } from '@ie/core';
 import type { StoryPresenter } from '@ie/present';
-import type { Beat } from '@ie/story';
+import type { Beat, FightResult } from '@ie/story';
 import type { StoryActionsHost } from './module.ts';
 import type { SlotId } from './saves.ts';
 import type { StorySession } from './session.ts';
@@ -40,6 +40,11 @@ export class StoryController implements StoryActionsHost {
 
   submit(answer: string): void {
     this.show(this.session.submit(answer));
+  }
+
+  fight(result: FightResult): void {
+    this.show(this.session.fight(result));
+    this.syncScene();
   }
 
   back(): void {

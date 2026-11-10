@@ -1,5 +1,8 @@
 import { z } from 'zod';
+import { STAGE_COLORS } from './colors.ts';
 import { labelSchema } from './schema.ts';
+
+export { STAGE_COLORS, type StageColor } from './colors.ts';
 
 /*
  * Params of the stage actions (ADR 0015). Like audio, `.set` actions are scene state the runtime
@@ -14,8 +17,6 @@ export type StageLook = (typeof STAGE_LOOKS)[number];
 
 export const STAGE_BURSTS = ['burst', 'sparks'] as const;
 export const STAGE_TRANSITIONS = ['dissolve', 'ink', 'wipe'] as const;
-export const STAGE_COLORS = ['ink', 'accent', 'white', 'red', 'gold', 'blue'] as const;
-export type StageColor = (typeof STAGE_COLORS)[number];
 
 const unit = z.number().min(0).max(1);
 

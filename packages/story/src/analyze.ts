@@ -1,5 +1,6 @@
 import { parseDice } from './dice.ts';
 import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
+import { checkEnemies, checkFightBlock } from './analyze-fight.ts';
 import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
@@ -41,6 +42,8 @@ export const listKey = {
   else: (ifId: string) => `e:${ifId}`,
   success: (checkId: string) => `s:${checkId}`,
   fail: (checkId: string) => `f:${checkId}`,
+  win: (fightId: string) => `w:${fightId}`,
+  lose: (fightId: string) => `l:${fightId}`,
 };
 
 export interface Analysis {
@@ -76,6 +79,8 @@ export function leaves(list: readonly Block[]): boolean {
         return block.branches.every((b) => leaves(b.then));
       case 'check':
         return leaves(block.success) && leaves(block.fail);
+      case 'fight':
+        return leaves(block.win) && leaves(block.lose);
       default:
         return false;
     }
@@ -318,6 +323,12 @@ export function analyzeProject(project: StoryProject): Analysis {
         case 'end':
           if (block.ending) useText(block.ending.title, block.id);
           break;
+        case 'fight':
+          checkFightBlock(block, project, report);
+          if (block.score) needVar(block.score, block.id, 'number');
+          walk(block.win, listKey.win(block.id), passageId);
+          walk(block.lose, listKey.lose(block.id), passageId);
+          break;
         case 'action':
           checkAudioAction(block, project, report);
           checkStageAction(block, project, report);
@@ -331,6 +342,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   for (const { passage } of passages.values())
     walk(passage.blocks, listKey.passage(passage.id), passage.id);
   checkAudioLibrary(project, report);
+  checkEnemies(project, report);
 
   for (const refs of pendingRefs) {
     for (const id of refs.passages) {

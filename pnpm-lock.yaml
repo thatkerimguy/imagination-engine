@@ -226,6 +226,9 @@ importers:
       '@ie/present':
         specifier: workspace:*
         version: link:../../packages/present
+      '@ie/rhythm':
+        specifier: workspace:*
+        version: link:../../packages/rhythm
       '@ie/samples':
         specifier: workspace:*
         version: link:../../packages/samples
@@ -269,6 +272,9 @@ importers:
       '@ie/present':
         specifier: workspace:*
         version: link:../../packages/present
+      '@ie/rhythm':
+        specifier: workspace:*
+        version: link:../../packages/rhythm
       '@ie/samples':
         specifier: workspace:*
         version: link:../../packages/samples
@@ -370,6 +376,21 @@ importers:
       '@ie/samples':
         specifier: workspace:*
         version: link:../samples
+
+  packages/rhythm:
+    dependencies:
+      '@ie/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@ie/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@ie/stage':
+        specifier: workspace:*
+        version: link:../stage
+      '@ie/story':
+        specifier: workspace:*
+        version: link:../story
 
   packages/samples:
     devDependencies:

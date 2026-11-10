@@ -1,7 +1,7 @@
 import type { Locale } from '@ie/i18n';
 import type { Block, Label, StoryProject, VariableType } from '@ie/story';
 import { useMemo } from 'react';
-import { cloneBlock, newCharacter, newPassage, newVariable } from '../project/factory.ts';
+import { cloneBlock, newCharacter, newEnemy, newPassage, newVariable } from '../project/factory.ts';
 import { currentPassageId, useProject } from '../project/store.ts';
 import {
   findBlock,
@@ -75,6 +75,11 @@ export function useEditor() {
         const character = newCharacter(name);
         edit((doc) => ({ ...doc, characters: [...doc.characters, character] }));
         return character.id;
+      },
+      addEnemy(name: Label): string {
+        const enemy = newEnemy(name);
+        edit((doc) => ({ ...doc, enemies: [...(doc.enemies ?? []), enemy] }));
+        return enemy.id;
       },
       addVariable(type: VariableType, name: Label): string {
         const variable = newVariable(type, name);

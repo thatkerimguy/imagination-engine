@@ -23,6 +23,8 @@ export const presentMessages = defineCatalogs({
     'end.count': 'Endings found: {count} of {total}',
     'end.restart': 'Start over',
     'chat.typing': '{name} is typing',
+    'fight.won': 'You beat {name} · score {score}',
+    'fight.lost': '{name} beat you · score {score}',
   },
   tr: {
     'lock.atLeast': '{label} {value} gerekli',
@@ -45,6 +47,8 @@ export const presentMessages = defineCatalogs({
     'end.count': 'Bulunan sonlar: {count} / {total}',
     'end.restart': 'Baştan başla',
     'chat.typing': '{name} yazıyor',
+    'fight.won': '{name} yenildi · puan {score}',
+    'fight.lost': '{name} seni yendi · puan {score}',
   },
 });
 

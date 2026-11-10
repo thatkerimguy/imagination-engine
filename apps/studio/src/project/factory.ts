@@ -6,6 +6,7 @@ import {
   type BlockType,
   type CharacterDef,
   type ChoiceOption,
+  type EnemyDef,
   type Label,
   type LocalText,
   type Passage,
@@ -35,6 +36,7 @@ export const BLOCK_MENU = [
   'choice',
   'if',
   'check',
+  'fight',
   'input',
   'set',
   'jump',
@@ -74,6 +76,7 @@ export interface BlockDefaults {
   readonly passage?: string;
   readonly track?: string;
   readonly sound?: string;
+  readonly enemy?: string;
 }
 
 /** A new block of a type, filled with sensible defaults so it is valid straight away. */
@@ -90,6 +93,8 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
       return { id, type, branches: [{ id: createId('br'), when: true, then: [] }] };
     case 'check':
       return { id, type, dice: '1d20', target: 10, success: [], fail: [] };
+    case 'fight':
+      return { id, type, enemy: defaults.enemy ?? '', win: [], lose: [] };
     case 'input':
       return { id, type, var: defaults.textVariable ?? '', prompt: newText() };
     case 'set':
@@ -147,6 +152,36 @@ export function newVariable(type: VariableType, name: Label): VariableDef {
 
 export function newCharacter(name: Label): CharacterDef {
   return { id: createId('c'), name };
+}
+
+/** A new enemy with three moves (two to parry, one to dodge), so it can fight straight away. */
+export function newEnemy(name: Label): EnemyDef {
+  return {
+    id: createId('en'),
+    name,
+    hp: 100,
+    attack: 10,
+    moves: [
+      {
+        id: createId('m'),
+        name: { en: 'Quick cut', tr: 'Hızlı kesik' },
+        pattern: 'jab',
+        answer: 'parry',
+      },
+      {
+        id: createId('m'),
+        name: { en: 'Double cut', tr: 'Çifte kesik' },
+        pattern: 'double',
+        answer: 'parry',
+      },
+      {
+        id: createId('m'),
+        name: { en: 'Low sweep', tr: 'Alçak süpürme' },
+        pattern: 'sweep',
+        answer: 'dodge',
+      },
+    ],
+  };
 }
 
 /** A new novel: one chapter with one passage holding one empty line. */
@@ -215,6 +250,8 @@ export function cloneBlock(block: Block): Block {
         success: list(block.success),
         fail: list(block.fail),
       };
+    case 'fight':
+      return { ...block, id, win: list(block.win), lose: list(block.lose) };
     case 'input':
       return { ...block, id, prompt: text(block.prompt) };
     case 'random':

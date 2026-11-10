@@ -67,6 +67,13 @@ export function problemMessage(
       return t('problem.unknownTrack', { name: id });
     case 'unknown-sound':
       return t('problem.unknownSound', { name: id });
+    case 'unknown-enemy':
+      return t('problem.unknownEnemy');
+    case 'enemy-name':
+      return t('problem.enemyName', {
+        name: labelText(doc.enemies?.find((e) => e.id === id)?.name, t.locale, id),
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
     case 'enum-values':
       return t('problem.enumValues', { name: variableName });
     default:

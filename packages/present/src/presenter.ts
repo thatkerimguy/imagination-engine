@@ -11,6 +11,8 @@ export interface PresenterHost extends PromptHandlers {
   advance(): void;
   /** Characters were just typed in; `speaker` is null for narration. Drives voice blips. */
   typed?(speaker: string | null, text: string): void;
+  /** A fight waits: the host plays it and resolves it on the runtime. Called again on a redraw. */
+  fight?(beat: Extract<Beat, { kind: 'fight' }>): void;
 }
 
 export interface PresenterOptions {
@@ -241,6 +243,8 @@ export class StoryPresenter {
       return;
     } else if (beat.kind === 'end') {
       shown = buildEnd(beat, { runtime: this.runtime, t: this.t }, handlers);
+    } else if (beat.kind === 'fight') {
+      handlers.fight?.(beat);
     } else if (beat.kind === 'pause' && beat.seconds !== undefined) {
       this.timer(key, beat.seconds, () => handlers.advance());
     }

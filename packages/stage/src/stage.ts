@@ -3,6 +3,7 @@ import { AMBIENTS, TitleActor, type Rgb } from './actors.ts';
 import { GlyphAtlas, BASE_CHARS } from './atlas.ts';
 import { ScreenFx, type FxState } from './fx.ts';
 import { PARTICLE_PRESETS, ParticleSystem, type ParticlePreset } from './particles.ts';
+import { createPen, type StageLayer, type StagePen } from './layer.ts';
 import { COVER, LOOKS, overlayUniforms, type Cover } from './looks.ts';
 import { SpriteBatch } from './batch.ts';
 import { Renderer, SHAPE } from './renderer.ts';
@@ -51,6 +52,8 @@ export class Stage {
   private readonly autoTier: TierName;
   private pinned = false;
   private readonly batch: SpriteBatch;
+  private readonly pen: StagePen;
+  private layer: StageLayer | null = null;
   private titles: TitleActor[] = [];
   private background: { preset: StageBackground; amount: number } = { preset: 'none', amount: 1 };
   private emitDebt = 0;
@@ -88,6 +91,11 @@ export class Stage {
     this.palette = options.palette();
     this.atlas = new GlyphAtlas({ family: options.family, size: 48 });
     this.batch = new SpriteBatch(this.atlas);
+    this.pen = createPen(
+      this.batch,
+      () => this.view,
+      () => this.palette,
+    );
     this.atlas.ensure(BASE_CHARS);
     canvas.addEventListener('webglcontextlost', this.onLost);
     canvas.addEventListener('webglcontextrestored', this.onRestored);
@@ -199,6 +207,13 @@ export class Stage {
   }
 
   /** Drops moments in flight (titles, bursts, covers), keeping background and look. */
+  /** Draws `layer` every frame until it is replaced, cleared or reports it is finished. */
+  setLayer(layer: StageLayer | null): void {
+    this.layer = layer;
+    if (layer?.glyphs) this.atlas.ensure(layer.glyphs);
+    this.wake();
+  }
+
   clearMoments(): void {
     this.titles = [];
     this.cover = null;
@@ -236,7 +251,11 @@ export class Stage {
 
   private get moving(): boolean {
     return (
-      this.particles.count > 0 || this.titles.length > 0 || this.cover !== null || this.fx.active
+      this.particles.count > 0 ||
+      this.titles.length > 0 ||
+      this.cover !== null ||
+      this.fx.active ||
+      this.layer !== null
     );
   }
 
@@ -263,9 +282,7 @@ export class Stage {
       this.step(dt);
       this.draw();
       this.lastFrameMs = performance.now() - start;
-      const changed = this.pinned
-        ? null
-        : this.governor.frame(dt * 1000 * (ambientOnly ? 0.5 : 1));
+      const changed = this.pinned ? null : this.governor.frame(dt * 1000 * (ambientOnly ? 0.5 : 1));
       if (changed) this.applyTier(changed);
     }
     if (this.moving || this.ambient) this.frame = requestAnimationFrame(this.tick);
@@ -333,6 +350,7 @@ export class Stage {
         (p.alpha[i] ?? 0) * 0.85,
       );
     }
+    if (this.layer && !this.layer.draw(this.pen, this.time)) this.layer = null;
     const phase = this.options.beatPhase?.() ?? null;
     const pulse = phase === null || this.fx.reducedMotion ? 0 : (1 - phase) ** 3;
     const look = LOOKS[this.look];

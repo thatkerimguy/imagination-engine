@@ -6,7 +6,7 @@ export {
   type AtlasGlyph,
   type AtlasOptions,
 } from './atlas.ts';
-export { gpuRenderer, StageDirector, type StageDirectorOptions } from './director.ts';
+export { gpuRenderer, StageDirector, stageColor, type StageDirectorOptions } from './director.ts';
 export { MAX_FLASHES_PER_SECOND, ScreenFx, type FxState } from './fx.ts';
 export { createStageModule, STAGE_DIRECTOR } from './module.ts';
 export {
@@ -29,3 +29,4 @@ export {
 } from './tiers.ts';
 export { parseCssColor } from './color.ts';
 export { createStageHost, themePalette, type StageHostOptions } from './host.ts';
+export { createPen, type StageLayer, type StagePen } from './layer.ts';

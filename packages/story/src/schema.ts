@@ -2,6 +2,15 @@ import { valueSchema, type Value } from '@ie/core';
 import { LOCALES, type Locale } from '@ie/i18n';
 import { z } from 'zod';
 import { audioLibrarySchema, voiceSchema, type AudioLibrary, type Voice } from './audio.ts';
+import {
+  DIFFICULTIES,
+  enemySchema,
+  FIGHT_BARS,
+  FIGHT_MODES,
+  type Difficulty,
+  type EnemyDef,
+  type FightMode,
+} from './fight.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
@@ -181,6 +190,20 @@ export interface EndBlock extends BlockBase {
   readonly type: 'end';
   readonly ending?: { readonly id: string; readonly title: LocalText };
 }
+/** A rhythm fight (ADR 0016). The story waits until it is won or lost. */
+export interface FightBlock extends BlockBase {
+  readonly type: 'fight';
+  readonly enemy: string;
+  /** The song to fight to; without one, the music already playing, else a procedural beat. */
+  readonly track?: string;
+  readonly mode?: FightMode;
+  readonly difficulty?: Difficulty;
+  readonly bars?: number;
+  /** A number variable that receives the score (0–100). */
+  readonly score?: string;
+  readonly win: readonly Block[];
+  readonly lose: readonly Block[];
+}
 export interface ActionBlock extends BlockBase {
   readonly type: 'action';
   /** A kernel action id, such as `audio.play`. */
@@ -203,6 +226,7 @@ export type Block =
   | ReturnBlock
   | RandomBlock
   | EndBlock
+  | FightBlock
   | ActionBlock;
 export type BlockType = Block['type'];
 
@@ -287,6 +311,18 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     }),
     z.object({
       id: idSchema,
+      type: z.literal('fight'),
+      enemy: idSchema,
+      track: idSchema.optional(),
+      mode: z.enum(FIGHT_MODES).optional(),
+      difficulty: z.enum(DIFFICULTIES).optional(),
+      bars: z.number().int().min(FIGHT_BARS.min).max(FIGHT_BARS.max).optional(),
+      score: idSchema.optional(),
+      win: blocks(),
+      lose: blocks(),
+    }),
+    z.object({
+      id: idSchema,
       type: z.literal('action'),
       action: z.string().regex(/^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/),
       params: z.record(z.string(), z.unknown()).optional(),
@@ -340,6 +376,7 @@ export interface StoryProject {
   readonly characters: readonly CharacterDef[];
   readonly chapters: readonly Chapter[];
   readonly audio?: AudioLibrary;
+  readonly enemies?: readonly EnemyDef[];
 }
 export const storyProjectSchema = z.object({
   format: z.literal(STORY_FORMAT),
@@ -354,4 +391,5 @@ export const storyProjectSchema = z.object({
   characters: z.array(characterSchema),
   chapters: z.array(chapterSchema).min(1),
   audio: audioLibrarySchema.optional(),
+  enemies: z.array(enemySchema).optional(),
 });

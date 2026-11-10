@@ -14,6 +14,7 @@
     "@ie/diagnostics": "workspace:*",
     "@ie/i18n": "workspace:*",
     "@ie/kits": "workspace:*",
+    "@ie/material": "workspace:*",
     "@ie/present": "workspace:*",
     "@ie/rhythm": "workspace:*",
     "@ie/samples": "workspace:*",

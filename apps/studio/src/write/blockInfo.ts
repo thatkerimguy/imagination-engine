@@ -4,6 +4,8 @@ import { stageKind, type StageKind } from '../project/stage-kinds.ts';
 import {
   AlignLeft,
   Blend,
+  Layers,
+  SlidersHorizontal,
   CloudRain,
   Heading,
   Film,
@@ -46,6 +48,8 @@ export const BLOCK_ICON: Readonly<Record<BlockKind, LucideIcon>> = {
   burst: Sparkles,
   title: Heading,
   transition: Blend,
+  post: Layers,
+  param: SlidersHorizontal,
   sequence: Film,
   music: Music,
   sfx: Volume2,

@@ -1,4 +1,4 @@
-import type { SequenceDef, TrackKind } from '@ie/story';
+import { TRACK_KINDS, type SequenceDef, type TrackKind } from '@ie/story';
 import { Pause, Play, SkipBack, ZoomIn, ZoomOut } from 'lucide-react';
 import type { Ref } from 'react';
 import { Segmented } from '../components/Segmented.tsx';
@@ -7,7 +7,8 @@ import { SNAPS } from './edit.ts';
 import { NOTE_CHOICES, noteName, snapName, trackName, type NoteKindChoice } from './labels.ts';
 import { useSequencerUi, ZOOMS } from './ui.ts';
 
-const TRACK_CHOICES: readonly TrackKind[] = ['stage', 'text', 'sound', 'notes'];
+/** Every track kind, so a new kind (materials, ADR 0020) shows up here by itself. */
+const TRACK_CHOICES: readonly TrackKind[] = TRACK_KINDS;
 
 /** Play, back to start, where the playhead is, snap, zoom, the kind of new notes, add a track. */
 export function Transport({

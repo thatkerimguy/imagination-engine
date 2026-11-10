@@ -129,6 +129,15 @@ export class AudioDirector {
    * calibration; null with no music or no grid. The stage pulses titles with it.
    */
   beatPhase(): number | null {
+    const info = this.beatInfo();
+    return info ? info.beat - Math.floor(info.beat) : null;
+  }
+
+  /**
+   * The playing song's beat count and bar length, from its analysis or calibration; null with no
+   * music or no grid. Materials read Beat and Bar phase from it (ADR 0020).
+   */
+  beatInfo(): { beat: number; beatsPerBar: number } | null {
     const id = this.music.trackId;
     if (!id || !this.music.clock.playing) return null;
     if (this.tempo?.id !== id) {
@@ -143,8 +152,10 @@ export class AudioDirector {
       this.tempo = { id, map };
     }
     if (!this.tempo.map) return null;
-    const beat = this.tempo.map.beatAt(this.music.clock.position());
-    return beat - Math.floor(beat);
+    return {
+      beat: this.tempo.map.beatAt(this.music.clock.position()),
+      beatsPerBar: this.tempo.map.beatsPerBar,
+    };
   }
 
   applyScene(scene: Readonly<Record<string, unknown>>): void {

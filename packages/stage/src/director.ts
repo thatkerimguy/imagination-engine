@@ -1,11 +1,18 @@
+import { compileMaterial } from '@ie/material';
 import {
   backgroundSetSchema,
+  findMaterial,
   lookSetSchema,
+  postSetSchema,
   type BackgroundSet,
   type Burst,
   type Flash,
   type Label,
   type LookSet,
+  type PostSet,
+  type MaterialDef,
+  type MaterialDomain,
+  type MaterialParamAction,
   type StageColor,
   type Title,
   type Transition,
@@ -28,6 +35,10 @@ export interface StageDirectorOptions {
   readonly announce?: (text: string) => void;
   readonly onFx?: (fx: FxState) => void;
   readonly beatPhase?: () => number | null;
+  /** The song's beat count and bar length, for materials (ADR 0020). */
+  readonly beat?: () => { beat: number; beatsPerBar: number } | null;
+  /** The project's materials, looked up when a title, post or parameter action names one. */
+  readonly materials?: () => readonly MaterialDef[] | undefined;
   /** Overrides tier detection (the Studio's stage view lets the author pick one). */
   readonly tier?: TierName;
   /** Class of the canvas: `ie-stage` covers the window, `ie-stage ie-stage--contained` a panel. */
@@ -101,6 +112,7 @@ export class StageDirector {
         palette: this.options.palette,
         ...(this.options.onFx ? { onFx: this.options.onFx } : {}),
         ...(this.options.beatPhase ? { beatPhase: this.options.beatPhase } : {}),
+        ...(this.options.beat ? { beat: this.options.beat } : {}),
       });
     } catch (error) {
       console.warn('The stage is unavailable.', error);
@@ -149,11 +161,47 @@ export class StageDirector {
     if (!text.trim()) return;
     this.options.announce?.(text);
     const color = this.color(params.color, this.options.palette());
-    this.ensure()?.title(text, {
+    const stage = this.ensure();
+    const material = stage ? this.loadMaterial(params.material, 'text') : undefined;
+    stage?.title(text, {
       ...(params.seconds ? { seconds: params.seconds } : {}),
       ...(params.exit ? { exit: params.exit } : {}),
       ...(color ? { color } : {}),
+      ...(material ? { material: material.id } : {}),
     });
+  }
+
+  /** The post material over the whole screen; '' turns it off. Scene state (ADR 0020). */
+  postSet(params: PostSet): void {
+    if (!params.material && !this.current) return;
+    const stage = this.ensure();
+    const material = stage ? this.loadMaterial(params.material, 'post') : undefined;
+    stage?.setPost(material?.id ?? null);
+  }
+
+  materialParam(params: MaterialParamAction): void {
+    if (!params.material || !params.param) return;
+    const stage = this.ensure();
+    if (!stage || !this.loadMaterial(params.material)) return;
+    stage.setMaterialParam(params.material, params.param, params.value, params.to, params.seconds);
+  }
+
+  /**
+   * Shows a material being edited (the Studio's Materials view): it is compiled and handed to the
+   * stage straight from the editor, so the preview follows every edit. Returns the problems.
+   */
+  previewMaterial(def: MaterialDef): ReturnType<typeof compileMaterial> | null {
+    const stage = this.ensure();
+    const compiled = compileMaterial(def);
+    stage?.useMaterial(compiled, def.params);
+    return stage ? compiled : null;
+  }
+
+  /** Compiles a project material for the stage; the stage keeps the program until it changes. */
+  private loadMaterial(id: string | undefined, domain?: MaterialDomain): MaterialDef | undefined {
+    const def = findMaterial(this.options.materials?.(), id, domain);
+    if (def) this.current?.useMaterial(compileMaterial(def), def.params);
+    return def;
   }
 
   transition(params: Transition): void {
@@ -167,6 +215,9 @@ export class StageDirector {
     this.current?.clearMoments();
     this.backgroundSet(background.success ? background.data : { preset: 'none' });
     this.lookSet(look.success ? look.data : { look: 'none' });
+    const post = postSetSchema.safeParse(scene['stage.post.set']);
+    this.postSet(post.success ? post.data : { material: '' });
+    this.current?.materials.reset();
   }
 
   /** Moves the stage into another panel (the Studio's Play and Stage views), or out of view. */

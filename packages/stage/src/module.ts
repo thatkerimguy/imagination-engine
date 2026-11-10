@@ -5,6 +5,8 @@ import {
   flashSchema,
   hitStopSchema,
   lookSetSchema,
+  materialParamActionSchema,
+  postSetSchema,
   shakeSchema,
   titleSchema,
   transitionSchema,
@@ -82,6 +84,22 @@ export function createStageModule(director: StageDirector): EngineModule {
           description: 'Cover and uncover the screen.',
           params: transitionSchema,
           run: (p) => director.transition(p),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'stage.post.set',
+          description: 'Draw a post material over the whole screen, or none.',
+          params: postSetSchema,
+          run: (p) => director.postSet(p),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'stage.material.param',
+          description: 'Set a material parameter, or ramp it to a value over some seconds.',
+          params: materialParamActionSchema,
+          run: (p) => director.materialParam(p),
         }),
       );
       ctx.onDispose(() => director.dispose());

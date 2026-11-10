@@ -5,6 +5,7 @@ import { checkReferences, type PendingRefs } from './analyze-refs.ts';
 import { checkRpgBlock, checkRpgData, type RpgCheckContext } from './analyze-rpg.ts';
 import { checkScreens } from './analyze-screens.ts';
 import { checkFightChart, checkSequenceBlock, checkSequences } from './analyze-sequence.ts';
+import { checkMaterials } from './analyze-material.ts';
 import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
@@ -385,6 +386,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   checkAudioLibrary(project, report);
   checkEnemies(project, report);
   checkSequences(project, report);
+  checkMaterials(project, report);
   checkScreens({ project, report, needVar, useFormula, useText });
 
   checkReferences({ project, passages, options, targets, pendingRefs, leaves, report });

@@ -1,6 +1,7 @@
 import { createStageHost } from '@ie/stage';
 import type { Locale } from '@ie/i18n';
 import { director as audio } from '../audio/studio-audio.ts';
+import { useProject } from '../project/store.ts';
 
 /*
  * The Studio's stage: one director, moved between the panels that show it (Play and the Stage
@@ -17,6 +18,8 @@ export const stage = createStageHost({
   root: () => root,
   locale: () => locale,
   beatPhase: () => audio.beatPhase(),
+  beat: () => audio.beatInfo(),
+  materials: () => useProject.getState().history?.present.materials,
 });
 
 /**

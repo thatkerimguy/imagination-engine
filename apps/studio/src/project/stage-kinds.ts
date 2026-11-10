@@ -11,6 +11,8 @@ export const STAGE_KINDS = {
   burst: ['stage.burst'],
   title: ['stage.title'],
   transition: ['stage.transition'],
+  post: ['stage.post.set'],
+  param: ['stage.material.param'],
 } as const satisfies Record<string, readonly StageActionId[]>;
 export type StageKind = keyof typeof STAGE_KINDS;
 
@@ -52,6 +54,15 @@ export function newStageBlock(id: string, kind: StageKind): ActionBlock {
         type: 'action',
         action: 'stage.transition',
         params: { kind: 'dissolve', seconds: 1.2 },
+      };
+    case 'post':
+      return { id, type: 'action', action: 'stage.post.set', params: { material: '' } };
+    case 'param':
+      return {
+        id,
+        type: 'action',
+        action: 'stage.material.param',
+        params: { material: '', param: '', value: 0 },
       };
   }
 }

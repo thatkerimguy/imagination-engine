@@ -24,6 +24,7 @@ export class SpriteBatch {
     kind: number,
     p1 = 0,
     p2 = 0,
+    p3 = 0,
   ): void {
     if ((this.count + 1) * SPRITE_FLOATS > this.data.length) {
       const bigger = new Float32Array(this.data.length * 2);
@@ -48,7 +49,7 @@ export class SpriteBatch {
     d[o++] = kind;
     d[o++] = p1;
     d[o++] = p2;
-    d[o] = 0;
+    d[o] = p3;
   }
 
   glyph(

@@ -12,6 +12,7 @@ import { stageKind, type STAGE_KINDS } from '../../project/stage-kinds.ts';
 import { useT } from '../../store.ts';
 import { useWrite } from '../context.ts';
 import { Sentence } from '../Sentence.tsx';
+import { ParamSentence, PostSentence, TitleMaterial } from './MaterialEditors.tsx';
 
 type Params = Readonly<Record<string, unknown>>;
 
@@ -249,10 +250,17 @@ export function StageEditor({
               ),
             }}
           />
+          <TitleMaterial params={params} set={set} />
         </div>
       );
       break;
     }
+    case 'post':
+      body = <PostSentence params={params} set={set} />;
+      break;
+    case 'param':
+      body = <ParamSentence params={params} set={set} timed={timed} />;
+      break;
     case 'transition':
       body = (
         <Sentence

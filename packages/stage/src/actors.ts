@@ -37,6 +37,8 @@ export class TitleActor {
     readonly color: Rgb,
     readonly seconds: number,
     readonly exit: 'fade' | 'shatter',
+    /** A text material for its glyphs (ADR 0020). */
+    readonly material: string | null = null,
   ) {
     atlas.ensure(text);
     // As large as fits: up to an eighth of the short side, smaller for long titles.

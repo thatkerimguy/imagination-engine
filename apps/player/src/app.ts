@@ -92,6 +92,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     root: () => story?.presenter.element ?? null,
     locale: () => settings.locale,
     beatPhase: () => audio.beatPhase(),
+    beat: () => audio.beatInfo(),
+    materials: () => story?.session.story.project.materials,
   });
   const fights = new FightRunner({
     audio,

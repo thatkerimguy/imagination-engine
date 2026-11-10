@@ -3,9 +3,9 @@ import { LOCALES } from '@ie/i18n';
 import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { z } from 'zod';
-import { TEXT_SIZES, type PlayerSettings } from './settings.ts';
+import { FIGHT_ASSISTS, TEXT_SIZES, VOLUME_BUSES, type PlayerSettings } from './settings.ts';
 
-export const PANELS = ['settings', 'diagnostics', 'history', 'saves'] as const;
+export const PANELS = ['settings', 'diagnostics', 'history', 'saves', 'sheet'] as const;
 export type Panel = (typeof PANELS)[number];
 
 declare module '@ie/core' {
@@ -78,10 +78,35 @@ export function createShellModule(host: ShellHost): EngineModule {
       );
       actions.register(
         defineAction({
+          id: 'ui.fightAssist.set',
+          description: 'Choose how much help rhythm fights give.',
+          params: z.object({ assist: z.enum(FIGHT_ASSISTS) }),
+          run: ({ assist }) => update({ fightAssist: assist }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.haptics.set',
+          description: 'Turn vibration in fights on or off.',
+          params: z.object({ enabled: z.boolean() }),
+          run: ({ enabled }) => update({ haptics: enabled }),
+        }),
+      );
+      actions.register(
+        defineAction({
           id: 'ui.hud.set',
           description: 'Show or hide the performance overlay.',
           params: z.object({ visible: z.boolean() }),
           run: ({ visible }) => update({ hud: visible }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.volume.set',
+          description: 'Remember a volume (master, music, ambience, effects or voices).',
+          params: z.object({ bus: z.enum(VOLUME_BUSES), volume: z.number().min(0).max(1) }),
+          run: ({ bus, volume }) =>
+            update({ volumes: { ...host.getSettings().volumes, [bus]: volume } }),
         }),
       );
       actions.register(

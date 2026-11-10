@@ -1,6 +1,7 @@
 import { Kernel, defineAction, defineModule } from '@ie/core';
 import { LOCALES } from '@ie/i18n';
 import { z } from 'zod';
+import { useProject } from './project/store.ts';
 import { useStudio } from './store.ts';
 import { VIEW_IDS } from './views.ts';
 
@@ -35,6 +36,22 @@ kernel.use(
           id: 'ui.theme.set',
           params: z.object({ theme: z.enum(['system', 'paper', 'night']) }),
           run: ({ theme }) => store().setTheme(theme),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'project.undo',
+          description: 'Undo the last change to the novel.',
+          params: z.object({}),
+          run: () => useProject.getState().undo(),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'project.redo',
+          description: 'Redo the change that was undone.',
+          params: z.object({}),
+          run: () => useProject.getState().redo(),
         }),
       );
       actions.register(

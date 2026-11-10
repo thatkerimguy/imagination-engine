@@ -1,7 +1,15 @@
 import type { Value } from '@ie/core';
 import type { Locale, Translator } from '@ie/i18n';
-import { plainText, type Beat, type Layout, type LocalText, type StoryRuntime } from '@ie/story';
+import {
+  pickLabel,
+  plainText,
+  type Beat,
+  type Layout,
+  type LocalText,
+  type StoryRuntime,
+} from '@ie/story';
 import { checkText } from './labels.ts';
+import { rpgLineText } from './rpg-lines.ts';
 import type { PresentKey } from './messages.ts';
 import { buildText, type BuildOptions } from './text-dom.ts';
 import type { RevealStep } from './typewriter.ts';
@@ -150,6 +158,29 @@ export function buildLine(beat: Beat, ctx: LineContext, mode: LineMode): BuiltLi
       const line = el('p', 'line line--check');
       line.dataset.result = beat.success ? 'success' : 'fail';
       line.textContent = checkText(beat, label ? plainText(label) : undefined, ctx.t);
+      return { element: line, steps: [] };
+    }
+    case 'fought': {
+      const block = story.blocks.get(beat.blockId)?.block;
+      const enemyId = block?.type === 'fight' ? block.enemy : '';
+      const enemy = story.project.enemies?.find((e) => e.id === enemyId);
+      const name = pickLabel(enemy?.name, ctx.locale, enemyId);
+      const line = el('p', 'line line--check line--fought');
+      line.dataset.result = beat.won ? 'success' : 'fail';
+      line.textContent = ctx.t(beat.won ? 'fight.won' : 'fight.lost', { name, score: beat.score });
+      return { element: line, steps: [] };
+    }
+    case 'item':
+    case 'quest':
+    case 'traded':
+    case 'battle':
+    case 'turn':
+    case 'battled': {
+      const said = rpgLineText(beat, story, ctx.t);
+      if (!said) return null;
+      const line = el('p', `line line--check line--rpg line--${beat.kind}`);
+      line.dataset.tone = said.tone;
+      line.textContent = said.text;
       return { element: line, steps: [] };
     }
     default:

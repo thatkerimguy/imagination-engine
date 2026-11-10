@@ -10,8 +10,15 @@ import { runAction } from './kernel.ts';
 import { useStudio, useT } from './store.ts';
 import { VIEWS } from './views.ts';
 import { DiagnosticsView } from './views/DiagnosticsView.tsx';
+import { DataView } from './views/DataView.tsx';
 import { EmptyView } from './views/EmptyView.tsx';
+import { LogicView } from './views/LogicView.tsx';
+import { FlowView } from './views/FlowView.tsx';
+import { PlayView } from './views/PlayView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
+import { SoundView } from './views/SoundView.tsx';
+import { StageView } from './views/StageView.tsx';
+import { WriteView } from './views/WriteView.tsx';
 
 function isTyping(target: EventTarget | null): boolean {
   return (
@@ -60,9 +67,16 @@ function useShortcuts() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const state = useStudio.getState();
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      const mod = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+      if (mod && key === 'k') {
         event.preventDefault();
         state.setPaletteOpen(!state.paletteOpen);
+      } else if (mod && !event.altKey && (key === 'z' || key === 'y')) {
+        // The novel's own history replaces the browser's per-field undo, so one Undo works
+        // the same in a text line, a dropdown or after deleting a block.
+        event.preventDefault();
+        runAction(key === 'y' || event.shiftKey ? 'project.redo' : 'project.undo');
       } else if (event.key === '`' && !isTyping(event.target)) {
         runAction('ui.hud.set', { visible: !state.hud });
       }
@@ -76,6 +90,13 @@ function CurrentView() {
   const view = useStudio((s) => s.view);
   if (view === 'settings') return <SettingsView />;
   if (view === 'diagnostics') return <DiagnosticsView />;
+  if (view === 'write') return <WriteView />;
+  if (view === 'flow') return <FlowView />;
+  if (view === 'play') return <PlayView />;
+  if (view === 'data') return <DataView />;
+  if (view === 'sound') return <SoundView />;
+  if (view === 'stage') return <StageView />;
+  if (view === 'logic') return <LogicView />;
   return <EmptyView key={view} info={VIEWS[view]} />;
 }
 

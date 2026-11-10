@@ -35,19 +35,13 @@ export interface ViewInfo {
 }
 
 export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
-  write: { id: 'write', icon: PenLine, label: 'view.write', phase: 2, description: 'desc.write' },
-  flow: { id: 'flow', icon: Workflow, label: 'view.flow', phase: 2, description: 'desc.flow' },
-  logic: { id: 'logic', icon: Zap, label: 'view.logic', phase: 6, description: 'desc.logic' },
-  sound: {
-    id: 'sound',
-    icon: AudioLines,
-    label: 'view.sound',
-    phase: 3,
-    description: 'desc.sound',
-  },
-  stage: { id: 'stage', icon: Sparkles, label: 'view.stage', phase: 4, description: 'desc.stage' },
-  data: { id: 'data', icon: Database, label: 'view.data', phase: 6, description: 'desc.data' },
-  play: { id: 'play', icon: Play, label: 'view.play', phase: 2, description: 'desc.play' },
+  write: { id: 'write', icon: PenLine, label: 'view.write', description: 'desc.write' },
+  flow: { id: 'flow', icon: Workflow, label: 'view.flow', description: 'desc.flow' },
+  logic: { id: 'logic', icon: Zap, label: 'view.logic', description: 'desc.logic' },
+  sound: { id: 'sound', icon: AudioLines, label: 'view.sound', description: 'desc.sound' },
+  stage: { id: 'stage', icon: Sparkles, label: 'view.stage', description: 'desc.stage' },
+  data: { id: 'data', icon: Database, label: 'view.data', description: 'desc.data' },
+  play: { id: 'play', icon: Play, label: 'view.play', description: 'desc.play' },
   settings: { id: 'settings', icon: Settings, label: 'view.settings' },
   diagnostics: { id: 'diagnostics', icon: Activity, label: 'view.diagnostics' },
 };

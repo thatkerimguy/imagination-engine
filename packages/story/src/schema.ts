@@ -1,6 +1,9 @@
 import { valueSchema, type Value } from '@ie/core';
-import { LOCALES, type Locale } from '@ie/i18n';
 import { z } from 'zod';
+import { voiceSchema, type Voice } from './audio.ts';
+import { DIFFICULTIES, FIGHT_BARS, FIGHT_MODES, type Difficulty, type FightMode } from './fight.ts';
+import { logicSchemas, type RoutineBlock } from './logic.ts';
+import { rpgBlockSchemas, type RpgBlock } from './rpg.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
@@ -50,6 +53,8 @@ export interface VariableDef {
   readonly description?: string;
   readonly min?: number;
   readonly max?: number;
+  /** Shown on the reader's character sheet. */
+  readonly stat?: boolean;
 }
 export const variableSchema = z.object({
   id: idSchema,
@@ -61,6 +66,7 @@ export const variableSchema = z.object({
   description: z.string().optional(),
   min: z.number().optional(),
   max: z.number().optional(),
+  stat: z.boolean().optional(),
 });
 
 export interface CharacterDef {
@@ -70,12 +76,15 @@ export interface CharacterDef {
   readonly color?: string;
   /** Spelling the Turkish suffix engine should hear instead (Kemal → "Kemel"). */
   readonly suffixAs?: string;
+  /** Dialogue blips while this character's lines type in. */
+  readonly voice?: Voice;
 }
 export const characterSchema = z.object({
   id: idSchema,
   name: labelSchema,
   color: z.string().optional(),
   suffixAs: z.string().optional(),
+  voice: voiceSchema.optional(),
 });
 
 interface BlockBase {
@@ -177,6 +186,20 @@ export interface EndBlock extends BlockBase {
   readonly type: 'end';
   readonly ending?: { readonly id: string; readonly title: LocalText };
 }
+/** A rhythm fight (ADR 0016). The story waits until it is won or lost. */
+export interface FightBlock extends BlockBase {
+  readonly type: 'fight';
+  readonly enemy: string;
+  /** The song to fight to; without one, the music already playing, else a procedural beat. */
+  readonly track?: string;
+  readonly mode?: FightMode;
+  readonly difficulty?: Difficulty;
+  readonly bars?: number;
+  /** A number variable that receives the score (0–100). */
+  readonly score?: string;
+  readonly win: readonly Block[];
+  readonly lose: readonly Block[];
+}
 export interface ActionBlock extends BlockBase {
   readonly type: 'action';
   /** A kernel action id, such as `audio.play`. */
@@ -199,10 +222,14 @@ export type Block =
   | ReturnBlock
   | RandomBlock
   | EndBlock
+  | FightBlock
+  | RpgBlock
+  | RoutineBlock
   | ActionBlock;
 export type BlockType = Block['type'];
 
 const blocks = (): z.ZodType<readonly Block[]> => z.array(blockSchema);
+const logic = logicSchemas(blocks);
 
 const optionSchema = z.object({
   id: idSchema,
@@ -283,6 +310,20 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     }),
     z.object({
       id: idSchema,
+      type: z.literal('fight'),
+      enemy: idSchema,
+      track: idSchema.optional(),
+      mode: z.enum(FIGHT_MODES).optional(),
+      difficulty: z.enum(DIFFICULTIES).optional(),
+      bars: z.number().int().min(FIGHT_BARS.min).max(FIGHT_BARS.max).optional(),
+      score: idSchema.optional(),
+      win: blocks(),
+      lose: blocks(),
+    }),
+    ...rpgBlockSchemas(blocks),
+    logic.routineBlock,
+    z.object({
+      id: idSchema,
       type: z.literal('action'),
       action: z.string().regex(/^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/),
       params: z.record(z.string(), z.unknown()).optional(),
@@ -320,32 +361,4 @@ export const chapterSchema = z.object({
   passages: z.array(passageSchema).min(1),
 });
 
-export const STORY_FORMAT = 'imagination.story';
-export const STORY_SCHEMA_VERSION = 1;
-
-export interface StoryProject {
-  readonly format: typeof STORY_FORMAT;
-  readonly schemaVersion: typeof STORY_SCHEMA_VERSION;
-  readonly id: string;
-  readonly title: Label;
-  readonly author?: string;
-  readonly languages: readonly Locale[];
-  readonly start: string;
-  readonly layout?: Layout;
-  readonly variables: readonly VariableDef[];
-  readonly characters: readonly CharacterDef[];
-  readonly chapters: readonly Chapter[];
-}
-export const storyProjectSchema = z.object({
-  format: z.literal(STORY_FORMAT),
-  schemaVersion: z.literal(STORY_SCHEMA_VERSION),
-  id: idSchema,
-  title: labelSchema,
-  author: z.string().optional(),
-  languages: z.array(z.enum(LOCALES)).min(1),
-  start: idSchema,
-  layout: z.enum(LAYOUTS).optional(),
-  variables: z.array(variableSchema),
-  characters: z.array(characterSchema),
-  chapters: z.array(chapterSchema).min(1),
-});
+export type { StoryProject } from './project.ts';

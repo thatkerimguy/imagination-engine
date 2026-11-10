@@ -1,4 +1,9 @@
+export { analyzeProject, leaves } from './analyze.ts';
+export * from './audio.ts';
+export * from './fight.ts';
+export * from './stage.ts';
 export {
+  checkStory,
   compileStory,
   defaultValue,
   listKey,
@@ -24,6 +29,7 @@ export {
   type FunctionName,
   type Requirement,
 } from './formula.ts';
+export { printFormula } from './formula-print.ts';
 export {
   EFFECTS,
   MarkupError,
@@ -32,11 +38,21 @@ export {
   type EffectName,
   type MarkupNode,
 } from './markup.ts';
-export { ENDINGS_KEY, StoryRuntime, type RuntimeOptions, type StoryHost } from './runtime.ts';
+export {
+  ENDINGS_KEY,
+  StoryRuntime,
+  type BattleAction,
+  type BattleMenu,
+  type RuntimeOptions,
+  type ShopMenu,
+  type StoryHost,
+} from './runtime.ts';
 export * from './schema.ts';
+export { STORY_FORMAT, STORY_SCHEMA_VERSION, storyProjectSchema } from './project.ts';
 export {
   beatSchema,
   pageStart,
+  sceneKey,
   storyStateSchema,
   type Beat,
   type Frame,
@@ -53,3 +69,6 @@ export {
   type TextContext,
 } from './text.ts';
 export { applyOperation, coerceValue } from './variables.ts';
+export * from './logic.ts';
+export * from './rpg.ts';
+export * from './state-rpg.ts';

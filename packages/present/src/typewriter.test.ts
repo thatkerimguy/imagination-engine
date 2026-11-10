@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Typewriter, type RevealStep, type Scheduler } from './typewriter.ts';
+import { reportTyped, Typewriter, type RevealStep, type Scheduler } from './typewriter.ts';
 
 /** A scheduler driven by hand, so tests control time exactly. */
 function manualClock() {
@@ -121,5 +121,25 @@ describe('Typewriter', () => {
     expect(fast.seen).toEqual([]);
     clock.advance(150);
     expect(fast.seen).toEqual([1]);
+  });
+});
+
+describe('reportTyped', () => {
+  it('reports each newly revealed run once', () => {
+    const shown: number[] = [];
+    const typed: string[] = [];
+    const steps: RevealStep[] = [
+      { kind: 'chars', text: 'Hello', speed: 1, reveal: (n) => shown.push(n) },
+      { kind: 'pause', ms: 10 },
+    ];
+    const wrapped = reportTyped(steps, (t) => typed.push(t));
+    const first = wrapped[0];
+    if (first?.kind !== 'chars') throw new Error('expected chars');
+    first.reveal(2);
+    first.reveal(2);
+    first.reveal(5);
+    expect(typed).toEqual(['He', 'llo']);
+    expect(shown).toEqual([2, 2, 5]);
+    expect(wrapped[1]).toBe(steps[1]);
   });
 });

@@ -22,7 +22,7 @@ It isn't tied to one genre or look: every system is optional, and every style is
 | Logic | **Sentence-style blocks**: Actions, Conditions, Rules (When → If → Do), Routines | Readable without programming knowledge, and the same blocks work everywhere |
 | Languages | **English + Turkish**, for both novels and the Studio UI, switchable even mid-game | You asked for both. Turkish needs special handling (suffixes, casing, hyphenation). See §4 |
 | Music | **Many sources. Spotify and YouTube are optional extras** | Files, open music catalogs, AI-generated music, and built-in procedural music all give fully automatic beat sync. See §5 |
-| Beat analysis | **Beat This!** (a 2024 beat tracker, MIT licence) in the browser through onnxruntime-web, plus **Meyda** for audio features | Best available accuracy, finds **downbeats** (bar starts), and avoids AGPL dependencies |
+| Beat analysis | **Beat This!** (a 2024 beat tracker, MIT licence) in the browser through onnxruntime-web, plus **Meyda** for audio features. *Beat This! (the full model, an opt-in download) runs in the Studio, with an own DSP tracker as the fallback (ADR 0013); results are prepared on desktop and travel with the novel (ADR 0014)* | Best available accuracy, finds **downbeats** (bar starts), and avoids AGPL dependencies |
 | Style | **Genre-agnostic.** Optional modules, gameplay kits, themes, and a no-code screen builder | Not locked to one style |
 | Development | Runs only on this PC. Phone testing over **adb reverse**; debugging with `chrome://inspect` | Private, no certificates needed, and the phone sees a secure context |
 | Hosting (later) | Static host. Recommended: **Cloudflare Pages + Cloudflare Access** (private login), Workers for small proxies | Free, fast, private. No server to maintain |
@@ -83,7 +83,7 @@ It isn't tied to one genre or look: every system is optional, and every style is
              Conductor (music clock) · Loop · Input actions · Save/Load · Assets · i18n
 
  PLATFORM
-   WebGPU → WebGL2 fallback (three.js + TSL) · Web Audio · DOM · OPFS / IndexedDB · Service worker
+   WebGL2 stage (own renderer, ADR 0015) · WebGPU for analysis · Web Audio · DOM · OPFS / IndexedDB · Service worker
 ```
 
 ### Tech stack
@@ -93,12 +93,12 @@ It isn't tied to one genre or look: every system is optional, and every style is
 | Language / build | TypeScript (strict), Vite, pnpm workspaces | Typed, fast, and safe for AI-written code |
 | Player runtime | Vanilla TS | Small and fast, and it runs everywhere |
 | Studio UI | React 19 + Zustand, Radix primitives, own CSS tokens | Richest editor ecosystem. Headless primitives keep the look ours |
-| Manuscript editor | **TipTap (ProseMirror)** with custom blocks | Notion-style blocks and slash menu, rich text marks, mobile support |
+| Manuscript editor | Block cards with plain-text fields and markup chips (ADR 0011; replaces TipTap) | Blocks stay typed data with stable IDs; Android keyboards keep the native input path |
 | Graph editors | React Flow (@xyflow/react) + ELK.js auto-layout | Mature. Tap-to-connect works on touch screens |
 | Code/formula fields | CodeMirror 6 | Works on mobile |
 | Docking | dockview (desktop only) | NLE/IDE-style layouts (an NLE is a non-linear video editor like Premiere) |
-| Rendering | three.js WebGPURenderer (falls back to WebGL2 automatically) + **TSL** | TSL compiles to WGSL and GLSL, a natural compile target for the material graph |
-| GPU text | Custom instanced MSDF glyphs (msdf-atlas-gen with kerning; TinySDF runtime fallback) | Gives per-glyph shader control |
+| Rendering | **Own WebGL2 renderer** (ADR 0015): one instanced sprite draw plus one full-screen pass. three.js + TSL may return for the material graph | Two draw calls a frame and a tiny bundle on the Adreno 610 |
+| GPU text | Custom instanced SDF glyphs, generated at runtime from the page's font (TinySDF-style); MSDF later if large sizes need sharper corners | Gives per-glyph shader control |
 | Audio | Web Audio API + Tone.js (synths and effects) | Our own Conductor owns the clock |
 | Beat analysis | **Beat This!** ONNX (onnxruntime-web, WebGPU with WASM fallback), **Meyda** (features), optional **demucs-web** (stems) | Beats and downbeats, onsets, energy, key. All MIT-compatible |
 | Schemas | Zod | Schemas validate data, generate forms, drive migrations, and act as AI guardrails |
@@ -332,7 +332,7 @@ Some catalogue servers may not send CORS headers. The Vite dev proxy handles tha
 
 | Source | Notes |
 |---|---|
-| **Spotify** (you have Premium ✓) | **Desktop:** the Web Playback SDK. **Phone:** Spotify Connect remote control (looser sync). Since Feb 2026, Development Mode needs a Premium owner, allows only 5 authorized users, and has fewer endpoints, which is fine for you. BPM comes from **ReccoBeats** (Spotify-style audio features by Spotify ID, no key). Phase comes from a one-time 8-beat tap. The OAuth redirect must be `http://127.0.0.1:5173/callback` (Spotify no longer accepts `localhost`) |
+| **Spotify** (you have Premium ✓) | **Desktop:** the Web Playback SDK. **Phone:** Spotify Connect remote control (looser sync). Since Feb 2026, Development Mode needs a Premium owner, allows only 5 authorized users, and has fewer endpoints, which is fine for you. BPM comes from **ReccoBeats** (Spotify-style audio features by Spotify ID, no key). Phase comes from a one-time 8-beat tap. The OAuth redirect must be a `127.0.0.1` loopback address (Spotify no longer accepts `localhost`); the Studio shows the exact one to register (ADR 0012) |
 | **YouTube** (IFrame API) | BPM lookup by title, then tap calibration. Ads and buffering pause the fight. The player must stay visible |
 
 ### Analysis pipeline
@@ -348,7 +348,7 @@ Runs in a worker; results are cached per track.
 Notes:
 - **Downbeats** let fights phrase themselves in bars (call and response, section changes on bar 1).
 - The **musical key** lets hit SFX and dialogue blips snap to the song's scale, so impacts *harmonize*.
-- If the Beat This! model is too heavy for the phone, analyse on desktop and the result travels with the project.
+- The Beat This! model is too heavy for the phone, so analysis is prepared on desktop and the result travels with the project (ADR 0014). The same rule covers later heavy work such as glyph atlases.
 
 ### Other music features
 
@@ -746,7 +746,7 @@ The Adreno 610 is an entry-level GPU, so the phone is the reference device from 
 | Particles | ≤ 3,000 instanced glyphs |
 | Draw calls | < 100 per frame (instancing everywhere) |
 | Memory | < 400 MB for the tab |
-| Startup | Reader shell < 250 KB gzipped. three.js loads only when a scene first needs the GPU stage |
+| Startup | Reader shell < 250 KB gzipped. The GPU stage is created only when a scene first uses it |
 | Beat analysis | Small Beat This! model, about a minute or less for a 4-minute song, once per track (cached). Stem separation is desktop-only |
 | Battery & heat | Render on demand while reading. A governor drops a quality tier when frame times run long for 5 s, because the Snapdragon 685 throttles under sustained load |
 | Audio latency | Calibrated per output. Android Chrome adds more output latency than desktop, and Bluetooth adds much more |
@@ -766,6 +766,16 @@ A built-in performance HUD shows these numbers live. `chrome://inspect` profiles
 | Memory | `navigator.deviceMemory` reports 4 GB (the API rounds down) | Don't use it to pick quality tiers on this phone |
 | Offline | Both apps load fully from the service worker with no route to the PC, in a tab and installed | The Phase 0 done condition holds |
 | Install | Installed as standalone apps (392 × 790 viewport) but not as WebAPKs, because the phone had no internet | Re-check on the hosted site; the refresh rate inside the installed app is still unmeasured |
+
+**Measured on the phone (Phases 3 and 4, 2026-11-10, Chrome 156, in a tab):**
+
+| What | Result | What it means |
+|---|---|---|
+| Stage, reading | Rain background: 59.5 fps, 0 long tasks | Ambient scenes stay inside the budget |
+| Stage, cinematic | Title + burst + shake + flash + ink transition over the film look: 59.6–59.9 fps on every tier, 2 draw calls, ~0.3–0.4 ms stage JavaScript a frame, at most 1 frame over 20 ms in 5 s | The Phase 4 done condition holds on the WebGL2 path |
+| Fight scene | Shake, flash, sparks and freeze in The Rain Alley through real touch input: 59.5 fps, 0 long tasks, 20 MB heap | Effects inside a story cost nothing visible |
+| Beat analysis (built-in tracker) | 16 s clip in 1.1 s; a 4-minute track in 9.3 s; correct 100 BPM 4/4 | Phones analyse well within budget without Beat This! |
+| Audio output | Chrome holds an AAudio media stream with audio focus while music plays | Sound reaches the speaker path; loudness and latency need a person listening |
 
 ---
 
@@ -803,9 +813,9 @@ Every phase ends with something you can use. Sizes are relative (S < M < L < XL)
 | 1 | **Story runtime & reader**: story model and interpreter, variables, choices (all types), DOM presenter, layouts, markup effects v1, saves/rewind/backlog, EN/TR with Turkish suffixes and hyphenation, Paper and Night themes | L | A JSON-authored bilingual branching story plays on your phone and switches language mid-scene |
 | 2 | **Writing studio**: Manuscript, Flow, condition builder, action blocks, characters, variables, translation view, validation, Play from here | L | ⭐ **Milestone A:** you write a bilingual branching novel on phone or desktop **without code** |
 | 3 | **Audio & music**: mixer, sfxr, blips, ambience; sources (files, Jamendo, Audius, Openverse, Spotify, YouTube); analysis worker (Beat This!, Meyda); conductor; calibration | L | Any file or catalogue song gets beats and downbeats automatically. Spotify and YouTube stay in sync after a tap |
-| 4 | **Stage & VFX**: WebGPU/WebGL2 stage, MSDF glyph renderer, GPU presenter, icons, particles, screen FX, transitions, quality tiers | L | A cinematic scene holds 60 fps on the Redmi Note 12 within the §11.1 budget |
-| 5 | **Rhythm combat**: charts, judge, director, BPM-adaptive density, **both modes (call & response, free beat, mixed)**, choreography, HUD, adaptive stems and procedural music, results to the story | XL | ⭐ **Milestone B:** a conversation, then a choice, then a fight on your song, then a branch on the result |
-| 6 | **Logic & kits I**: Rules, Routines, formulas; RPG kit (stats, inventory, checks, quests, shops); turn-based combat; Data editor | L | An RPG chapter is built entirely in the Studio |
+| 4 | **Stage & VFX**: WebGL2 stage (ADR 0015), SDF glyph renderer, GPU titles, particles, screen FX, looks, transitions, quality tiers, stage blocks and the Stage view | L | A cinematic scene holds 60 fps on the Redmi Note 12 within the §11.1 budget |
+| 5 | **Rhythm combat** (ADR 0016): Fight block and enemies, generated charts, judge, director, BPM-adaptive density, **both modes (call & response, free beat, mixed)**, choreography on the stage, HUD, assists, procedural music that builds with the combo (stems later), results to the story | XL | ⭐ **Milestone B:** a conversation, then a choice, then a fight on your song, then a branch on the result |
+| 6 | **Logic & kits I** (ADR 0017): Rules, Routines, formulas; RPG kit (stats, inventory, checks, quests, shops); turn-based combat; Data editor | L | An RPG chapter is built entirely in the Studio |
 | 7 | **Screens & themes**: screen builder, theme editor, kit system, new-project wizard, starter kits (VN, Gamebook, Chat, Mystery) | L | You can start a project in a different genre in a few clicks |
 | 8 | **Sequencer** | XL | Fight moves and cinematic scenes are authored on a beat-snapped timeline |
 | 9 | **Material graph** | XL | Text and post effects are built from nodes and animated by the sequencer |

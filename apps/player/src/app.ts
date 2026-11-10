@@ -1,3 +1,4 @@
+import { AudioDirector, AudioEngine, createAudioModule } from '@ie/audio';
 import {
   Kernel,
   createMemoryStore,
@@ -8,18 +9,35 @@ import {
 import { PerfHud } from '@ie/diagnostics';
 import { LOCALE_INFO, createTranslator, loadHyphenators, type Locale } from '@ie/i18n';
 import { StoryPresenter, type PresenterOptions } from '@ie/present';
+import { FightRunner, type Assist } from '@ie/rhythm';
 import { samples } from '@ie/samples';
+import { createStageHost, createStageModule } from '@ie/stage';
 import { StoryLoadError, compileStory, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
 import { Dialogs } from './dialogs.ts';
 import { Menu } from './menu.ts';
+import { hasSheet } from './panels/sheet-panel.ts';
 import { messages } from './messages.ts';
 import { Reader } from './reader.ts';
-import { TEXT_SCALE, loadSettings, saveSettings, type PlayerSettings } from './settings.ts';
+import {
+  TEXT_SCALE,
+  VOLUME_BUSES,
+  loadSettings,
+  saveSettings,
+  type FightAssist,
+  type PlayerSettings,
+} from './settings.ts';
 import { createShellModule } from './shell-module.ts';
 import { StoryController } from './story/controller.ts';
 import { createStoryModule } from './story/module.ts';
 import { StorySession } from './story/session.ts';
+
+const ASSISTS: Readonly<Record<FightAssist, Assist>> = {
+  off: {},
+  wide: { wide: true },
+  noFail: { noFail: true },
+  auto: { auto: true },
+};
 
 const ADVANCE_KEYS = new Set([' ', 'Enter', 'ArrowRight', 'ArrowDown', 'PageDown']);
 const BACK_KEYS = new Set(['ArrowLeft', 'Backspace', 'PageUp']);
@@ -62,6 +80,33 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     runAsync(id, params, source).catch((error: unknown) => console.error(error));
   };
   let story: StoryController | null = null;
+  const engine = new AudioEngine();
+  const audio = new AudioDirector({
+    engine,
+    // Imported files live in the Studio's own storage; a published novel plays catalogue links.
+    resolve: (track) => Promise.resolve(track.source.kind === 'url' ? track.source.url : null),
+    library: () => story?.session.story.project.audio,
+    characters: () => story?.session.story.project.characters ?? [],
+  });
+  engine.unlockOnGesture(document, () => story?.syncScene());
+  // The GPU stage is built only when the novel first uses it (ADR 0015).
+  const stage = createStageHost({
+    root: () => story?.presenter.element ?? null,
+    locale: () => settings.locale,
+    beatPhase: () => audio.beatPhase(),
+  });
+  const fights = new FightRunner({
+    audio,
+    stage,
+    host: () => document.body,
+    settings: () => ({
+      locale: settings.locale,
+      assist: ASSISTS[settings.fightAssist],
+      haptics: settings.haptics,
+      tapLatency: 0, // the Player has no tap-timing test yet
+    }),
+    resolve: (result) => run('story.fight', result),
+  });
   let hyphenate: PresenterOptions['hyphenate'];
   const hyphenation = loadHyphenators().then(
     (engines) => {
@@ -110,6 +155,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         run('ui.menu.set', { open: false });
         run('ui.panel.open', { panel });
       },
+      hasSheet: () => (story ? hasSheet(story.session.runtime.story) : false),
     },
     () => run('ui.menu.set', { open: !menu.isOpen }),
   );
@@ -119,9 +165,11 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     settings = next;
     saveSettings(next);
     applyTheme(next.theme);
+    stage.refreshPalette();
     document.documentElement.lang = LOCALE_INFO[next.locale].tag;
     document.documentElement.style.setProperty('--reader-scale', String(TEXT_SCALE[next.textSize]));
     hud.setLocale(next.locale);
+    for (const bus of VOLUME_BUSES) engine.setVolume(bus, next.volumes[bus]);
     if (next.hud && !hud.mounted) hud.mount();
     if (!next.hud && hud.mounted) hud.unmount();
     if (localeChanged) t = createTranslator(messages, next.locale);
@@ -145,6 +193,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     }),
   );
   kernel.use(createStoryModule(() => story));
+  kernel.use(createAudioModule(audio));
+  kernel.use(createStageModule(stage));
   await kernel.start();
 
   root.replaceChildren(reader.element, menu.trigger, menu.element);
@@ -166,11 +216,22 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         submit: (answer) => run('story.submit', { answer }),
         advance: () => run('story.advance'),
         restart: () => run('story.restart'),
+        buy: (itemId) => run('story.buy', { itemId }),
+        sell: (itemId) => run('story.sell', { itemId }),
+        leaveShop: () => run('story.leaveShop'),
+        battle: (action) => run('story.battle', action),
+        typed: (speaker, text) => audio.typed(speaker, text),
+        fight: (beat) => fights.start(session.runtime, beat),
       },
       presenterOptions(settings),
     );
-    story = new StoryController(session, presenter, kernel.events);
+    story = new StoryController(session, presenter, kernel.events, (scene) => {
+      fights.sync(session.runtime);
+      audio.applyScene(scene);
+      stage.applyScene(scene);
+    });
     reader.mount(presenter.element);
+    menu.render(t);
     // The patterns are small and usually cached: wait briefly so the first page is hyphenated.
     await Promise.race([hyphenation, new Promise((resolve) => setTimeout(resolve, 500))]);
     presenter.setOptions(presenterOptions(settings));
@@ -198,7 +259,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       run('ui.menu.set', { open: !menu.isOpen });
       return;
     }
-    if (menu.isOpen || target?.closest('input, textarea, select')) return;
+    // A fight reads its own keys (arrows dodge there, not step back).
+    if (menu.isOpen || fights.running || target?.closest('input, textarea, select')) return;
     if (event.key === '`') {
       run('ui.hud.set', { visible: !settings.hud });
     } else if (story?.presenter.handleKey(event.key)) {
@@ -217,6 +279,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   document.addEventListener('visibilitychange', holdClocks);
   watchSystemTheme(() => {
     if (settings.theme === 'system') applyTheme('system');
+    stage.refreshPalette();
   });
 
   if (location.hash === '#diagnostics') run('ui.panel.open', { panel: 'diagnostics' });

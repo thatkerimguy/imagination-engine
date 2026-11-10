@@ -2,6 +2,13 @@ import { valueSchema, type Value } from '@ie/core';
 import { z } from 'zod';
 import type { Requirement } from './formula.ts';
 import { LAYOUTS, type Layout } from './schema.ts';
+import {
+  rpgBeatSchemas,
+  rpgStateShape,
+  type BattleState,
+  type QuestState,
+  type RpgBeat,
+} from './state-rpg.ts';
 
 /** Why an option is greyed out. The reader turns this into words in the current language. */
 /** Internal: the runtime edits its own copy of a state in place. */
@@ -64,6 +71,14 @@ export type Beat =
       readonly success: boolean;
       readonly values: Readonly<Record<string, Value>>;
     }
+  | { readonly kind: 'fight'; readonly blockId: string }
+  | {
+      readonly kind: 'fought';
+      readonly blockId: string;
+      readonly won: boolean;
+      readonly score: number;
+    }
+  | RpgBeat
   | { readonly kind: 'end'; readonly blockId: string | null; readonly endingId?: string };
 
 /** One level of the execution stack: a block list and the next block to run in it. */
@@ -74,6 +89,10 @@ export interface Frame {
   readonly at?: string;
   /** Marks a Call boundary: when the called passage ends, play returns below this frame. */
   readonly call?: boolean;
+  /** A routine's inputs, readable and writable like variables while it runs. */
+  readonly locals?: Readonly<Record<string, Value>>;
+  /** The rule whose blocks this frame runs; it can't fire again until the frame is gone. */
+  readonly rule?: string;
 }
 
 export interface StoryState {
@@ -88,6 +107,36 @@ export interface StoryState {
   /** Index in `log` of the beat the reader must respond to, if any. */
   readonly waiting: number | null;
   readonly ended: boolean;
+  /**
+   * The last params of each `.set` action by scene key: what should be playing or showing now.
+   * Hosts re-apply it after a load or a rewind. Missing in saves from before Phase 3.
+   */
+  readonly scene?: Readonly<Record<string, unknown>>;
+  /** Item counts the reader carries (ADR 0017). */
+  readonly inv?: Readonly<Record<string, number>>;
+  readonly quests?: Readonly<Record<string, QuestState>>;
+  /** The battle in progress, if any. */
+  readonly battle?: BattleState;
+  /** Rule events raised but not yet handled (`changed:gold`). */
+  readonly events?: readonly string[];
+  /** How often each rule has fired, for `once` rules. */
+  readonly fired?: Readonly<Record<string, number>>;
+}
+
+/** Scene key of a `.set` action: the action id, plus `:slot` when the params name a slot. */
+export function sceneKey(action: string, params: unknown): string {
+  const slot =
+    params && typeof params === 'object' ? (params as Record<string, unknown>).slot : undefined;
+  return typeof slot === 'string' ? `${action}:${slot}` : action;
+}
+
+/** The scene after an action runs: `.set` actions replace what their key was doing. */
+export function rememberScene(
+  scene: Readonly<Record<string, unknown>> | undefined,
+  action: string,
+  params: unknown,
+): Readonly<Record<string, unknown>> {
+  return action.endsWith('.set') ? { ...scene, [sceneKey(action, params)]: params } : (scene ?? {});
 }
 
 const values = z.record(z.string(), valueSchema);
@@ -142,6 +191,9 @@ export const beatSchema: z.ZodType<Beat> = z.discriminatedUnion('kind', [
     success: z.boolean(),
     values,
   }),
+  z.object({ kind: z.literal('fight'), blockId: z.string() }),
+  z.object({ kind: z.literal('fought'), blockId: z.string(), won: z.boolean(), score: z.number() }),
+  ...rpgBeatSchemas,
   z.object({
     kind: z.literal('end'),
     blockId: z.string().nullable(),
@@ -157,6 +209,8 @@ export const storyStateSchema: z.ZodType<StoryState> = z.object({
       index: z.number().int().min(0),
       at: z.string().optional(),
       call: z.boolean().optional(),
+      locals: values.optional(),
+      rule: z.string().optional(),
     }),
   ),
   vars: values,
@@ -167,6 +221,8 @@ export const storyStateSchema: z.ZodType<StoryState> = z.object({
   log: z.array(beatSchema),
   waiting: z.number().int().nullable(),
   ended: z.boolean(),
+  scene: z.record(z.string(), z.json()).optional(),
+  ...rpgStateShape,
 });
 
 /** Index of the beat that starts the page currently on screen. */
@@ -176,4 +232,20 @@ export function pageStart(log: readonly Beat[]): number {
     if (beat?.kind === 'passage' && !beat.keepPage) return i;
   }
   return 0;
+}
+
+/** A playthrough before its first passage; `seed` fixes its dice (a random seed when unset). */
+export function emptyState(seed?: number): Mutable<StoryState> {
+  return {
+    v: 1,
+    frames: [],
+    vars: {},
+    visits: {},
+    chosen: {},
+    rng: (seed ?? Math.floor(Math.random() * 2 ** 32)) >>> 0,
+    chapter: null,
+    log: [],
+    waiting: null,
+    ended: false,
+  };
 }

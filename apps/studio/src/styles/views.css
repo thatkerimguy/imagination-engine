@@ -1,0 +1,387 @@
+/* Flow, Play, Data and the project sheet. */
+
+/* Flow */
+.flow {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.flow__bar {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.flow__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.flow__scale {
+  min-width: 3.5rem;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.flow__canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  touch-action: pan-x pan-y;
+}
+
+.flow__world {
+  position: relative;
+}
+
+.flow__layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.flow__edges {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.flow__edge {
+  fill: none;
+  stroke: var(--color-line-strong);
+  stroke-width: 1.25;
+}
+
+.flow__edge[data-kind='call'] {
+  stroke-dasharray: 4 3;
+}
+
+.flow__edge[data-active] {
+  stroke: var(--color-ink);
+}
+
+.flow__arrow {
+  fill: var(--color-ink-muted);
+}
+
+.flow__node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  overflow: hidden;
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flow__node:hover {
+  border-color: var(--color-ink-muted);
+}
+
+.flow__node[aria-pressed='true'] {
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 1px var(--color-ink);
+}
+
+.flow__node[data-unreached] {
+  border-style: dashed;
+}
+
+.flow__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow: hidden;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.flow__name .badge {
+  margin-left: auto;
+}
+
+.flow__excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-ink-muted);
+  font-family: var(--font-prose);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.flow__panel {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 32rem;
+  margin-left: auto;
+  padding: var(--space-3);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-2);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-float);
+}
+
+.flow__panel-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Play */
+.play {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.play__bar {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.play__from {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-3);
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.play__from .icon-button {
+  min-width: 2rem;
+  min-height: 2rem;
+}
+
+.play__lang {
+  margin-left: auto;
+}
+
+/* Spacing like the Player's reader, so lines wrap where readers will see them wrap. */
+.play__frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.play__page {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: clamp(var(--space-6), 8vh, var(--space-7)) var(--space-5) var(--space-7);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Data */
+.page--wide {
+  width: min(960px, 100%);
+}
+
+.page__body {
+  margin-top: var(--space-5);
+}
+
+/* Seven tabs don't fit a phone; the strip scrolls sideways instead of wrapping. */
+.data__tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.data__tabs > .ie-segmented > button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-2);
+}
+
+.card__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Project sheet */
+.project-sheet {
+  width: min(560px, calc(100vw - 2 * var(--space-4)));
+}
+
+.project-sheet__list-title {
+  margin-top: var(--space-6);
+}
+
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.project-list__open {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-1);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-list__open:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.project-list__open:disabled {
+  cursor: default;
+}
+
+.project-list__item[aria-current='true'] .project-list__open {
+  background: var(--color-surface-raised);
+}
+
+.project-list__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Top bar additions */
+.topbar__start {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topbar__title {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  border: 0;
+  border-radius: var(--radius-1);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.topbar__title:hover {
+  background: var(--color-surface-raised);
+}
+
+.topbar__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__save {
+  flex-shrink: 0;
+  color: var(--color-ink-faint);
+  font-size: var(--text-xs);
+}
+
+.topbar__save[data-state='error'] {
+  color: var(--color-accent);
+}
+
+.topbar__icon {
+  min-width: 2rem;
+  padding: 0;
+}
+
+@media (max-width: 767px) {
+  .flow__bar,
+  .play__bar {
+    padding: var(--space-2);
+  }
+
+  .topbar__save {
+    display: none;
+  }
+
+  .card {
+    padding: var(--space-3);
+  }
+}

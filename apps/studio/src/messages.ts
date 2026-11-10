@@ -1,6 +1,14 @@
 import { defineCatalogs } from '@ie/i18n';
+import { fightStudioMessages } from './messages-fight.ts';
+import { logicMessages } from './messages-logic.ts';
+import { projectMessages } from './messages-project.ts';
+import { rpgBlockMessages } from './messages-rpg.ts';
+import { soundMessages } from './messages-sound.ts';
+import { stageMessages } from './messages-stage.ts';
+import { writeMessages } from './messages-write.ts';
 
-export const messages = defineCatalogs({
+/** The shell: workspaces, palette, settings and diagnostics. */
+const shellMessages = defineCatalogs({
   en: {
     'app.name': 'Studio',
     'app.untitled': 'Untitled novel',
@@ -96,4 +104,31 @@ export const messages = defineCatalogs({
   },
 });
 
+/** Each catalog checks its own en/tr keys; together they are the Studio's whole vocabulary. */
+export const messages = {
+  en: {
+    ...shellMessages.en,
+    ...writeMessages.en,
+    ...projectMessages.en,
+    ...soundMessages.en,
+    ...stageMessages.en,
+    ...fightStudioMessages.en,
+    ...rpgBlockMessages.en,
+    ...logicMessages.en,
+  },
+  tr: {
+    ...shellMessages.tr,
+    ...writeMessages.tr,
+    ...projectMessages.tr,
+    ...soundMessages.tr,
+    ...stageMessages.tr,
+    ...fightStudioMessages.tr,
+    ...rpgBlockMessages.tr,
+    ...logicMessages.tr,
+  },
+};
+
 export type MessageKey = keyof typeof messages.en;
+
+/** A new novel's title, in both languages. */
+export const UNTITLED = { en: messages.en['app.untitled'], tr: messages.tr['app.untitled'] };

@@ -16,6 +16,7 @@ import { StoryLoadError, compileStory, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
 import { Dialogs } from './dialogs.ts';
 import { Menu } from './menu.ts';
+import { hasSheet } from './panels/sheet-panel.ts';
 import { messages } from './messages.ts';
 import { Reader } from './reader.ts';
 import {
@@ -154,6 +155,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         run('ui.menu.set', { open: false });
         run('ui.panel.open', { panel });
       },
+      hasSheet: () => (story ? hasSheet(story.session.runtime.story) : false),
     },
     () => run('ui.menu.set', { open: !menu.isOpen }),
   );
@@ -214,6 +216,10 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         submit: (answer) => run('story.submit', { answer }),
         advance: () => run('story.advance'),
         restart: () => run('story.restart'),
+        buy: (itemId) => run('story.buy', { itemId }),
+        sell: (itemId) => run('story.sell', { itemId }),
+        leaveShop: () => run('story.leaveShop'),
+        battle: (action) => run('story.battle', action),
         typed: (speaker, text) => audio.typed(speaker, text),
         fight: (beat) => fights.start(session.runtime, beat),
       },
@@ -225,6 +231,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       stage.applyScene(scene);
     });
     reader.mount(presenter.element);
+    menu.render(t);
     // The patterns are small and usually cached: wait briefly so the first page is hyphenated.
     await Promise.race([hyphenation, new Promise((resolve) => setTimeout(resolve, 500))]);
     presenter.setOptions(presenterOptions(settings));

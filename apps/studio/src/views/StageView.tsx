@@ -26,7 +26,11 @@ const MOMENTS: readonly { key: MessageKey; action: string; params: unknown }[] =
     action: 'stage.title',
     params: { text: SAMPLE_TITLE, seconds: 2.5, exit: 'shatter' },
   },
-  { key: 'stage.transition.ink', action: 'stage.transition', params: { kind: 'ink', seconds: 1.2 } },
+  {
+    key: 'stage.transition.ink',
+    action: 'stage.transition',
+    params: { kind: 'ink', seconds: 1.2 },
+  },
 ];
 
 /** A playground for the stage: scene settings, moments, the quality tier and live frame stats. */

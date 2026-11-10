@@ -10,6 +10,7 @@ import type { MessageKey } from './messages.ts';
 import { fillHistory } from './panels/history-panel.ts';
 import { fillSaves } from './panels/saves-panel.ts';
 import { fillSettings } from './panels/settings-panel.ts';
+import { fillSheet } from './panels/sheet-panel.ts';
 import type { PlayerSettings } from './settings.ts';
 import type { Panel } from './shell-module.ts';
 import type { StoryController } from './story/controller.ts';
@@ -31,6 +32,7 @@ const TITLES: Readonly<Record<Panel, MessageKey>> = {
   diagnostics: 'diagnostics.title',
   history: 'history.title',
   saves: 'saves.title',
+  sheet: 'sheet.title',
 };
 
 function dialogShell(title: string, closeLabel: string, testId: string) {
@@ -71,7 +73,7 @@ export class Dialogs {
   }
 
   open(panel: Panel): void {
-    if ((panel === 'history' || panel === 'saves') && !this.handlers.story()) return;
+    if (panel !== 'settings' && panel !== 'diagnostics' && !this.handlers.story()) return;
     this.current?.close();
     const { dialog, body } = dialogShell(
       this.t(TITLES[panel]),
@@ -134,6 +136,9 @@ export class Dialogs {
         break;
       case 'saves':
         if (story) void fillSaves(body, { t, story, runAsync: this.handlers.runAsync, close });
+        break;
+      case 'sheet':
+        if (story) fillSheet(body, t, story);
         break;
     }
   }

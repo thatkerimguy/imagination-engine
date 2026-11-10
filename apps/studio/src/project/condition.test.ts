@@ -14,6 +14,25 @@ const trip = (formula: string) => {
 };
 
 describe('condition builder model', () => {
+  it('reads carried items and quest states as rows, and prints them back', () => {
+    expect(parseCondition('owned("key") > 0 and quest("lost") == "done"')).toEqual({
+      join: 'and',
+      rows: [
+        { kind: 'owned', item: 'key', is: true },
+        { kind: 'quest', quest: 'lost', status: 'done', is: true },
+      ],
+    });
+    expect(parseCondition('quest("lost") != "none"')?.rows[0]).toEqual({
+      kind: 'quest',
+      quest: 'lost',
+      status: 'none',
+      is: false,
+    });
+    expect(trip('owned("key") == 0 or quest("lost") == "active"')).toBe(
+      'owned("key") == 0 or quest("lost") == "active"',
+    );
+  });
+
   it('reads simple comparisons, flags and lists as rows', () => {
     expect(parseCondition('charisma >= 6 and not warned and has(items, "key")')).toEqual({
       join: 'and',

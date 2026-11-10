@@ -1,5 +1,5 @@
 import { defineAction, defineModule, type EngineModule } from '@ie/core';
-import { fightResultSchema, type FightResult } from '@ie/story';
+import { BATTLE_ACTS, fightResultSchema, type BattleAction, type FightResult } from '@ie/story';
 import { z } from 'zod';
 import type { SlotId } from './saves.ts';
 
@@ -16,6 +16,10 @@ export interface StoryActionsHost {
   choose(optionId: string): void;
   submit(answer: string): void;
   fight(result: FightResult): void;
+  buy(itemId: string): void;
+  sell(itemId: string): void;
+  leaveShop(): void;
+  battle(action: BattleAction): void;
   back(): void;
   rewind(to: number): void;
   restart(): void;
@@ -69,6 +73,39 @@ export function createStoryModule(host: () => StoryActionsHost | null): EngineMo
           description: 'End the fight on screen with a result.',
           params: fightResultSchema,
           run: (result) => call((s) => s.fight(result)),
+        }),
+      );
+      const item = z.object({ itemId: z.string().min(1) });
+      actions.register(
+        defineAction({
+          id: 'story.buy',
+          description: 'Buy one of an item in the shop on screen.',
+          params: item,
+          run: ({ itemId }) => call((s) => s.buy(itemId)),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.sell',
+          description: 'Sell one of an item in the shop on screen.',
+          params: item,
+          run: ({ itemId }) => call((s) => s.sell(itemId)),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.leaveShop',
+          params: none,
+          description: 'Leave the shop on screen.',
+          run: () => call((s) => s.leaveShop()),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.battle',
+          description: 'Take a turn in the battle on screen: attack, a skill, an item or run.',
+          params: z.object({ act: z.enum(BATTLE_ACTS), id: z.string().min(1).optional() }),
+          run: ({ act, id }) => call((s) => s.battle(id === undefined ? { act } : { act, id })),
         }),
       );
       actions.register(

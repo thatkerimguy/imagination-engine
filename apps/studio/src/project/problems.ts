@@ -32,7 +32,7 @@ export function findProblems(doc: StoryProject): LocatedProblem[] {
   const index = nodeIndex(doc);
   return analyzeProject(doc).problems.map((problem) => {
     const place = problem.where === undefined ? undefined : index.get(problem.where);
-    return { ...problem, passageId: place?.passageId ?? null, blockId: place?.blockId ?? null };
+    return { ...problem, passageId: place?.passageId || null, blockId: place?.blockId ?? null };
   });
 }
 

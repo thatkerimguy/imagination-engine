@@ -5,7 +5,7 @@ import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { z } from 'zod';
 import { FIGHT_ASSISTS, TEXT_SIZES, VOLUME_BUSES, type PlayerSettings } from './settings.ts';
 
-export const PANELS = ['settings', 'diagnostics', 'history', 'saves'] as const;
+export const PANELS = ['settings', 'diagnostics', 'history', 'saves', 'sheet'] as const;
 export type Panel = (typeof PANELS)[number];
 
 declare module '@ie/core' {

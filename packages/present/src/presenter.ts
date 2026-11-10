@@ -4,9 +4,10 @@ import { Countdown } from './countdown.ts';
 import { buildLine, type LineContext, type LineMode } from './lines.ts';
 import { presentMessages, type PresentKey } from './messages.ts';
 import { buildChoice, buildEnd, buildInput, type PromptHandlers } from './prompts.ts';
+import { buildBattle, buildShop, type RpgHandlers } from './rpg-prompts.ts';
 import { CHARS_PER_SECOND, reportTyped, Typewriter, type TextSpeed } from './typewriter.ts';
 
-export interface PresenterHost extends PromptHandlers {
+export interface PresenterHost extends PromptHandlers, RpgHandlers {
   /** A timed pause ran out. */
   advance(): void;
   /** Characters were just typed in; `speaker` is null for narration. Drives voice blips. */
@@ -245,6 +246,10 @@ export class StoryPresenter {
       shown = buildEnd(beat, { runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'fight') {
       handlers.fight?.(beat);
+    } else if (beat.kind === 'shop') {
+      shown = buildShop({ runtime: this.runtime, t: this.t }, handlers);
+    } else if (beat.kind === 'battle') {
+      shown = buildBattle({ runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'pause' && beat.seconds !== undefined) {
       this.timer(key, beat.seconds, () => handlers.advance());
     }

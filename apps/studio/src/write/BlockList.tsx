@@ -1,6 +1,7 @@
 import type { Block } from '@ie/story';
 import { Plus } from 'lucide-react';
 import { MenuButton, type MenuItem } from '../components/Menu.tsx';
+import { currencyFor } from '../project/factory-rpg.ts';
 import { BLOCK_MENU, newBlock, type MenuBlockType } from '../project/factory.ts';
 import { allPassages } from '../project/tree.ts';
 import { useT } from '../store.ts';
@@ -20,6 +21,10 @@ export function useNewBlock(): (type: MenuBlockType) => Block {
       track: doc.audio?.tracks[0]?.id,
       sound: doc.audio?.sounds[0]?.id,
       enemy: doc.enemies?.[0]?.id,
+      item: doc.items?.[0]?.id,
+      quest: doc.quests?.[0]?.id,
+      routine: doc.routines?.[0]?.id,
+      currency: currencyFor(doc),
     });
 }
 

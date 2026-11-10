@@ -5,6 +5,14 @@ import { useDoc } from '../project/store.ts';
 import { useStudio, useT } from '../store.ts';
 import { labelText } from './edit.ts';
 
+/** The name of an item, skill or quest by ID, for problems about them. */
+function dataName(doc: StoryProject, id: string, locale: Translator<MessageKey>['locale']): string {
+  const entry = [...(doc.items ?? []), ...(doc.skills ?? []), ...(doc.quests ?? [])].find(
+    (e) => e.id === id,
+  );
+  return labelText(entry?.name, locale, id);
+}
+
 /** A validator problem in the Studio's language (the validator's own message is English). */
 export function problemMessage(
   t: Translator<MessageKey>,
@@ -74,6 +82,29 @@ export function problemMessage(
         name: labelText(doc.enemies?.find((e) => e.id === id)?.name, t.locale, id),
         language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
       });
+    case 'unknown-item':
+      return id ? t('problem.unknownItem', { name: id }) : t('problem.noItem');
+    case 'unknown-quest':
+      return id ? t('problem.unknownQuest', { name: id }) : t('problem.noQuest');
+    case 'unknown-step':
+      return t('problem.unknownStep');
+    case 'shop-empty':
+      return t('problem.shopEmpty');
+    case 'hero-missing':
+      return t('problem.heroMissing');
+    case 'unknown-routine':
+      return id ? t('problem.unknownRoutine', { name: id }) : t('problem.noRoutine');
+    case 'unknown-input':
+      return t('problem.unknownInput', { name: id });
+    case 'data-name':
+      return t('problem.dataName', {
+        name: dataName(doc, id, t.locale),
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
+    case 'rule-target':
+      return t('problem.ruleTarget', { name: p.name || id });
+    case 'input-clash':
+      return t('problem.inputClash', { name: id });
     case 'enum-values':
       return t('problem.enumValues', { name: variableName });
     default:

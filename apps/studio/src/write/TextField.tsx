@@ -59,17 +59,23 @@ let pressing = false;
 let tracking = false;
 
 /**
+ * Starts following presses. Called on focus, so the listeners exist before the first press that
+ * takes focus away; installing them on blur would miss that press.
+ */
+function trackPresses(): void {
+  if (tracking) return;
+  tracking = true;
+  const up = () => (pressing = false);
+  document.addEventListener('pointerdown', () => (pressing = true), true);
+  document.addEventListener('pointerup', up, true);
+  document.addEventListener('pointercancel', up, true);
+}
+
+/**
  * Runs `hide` once the press that moved focus away has finished. Hiding the toolbar at once would
  * shift the layout between pointerdown and click, and the click would miss what it was aimed at.
  */
 function afterPress(hide: () => void): void {
-  if (!tracking) {
-    tracking = true;
-    const up = () => (pressing = false);
-    document.addEventListener('pointerdown', () => (pressing = true), true);
-    document.addEventListener('pointerup', up, true);
-    document.addEventListener('pointercancel', up, true);
-  }
   if (!pressing) return hide();
   // The click follows pointerup in the same task; a timeout runs after it.
   document.addEventListener('pointerup', () => setTimeout(hide), { once: true });
@@ -236,7 +242,10 @@ export function TextField(props: TextFieldProps) {
     <div
       className="tf"
       data-active={active || undefined}
-      onFocus={() => setActive(true)}
+      onFocus={() => {
+        trackPresses();
+        setActive(true);
+      }}
       onBlur={(event) => {
         if (event.currentTarget.contains(event.relatedTarget)) return;
         const root = event.currentTarget;

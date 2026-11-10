@@ -11,6 +11,7 @@ import { EnemyMoves } from './EnemyMoves.tsx';
 
 const HP = [50, 75, 100, 150, 200, 300] as const;
 const ATTACK = [5, 8, 10, 15, 20, 30] as const;
+const DEFENSE = [0, 2, 4, 6, 10, 15] as const;
 
 /** A select over numbers, keeping a value that isn't one of the presets. */
 function NumberChoice({
@@ -94,6 +95,12 @@ export function EnemiesEditor({ doc }: { readonly doc: StoryProject }) {
               value={enemy.attack ?? 10}
               label={t('enemies.attack')}
               onChange={(attack) => set(enemy.id, (x) => ({ ...x, attack }))}
+            />
+            <NumberChoice
+              values={DEFENSE}
+              value={enemy.defense ?? 0}
+              label={t('enemies.defense')}
+              onChange={(defense) => set(enemy.id, (x) => ({ ...x, defense }))}
             />
             <label className="labelled">
               <span className="ie-label">{t('enemies.color')}</span>

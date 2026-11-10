@@ -37,7 +37,7 @@ export interface ViewInfo {
 export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
   write: { id: 'write', icon: PenLine, label: 'view.write', description: 'desc.write' },
   flow: { id: 'flow', icon: Workflow, label: 'view.flow', description: 'desc.flow' },
-  logic: { id: 'logic', icon: Zap, label: 'view.logic', phase: 6, description: 'desc.logic' },
+  logic: { id: 'logic', icon: Zap, label: 'view.logic', description: 'desc.logic' },
   sound: { id: 'sound', icon: AudioLines, label: 'view.sound', description: 'desc.sound' },
   stage: { id: 'stage', icon: Sparkles, label: 'view.stage', description: 'desc.stage' },
   data: { id: 'data', icon: Database, label: 'view.data', description: 'desc.data' },

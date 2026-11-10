@@ -9,6 +9,7 @@ import {
   type StoryRuntime,
 } from '@ie/story';
 import { checkText } from './labels.ts';
+import { rpgLineText } from './rpg-lines.ts';
 import type { PresentKey } from './messages.ts';
 import { buildText, type BuildOptions } from './text-dom.ts';
 import type { RevealStep } from './typewriter.ts';
@@ -167,6 +168,19 @@ export function buildLine(beat: Beat, ctx: LineContext, mode: LineMode): BuiltLi
       const line = el('p', 'line line--check line--fought');
       line.dataset.result = beat.won ? 'success' : 'fail';
       line.textContent = ctx.t(beat.won ? 'fight.won' : 'fight.lost', { name, score: beat.score });
+      return { element: line, steps: [] };
+    }
+    case 'item':
+    case 'quest':
+    case 'traded':
+    case 'battle':
+    case 'turn':
+    case 'battled': {
+      const said = rpgLineText(beat, story, ctx.t);
+      if (!said) return null;
+      const line = el('p', `line line--check line--rpg line--${beat.kind}`);
+      line.dataset.tone = said.tone;
+      line.textContent = said.text;
       return { element: line, steps: [] };
     }
     default:

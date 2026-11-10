@@ -2,6 +2,13 @@ import { valueSchema, type Value } from '@ie/core';
 import { z } from 'zod';
 import type { Requirement } from './formula.ts';
 import { LAYOUTS, type Layout } from './schema.ts';
+import {
+  rpgBeatSchemas,
+  rpgStateShape,
+  type BattleState,
+  type QuestState,
+  type RpgBeat,
+} from './state-rpg.ts';
 
 /** Why an option is greyed out. The reader turns this into words in the current language. */
 /** Internal: the runtime edits its own copy of a state in place. */
@@ -71,6 +78,7 @@ export type Beat =
       readonly won: boolean;
       readonly score: number;
     }
+  | RpgBeat
   | { readonly kind: 'end'; readonly blockId: string | null; readonly endingId?: string };
 
 /** One level of the execution stack: a block list and the next block to run in it. */
@@ -81,6 +89,10 @@ export interface Frame {
   readonly at?: string;
   /** Marks a Call boundary: when the called passage ends, play returns below this frame. */
   readonly call?: boolean;
+  /** A routine's inputs, readable and writable like variables while it runs. */
+  readonly locals?: Readonly<Record<string, Value>>;
+  /** The rule whose blocks this frame runs; it can't fire again until the frame is gone. */
+  readonly rule?: string;
 }
 
 export interface StoryState {
@@ -100,6 +112,15 @@ export interface StoryState {
    * Hosts re-apply it after a load or a rewind. Missing in saves from before Phase 3.
    */
   readonly scene?: Readonly<Record<string, unknown>>;
+  /** Item counts the reader carries (ADR 0017). */
+  readonly inv?: Readonly<Record<string, number>>;
+  readonly quests?: Readonly<Record<string, QuestState>>;
+  /** The battle in progress, if any. */
+  readonly battle?: BattleState;
+  /** Rule events raised but not yet handled (`changed:gold`). */
+  readonly events?: readonly string[];
+  /** How often each rule has fired, for `once` rules. */
+  readonly fired?: Readonly<Record<string, number>>;
 }
 
 /** Scene key of a `.set` action: the action id, plus `:slot` when the params name a slot. */
@@ -172,6 +193,7 @@ export const beatSchema: z.ZodType<Beat> = z.discriminatedUnion('kind', [
   }),
   z.object({ kind: z.literal('fight'), blockId: z.string() }),
   z.object({ kind: z.literal('fought'), blockId: z.string(), won: z.boolean(), score: z.number() }),
+  ...rpgBeatSchemas,
   z.object({
     kind: z.literal('end'),
     blockId: z.string().nullable(),
@@ -187,6 +209,8 @@ export const storyStateSchema: z.ZodType<StoryState> = z.object({
       index: z.number().int().min(0),
       at: z.string().optional(),
       call: z.boolean().optional(),
+      locals: values.optional(),
+      rule: z.string().optional(),
     }),
   ),
   vars: values,
@@ -198,6 +222,7 @@ export const storyStateSchema: z.ZodType<StoryState> = z.object({
   waiting: z.number().int().nullable(),
   ended: z.boolean(),
   scene: z.record(z.string(), z.json()).optional(),
+  ...rpgStateShape,
 });
 
 /** Index of the beat that starts the page currently on screen. */

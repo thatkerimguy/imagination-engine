@@ -17,7 +17,7 @@ const NEW = '__new__';
 const BAR_CHOICES = [8, 16, 24, 32, 48, 64] as const;
 
 /** Picks an enemy, or makes a new one with starter moves and picks that. */
-function EnemyPicker({
+export function EnemyPicker({
   doc,
   value,
   onChange,

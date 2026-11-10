@@ -47,6 +47,8 @@ export interface EnemyDef {
   readonly hp?: number;
   /** Damage to the reader (out of 100) for each attack note that gets through. */
   readonly attack?: number;
+  /** Turn-based battles only: taken off each hit the hero lands. */
+  readonly defense?: number;
   /** Words that drift around the enemy on the stage, in both languages. */
   readonly presence?: readonly { readonly en?: string; readonly tr?: string }[];
   readonly color?: StageColor;
@@ -57,6 +59,7 @@ export const enemySchema = z.object({
   name: label,
   hp: z.number().min(10).max(1000).optional(),
   attack: z.number().min(1).max(50).optional(),
+  defense: z.number().min(0).max(50).optional(),
   presence: z.array(label).max(12).optional(),
   color: z.enum(STAGE_COLORS).optional(),
   moves: z.array(enemyMoveSchema).min(1),

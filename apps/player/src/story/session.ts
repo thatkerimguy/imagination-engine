@@ -1,6 +1,7 @@
 import type { KeyValueStore, Value } from '@ie/core';
 import {
   StoryRuntime,
+  type BattleAction,
   type Beat,
   type CompiledStory,
   type FightResult,
@@ -102,6 +103,23 @@ export class StorySession {
   /** Ends the waiting fight with its result; the story branches on it. */
   fight(result: FightResult): Beat[] {
     return this.act(() => this.runtime.resolveFight(result));
+  }
+
+  /** One purchase, sale or battle turn is one reader action, so one step back undoes it. */
+  buy(itemId: string): Beat[] {
+    return this.act(() => this.runtime.buy(itemId));
+  }
+
+  sell(itemId: string): Beat[] {
+    return this.act(() => this.runtime.sell(itemId));
+  }
+
+  leaveShop(): Beat[] {
+    return this.act(() => this.runtime.leaveShop());
+  }
+
+  battle(action: BattleAction): Beat[] {
+    return this.act(() => this.runtime.battleAction(action));
   }
 
   /** Steps back one reader action. */

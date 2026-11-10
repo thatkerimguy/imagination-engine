@@ -31,7 +31,19 @@ export type ConditionRow =
   /** The reader has (or hasn't) been to a passage. */
   | { readonly kind: 'visited'; readonly passage: string; readonly is: boolean }
   /** The reader has (or hasn't) picked an option before. */
-  | { readonly kind: 'chosen'; readonly option: string; readonly is: boolean };
+  | { readonly kind: 'chosen'; readonly option: string; readonly is: boolean }
+  /** The reader carries (or doesn't carry) an item. */
+  | { readonly kind: 'owned'; readonly item: string; readonly is: boolean }
+  /** A quest is (or isn't) in a state: not started, active, complete or failed. */
+  | {
+      readonly kind: 'quest';
+      readonly quest: string;
+      readonly status: QuestCheck;
+      readonly is: boolean;
+    };
+
+export const QUEST_CHECKS = ['none', 'active', 'done', 'failed'] as const;
+export type QuestCheck = (typeof QUEST_CHECKS)[number];
 
 export interface Condition {
   readonly join: 'and' | 'or';
@@ -64,7 +76,19 @@ function countRow(expr: Expr, is: boolean): ConditionRow | null {
   const yes = positive === is;
   if (expr.a.fn === 'visited') return { kind: 'visited', passage: target, is: yes };
   if (expr.a.fn === 'chosen') return { kind: 'chosen', option: target, is: yes };
+  if (expr.a.fn === 'owned') return { kind: 'owned', item: target, is: yes };
   return null;
+}
+
+/** `quest("q") == "done"` / `!=`. */
+function questRow(expr: Expr): ConditionRow | null {
+  if (expr.k !== 'bin' || (expr.op !== '==' && expr.op !== '!=')) return null;
+  if (expr.a.k !== 'call' || expr.a.fn !== 'quest') return null;
+  const quest = stringArg(expr.a.args[0]);
+  const status = stringArg(expr.b);
+  const check = QUEST_CHECKS.find((c) => c === status);
+  if (quest === null || !check) return null;
+  return { kind: 'quest', quest, status: check, is: expr.op === '==' };
 }
 
 function row(expr: Expr): ConditionRow | null {
@@ -75,12 +99,17 @@ function row(expr: Expr): ConditionRow | null {
     const value = stringArg(inner.args[1]);
     if (value !== null) return { kind: 'contains', var: inner.args[0].id, value, is: !negated };
   }
-  if (inner.k === 'call' && (inner.fn === 'visited' || inner.fn === 'chosen')) {
+  if (
+    inner.k === 'call' &&
+    (inner.fn === 'visited' || inner.fn === 'chosen' || inner.fn === 'owned')
+  ) {
     return countRow({ k: 'bin', op: '>', a: inner, b: { k: 'lit', v: 0 } }, !negated);
   }
   if (inner.k !== 'bin') return null;
   const counted = countRow(inner, !negated);
   if (counted) return counted;
+  const quest = negated ? null : questRow(inner);
+  if (quest) return quest;
   if (negated || !isCompare(inner.op) || inner.a.k !== 'var') return null;
   if (inner.b.k === 'lit')
     return { kind: 'compare', var: inner.a.id, op: inner.op, value: inner.b };
@@ -110,7 +139,7 @@ export function parseCondition(formula: Formula | undefined): Condition | null {
 }
 
 const lit = (v: Value): Expr => ({ k: 'lit', v });
-const counted = (fn: 'visited' | 'chosen', id: string, is: boolean): Expr => ({
+const counted = (fn: 'visited' | 'chosen' | 'owned', id: string, is: boolean): Expr => ({
   k: 'bin',
   op: is ? '>' : '==',
   a: { k: 'call', fn, args: [lit(id)] },
@@ -136,6 +165,15 @@ function rowExpr(r: ConditionRow): Expr {
       return counted('visited', r.passage, r.is);
     case 'chosen':
       return counted('chosen', r.option, r.is);
+    case 'owned':
+      return counted('owned', r.item, r.is);
+    case 'quest':
+      return {
+        k: 'bin',
+        op: r.is ? '==' : '!=',
+        a: { k: 'call', fn: 'quest', args: [lit(r.quest)] },
+        b: lit(r.status),
+      };
   }
 }
 

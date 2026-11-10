@@ -29,6 +29,8 @@ export const FUNCTIONS = {
   chosen: [1, 1],
   has: [2, 2],
   len: [1, 1],
+  owned: [1, 1],
+  quest: [1, 1],
 } as const satisfies Record<string, readonly [number, number]>;
 export type FunctionName = keyof typeof FUNCTIONS;
 
@@ -210,6 +212,10 @@ export interface EvalContext {
   chosen(optionId: string): number;
   /** Integer in [min, max], from the story's seeded generator. */
   random(min: number, max: number): number;
+  /** How many of an item the reader carries. */
+  owned?(itemId: string): number;
+  /** A quest's status: `none`, `active`, `done` or `failed`. */
+  quest?(questId: string): string;
 }
 
 /** A value as plain text: lists and records as JSON, null as nothing. */
@@ -318,19 +324,27 @@ function callFunction(fn: FunctionName, args: readonly Expr[], ctx: EvalContext)
         : valueText(first).includes(valueText(second));
     case 'len':
       return Array.isArray(first) ? first.length : valueText(first).length;
+    case 'owned':
+      return ctx.owned?.(valueText(first)) ?? 0;
+    case 'quest':
+      return ctx.quest?.(valueText(first)) ?? 'none';
   }
 }
 
-/** Every variable a formula reads, and the passage/option IDs it names in visited()/chosen(). */
+/** Every variable a formula reads, and the IDs it names in visited(), chosen(), owned(), quest(). */
 export function references(expr: Expr): {
   vars: Set<string>;
   passages: Set<string>;
   options: Set<string>;
+  items: Set<string>;
+  quests: Set<string>;
 } {
   const found = {
     vars: new Set<string>(),
     passages: new Set<string>(),
     options: new Set<string>(),
+    items: new Set<string>(),
+    quests: new Set<string>(),
   };
   const walk = (e: Expr): void => {
     if (e.k === 'var') found.vars.add(e.id);
@@ -343,6 +357,8 @@ export function references(expr: Expr): {
       if (target?.k === 'lit' && typeof target.v === 'string') {
         if (e.fn === 'visited') found.passages.add(target.v);
         if (e.fn === 'chosen') found.options.add(target.v);
+        if (e.fn === 'owned') found.items.add(target.v);
+        if (e.fn === 'quest') found.quests.add(target.v);
       }
       e.args.forEach(walk);
     }

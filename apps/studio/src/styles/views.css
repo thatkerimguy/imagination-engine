@@ -224,6 +224,18 @@
   margin-top: var(--space-5);
 }
 
+/* Seven tabs don't fit a phone; the strip scrolls sideways instead of wrapping. */
+.data__tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.data__tabs > .ie-segmented > button {
+  flex: none;
+  white-space: nowrap;
+}
+
 .cards {
   display: flex;
   flex-direction: column;

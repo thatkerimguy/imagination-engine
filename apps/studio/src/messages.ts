@@ -1,6 +1,8 @@
 import { defineCatalogs } from '@ie/i18n';
 import { fightStudioMessages } from './messages-fight.ts';
+import { logicMessages } from './messages-logic.ts';
 import { projectMessages } from './messages-project.ts';
+import { rpgBlockMessages } from './messages-rpg.ts';
 import { soundMessages } from './messages-sound.ts';
 import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
@@ -111,6 +113,8 @@ export const messages = {
     ...soundMessages.en,
     ...stageMessages.en,
     ...fightStudioMessages.en,
+    ...rpgBlockMessages.en,
+    ...logicMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -119,6 +123,8 @@ export const messages = {
     ...soundMessages.tr,
     ...stageMessages.tr,
     ...fightStudioMessages.tr,
+    ...rpgBlockMessages.tr,
+    ...logicMessages.tr,
   },
 };
 

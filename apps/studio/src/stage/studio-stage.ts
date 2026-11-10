@@ -23,7 +23,11 @@ export const stage = createStageHost({
  * Shows the stage in `panel` (positioned), moving `text` with the camera. Returns a function that
  * takes it away again and clears what was on it.
  */
-export function attachStage(panel: HTMLElement, text: HTMLElement | null, language: Locale): () => void {
+export function attachStage(
+  panel: HTMLElement,
+  text: HTMLElement | null,
+  language: Locale,
+): () => void {
   mount = panel;
   root = text;
   locale = language;

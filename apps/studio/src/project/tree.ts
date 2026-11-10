@@ -37,6 +37,12 @@ export function childLists(block: Block): [string, Blocks][] {
       ];
     case 'random':
       return block.branches.map((b) => [listKey.branch(b.id), b.then]);
+    case 'battle':
+      return [
+        [listKey.win(block.id), block.win],
+        [listKey.lose(block.id), block.lose],
+        ...(block.fled ? [[listKey.fled(block.id), block.fled] as [string, Blocks]] : []),
+      ];
     default:
       return [];
   }
@@ -75,6 +81,13 @@ function mapChildren(block: Block, map: ListMapper): Block {
       const win = mapList(listKey.win(block.id), block.win, map);
       const lose = mapList(listKey.lose(block.id), block.lose, map);
       return win === block.win && lose === block.lose ? block : { ...block, win, lose };
+    }
+    case 'battle': {
+      const win = mapList(listKey.win(block.id), block.win, map);
+      const lose = mapList(listKey.lose(block.id), block.lose, map);
+      const fled = block.fled && mapList(listKey.fled(block.id), block.fled, map);
+      if (win === block.win && lose === block.lose && fled === block.fled) return block;
+      return fled ? { ...block, win, lose, fled } : { ...block, win, lose };
     }
     case 'random': {
       let changed = false;
@@ -118,12 +131,39 @@ function mapPassages(project: StoryProject, fn: (p: Passage) => Passage): StoryP
   return changed ? { ...project, chapters } : project;
 }
 
-/** Rewrites every block list in the project (each passage's and every nested one). */
+/** Rewrites the block lists of rules and routines (the Logic workspace). */
+function mapLogic(project: StoryProject, map: ListMapper): StoryProject {
+  let next = project;
+  if (project.rules?.length) {
+    let changed = false;
+    const rules = project.rules.map((rule) => {
+      const blocks = mapList(listKey.rule(rule.id), rule.do, map);
+      if (blocks === rule.do) return rule;
+      changed = true;
+      return { ...rule, do: blocks };
+    });
+    if (changed) next = { ...next, rules };
+  }
+  if (project.routines?.length) {
+    let changed = false;
+    const routines = project.routines.map((routine) => {
+      const blocks = mapList(listKey.routine(routine.id), routine.blocks, map);
+      if (blocks === routine.blocks) return routine;
+      changed = true;
+      return { ...routine, blocks };
+    });
+    if (changed) next = { ...next, routines };
+  }
+  return next;
+}
+
+/** Rewrites every block list in the project: passages, rules, routines and every nested one. */
 export function mapLists(project: StoryProject, map: ListMapper): StoryProject {
-  return mapPassages(project, (passage) => {
+  const passages = mapPassages(project, (passage) => {
     const blocks = mapList(listKey.passage(passage.id), passage.blocks, map);
     return blocks === passage.blocks ? passage : { ...passage, blocks };
   });
+  return mapLogic(passages, map);
 }
 
 export function updatePassage(
@@ -179,7 +219,7 @@ export interface BlockPlace {
   readonly index: number;
 }
 
-/** Calls `visit` for every block, depth first, in reading order. */
+/** Calls `visit` for every block, depth first, in reading order; rule and routine blocks last, with no passage. */
 export function walkBlocks(project: StoryProject, visit: (place: BlockPlace) => void): void {
   const walk = (key: string, list: Blocks, passageId: string) => {
     list.forEach((block, index) => {
@@ -190,6 +230,9 @@ export function walkBlocks(project: StoryProject, visit: (place: BlockPlace) => 
   for (const chapter of project.chapters)
     for (const passage of chapter.passages)
       walk(listKey.passage(passage.id), passage.blocks, passage.id);
+  for (const rule of project.rules ?? []) walk(listKey.rule(rule.id), rule.do, '');
+  for (const routine of project.routines ?? [])
+    walk(listKey.routine(routine.id), routine.blocks, '');
 }
 
 export function findBlock(project: StoryProject, id: string): BlockPlace | undefined {

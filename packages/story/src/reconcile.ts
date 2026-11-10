@@ -28,6 +28,8 @@ export function reconcileState(story: CompiledStory, state: Mutable<StoryState>)
   if (waiting && 'blockId' in waiting && waiting.blockId && !story.blocks.has(waiting.blockId)) {
     state.waiting = null;
   }
+  if (state.battle && story.blocks.get(state.battle.blockId)?.block.type !== 'battle')
+    delete state.battle;
   return null;
 }
 

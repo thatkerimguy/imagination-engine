@@ -3,9 +3,9 @@ import type { Locale } from '@ie/i18n';
 import { z } from 'zod';
 import { analyzeProject, type BlockInfo, type StoryProblem } from './analyze.ts';
 import { compileFormula, type Expr } from './formula.ts';
+import { storyProjectSchema } from './project.ts';
 import type { MarkupNode } from './markup.ts';
 import {
-  storyProjectSchema,
   type Block,
   type Chapter,
   type CharacterDef,

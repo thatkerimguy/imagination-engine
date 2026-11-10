@@ -66,6 +66,10 @@ export class PlaySession {
         restart: () => this.restart(),
         advance: () => this.advance(),
         fight: (beat) => this.fights?.start(this.runtime, beat),
+        buy: (item) => this.act(() => this.runtime.buy(item)),
+        sell: (item) => this.act(() => this.runtime.sell(item)),
+        leaveShop: () => this.act(() => this.runtime.leaveShop()),
+        battle: (action) => this.act(() => this.runtime.battleAction(action)),
         ...(audio
           ? { typed: (speaker: string | null, text: string) => audio.typed(speaker, text) }
           : {}),

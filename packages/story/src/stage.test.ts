@@ -25,8 +25,7 @@ function project(blocks: Block[]): StoryProject {
   };
 }
 
-const codes = (blocks: Block[]) =>
-  analyzeProject(project(blocks)).problems.map((p) => p.code);
+const codes = (blocks: Block[]) => analyzeProject(project(blocks)).problems.map((p) => p.code);
 
 describe('stage checks', () => {
   it('accepts complete stage blocks', () => {

@@ -37,7 +37,8 @@
       },
       "type": "number",
       "default": 8,
-      "min": 0
+      "min": 0,
+      "stat": true
     },
     {
       "id": "charisma",
@@ -46,7 +47,8 @@
         "tr": "Karizma"
       },
       "type": "number",
-      "default": 4
+      "default": 4,
+      "stat": true
     },
     {
       "id": "agility",
@@ -55,7 +57,8 @@
         "tr": "Çeviklik"
       },
       "type": "number",
-      "default": 3
+      "default": 3,
+      "stat": true
     },
     {
       "id": "trust",
@@ -101,6 +104,60 @@
       "default": 0,
       "min": 0,
       "max": 100
+    },
+    {
+      "id": "hp",
+      "name": {
+        "en": "HP",
+        "tr": "Can"
+      },
+      "type": "number",
+      "default": 20,
+      "min": 0,
+      "stat": true
+    },
+    {
+      "id": "max_hp",
+      "name": {
+        "en": "Max HP",
+        "tr": "En yüksek can"
+      },
+      "type": "number",
+      "default": 20,
+      "min": 0
+    },
+    {
+      "id": "attack",
+      "name": {
+        "en": "Attack",
+        "tr": "Saldırı"
+      },
+      "type": "number",
+      "default": 5,
+      "min": 0,
+      "stat": true
+    },
+    {
+      "id": "defense",
+      "name": {
+        "en": "Defense",
+        "tr": "Savunma"
+      },
+      "type": "number",
+      "default": 1,
+      "min": 0,
+      "stat": true
+    },
+    {
+      "id": "mp",
+      "name": {
+        "en": "MP",
+        "tr": "MP"
+      },
+      "type": "number",
+      "default": 3,
+      "min": 0,
+      "stat": true
     }
   ],
   "characters": [
@@ -551,6 +608,22 @@
                       "id": "o_lamp_go",
                       "type": "jump",
                       "to": "lamp"
+                    }
+                  ]
+                },
+                {
+                  "id": "o_market",
+                  "text": {
+                    "id": "o_market",
+                    "en": "Duck into the night market",
+                    "tr": "Gece pazarına dal"
+                  },
+                  "once": true,
+                  "then": [
+                    {
+                      "id": "o_market_go",
+                      "type": "jump",
+                      "to": "market"
                     }
                   ]
                 }
@@ -1148,6 +1221,24 @@
               }
             },
             {
+              "id": "la_quest",
+              "type": "if",
+              "branches": [
+                {
+                  "id": "la_quest_br",
+                  "when": "quest(\"stranger\") == \"active\"",
+                  "then": [
+                    {
+                      "id": "la_quest_done",
+                      "type": "quest",
+                      "op": "done",
+                      "quest": "stranger"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "id": "la_4",
               "type": "narration",
               "text": {
@@ -1167,6 +1258,135 @@
                   "tr": "Aile"
                 }
               }
+            }
+          ]
+        },
+        {
+          "id": "market",
+          "name": "Night market",
+          "blocks": [
+            {
+              "id": "mk_quest",
+              "type": "quest",
+              "op": "start",
+              "quest": "stranger"
+            },
+            {
+              "id": "mk_1",
+              "type": "narration",
+              "text": {
+                "id": "mk_1",
+                "en": "Behind a torn tarp, the night market hums: hissing lamps, wet canvas, a man selling tonic by the cup.",
+                "tr": "Yırtık bir brandanın ardında gece pazarı uğulduyor: tıslayan lambalar, ıslak branda, bardakla tonik satan bir adam."
+              }
+            },
+            {
+              "id": "mk_2",
+              "type": "dialogue",
+              "speaker": "mira",
+              "text": {
+                "id": "mk_2",
+                "en": "Be quick. And don't flash your coins.",
+                "tr": "Çabuk ol. Paranı da ortada sallama."
+              }
+            },
+            {
+              "id": "mk_tea",
+              "type": "routine",
+              "routine": "pay",
+              "args": {
+                "amount": 1
+              }
+            },
+            {
+              "id": "mk_shop",
+              "type": "shop",
+              "currency": "gold",
+              "stock": [
+                {
+                  "item": "tonic"
+                },
+                {
+                  "item": "lantern"
+                }
+              ],
+              "sells": true
+            },
+            {
+              "id": "mk_3",
+              "type": "narration",
+              "text": {
+                "id": "mk_3",
+                "en": "A hand slips into your coat.",
+                "tr": "Bir el ceketinin içine kayıyor."
+              }
+            },
+            {
+              "id": "mk_fight",
+              "type": "battle",
+              "enemy": "pickpocket",
+              "flee": true,
+              "win": [
+                {
+                  "id": "mk_win",
+                  "type": "narration",
+                  "text": {
+                    "id": "mk_win",
+                    "en": "The pickpocket bolts, leaving a small knife in the mud.",
+                    "tr": "Yankesici kaçıyor, çamurda küçük bir bıçak bırakıyor."
+                  }
+                },
+                {
+                  "id": "mk_knife",
+                  "type": "item",
+                  "op": "give",
+                  "item": "knife"
+                },
+                {
+                  "id": "mk_win_go",
+                  "type": "jump",
+                  "to": "crossroads"
+                }
+              ],
+              "lose": [
+                {
+                  "id": "mk_lose",
+                  "type": "narration",
+                  "text": {
+                    "id": "mk_lose",
+                    "en": "You come to in the gutter. Your purse is lighter.",
+                    "tr": "Kendine geldiğinde oluktasın. Kesen hafiflemiş."
+                  }
+                },
+                {
+                  "id": "mk_lose_gold",
+                  "type": "set",
+                  "var": "gold",
+                  "op": "set",
+                  "value": 0
+                },
+                {
+                  "id": "mk_lose_go",
+                  "type": "jump",
+                  "to": "escaped"
+                }
+              ],
+              "fled": [
+                {
+                  "id": "mk_fled",
+                  "type": "narration",
+                  "text": {
+                    "id": "mk_fled",
+                    "en": "You shove back through the crowd, heart pounding.",
+                    "tr": "Kalbin küt küt atarken kalabalığı yarıp geri dönüyorsun."
+                  }
+                },
+                {
+                  "id": "mk_fled_go",
+                  "type": "jump",
+                  "to": "crossroads"
+                }
+              ]
             }
           ]
         }
@@ -1247,6 +1467,178 @@
           },
           "pattern": "flurry",
           "answer": "parry"
+        }
+      ]
+    },
+    {
+      "id": "pickpocket",
+      "name": {
+        "en": "The pickpocket",
+        "tr": "Yankesici"
+      },
+      "hp": 14,
+      "attack": 4,
+      "defense": 0,
+      "color": "gold",
+      "moves": [
+        {
+          "id": "grab",
+          "name": {
+            "en": "Grab",
+            "tr": "Kapma"
+          },
+          "pattern": "jab",
+          "answer": "parry"
+        }
+      ]
+    }
+  ],
+  "hero": {
+    "hp": "hp",
+    "maxHp": "max_hp",
+    "attack": "attack",
+    "defense": "defense",
+    "mp": "mp"
+  },
+  "items": [
+    {
+      "id": "tonic",
+      "name": {
+        "en": "Tonic",
+        "tr": "Tonik"
+      },
+      "description": {
+        "en": "Bitter, warm, and good for bruises.",
+        "tr": "Acı, sıcak ve morluklara iyi gelir."
+      },
+      "kind": "consumable",
+      "price": 3,
+      "effects": [
+        {
+          "var": "hp",
+          "amount": 8
+        }
+      ]
+    },
+    {
+      "id": "lantern",
+      "name": {
+        "en": "Lantern",
+        "tr": "Fener"
+      },
+      "description": {
+        "en": "Cracked glass, but it holds a flame.",
+        "tr": "Camı çatlak ama alevi tutuyor."
+      },
+      "kind": "item",
+      "price": 6
+    },
+    {
+      "id": "knife",
+      "name": {
+        "en": "Small knife",
+        "tr": "Küçük bıçak"
+      },
+      "description": {
+        "en": "The pickpocket left it behind.",
+        "tr": "Yankesici geride bıraktı."
+      },
+      "kind": "key"
+    }
+  ],
+  "skills": [
+    {
+      "id": "feint",
+      "name": {
+        "en": "Feint",
+        "tr": "Aldatmaca"
+      },
+      "cost": 2,
+      "power": 1.8
+    },
+    {
+      "id": "breathe",
+      "name": {
+        "en": "Catch your breath",
+        "tr": "Soluklan"
+      },
+      "cost": 1,
+      "power": 0.4,
+      "heal": true
+    }
+  ],
+  "quests": [
+    {
+      "id": "stranger",
+      "name": {
+        "en": "The stranger",
+        "tr": "Yabancı"
+      },
+      "steps": [
+        {
+          "id": "who",
+          "text": {
+            "en": "Find out who blocks the alley.",
+            "tr": "Sokağı kimin kestiğini öğren."
+          }
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "lantern_light",
+      "name": "Lantern lights the way",
+      "on": "gained",
+      "target": "lantern",
+      "do": [
+        {
+          "id": "ru_lamp",
+          "type": "set",
+          "var": "has_lamp",
+          "op": "set",
+          "value": true
+        },
+        {
+          "id": "ru_bag",
+          "type": "set",
+          "var": "bag",
+          "op": "append",
+          "value": "\"lamp\""
+        }
+      ]
+    }
+  ],
+  "routines": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "params": [
+        {
+          "id": "amount",
+          "name": {
+            "en": "Amount",
+            "tr": "Miktar"
+          },
+          "type": "number"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "pay_set",
+          "type": "set",
+          "var": "gold",
+          "op": "subtract",
+          "value": "amount"
+        },
+        {
+          "id": "pay_line",
+          "type": "narration",
+          "text": {
+            "id": "pay_line",
+            "en": "You hand over {amount} gold for a cup of something hot.",
+            "tr": "Sıcak bir şeyler için {amount} altın uzatıyorsun."
+          }
         }
       ]
     }

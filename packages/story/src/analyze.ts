@@ -1,6 +1,8 @@
 import { parseDice } from './dice.ts';
 import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
 import { checkEnemies, checkFightBlock } from './analyze-fight.ts';
+import { checkReferences, type PendingRefs } from './analyze-refs.ts';
+import { checkRpgBlock, checkRpgData, type RpgCheckContext } from './analyze-rpg.ts';
 import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
@@ -44,6 +46,9 @@ export const listKey = {
   fail: (checkId: string) => `f:${checkId}`,
   win: (fightId: string) => `w:${fightId}`,
   lose: (fightId: string) => `l:${fightId}`,
+  fled: (battleId: string) => `x:${battleId}`,
+  rule: (ruleId: string) => `r:${ruleId}`,
+  routine: (routineId: string) => `u:${routineId}`,
 };
 
 export interface Analysis {
@@ -81,6 +86,10 @@ export function leaves(list: readonly Block[]): boolean {
         return leaves(block.success) && leaves(block.fail);
       case 'fight':
         return leaves(block.win) && leaves(block.lose);
+      case 'battle':
+        return (
+          leaves(block.win) && leaves(block.lose) && (block.fled ? leaves(block.fled) : !block.flee)
+        );
       default:
         return false;
     }
@@ -113,7 +122,10 @@ export function analyzeProject(project: StoryProject): Analysis {
   const lineIds = new Set<string>();
   const nodeIds = new Set<string>();
   const targets = { jump: new Set<string>(), call: new Set<string>() };
-  const pendingRefs: { passages: Set<string>; options: Set<string>; where: string }[] = [];
+  const pendingRefs: PendingRefs[] = [];
+  // A routine's inputs, readable like variables while its blocks are checked.
+  let locals: ReadonlySet<string> = new Set();
+  const known = (id: string) => variables.has(id) || locals.has(id);
 
   for (const chapter of project.chapters) {
     for (const passage of chapter.passages) {
@@ -143,8 +155,8 @@ export function analyzeProject(project: StoryProject): Analysis {
       const expr = compileFormula(formula);
       formulas.set(String(formula), expr);
       const refs = references(expr);
-      for (const id of refs.vars) if (!variables.has(id)) unknownVariable(id, where);
-      pendingRefs.push({ passages: refs.passages, options: refs.options, where });
+      for (const id of refs.vars) if (!known(id)) unknownVariable(id, where);
+      pendingRefs.push({ ...refs, where });
       return expr;
     } catch (error) {
       const detail = error instanceof FormulaError ? error.message : String(error);
@@ -189,7 +201,7 @@ export function analyzeProject(project: StoryProject): Analysis {
         markups.set(`${text.id}:${locale}`, nodes);
         const refs = markupReferences(nodes);
         for (const id of refs.vars) {
-          if (!variables.has(id)) unknownVariable(id, where);
+          if (!known(id)) unknownVariable(id, where);
           vars.add(id);
         }
         for (const id of refs.characters) {
@@ -211,6 +223,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   };
 
   const needVar = (id: string, where: string, type?: VariableDef['type']) => {
+    if (locals.has(id)) return;
     const def = variables.get(id);
     if (!def) unknownVariable(id, where);
     else if (type && def.type !== type)
@@ -329,6 +342,13 @@ export function analyzeProject(project: StoryProject): Analysis {
           walk(block.win, listKey.win(block.id), passageId);
           walk(block.lose, listKey.lose(block.id), passageId);
           break;
+        case 'item':
+        case 'quest':
+        case 'shop':
+        case 'battle':
+        case 'routine':
+          checkRpgBlock(block, passageId, rpg);
+          break;
         case 'action':
           checkAudioAction(block, project, report);
           checkStageAction(block, project, report);
@@ -339,56 +359,27 @@ export function analyzeProject(project: StoryProject): Analysis {
     }
   };
 
+  const rpg: RpgCheckContext = {
+    project,
+    report,
+    needVar,
+    useFormula,
+    walk,
+    walkRoutine: (list, key, inputs) => {
+      locals = new Set(inputs);
+      walk(list, key, '');
+      locals = new Set();
+    },
+    listKey,
+  };
+
   for (const { passage } of passages.values())
     walk(passage.blocks, listKey.passage(passage.id), passage.id);
+  checkRpgData(rpg);
   checkAudioLibrary(project, report);
   checkEnemies(project, report);
 
-  for (const refs of pendingRefs) {
-    for (const id of refs.passages) {
-      if (!passages.has(id))
-        report(
-          'error',
-          'unknown-passage',
-          `visited("${id}") names a passage that doesn't exist.`,
-          { id },
-          refs.where,
-        );
-    }
-    for (const id of refs.options) {
-      if (!options.has(id))
-        report(
-          'error',
-          'unknown-option',
-          `chosen("${id}") names an option that doesn't exist.`,
-          { id },
-          refs.where,
-        );
-    }
-  }
-
-  if (!passages.has(project.start))
-    report('error', 'start', `The start passage "${project.start}" doesn't exist.`, {
-      id: project.start,
-    });
-  for (const [id, { passage }] of passages) {
-    const name = passage.name ?? id;
-    if (id !== project.start && !targets.jump.has(id) && !targets.call.has(id))
-      report('warning', 'unreachable', `Nothing leads to passage "${name}".`, { name }, id);
-    if (!targets.call.has(id) && !leaves(passage.blocks)) {
-      report(
-        'warning',
-        'dead-end',
-        `Passage "${name}" can run out without a Jump or End, so the story stops there.`,
-        { name },
-        id,
-      );
-    }
-  }
-  for (const def of project.variables) {
-    if (def.type === 'enum' && !def.values?.length)
-      report('error', 'enum-values', `One-of variable "${def.id}" has no values.`, { id: def.id });
-  }
+  checkReferences({ project, passages, options, targets, pendingRefs, leaves, report });
 
   return {
     passages,

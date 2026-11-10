@@ -27,7 +27,12 @@ export function stageKind(block: Block): StageKind | null {
 export function newStageBlock(id: string, kind: StageKind): ActionBlock {
   switch (kind) {
     case 'background':
-      return { id, type: 'action', action: 'stage.background.set', params: { preset: 'rain', amount: 0.6 } };
+      return {
+        id,
+        type: 'action',
+        action: 'stage.background.set',
+        params: { preset: 'rain', amount: 0.6 },
+      };
     case 'look':
       return { id, type: 'action', action: 'stage.look.set', params: { look: 'film' } };
     case 'effect':
@@ -42,6 +47,11 @@ export function newStageBlock(id: string, kind: StageKind): ActionBlock {
         params: { text: { en: '', tr: '' }, seconds: 3, exit: 'fade' },
       };
     case 'transition':
-      return { id, type: 'action', action: 'stage.transition', params: { kind: 'dissolve', seconds: 1.2 } };
+      return {
+        id,
+        type: 'action',
+        action: 'stage.transition',
+        params: { kind: 'dissolve', seconds: 1.2 },
+      };
   }
 }

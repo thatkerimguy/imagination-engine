@@ -8,6 +8,8 @@ export {
   type LineMode,
 } from './lines.ts';
 export { presentMessages, type PresentKey } from './messages.ts';
+export { rpgLineText, rpgNames } from './rpg-lines.ts';
+export { buildBattle, buildShop, type RpgHandlers } from './rpg-prompts.ts';
 export { StoryPresenter, type PresenterHost, type PresenterOptions } from './presenter.ts';
 export { buildText, type BuildOptions, type BuiltText } from './text-dom.ts';
 export {

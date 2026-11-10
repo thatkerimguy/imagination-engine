@@ -175,7 +175,9 @@ export function StageEditor({ block }: { readonly block: ActionBlock }) {
       );
       break;
     case 'effect':
-      body = <EffectSentence block={block} params={params} set={set} update={update} color={color} />;
+      body = (
+        <EffectSentence block={block} params={params} set={set} update={update} color={color} />
+      );
       break;
     case 'burst':
       body = (

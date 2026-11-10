@@ -16,6 +16,10 @@ export interface Usages {
   readonly audio: ReadonlyMap<string, number>;
   /** Enemies, by ID, from the fight blocks. */
   readonly enemies: ReadonlyMap<string, number>;
+  /** Items, quests and routines, from their blocks, shops and formulas. */
+  readonly items: ReadonlyMap<string, number>;
+  readonly quests: ReadonlyMap<string, number>;
+  readonly routines: ReadonlyMap<string, number>;
 }
 
 function formulasOf(block: Block): Formula[] {
@@ -32,6 +36,10 @@ function formulasOf(block: Block): Formula[] {
       return [block.target, ...(block.modifier === undefined ? [] : [block.modifier])];
     case 'set':
       return block.value === undefined ? [] : [block.value];
+    case 'item':
+      return block.count === undefined ? [] : [block.count];
+    case 'routine':
+      return Object.values(block.args ?? {});
     default:
       return [];
   }
@@ -43,6 +51,9 @@ export function countUsages(doc: StoryProject): Usages {
   const characters = new Map<string, number>();
   const audio = new Map<string, number>();
   const enemies = new Map<string, number>();
+  const items = new Map<string, number>();
+  const quests = new Map<string, number>();
+  const routines = new Map<string, number>();
   const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
 
   walkBlocks(doc, ({ block }) => {
@@ -65,9 +76,20 @@ export function countUsages(doc: StoryProject): Usages {
     }
     if (block.type === 'choice')
       for (const o of block.options) if (o.cost) bump(variables, o.cost.var);
+    if (block.type === 'item') bump(items, block.item);
+    if (block.type === 'quest') bump(quests, block.quest);
+    if (block.type === 'battle') bump(enemies, block.enemy);
+    if (block.type === 'routine') bump(routines, block.routine);
+    if (block.type === 'shop') {
+      bump(variables, block.currency);
+      for (const stock of block.stock) bump(items, stock.item);
+    }
     for (const formula of formulasOf(block)) {
       try {
-        for (const id of references(compileFormula(formula)).vars) bump(variables, id);
+        const refs = references(compileFormula(formula));
+        for (const id of refs.vars) bump(variables, id);
+        for (const id of refs.items) bump(items, id);
+        for (const id of refs.quests) bump(quests, id);
       } catch {
         // A broken formula is reported by the validator; it just counts as no usage here.
       }
@@ -85,5 +107,14 @@ export function countUsages(doc: StoryProject): Usages {
       }
     }
   });
-  return { variables, characters, audio, enemies };
+  for (const id of Object.values(doc.hero ?? {})) if (typeof id === 'string') bump(variables, id);
+  for (const item of doc.items ?? [])
+    for (const effect of item.effects ?? []) bump(variables, effect.var);
+  for (const rule of doc.rules ?? []) {
+    if (!rule.target) continue;
+    if (rule.on === 'changed') bump(variables, rule.target);
+    else if (rule.on === 'gained' || rule.on === 'lost') bump(items, rule.target);
+    else if (rule.on === 'quest') bump(quests, rule.target);
+  }
+  return { variables, characters, audio, enemies, items, quests, routines };
 }

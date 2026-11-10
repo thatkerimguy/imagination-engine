@@ -1,5 +1,6 @@
 import { listKey, type Block, type StoryProject } from '@ie/story';
 import { describe, expect, it } from 'vitest';
+import { newRoutine, newRule } from './factory-rpg.ts';
 import { cloneBlock, newBlock, newProject } from './factory.ts';
 import {
   findBlock,
@@ -75,5 +76,30 @@ describe('block tree edits', () => {
     if (copy.type !== 'choice') throw new Error('not a choice');
     expect(copy.options.map((o) => o.id)).not.toContain(choice.options[0]?.id);
     expect(copy.options[0]?.text.id).not.toBe(choice.options[0]?.text.id);
+  });
+
+  it('edits the blocks of rules, routines and battles like any other list', () => {
+    const rule = newRule('Rule 1');
+    const routine = newRoutine('Routine 1');
+    const base = {
+      ...newProject({ en: 'Test', tr: 'Deneme' }),
+      rules: [rule],
+      routines: [routine],
+    };
+    const battle = newBlock('battle', { enemy: 'rat' });
+    const line = newBlock('narration');
+    let next = insertBlock(base, listKey.rule(rule.id), 0, battle);
+    next = insertBlock(next, listKey.win(battle.id), 0, line);
+    next = insertBlock(next, listKey.routine(routine.id), 0, newBlock('narration'));
+    const found = next.rules?.[0]?.do[0];
+    expect(found?.type === 'battle' && found.win[0]?.id).toBe(line.id);
+    expect(next.routines?.[0]?.blocks).toHaveLength(1);
+    expect(findBlock(next, line.id)).toMatchObject({
+      listKey: listKey.win(battle.id),
+      passageId: '',
+    });
+    const copy = cloneBlock(battle);
+    expect(copy.id).not.toBe(battle.id);
+    expect(removeBlock(next, line.id).rules?.[0]?.do[0]).toMatchObject({ win: [] });
   });
 });

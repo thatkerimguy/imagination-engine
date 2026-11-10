@@ -41,7 +41,7 @@ export function VariablesEditor({ doc }: { readonly doc: StoryProject }) {
       (d) => ({ ...d, variables: d.variables.map((v) => (v.id === id ? change(v) : v)) }),
       merge ? `variable:${id}` : undefined,
     );
-  const optional = <K extends 'min' | 'max' | 'description'>(
+  const optional = <K extends 'min' | 'max' | 'description' | 'stat'>(
     v: VariableDef,
     key: K,
     value: VariableDef[K] | undefined,
@@ -187,6 +187,19 @@ export function VariablesEditor({ doc }: { readonly doc: StoryProject }) {
               onChange={(e) => set(v.id, (x) => optional(x, 'description', e.target.value))}
             />
           </label>
+          {v.type === 'number' && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={v.stat === true}
+                data-testid="variable-stat"
+                onChange={(e) =>
+                  set(v.id, (x) => optional(x, 'stat', e.target.checked || undefined))
+                }
+              />
+              <span>{t('variables.stat')}</span>
+            </label>
+          )}
           <p className="hint">{t(`scopeHint.${v.scope ?? 'game'}` as MessageKey)}</p>
           <div className="card__foot">
             <span className="hint">{t('data.uses', { count: usages.get(v.id) ?? 0 })}</span>

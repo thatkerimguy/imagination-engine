@@ -13,6 +13,13 @@ import { FightEditor } from './blocks/FightEditor.tsx';
 import { CheckEditor, IfEditor, RandomEditor } from './blocks/BranchEditors.tsx';
 import { FlowEditor, SetEditor } from './blocks/LogicEditors.tsx';
 import {
+  BattleEditor,
+  ItemEditor,
+  QuestEditor,
+  RoutineCallEditor,
+  ShopEditor,
+} from './blocks/RpgEditors.tsx';
+import {
   EndEditor,
   InputEditor,
   LineEditor,
@@ -54,6 +61,16 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
       return <RandomEditor block={block} />;
     case 'set':
       return <SetEditor block={block} />;
+    case 'item':
+      return <ItemEditor block={block} />;
+    case 'quest':
+      return <QuestEditor block={block} />;
+    case 'shop':
+      return <ShopEditor block={block} />;
+    case 'battle':
+      return <BattleEditor block={block} />;
+    case 'routine':
+      return <RoutineCallEditor block={block} />;
     case 'jump':
     case 'call':
     case 'return':

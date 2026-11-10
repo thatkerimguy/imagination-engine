@@ -14,6 +14,13 @@ import {
   type VariableDef,
   type VariableType,
 } from '@ie/story';
+import {
+  cloneBattle,
+  newRpgBlock,
+  RPG_BLOCKS,
+  type RpgBlockType,
+  type RpgDefaults,
+} from './factory-rpg.ts';
 import { newStageBlock, STAGE_KIND_LIST, type StageKind } from './stage-kinds.ts';
 
 /** A new, empty line in both languages. The line ID is its translation key. */
@@ -38,6 +45,7 @@ export const BLOCK_MENU = [
   'check',
   'fight',
   'input',
+  ...RPG_BLOCKS,
   'set',
   'jump',
   'call',
@@ -69,7 +77,7 @@ export function audioKind(block: Block): AudioKind | null {
   return found ? (found[0] as AudioKind) : null;
 }
 
-export interface BlockDefaults {
+export interface BlockDefaults extends RpgDefaults {
   readonly speaker?: string;
   readonly variable?: string;
   readonly textVariable?: string;
@@ -140,6 +148,12 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
         action: AUDIO_KINDS.ambience,
         params: { slot: 'rain', volume: 0.6, fade: 3 },
       };
+    case 'item':
+    case 'quest':
+    case 'shop':
+    case 'battle':
+    case 'routine':
+      return newRpgBlock(type satisfies RpgBlockType, id, defaults);
     default:
       return newStageBlock(id, type);
   }
@@ -252,6 +266,8 @@ export function cloneBlock(block: Block): Block {
       };
     case 'fight':
       return { ...block, id, win: list(block.win), lose: list(block.lose) };
+    case 'battle':
+      return cloneBattle(block, id, list);
     case 'input':
       return { ...block, id, prompt: text(block.prompt) };
     case 'random':

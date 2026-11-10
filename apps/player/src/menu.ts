@@ -7,6 +7,8 @@ export interface MenuHandlers {
   close(): void;
   back(): void;
   openPanel(panel: Panel): void;
+  /** Whether the story has a character sheet to offer. */
+  hasSheet(): boolean;
 }
 
 /**
@@ -66,6 +68,9 @@ export class Menu {
       item(t('menu.back'), () => this.handlers.back(), 'menu-back'),
       item(t('menu.history'), () => this.handlers.openPanel('history'), 'menu-history'),
       item(t('menu.saves'), () => this.handlers.openPanel('saves'), 'menu-saves'),
+      ...(this.handlers.hasSheet()
+        ? [item(t('menu.sheet'), () => this.handlers.openPanel('sheet'), 'menu-sheet')]
+        : []),
       item(t('menu.settings'), () => this.handlers.openPanel('settings'), 'menu-settings'),
       item(t('menu.diagnostics'), () => this.handlers.openPanel('diagnostics'), 'menu-diagnostics'),
     ];

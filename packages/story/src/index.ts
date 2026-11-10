@@ -38,8 +38,17 @@ export {
   type EffectName,
   type MarkupNode,
 } from './markup.ts';
-export { ENDINGS_KEY, StoryRuntime, type RuntimeOptions, type StoryHost } from './runtime.ts';
+export {
+  ENDINGS_KEY,
+  StoryRuntime,
+  type BattleAction,
+  type BattleMenu,
+  type RuntimeOptions,
+  type ShopMenu,
+  type StoryHost,
+} from './runtime.ts';
 export * from './schema.ts';
+export { STORY_FORMAT, STORY_SCHEMA_VERSION, storyProjectSchema } from './project.ts';
 export {
   beatSchema,
   pageStart,
@@ -60,3 +69,6 @@ export {
   type TextContext,
 } from './text.ts';
 export { applyOperation, coerceValue } from './variables.ts';
+export * from './logic.ts';
+export * from './rpg.ts';
+export * from './state-rpg.ts';

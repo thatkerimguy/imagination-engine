@@ -81,7 +81,8 @@ export const stageMessages = defineCatalogs({
     'stageView.tier.medium': 'Medium',
     'stageView.tier.high': 'High',
     'stageView.stats': '{tier} · {sprites} sprites · {calls} draw calls · {ms} ms',
-    'stageView.unavailable': 'This browser has no WebGL2, so the stage is off. Novels still play without it.',
+    'stageView.unavailable':
+      'This browser has no WebGL2, so the stage is off. Novels still play without it.',
     'stageView.clear': 'Clear',
     'stageView.sparks': 'Sparks',
   },
@@ -164,7 +165,8 @@ export const stageMessages = defineCatalogs({
     'stageView.tier.medium': 'Orta',
     'stageView.tier.high': 'Yüksek',
     'stageView.stats': '{tier} · {sprites} sprite · {calls} çizim çağrısı · {ms} ms',
-    'stageView.unavailable': 'Bu tarayıcıda WebGL2 yok, bu yüzden sahne kapalı. Romanlar onsuz da oynar.',
+    'stageView.unavailable':
+      'Bu tarayıcıda WebGL2 yok, bu yüzden sahne kapalı. Romanlar onsuz da oynar.',
     'stageView.clear': 'Temizle',
     'stageView.sparks': 'Kıvılcım',
   },

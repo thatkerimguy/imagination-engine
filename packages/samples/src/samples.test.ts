@@ -22,12 +22,45 @@ function playthrough(seed: number) {
       const roll = nextRandom(pick);
       pick = roll.state;
       runtime.resolveFight({ won: roll.value < 0.5, score: Math.round(roll.value * 100) });
+    } else if (beat.kind === 'shop' || beat.kind === 'traded') {
+      // Buy something affordable at random, one at a time, then leave.
+      const offers = runtime.shopMenu()?.stock.filter((s) => s.affordable) ?? [];
+      const roll = nextRandom(pick);
+      pick = roll.state;
+      const offer = offers[Math.floor(roll.value * offers.length)];
+      if (offer && roll.value < 0.7) runtime.buy(offer.item);
+      else runtime.leaveShop();
+    } else if (runtime.battleMenu()) {
+      const menu = runtime.battleMenu();
+      const roll = nextRandom(pick);
+      pick = roll.state;
+      const skill = menu?.skills.find((s) => s.enabled);
+      const item = menu?.items[0];
+      if (menu?.flee && roll.value < 0.1) runtime.battleAction({ act: 'flee' });
+      else if (skill && roll.value < 0.4) runtime.battleAction({ act: 'skill', id: skill.id });
+      else if (item && roll.value < 0.5) runtime.battleAction({ act: 'item', id: item.id });
+      else runtime.battleAction({ act: 'attack' });
     }
   }
   throw new Error(`Seed ${seed} never reached an ending.`);
 }
 
 describe('The Rain Alley sample', () => {
+  it('has a night market with a shop, a battle, a quest, a rule and a routine', () => {
+    let saw = { shop: false, battle: false, lantern: false, quest: false };
+    for (let seed = 1; seed <= 300; seed++) {
+      const { runtime } = playthrough(seed);
+      const log = runtime.log;
+      saw = {
+        shop: saw.shop || log.some((b) => b.kind === 'traded'),
+        battle: saw.battle || log.some((b) => b.kind === 'battled'),
+        lantern: saw.lantern || (runtime.inventory.lantern ?? 0) > 0,
+        quest: saw.quest || runtime.quests.stranger?.status === 'done',
+      };
+    }
+    expect(saw).toEqual({ shop: true, battle: true, lantern: true, quest: true });
+  });
+
   it('loads without errors or warnings', () => {
     const story = compileStory(samples.rainAlley);
     expect(story.problems).toEqual([]);

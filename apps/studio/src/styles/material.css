@@ -112,6 +112,7 @@
   height: min(32rem, 70vh);
   overflow: auto;
   overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
   border: var(--hairline) solid var(--color-line);
   border-radius: var(--radius-2);
   background: var(--color-surface);

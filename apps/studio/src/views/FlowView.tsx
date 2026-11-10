@@ -1,5 +1,7 @@
 import { Flag, Minus, PenLine, Play, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { stepFrom } from '../components/gestures.ts';
+import { usePanZoom } from '../components/usePanZoom.ts';
 import { runAction } from '../kernel.ts';
 import { buildFlow, type FlowEdge } from '../project/graph.ts';
 import { problemsByPassage } from '../project/problems.ts';
@@ -16,6 +18,13 @@ const GAP_X = 72;
 const GAP_Y = 24;
 const PAD = 24;
 const ZOOMS = [0.5, 0.75, 1, 1.25] as const;
+const MIN_SCALE = 0.35;
+const MAX_SCALE = 1.5;
+
+/** The empty background, where a mouse drag pans instead of selecting. */
+const isBackground = (target: Element) =>
+  !target.closest('.flow__node') &&
+  (target.classList.contains('flow__canvas') || target.closest('.flow__world') !== null);
 
 const x = (column: number) => PAD + column * (NODE_W + GAP_X);
 const y = (row: number) => PAD + row * (NODE_H + GAP_Y);
@@ -54,8 +63,19 @@ export function FlowView() {
   const counts = useMemo(() => problemsByPassage(problems), [problems]);
   const flow = useMemo(() => buildFlow(doc), [doc]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(2);
-  const scale = ZOOMS[zoom] ?? 1;
+  const [scale, setScale] = useState(1);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  usePanZoom(canvasRef, {
+    scale,
+    onScale: setScale,
+    min: MIN_SCALE,
+    max: MAX_SCALE,
+    panSurface: isBackground,
+  });
+  const playFrom = (id: string) => {
+    setPlayFrom(id);
+    runAction('studio.view.open', { view: 'play' });
+  };
 
   const passages = new Map(allPassages(doc).map((p) => [p.id, p]));
   const excerpts = useMemo(() => {
@@ -105,8 +125,8 @@ export function FlowView() {
             type="button"
             className="ie-button ie-button--quiet icon-button"
             aria-label={t('flow.zoomOut')}
-            disabled={zoom === 0}
-            onClick={() => setZoom(zoom - 1)}
+            disabled={scale <= ZOOMS[0]}
+            onClick={() => setScale(stepFrom(ZOOMS, scale, -1))}
           >
             <Minus size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
@@ -115,8 +135,8 @@ export function FlowView() {
             type="button"
             className="ie-button ie-button--quiet icon-button"
             aria-label={t('flow.zoomIn')}
-            disabled={zoom === ZOOMS.length - 1}
-            onClick={() => setZoom(zoom + 1)}
+            disabled={scale >= ZOOMS[ZOOMS.length - 1]!}
+            onClick={() => setScale(stepFrom(ZOOMS, scale, 1))}
           >
             <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
@@ -124,6 +144,9 @@ export function FlowView() {
       </div>
       <div
         className="flow__canvas"
+        ref={canvasRef}
+        title={t('flow.canvasHint')}
+        data-testid="flow-canvas"
         onClick={(e) => e.target === e.currentTarget && setSelected(null)}
       >
         <div className="flow__world" style={{ width: width * scale, height: height * scale }}>
@@ -172,7 +195,13 @@ export function FlowView() {
                   aria-pressed={selected === node.id}
                   data-unreached={node.unreached || undefined}
                   data-testid="flow-node"
+                  title={t('flow.nodeHint')}
                   onClick={() => setSelected(node.id)}
+                  onContextMenu={(e) => {
+                    // Right-click, or a long-press on touch, plays from this passage.
+                    e.preventDefault();
+                    playFrom(node.id);
+                  }}
                   onDoubleClick={() => {
                     openPassage(node.id);
                     runAction('studio.view.open', { view: 'write' });
@@ -211,10 +240,7 @@ export function FlowView() {
             type="button"
             className="ie-button"
             data-testid="flow-play"
-            onClick={() => {
-              setPlayFrom(chosen.id);
-              runAction('studio.view.open', { view: 'play' });
-            }}
+            onClick={() => playFrom(chosen.id)}
           >
             <Play size={16} strokeWidth={1.5} aria-hidden="true" />
             {t('passage.playFromHere')}

@@ -385,3 +385,9 @@
     padding: var(--space-3);
   }
 }
+
+/* A canvas being dragged by its background (usePanZoom). */
+[data-panning] {
+  cursor: grabbing;
+  user-select: none;
+}

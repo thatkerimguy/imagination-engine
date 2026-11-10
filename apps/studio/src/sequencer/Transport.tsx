@@ -1,6 +1,7 @@
 import { TRACK_KINDS, type SequenceDef, type TrackKind } from '@ie/story';
 import { Pause, Play, SkipBack, ZoomIn, ZoomOut } from 'lucide-react';
 import type { Ref } from 'react';
+import { stepFrom } from '../components/gestures.ts';
 import { Segmented } from '../components/Segmented.tsx';
 import { useT } from '../store.ts';
 import { SNAPS } from './edit.ts';
@@ -30,11 +31,8 @@ export function Transport({
 }) {
   const t = useT();
   const ui = useSequencerUi();
-  const zoomIndex = ZOOMS.findIndex((z) => z >= ui.zoom);
-  const zoomBy = (delta: number) => {
-    const next = ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, zoomIndex + delta))];
-    if (next) ui.setZoom(next);
-  };
+  // A pinch leaves the zoom between steps; the buttons go to the next step either way.
+  const zoomBy = (direction: 1 | -1) => ui.setZoom(stepFrom(ZOOMS, ui.zoom, direction));
   const hasNotes = sequence.tracks.some((tr) => tr.kind === 'notes');
   const noteKinds: readonly NoteKindChoice[] =
     sequence.kind === 'move' ? NOTE_CHOICES.filter((k) => k !== 'strike') : NOTE_CHOICES;
@@ -93,7 +91,7 @@ export function Transport({
           className="ie-button ie-button--quiet"
           aria-label={t('seq.zoomOut')}
           title={t('seq.zoomOut')}
-          disabled={zoomIndex <= 0}
+          disabled={ui.zoom <= ZOOMS[0]}
           onClick={() => zoomBy(-1)}
         >
           <ZoomOut size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -104,7 +102,7 @@ export function Transport({
           aria-label={t('seq.zoomIn')}
           title={t('seq.zoomIn')}
           data-testid="seq-zoom-in"
-          disabled={zoomIndex >= ZOOMS.length - 1}
+          disabled={ui.zoom >= ZOOMS[ZOOMS.length - 1]!}
           onClick={() => zoomBy(1)}
         >
           <ZoomIn size={16} strokeWidth={1.5} aria-hidden="true" />

@@ -7,6 +7,7 @@ import {
   type TrackKind,
 } from '@ie/story';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { usePanZoom } from '../components/usePanZoom.ts';
 import { useDoc, useProject } from '../project/store.ts';
 import { attachStage, setStageLocale } from '../stage/studio-stage.ts';
 import { useStudio, useT } from '../store.ts';
@@ -32,7 +33,7 @@ import { SequencePreview, sequenceTempo } from './preview.ts';
 import { Settings } from './Settings.tsx';
 import { Timeline } from './Timeline.tsx';
 import { Transport } from './Transport.tsx';
-import { useSequencerUi } from './ui.ts';
+import { useSequencerUi, ZOOMS } from './ui.ts';
 
 const TYPING = 'input, textarea, select, [contenteditable="true"]';
 
@@ -55,6 +56,16 @@ export function Workbench({ sequence }: { readonly sequence: SequenceDef }) {
   const step = snapBeats(ui.snap, { ...sequence, beatsPerBar });
   const snap = (beat: number) => snapTo(beat, step, sequence.length);
   const zoom = ui.zoom;
+  // Pinch or Ctrl+wheel zooms around the fingers; the wheel alone scrolls through time.
+  usePanZoom(scrollRef, {
+    scale: zoom,
+    onScale: ui.setZoom,
+    min: ZOOMS[0],
+    max: ZOOMS[ZOOMS.length - 1],
+    axis: 'x',
+    wheelScrollsX: true,
+    panSurface: (el) => el.classList.contains('tl__lane') || el.closest('.tl__grid') !== null,
+  });
   const position = (beat: number) => t('seq.position', barBeat(Math.max(0, beat), beatsPerBar));
 
   // Live values for the preview's callbacks, which outlive renders.

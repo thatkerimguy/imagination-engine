@@ -32,6 +32,7 @@ import { messages, UNTITLED } from './messages.ts';
 import { startProjects } from './project/store.ts';
 import { useStudio } from './store.ts';
 import { registerServiceWorker } from './pwa.ts';
+import { startSync } from './sync/run.ts';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element.');
@@ -40,6 +41,7 @@ kernel.use(createAudioModule(director));
 kernel.use(createStageModule(stage));
 await kernel.start();
 await startProjects(UNTITLED, messages[useStudio.getState().locale]['passage.first']);
+startSync();
 createRoot(root).render(
   <StrictMode>
     <App />

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const HELP = `Usage: pnpm publish:studio [options]
 
-Builds the Studio into out/studio (site in public/, the audio relay in functions/).
+Builds the Studio into out/studio (site in public/; the audio relay and device sync in functions/).
 
 Options
   --pages <project>  deploy to this Cloudflare Pages project with wrangler (needs a login)
@@ -17,6 +17,9 @@ Options
 Before the first deploy, protect the project with Cloudflare Access (Zero Trust → Access →
 Applications → Self-hosted, the project's pages.dev domain, a policy allowing only your e-mail).
 Without Access the Studio would be public.
+
+Device sync (ADR 0024) needs an R2 bucket bound to the Pages project as SYNC (Settings →
+Functions → R2 bucket bindings). Without it the Studio works as before and says sync is off.
 `;
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -49,6 +52,11 @@ cpSync(dist, join(out, 'public'), { recursive: true, filter: (src) => !src.endsW
 cpSync(
   join(root, 'tools', 'publish', 'studio-functions', 'fetch.js'),
   join(out, 'functions', 'fetch.js'),
+);
+mkdirSync(join(out, 'functions', 'sync'), { recursive: true });
+cpSync(
+  join(root, 'tools', 'publish', 'studio-functions', 'sync.js'),
+  join(out, 'functions', 'sync', '[[path]].js'),
 );
 // Never let a search engine list the private Studio, even if Access is misconfigured.
 writeFileSync(

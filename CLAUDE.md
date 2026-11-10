@@ -47,7 +47,7 @@ apps/player           vanilla TS reader shell (PWA): bookshelf, story session, s
 apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Materials, Library, Publish, Play
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator
-tools/publish         public novel builds, itch.io zips, the hosted Studio and its audio relay
+tools/publish         public novel builds, itch.io zips, the hosted Studio, its audio relay and sync store
 e2e                   Playwright smoke tests (desktop + Redmi Note 12 viewport)
 docs/adr              architecture decision records
 ```

@@ -4,7 +4,7 @@ import { createTranslator, type Locale } from '@ie/i18n';
 import { compileSequence, CueQueue, steadyTime, type SequenceCue } from '@ie/sequencer';
 import type { Difficulty, EnemyDef, FightMode, FightResult, SequenceDef } from '@ie/story';
 import { FightSession, type Assist, type FightClock, type FightEvent } from '../fight.ts';
-import { WINDOWS } from '../judge.ts';
+import { WIDE_WINDOWS, WINDOWS } from '../judge.ts';
 import { FightHud, type FightText } from './fight-hud.ts';
 import { fightMessages } from './messages.ts';
 import { FightInput, type FightAction } from './fight-input.ts';
@@ -83,7 +83,8 @@ export class FightView {
       dodge: stageColor('blue', palette),
       miss: mix(palette.ink, palette.background),
     };
-    const approach = Math.min(1.6, Math.max(0.7, (2 * 60) / music.tempo.bpm));
+    // Two beats to see a note coming, never under 0.9 s: enough to read which input it wants.
+    const approach = Math.min(1.6, Math.max(0.9, (2 * 60) / music.tempo.bpm));
     this.approach = approach;
     this.layer = new FightLayer({
       now: () => this.conductor.time(),
@@ -91,6 +92,7 @@ export class FightView {
       approach,
       colors: () => this.colors,
       onFrame: () => this.tick(),
+      hitWindow: WINDOWS.good * (options.assist.wide ? WIDE_WINDOWS : 1),
     });
     this.input = new FightInput({
       target: this.hud.root,

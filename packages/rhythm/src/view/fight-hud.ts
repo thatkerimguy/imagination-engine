@@ -1,6 +1,7 @@
 import type { Translator } from '@ie/i18n';
 import type { Grade } from '../judge.ts';
 import type { Turn } from '../director.ts';
+import { NOTE_GLYPHS } from './fight-layer.ts';
 import type { FightKey } from './messages.ts';
 
 export type FightText = Translator<FightKey>;
@@ -62,6 +63,20 @@ export class FightHud {
     this.fallback.hidden = true;
 
     const bottom = el('div', 'ie-fight__bottom', root);
+    // What each mark asks for, always in view: the same shapes the notes are drawn with.
+    const legend = el('div', 'ie-fight__legend', bottom);
+    legend.dataset.testid = 'fight-legend';
+    for (const [glyphs, key, input] of [
+      [`${NOTE_GLYPHS.strike} ${NOTE_GLYPHS.parry}`, 'fight.tap', 'tap'],
+      [NOTE_GLYPHS.dodge, 'fight.swipe', 'swipe'],
+    ] as const) {
+      const item = el('span', 'ie-fight__legend-item', legend);
+      item.dataset.input = input;
+      const mark = el('span', 'ie-fight__legend-mark', item);
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = glyphs;
+      el('span', '', item).textContent = text(key);
+    }
     this.combo = el('div', 'ie-fight__combo', bottom);
     this.playerBar = this.bar(
       bottom,

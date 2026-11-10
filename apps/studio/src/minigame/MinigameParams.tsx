@@ -1,6 +1,8 @@
 import type { Label, MinigameGame } from '@ie/story';
 import { Plus, X } from 'lucide-react';
 import { useStudio, useT } from '../store.ts';
+import { BuiltParts } from './BuiltParts.tsx';
+import { BuiltRules } from './BuiltRules.tsx';
 import {
   formatParam,
   PARAM_FIELDS,
@@ -150,6 +152,14 @@ export function MinigameParams({
   readonly game: MinigameGame;
   readonly onChange: (game: MinigameGame) => void;
 }) {
+  if (game.template === 'built') {
+    return (
+      <div className="mg-params bg">
+        <BuiltParts game={game} onChange={onChange} />
+        <BuiltRules game={game} onChange={onChange} />
+      </div>
+    );
+  }
   return (
     <div className="mg-params">
       {game.template === 'cipher' && (

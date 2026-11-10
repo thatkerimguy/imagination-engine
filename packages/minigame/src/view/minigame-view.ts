@@ -3,6 +3,7 @@ import type { MinigameGame, MinigameResult, MinigameTemplate } from '@ie/story';
 import { startMinigame } from '../games/index.ts';
 import type { Direction, MinigameInput, MinigameSession } from '../types.ts';
 import { diceView, memoryView, sliderView } from './board-views.ts';
+import { builtView } from './built-view.ts';
 import { el, type MountedView, type TemplateView, type ViewContext } from './dom.ts';
 import { minigameMessages } from './messages.ts';
 import { lockpickView, qteView, tensionView } from './timing-views.ts';
@@ -18,6 +19,7 @@ const VIEWS = {
   dice: diceView,
   slider: sliderView,
   tension: tensionView,
+  built: builtView,
 } as unknown as Readonly<Record<MinigameTemplate, TemplateView<unknown>>>;
 
 /** Keys by physical position, so Turkish Q and F layouts play the same (ADR 0021). */

@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  builtGameSchema,
+  builtValues,
+  defaultBuiltGame,
+  type BuiltGame,
+} from './minigame-built.ts';
 
 /*
  * Minigames (ADR 0021): the templates a Minigame block can play and their parameters. This is
@@ -18,6 +24,7 @@ export const MINIGAME_TEMPLATES = [
   'dice',
   'slider',
   'tension',
+  'built',
 ] as const;
 export type MinigameTemplate = (typeof MINIGAME_TEMPLATES)[number];
 
@@ -100,7 +107,8 @@ export type MinigameGame =
   | QteGame
   | DiceGame
   | SliderGame
-  | TensionGame;
+  | TensionGame
+  | BuiltGame;
 
 const int = (min: number, max: number) => z.number().int().min(min).max(max).optional();
 const num = (min: number, max: number) => z.number().min(min).max(max).optional();
@@ -116,6 +124,8 @@ export const MINIGAME_LIMITS = {
   dice: { dice: [1, 6], target: [1, 120], rerolls: [0, 3] },
   slider: { size: [3, 4], shuffle: [4, 80], seconds: [20, 600] },
   tension: { hold: [2, 20], limit: [5, 90], zone: [0.15, 0.5], drift: [0.2, 2] },
+  // A built game has its own limits (BUILT_LIMITS) and its own editor.
+  built: {},
 } as const satisfies Record<MinigameTemplate, Record<string, readonly [number, number]>>;
 
 const L = MINIGAME_LIMITS;
@@ -165,6 +175,7 @@ export const minigameGameSchema: z.ZodType<MinigameGame> = z.discriminatedUnion(
     zone: range(L.tension.zone),
     drift: range(L.tension.drift),
   }),
+  builtGameSchema,
 ]);
 
 /** What a parameter is when the block leaves it out. A slider has no time limit by default. */
@@ -177,6 +188,7 @@ export const MINIGAME_DEFAULTS = {
   dice: { dice: 2, sides: 6, target: 7, rerolls: 1 },
   slider: { size: 3, shuffle: 20 },
   tension: { hold: 6, limit: 25, zone: 0.3, drift: 1 },
+  built: {},
 } as const satisfies Record<MinigameTemplate, Record<string, number>>;
 
 /** The numbers each template reports besides the score; a block can store them in variables. */
@@ -189,6 +201,8 @@ export const MINIGAME_VALUES = {
   dice: ['total'],
   slider: ['moves', 'seconds'],
   tension: ['seconds'],
+  // A built game reports its meters instead: see minigameValues.
+  built: [],
 } as const satisfies Record<MinigameTemplate, readonly string[]>;
 
 /** What a finished minigame reports back to the story. */
@@ -221,7 +235,14 @@ export function defaultGame(template: MinigameTemplate): MinigameGame {
       return { template, words: [{ en: 'SECRET', tr: 'GİZEM' }] };
     case 'typing':
       return { template, phrases: [{ en: 'Open the door', tr: 'Kapıyı aç' }] };
+    case 'built':
+      return defaultBuiltGame();
     default:
       return { template };
   }
+}
+
+/** The named numbers a game reports, which a block can store in variables. */
+export function minigameValues(game: MinigameGame): readonly string[] {
+  return game.template === 'built' ? builtValues(game) : MINIGAME_VALUES[game.template];
 }

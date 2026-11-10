@@ -4,6 +4,7 @@ import { fightStudioMessages } from './messages-fight.ts';
 import { logicMessages } from './messages-logic.ts';
 import { libraryMessages } from './messages-library.ts';
 import { materialMessages } from './messages-material.ts';
+import { builtMessages } from './messages-built.ts';
 import { minigameStudioMessages } from './messages-minigame.ts';
 import { projectMessages } from './messages-project.ts';
 import { publishMessages } from './messages-publish.ts';
@@ -126,6 +127,7 @@ export const messages = {
     ...sequencerMessages.en,
     ...materialMessages.en,
     ...minigameStudioMessages.en,
+    ...builtMessages.en,
     ...libraryMessages.en,
     ...publishMessages.en,
     ...scriptMessages.en,
@@ -143,6 +145,7 @@ export const messages = {
     ...sequencerMessages.tr,
     ...materialMessages.tr,
     ...minigameStudioMessages.tr,
+    ...builtMessages.tr,
     ...libraryMessages.tr,
     ...publishMessages.tr,
     ...scriptMessages.tr,

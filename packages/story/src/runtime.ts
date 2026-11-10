@@ -5,7 +5,7 @@ import { optionView } from './choices.ts';
 import { listKey, type CompiledStory } from './compile.ts';
 import { truthy, valueText } from './formula.ts';
 import type { FightResult } from './fight.ts';
-import { MINIGAME_VALUES, type MinigameResult } from './minigame.ts';
+import { minigameValues, type MinigameResult } from './minigame.ts';
 import type { Formula, LocalText } from './schema.ts';
 import type { ScreenAction } from './screens.ts';
 import { reconcileState } from './reconcile.ts';
@@ -228,7 +228,7 @@ export class StoryRuntime {
     if (block?.type !== 'minigame') throw new Error('The minigame is no longer in the story.');
     const score = Math.round(Math.max(0, Math.min(100, result.score)));
     if (block.score) core.write(block.score, score);
-    const names: readonly string[] = MINIGAME_VALUES[block.game.template];
+    const names = minigameValues(block.game);
     for (const [name, variable] of Object.entries(block.store ?? {})) {
       const value = result.values?.[name];
       if (names.includes(name) && typeof value === 'number' && Number.isFinite(value))

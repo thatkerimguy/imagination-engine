@@ -75,6 +75,8 @@ export const PARAM_FIELDS: Readonly<Record<MinigameTemplate, readonly ParamField
     range('tension', 'zone', 'mg.p.zone', 0.01, { percent: true }),
     range('tension', 'drift', 'mg.p.drift', 0.1),
   ],
+  // A built game has its own editor (BuiltParts, BuiltRules).
+  built: [],
 };
 
 /** A parameter's value in the block, else its default, else the middle of its range. */

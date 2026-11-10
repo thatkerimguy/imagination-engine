@@ -1,6 +1,7 @@
 import type { Locale } from '@ie/i18n';
 import type { MinigameGame, MinigameTemplate } from '@ie/story';
 import { seededRandom, type MinigameDef, type MinigameSession } from '../types.ts';
+import { built } from './built.ts';
 import { cipher } from './cipher.ts';
 import { dice } from './dice.ts';
 import { lockpick } from './lockpick.ts';
@@ -11,7 +12,17 @@ import { tension } from './tension.ts';
 import { typing } from './typing.ts';
 
 /** Every template's rules, by template. A new template is one more entry here (ADR 0021). */
-export const MINIGAMES = { lockpick, memory, cipher, typing, qte, dice, slider, tension } as const;
+export const MINIGAMES = {
+  lockpick,
+  memory,
+  cipher,
+  typing,
+  qte,
+  dice,
+  slider,
+  tension,
+  built,
+} as const;
 
 export interface SessionOptions {
   readonly seed: number;

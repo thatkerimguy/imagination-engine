@@ -2,6 +2,7 @@ export { analyzeProject, leaves } from './analyze.ts';
 export * from './audio.ts';
 export * from './fight.ts';
 export * from './minigame.ts';
+export * from './minigame-built.ts';
 export * from './library.ts';
 export * from './playtest.ts';
 export * from './publish.ts';

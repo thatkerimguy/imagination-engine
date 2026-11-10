@@ -3,7 +3,7 @@ import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { h, segmented } from '../dom.ts';
 import type { MessageKey } from '../messages.ts';
-import { TEXT_SIZES, type PlayerSettings } from '../settings.ts';
+import { TEXT_SIZES, VOLUME_BUSES, type PlayerSettings, type VolumeBus } from '../settings.ts';
 
 type Run = (actionId: string, params: unknown) => void;
 
@@ -26,6 +26,29 @@ function onOff(
     (v) => onPick(v === 'on'),
     label,
   );
+}
+
+/** Dragging changes the sound at once; letting go remembers it (and redraws the sheet). */
+function volume(
+  t: Translator<MessageKey>,
+  s: PlayerSettings,
+  bus: VolumeBus,
+  run: Run,
+): HTMLElement {
+  const label = t(`settings.volume.${bus}`);
+  const input = h('input', {
+    class: 'ie-range',
+    type: 'range',
+    min: '0',
+    max: '100',
+    step: '1',
+    value: String(Math.round(s.volumes[bus] * 100)),
+    'aria-label': label,
+  });
+  const level = () => Number(input.value) / 100;
+  input.addEventListener('input', () => run('audio.volume.set', { bus, volume: level() }));
+  input.addEventListener('change', () => run('ui.volume.set', { bus, volume: level() }));
+  return field(label, input);
 }
 
 /** Every control changes a setting through its action, so it applies (and re-renders) at once. */
@@ -76,6 +99,7 @@ export function fillSettings(
       t('settings.timers'),
       onOff(t, s.timers, (enabled) => run('ui.timers.set', { enabled }), t('settings.timers')),
     ),
+    ...VOLUME_BUSES.map((bus) => volume(t, s, bus, run)),
     field(
       t('settings.hud'),
       onOff(t, s.hud, (visible) => run('ui.hud.set', { visible }), t('settings.hud')),

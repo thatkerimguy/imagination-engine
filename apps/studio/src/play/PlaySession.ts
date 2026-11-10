@@ -2,6 +2,14 @@ import type { Locale } from '@ie/i18n';
 import { StoryPresenter } from '@ie/present';
 import { StoryRuntime, type CompiledStory, type StoryState } from '@ie/story';
 
+/** What a playthrough needs from the Studio's sound (see audio/studio-audio.ts). */
+export interface PlayAudio {
+  run(actionId: string, params: unknown): void;
+  typed(speaker: string | null, text: string): void;
+  applyScene(scene: Readonly<Record<string, unknown>>): void;
+  stopAll(): void;
+}
+
 /**
  * A throwaway playthrough for the Studio's Play view: the same runtime and presenter the Player
  * uses, without saves. Back steps through an in-memory list of states.
@@ -17,6 +25,7 @@ export class PlaySession {
     locale: Locale,
     /** Called after every step with whether Back can go further. */
     private readonly onChange: (canBack: boolean) => void,
+    private readonly audio?: PlayAudio,
   ) {
     this.runtime = this.create();
     this.presenter = new StoryPresenter(
@@ -26,6 +35,9 @@ export class PlaySession {
         submit: (answer) => this.act(() => this.runtime.submit(answer)),
         restart: () => this.restart(),
         advance: () => this.advance(),
+        ...(audio
+          ? { typed: (speaker: string | null, text: string) => audio.typed(speaker, text) }
+          : {}),
       },
       { locale, speed: 'normal', timers: true },
     );
@@ -55,6 +67,7 @@ export class PlaySession {
     if (!state) return;
     this.runtime.restore(state);
     this.presenter.redraw();
+    this.audio?.applyScene(this.runtime.scene);
     this.onChange(this.canBack);
   }
 
@@ -62,6 +75,7 @@ export class PlaySession {
     this.history.length = 0;
     this.runtime = this.create();
     this.presenter.attach(this.runtime);
+    this.audio?.applyScene({});
     this.begin();
     this.onChange(this.canBack);
   }
@@ -72,10 +86,17 @@ export class PlaySession {
 
   dispose(): void {
     this.presenter.dispose();
+    this.audio?.stopAll();
   }
 
   private create(): StoryRuntime {
-    return new StoryRuntime(this.story, this.start ? { start: this.start } : {});
+    const audio = this.audio;
+    return new StoryRuntime(this.story, {
+      ...(this.start ? { start: this.start } : {}),
+      ...(audio
+        ? { host: { runAction: (id: string, params: unknown) => audio.run(id, params) } }
+        : {}),
+    });
   }
 
   private act(change: () => void): void {

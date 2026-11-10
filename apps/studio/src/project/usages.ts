@@ -12,6 +12,8 @@ import { blockTexts, walkBlocks } from './tree.ts';
 export interface Usages {
   readonly variables: ReadonlyMap<string, number>;
   readonly characters: ReadonlyMap<string, number>;
+  /** Tracks and sounds, by ID, from the audio blocks. */
+  readonly audio: ReadonlyMap<string, number>;
 }
 
 function formulasOf(block: Block): Formula[] {
@@ -37,10 +39,21 @@ function formulasOf(block: Block): Formula[] {
 export function countUsages(doc: StoryProject): Usages {
   const variables = new Map<string, number>();
   const characters = new Map<string, number>();
+  const audio = new Map<string, number>();
   const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
 
   walkBlocks(doc, ({ block }) => {
     if (block.type === 'dialogue') bump(characters, block.speaker);
+    if (block.type === 'action') {
+      const p = block.params ?? {};
+      const id =
+        block.action === 'audio.music.set'
+          ? p.track
+          : block.action === 'audio.sfx.play'
+            ? p.sound
+            : null;
+      if (typeof id === 'string') bump(audio, id);
+    }
     if (block.type === 'set' || block.type === 'input') bump(variables, block.var);
     if (block.type === 'choice')
       for (const o of block.options) if (o.cost) bump(variables, o.cost.var);
@@ -64,5 +77,5 @@ export function countUsages(doc: StoryProject): Usages {
       }
     }
   });
-  return { variables, characters };
+  return { variables, characters, audio };
 }

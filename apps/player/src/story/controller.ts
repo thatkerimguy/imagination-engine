@@ -11,7 +11,14 @@ export class StoryController implements StoryActionsHost {
     readonly session: StorySession,
     readonly presenter: StoryPresenter,
     private readonly events: EventBus<EngineEvents>,
+    /** The soundscape the story says should be playing, after a jump in time (load, rewind). */
+    private readonly onScene: (scene: Readonly<Record<string, unknown>>) => void = () => {},
   ) {}
+
+  /** Plays what the current point of the story says should be playing. */
+  syncScene(): void {
+    this.onScene(this.session.runtime.scene);
+  }
 
   /** Opens on the reader's last page, or types the first line of a new story. Returns true if new. */
   begin(): boolean {
@@ -19,6 +26,7 @@ export class StoryController implements StoryActionsHost {
     const beats = this.session.start();
     if (beats.length) this.show(beats);
     else this.presenter.redraw();
+    this.syncScene();
     return beats.length > 0;
   }
 
@@ -35,17 +43,22 @@ export class StoryController implements StoryActionsHost {
   }
 
   back(): void {
-    if (this.session.back()) this.presenter.redraw();
+    if (!this.session.back()) return;
+    this.presenter.redraw();
+    this.syncScene();
   }
 
   rewind(to: number): void {
-    if (this.session.rewindTo(to)) this.presenter.redraw();
+    if (!this.session.rewindTo(to)) return;
+    this.presenter.redraw();
+    this.syncScene();
   }
 
   restart(): void {
     const beats = this.session.restart();
     this.presenter.attach(this.session.runtime);
     this.show(beats);
+    this.syncScene();
   }
 
   save(slot: Exclude<SlotId, 'auto'>): Promise<void> {
@@ -58,6 +71,7 @@ export class StoryController implements StoryActionsHost {
     this.presenter.attach(this.session.runtime);
     if (beats.length) this.show(beats);
     else this.presenter.redraw();
+    this.syncScene();
   }
 
   private show(beats: readonly Beat[]): void {

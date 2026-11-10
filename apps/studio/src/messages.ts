@@ -1,5 +1,7 @@
 import { defineCatalogs } from '@ie/i18n';
 import { projectMessages } from './messages-project.ts';
+import { soundMessages } from './messages-sound.ts';
+import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
 
 /** The shell: workspaces, palette, settings and diagnostics. */
@@ -101,8 +103,20 @@ const shellMessages = defineCatalogs({
 
 /** Each catalog checks its own en/tr keys; together they are the Studio's whole vocabulary. */
 export const messages = {
-  en: { ...shellMessages.en, ...writeMessages.en, ...projectMessages.en },
-  tr: { ...shellMessages.tr, ...writeMessages.tr, ...projectMessages.tr },
+  en: {
+    ...shellMessages.en,
+    ...writeMessages.en,
+    ...projectMessages.en,
+    ...soundMessages.en,
+    ...stageMessages.en,
+  },
+  tr: {
+    ...shellMessages.tr,
+    ...writeMessages.tr,
+    ...projectMessages.tr,
+    ...soundMessages.tr,
+    ...stageMessages.tr,
+  },
 };
 
 export type MessageKey = keyof typeof messages.en;

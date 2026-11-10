@@ -53,6 +53,20 @@ export function problemMessage(
       return t('problem.unreachable', { name: p.name ?? '' });
     case 'dead-end':
       return t('problem.deadEnd', { name: p.name ?? '' });
+    case 'action-params':
+      return p.action?.startsWith('stage.')
+        ? t('problem.stageIncomplete')
+        : t('problem.audioIncomplete');
+    case 'title-empty':
+      return t('problem.titleEmpty');
+    case 'title-translation':
+      return t('problem.titleTranslation', {
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
+    case 'unknown-track':
+      return t('problem.unknownTrack', { name: id });
+    case 'unknown-sound':
+      return t('problem.unknownSound', { name: id });
     case 'enum-values':
       return t('problem.enumValues', { name: variableName });
     default:

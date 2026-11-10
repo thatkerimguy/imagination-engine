@@ -88,6 +88,27 @@ export interface StoryState {
   /** Index in `log` of the beat the reader must respond to, if any. */
   readonly waiting: number | null;
   readonly ended: boolean;
+  /**
+   * The last params of each `.set` action by scene key: what should be playing or showing now.
+   * Hosts re-apply it after a load or a rewind. Missing in saves from before Phase 3.
+   */
+  readonly scene?: Readonly<Record<string, unknown>>;
+}
+
+/** Scene key of a `.set` action: the action id, plus `:slot` when the params name a slot. */
+export function sceneKey(action: string, params: unknown): string {
+  const slot =
+    params && typeof params === 'object' ? (params as Record<string, unknown>).slot : undefined;
+  return typeof slot === 'string' ? `${action}:${slot}` : action;
+}
+
+/** The scene after an action runs: `.set` actions replace what their key was doing. */
+export function rememberScene(
+  scene: Readonly<Record<string, unknown>> | undefined,
+  action: string,
+  params: unknown,
+): Readonly<Record<string, unknown>> {
+  return action.endsWith('.set') ? { ...scene, [sceneKey(action, params)]: params } : (scene ?? {});
 }
 
 const values = z.record(z.string(), valueSchema);
@@ -167,6 +188,7 @@ export const storyStateSchema: z.ZodType<StoryState> = z.object({
   log: z.array(beatSchema),
   waiting: z.number().int().nullable(),
   ended: z.boolean(),
+  scene: z.record(z.string(), z.json()).optional(),
 });
 
 /** Index of the beat that starts the page currently on screen. */

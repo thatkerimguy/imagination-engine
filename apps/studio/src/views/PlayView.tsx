@@ -4,14 +4,30 @@ import { RotateCcw, Undo2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Segmented } from '../components/Segmented.tsx';
 import { runAction } from '../kernel.ts';
-import { PlaySession } from '../play/PlaySession.ts';
+import { director } from '../audio/studio-audio.ts';
+import { PlaySession, type PlayAudio } from '../play/PlaySession.ts';
 import { findProblems } from '../project/problems.ts';
 import { useDoc, useProject } from '../project/store.ts';
 import { allPassages } from '../project/tree.ts';
 import { useStudio, useT } from '../store.ts';
 import { ProblemText } from '../write/ProblemText.tsx';
+import { attachStage, setStageLocale, stage } from '../stage/studio-stage.ts';
 
 const INTERACTIVE = 'button, input, textarea, select, a, label';
+
+/** Play runs audio and stage blocks through the Studio's action bus, like the Player does. */
+const playAudio: PlayAudio = {
+  run: (id, params) => runAction(id, params),
+  typed: (speaker, text) => director.typed(speaker, text),
+  applyScene: (scene) => {
+    director.applyScene(scene);
+    stage.applyScene(scene);
+  },
+  stopAll: () => {
+    director.stopAll();
+    stage.applyScene({});
+  },
+};
 
 function compile(doc: unknown): { story: CompiledStory } | { problems: readonly StoryProblem[] } {
   try {
@@ -33,26 +49,32 @@ export function PlayView() {
   const [locale, setLocale] = useState<Locale>(uiLocale);
   const [canBack, setCanBack] = useState(false);
   const host = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   const session = useRef<PlaySession | null>(null);
   const result = useMemo(() => compile(doc), [doc]);
   const start = playFrom && allPassages(doc).some((p) => p.id === playFrom) ? playFrom : undefined;
   const startName = start ? allPassages(doc).find((p) => p.id === start)?.name || start : null;
 
   useEffect(() => {
-    if (!('story' in result) || !host.current) return;
-    const play = new PlaySession(result.story, start, locale, setCanBack);
+    if (!('story' in result) || !host.current || !frame.current) return;
+    const play = new PlaySession(result.story, start, locale, setCanBack, playAudio);
     session.current = play;
     host.current.replaceChildren(play.presenter.element);
+    const detach = attachStage(frame.current, play.presenter.element, locale);
     play.begin();
     return () => {
       play.dispose();
+      detach();
       session.current = null;
     };
     // The language changes through setLocale below, without restarting the playthrough.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, start]);
 
-  useEffect(() => session.current?.setLocale(locale), [locale]);
+  useEffect(() => {
+    setStageLocale(locale);
+    session.current?.setLocale(locale);
+  }, [locale]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -148,15 +170,18 @@ export function PlayView() {
           onChange={setLocale}
         />
       </div>
-      <div
-        className="play__page"
-        ref={host}
-        onClick={(event) => {
-          if ((event.target as Element).closest(INTERACTIVE)) return;
-          if (!document.getSelection()?.isCollapsed) return;
-          session.current?.tap();
-        }}
-      />
+      {/* The frame holds the page and, over it, the stage canvas. */}
+      <div className="play__frame" ref={frame}>
+        <div
+          className="play__page"
+          ref={host}
+          onClick={(event) => {
+            if ((event.target as Element).closest(INTERACTIVE)) return;
+            if (!document.getSelection()?.isCollapsed) return;
+            session.current?.tap();
+          }}
+        />
+      </div>
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { AudioDirector, AudioEngine, createAudioModule } from '@ie/audio';
 import {
   Kernel,
   createMemoryStore,
@@ -9,13 +10,20 @@ import { PerfHud } from '@ie/diagnostics';
 import { LOCALE_INFO, createTranslator, loadHyphenators, type Locale } from '@ie/i18n';
 import { StoryPresenter, type PresenterOptions } from '@ie/present';
 import { samples } from '@ie/samples';
+import { createStageHost, createStageModule } from '@ie/stage';
 import { StoryLoadError, compileStory, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
 import { Dialogs } from './dialogs.ts';
 import { Menu } from './menu.ts';
 import { messages } from './messages.ts';
 import { Reader } from './reader.ts';
-import { TEXT_SCALE, loadSettings, saveSettings, type PlayerSettings } from './settings.ts';
+import {
+  TEXT_SCALE,
+  VOLUME_BUSES,
+  loadSettings,
+  saveSettings,
+  type PlayerSettings,
+} from './settings.ts';
 import { createShellModule } from './shell-module.ts';
 import { StoryController } from './story/controller.ts';
 import { createStoryModule } from './story/module.ts';
@@ -62,6 +70,21 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     runAsync(id, params, source).catch((error: unknown) => console.error(error));
   };
   let story: StoryController | null = null;
+  const engine = new AudioEngine();
+  const audio = new AudioDirector({
+    engine,
+    // Imported files live in the Studio's own storage; a published novel plays catalogue links.
+    resolve: (track) => Promise.resolve(track.source.kind === 'url' ? track.source.url : null),
+    library: () => story?.session.story.project.audio,
+    characters: () => story?.session.story.project.characters ?? [],
+  });
+  engine.unlockOnGesture(document, () => story?.syncScene());
+  // The GPU stage is built only when the novel first uses it (ADR 0015).
+  const stage = createStageHost({
+    root: () => story?.presenter.element ?? null,
+    locale: () => settings.locale,
+    beatPhase: () => audio.beatPhase(),
+  });
   let hyphenate: PresenterOptions['hyphenate'];
   const hyphenation = loadHyphenators().then(
     (engines) => {
@@ -119,9 +142,11 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     settings = next;
     saveSettings(next);
     applyTheme(next.theme);
+    stage.refreshPalette();
     document.documentElement.lang = LOCALE_INFO[next.locale].tag;
     document.documentElement.style.setProperty('--reader-scale', String(TEXT_SCALE[next.textSize]));
     hud.setLocale(next.locale);
+    for (const bus of VOLUME_BUSES) engine.setVolume(bus, next.volumes[bus]);
     if (next.hud && !hud.mounted) hud.mount();
     if (!next.hud && hud.mounted) hud.unmount();
     if (localeChanged) t = createTranslator(messages, next.locale);
@@ -145,6 +170,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     }),
   );
   kernel.use(createStoryModule(() => story));
+  kernel.use(createAudioModule(audio));
+  kernel.use(createStageModule(stage));
   await kernel.start();
 
   root.replaceChildren(reader.element, menu.trigger, menu.element);
@@ -166,10 +193,14 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         submit: (answer) => run('story.submit', { answer }),
         advance: () => run('story.advance'),
         restart: () => run('story.restart'),
+        typed: (speaker, text) => audio.typed(speaker, text),
       },
       presenterOptions(settings),
     );
-    story = new StoryController(session, presenter, kernel.events);
+    story = new StoryController(session, presenter, kernel.events, (scene) => {
+      audio.applyScene(scene);
+      stage.applyScene(scene);
+    });
     reader.mount(presenter.element);
     // The patterns are small and usually cached: wait briefly so the first page is hyphenated.
     await Promise.race([hyphenation, new Promise((resolve) => setTimeout(resolve, 500))]);
@@ -217,6 +248,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   document.addEventListener('visibilitychange', holdClocks);
   watchSystemTheme(() => {
     if (settings.theme === 'system') applyTheme('system');
+    stage.refreshPalette();
   });
 
   if (location.hash === '#diagnostics') run('ui.panel.open', { panel: 'diagnostics' });

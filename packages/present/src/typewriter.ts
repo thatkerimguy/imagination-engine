@@ -142,3 +142,24 @@ export class Typewriter {
     return 0;
   }
 }
+
+/** Wraps steps so each newly revealed run of characters is reported (for voice blips). */
+export function reportTyped(
+  steps: readonly RevealStep[],
+  typed: (text: string) => void,
+): RevealStep[] {
+  return steps.map((step) => {
+    if (step.kind !== 'chars') return step;
+    let shown = 0;
+    return {
+      kind: 'chars',
+      text: step.text,
+      speed: step.speed,
+      reveal(count: number) {
+        step.reveal(count);
+        if (count > shown) typed(step.text.slice(shown, count));
+        shown = Math.max(shown, count);
+      },
+    };
+  });
+}

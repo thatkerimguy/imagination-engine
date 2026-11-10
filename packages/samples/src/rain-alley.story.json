@@ -2,63 +2,141 @@
   "format": "imagination.story",
   "schemaVersion": 1,
   "id": "rain_alley",
-  "title": { "en": "The Rain Alley", "tr": "Yağmurlu Sokak" },
+  "title": {
+    "en": "The Rain Alley",
+    "tr": "Yağmurlu Sokak"
+  },
   "author": "Imagination Engine sample",
   "languages": ["en", "tr"],
   "start": "prologue",
   "layout": "page",
   "variables": [
-    { "id": "name", "name": { "en": "Name", "tr": "İsim" }, "type": "text", "default": "Can" },
+    {
+      "id": "name",
+      "name": {
+        "en": "Name",
+        "tr": "İsim"
+      },
+      "type": "text",
+      "default": "Can"
+    },
     {
       "id": "pronoun",
-      "name": { "en": "Pronoun", "tr": "Zamir" },
+      "name": {
+        "en": "Pronoun",
+        "tr": "Zamir"
+      },
       "type": "enum",
       "values": ["they", "she", "he"]
     },
     {
       "id": "gold",
-      "name": { "en": "Gold", "tr": "Altın" },
+      "name": {
+        "en": "Gold",
+        "tr": "Altın"
+      },
       "type": "number",
       "default": 8,
       "min": 0
     },
     {
       "id": "charisma",
-      "name": { "en": "Charisma", "tr": "Karizma" },
+      "name": {
+        "en": "Charisma",
+        "tr": "Karizma"
+      },
       "type": "number",
       "default": 4
     },
     {
       "id": "agility",
-      "name": { "en": "Agility", "tr": "Çeviklik" },
+      "name": {
+        "en": "Agility",
+        "tr": "Çeviklik"
+      },
       "type": "number",
       "default": 3
     },
-    { "id": "trust", "name": { "en": "Mira's trust", "tr": "Mira'nın güveni" }, "type": "number" },
-    { "id": "has_lamp", "name": { "en": "Has the lamp", "tr": "Lamba var" }, "type": "bool" },
-    { "id": "bag", "name": { "en": "Bag", "tr": "Çanta" }, "type": "list" },
+    {
+      "id": "trust",
+      "name": {
+        "en": "Mira's trust",
+        "tr": "Mira'nın güveni"
+      },
+      "type": "number"
+    },
+    {
+      "id": "has_lamp",
+      "name": {
+        "en": "Has the lamp",
+        "tr": "Lamba var"
+      },
+      "type": "bool"
+    },
+    {
+      "id": "bag",
+      "name": {
+        "en": "Bag",
+        "tr": "Çanta"
+      },
+      "type": "list"
+    },
     {
       "id": "runs",
-      "name": { "en": "Walks down the alley", "tr": "Sokaktan geçişler" },
+      "name": {
+        "en": "Walks down the alley",
+        "tr": "Sokaktan geçişler"
+      },
       "type": "number",
       "scope": "persistent",
       "description": "Counts playthroughs, so the story can remember earlier ones."
     }
   ],
   "characters": [
-    { "id": "mira", "name": { "en": "Mira", "tr": "Mira" }, "color": "accent" },
-    { "id": "stranger", "name": { "en": "Stranger", "tr": "Yabancı" } },
-    { "id": "player", "name": { "en": "You", "tr": "Sen" } }
+    {
+      "id": "mira",
+      "name": {
+        "en": "Mira",
+        "tr": "Mira"
+      },
+      "color": "accent"
+    },
+    {
+      "id": "stranger",
+      "name": {
+        "en": "Stranger",
+        "tr": "Yabancı"
+      }
+    },
+    {
+      "id": "player",
+      "name": {
+        "en": "You",
+        "tr": "Sen"
+      }
+    }
   ],
   "chapters": [
     {
       "id": "alley_chapter",
-      "title": { "en": "The Alley", "tr": "Sokak" },
+      "title": {
+        "en": "The Alley",
+        "tr": "Sokak"
+      },
       "passages": [
         {
           "id": "prologue",
           "name": "Prologue",
           "blocks": [
+            {
+              "id": "pro_stage_rain",
+              "type": "action",
+              "action": "stage.background.set",
+              "params": {
+                "preset": "rain",
+                "amount": 0.6
+              }
+            },
             {
               "id": "pro_rain",
               "type": "narration",
@@ -68,7 +146,13 @@
                 "tr": "[fade]Yağmur. İliklerine işleyen cinsten.[/fade]"
               }
             },
-            { "id": "pro_count", "type": "set", "var": "runs", "op": "add", "value": 1 },
+            {
+              "id": "pro_count",
+              "type": "set",
+              "var": "runs",
+              "op": "add",
+              "value": 1
+            },
             {
               "id": "pro_again",
               "type": "if",
@@ -105,7 +189,11 @@
               "type": "input",
               "var": "name",
               "maxLength": 20,
-              "prompt": { "id": "pro_name_prompt", "en": "Your name", "tr": "Adın" }
+              "prompt": {
+                "id": "pro_name_prompt",
+                "en": "Your name",
+                "tr": "Adın"
+              }
             },
             {
               "id": "pro_close",
@@ -128,21 +216,50 @@
               "options": [
                 {
                   "id": "pro_she",
-                  "text": { "id": "pro_she", "en": "She", "tr": "Kadın olarak" },
+                  "text": {
+                    "id": "pro_she",
+                    "en": "She",
+                    "tr": "Kadın olarak"
+                  },
                   "then": [
-                    { "id": "pro_set_she", "type": "set", "var": "pronoun", "value": "'she'" }
+                    {
+                      "id": "pro_set_she",
+                      "type": "set",
+                      "var": "pronoun",
+                      "value": "'she'"
+                    }
                   ]
                 },
                 {
                   "id": "pro_he",
-                  "text": { "id": "pro_he", "en": "He", "tr": "Erkek olarak" },
-                  "then": [{ "id": "pro_set_he", "type": "set", "var": "pronoun", "value": "'he'" }]
+                  "text": {
+                    "id": "pro_he",
+                    "en": "He",
+                    "tr": "Erkek olarak"
+                  },
+                  "then": [
+                    {
+                      "id": "pro_set_he",
+                      "type": "set",
+                      "var": "pronoun",
+                      "value": "'he'"
+                    }
+                  ]
                 },
                 {
                   "id": "pro_they",
-                  "text": { "id": "pro_they", "en": "They", "tr": "Fark etmez" },
+                  "text": {
+                    "id": "pro_they",
+                    "en": "They",
+                    "tr": "Fark etmez"
+                  },
                   "then": [
-                    { "id": "pro_set_they", "type": "set", "var": "pronoun", "value": "'they'" }
+                    {
+                      "id": "pro_set_they",
+                      "type": "set",
+                      "var": "pronoun",
+                      "value": "'they'"
+                    }
                   ]
                 }
               ]
@@ -168,28 +285,62 @@
               "options": [
                 {
                   "id": "pro_tongue",
-                  "text": { "id": "pro_tongue", "en": "A quick tongue", "tr": "Hazırcevaplığım" },
+                  "text": {
+                    "id": "pro_tongue",
+                    "en": "A quick tongue",
+                    "tr": "Hazırcevaplığım"
+                  },
                   "then": [
-                    { "id": "pro_cha", "type": "set", "var": "charisma", "op": "add", "value": 2 }
+                    {
+                      "id": "pro_cha",
+                      "type": "set",
+                      "var": "charisma",
+                      "op": "add",
+                      "value": 2
+                    }
                   ]
                 },
                 {
                   "id": "pro_feet",
-                  "text": { "id": "pro_feet", "en": "Quick feet", "tr": "Çevik ayaklarım" },
+                  "text": {
+                    "id": "pro_feet",
+                    "en": "Quick feet",
+                    "tr": "Çevik ayaklarım"
+                  },
                   "then": [
-                    { "id": "pro_agi", "type": "set", "var": "agility", "op": "add", "value": 3 }
+                    {
+                      "id": "pro_agi",
+                      "type": "set",
+                      "var": "agility",
+                      "op": "add",
+                      "value": 3
+                    }
                   ]
                 },
                 {
                   "id": "pro_luck",
-                  "text": { "id": "pro_luck", "en": "Plain luck", "tr": "Düpedüz şans" },
+                  "text": {
+                    "id": "pro_luck",
+                    "en": "Plain luck",
+                    "tr": "Düpedüz şans"
+                  },
                   "then": [
-                    { "id": "pro_gold", "type": "set", "var": "gold", "op": "add", "value": 2 }
+                    {
+                      "id": "pro_gold",
+                      "type": "set",
+                      "var": "gold",
+                      "op": "add",
+                      "value": 2
+                    }
                   ]
                 }
               ]
             },
-            { "id": "pro_go", "type": "jump", "to": "alley" }
+            {
+              "id": "pro_go",
+              "type": "jump",
+              "to": "alley"
+            }
           ]
         },
         {
@@ -234,7 +385,11 @@
                 "tr": "[tremble]Karar {name}'in.[/tremble] Ne yapacaksan şimdi yap."
               }
             },
-            { "id": "al_go", "type": "jump", "to": "crossroads" }
+            {
+              "id": "al_go",
+              "type": "jump",
+              "to": "crossroads"
+            }
           ]
         },
         {
@@ -248,30 +403,71 @@
               "options": [
                 {
                   "id": "o_blade",
-                  "text": { "id": "o_blade", "en": "Draw your blade", "tr": "Kılıcını çek" },
-                  "then": [{ "id": "o_blade_go", "type": "jump", "to": "fight" }]
+                  "text": {
+                    "id": "o_blade",
+                    "en": "Draw your blade",
+                    "tr": "Kılıcını çek"
+                  },
+                  "then": [
+                    {
+                      "id": "o_blade_go",
+                      "type": "jump",
+                      "to": "fight"
+                    }
+                  ]
                 },
                 {
                   "id": "o_talk",
-                  "text": { "id": "o_talk", "en": "Talk them down", "tr": "Konuşarak ikna et" },
+                  "text": {
+                    "id": "o_talk",
+                    "en": "Talk them down",
+                    "tr": "Konuşarak ikna et"
+                  },
                   "enabledIf": "charisma >= 6",
-                  "then": [{ "id": "o_talk_go", "type": "jump", "to": "parley" }]
+                  "then": [
+                    {
+                      "id": "o_talk_go",
+                      "type": "jump",
+                      "to": "parley"
+                    }
+                  ]
                 },
                 {
                   "id": "o_bribe",
-                  "text": { "id": "o_bribe", "en": "Offer coins", "tr": "Para teklif et" },
-                  "cost": { "var": "gold", "amount": 10 },
-                  "then": [{ "id": "o_bribe_go", "type": "jump", "to": "bribe" }]
+                  "text": {
+                    "id": "o_bribe",
+                    "en": "Offer coins",
+                    "tr": "Para teklif et"
+                  },
+                  "cost": {
+                    "var": "gold",
+                    "amount": 10
+                  },
+                  "then": [
+                    {
+                      "id": "o_bribe_go",
+                      "type": "jump",
+                      "to": "bribe"
+                    }
+                  ]
                 },
                 {
                   "id": "o_run",
-                  "text": { "id": "o_run", "en": "Run for the gap", "tr": "Boşluğa doğru koş" },
+                  "text": {
+                    "id": "o_run",
+                    "en": "Run for the gap",
+                    "tr": "Boşluğa doğru koş"
+                  },
                   "showOdds": true,
                   "then": [
                     {
                       "id": "o_run_check",
                       "type": "check",
-                      "label": { "id": "o_run_label", "en": "Agility", "tr": "Çeviklik" },
+                      "label": {
+                        "id": "o_run_label",
+                        "en": "Agility",
+                        "tr": "Çeviklik"
+                      },
                       "dice": "1d20",
                       "modifier": "agility",
                       "target": 12,
@@ -285,7 +481,11 @@
                             "tr": "Islak yünün kokusunu alacak kadar yakından sıyrılıp geçiyorsun."
                           }
                         },
-                        { "id": "o_run_ok_go", "type": "jump", "to": "escaped" }
+                        {
+                          "id": "o_run_ok_go",
+                          "type": "jump",
+                          "to": "escaped"
+                        }
                       ],
                       "fail": [
                         {
@@ -297,7 +497,11 @@
                             "tr": "Ayağın gevşek bir taşa takılıyor."
                           }
                         },
-                        { "id": "o_run_fail_go", "type": "jump", "to": "fight" }
+                        {
+                          "id": "o_run_fail_go",
+                          "type": "jump",
+                          "to": "fight"
+                        }
                       ]
                     }
                   ]
@@ -311,15 +515,33 @@
                   },
                   "once": true,
                   "then": [
-                    { "id": "o_search_call", "type": "call", "to": "crates" },
-                    { "id": "o_search_back", "type": "jump", "to": "crossroads" }
+                    {
+                      "id": "o_search_call",
+                      "type": "call",
+                      "to": "crates"
+                    },
+                    {
+                      "id": "o_search_back",
+                      "type": "jump",
+                      "to": "crossroads"
+                    }
                   ]
                 },
                 {
                   "id": "o_lamp",
-                  "text": { "id": "o_lamp", "en": "Raise the lamp", "tr": "Lambayı kaldır" },
+                  "text": {
+                    "id": "o_lamp",
+                    "en": "Raise the lamp",
+                    "tr": "Lambayı kaldır"
+                  },
                   "visibleIf": "has_lamp",
-                  "then": [{ "id": "o_lamp_go", "type": "jump", "to": "lamp" }]
+                  "then": [
+                    {
+                      "id": "o_lamp_go",
+                      "type": "jump",
+                      "to": "lamp"
+                    }
+                  ]
                 }
               ]
             }
@@ -347,7 +569,12 @@
                   "id": "cr_lamp",
                   "weight": 2,
                   "then": [
-                    { "id": "cr_lamp_set", "type": "set", "var": "has_lamp", "value": true },
+                    {
+                      "id": "cr_lamp_set",
+                      "type": "set",
+                      "var": "has_lamp",
+                      "value": true
+                    },
                     {
                       "id": "cr_lamp_bag",
                       "type": "set",
@@ -370,7 +597,13 @@
                   "id": "cr_coins",
                   "weight": 1,
                   "then": [
-                    { "id": "cr_coins_set", "type": "set", "var": "gold", "op": "add", "value": 5 },
+                    {
+                      "id": "cr_coins_set",
+                      "type": "set",
+                      "var": "gold",
+                      "op": "add",
+                      "value": 5
+                    },
                     {
                       "id": "cr_coins_line",
                       "type": "narration",
@@ -410,7 +643,11 @@
               "id": "pa_1",
               "type": "dialogue",
               "speaker": "player",
-              "text": { "id": "pa_1", "en": "We don't want trouble.", "tr": "Bela istemiyoruz." }
+              "text": {
+                "id": "pa_1",
+                "en": "We don't want trouble.",
+                "tr": "Bela istemiyoruz."
+              }
             },
             {
               "id": "pa_2",
@@ -422,7 +659,13 @@
                 "tr": "Kimse istemez.[pause=500] Yine de."
               }
             },
-            { "id": "pa_trust", "type": "set", "var": "trust", "op": "add", "value": 2 },
+            {
+              "id": "pa_trust",
+              "type": "set",
+              "var": "trust",
+              "op": "add",
+              "value": 2
+            },
             {
               "id": "pa_3",
               "type": "dialogue",
@@ -447,7 +690,11 @@
               "type": "end",
               "ending": {
                 "id": "words",
-                "title": { "id": "end_words", "en": "Words, not steel", "tr": "Çelik değil, söz" }
+                "title": {
+                  "id": "end_words",
+                  "en": "Words, not steel",
+                  "tr": "Çelik değil, söz"
+                }
               }
             }
           ]
@@ -474,13 +721,33 @@
                 "tr": "{gold, plural, =0 {Kesen artık boş.} other {Geriye # sikke kaldı.}}"
               }
             },
-            { "id": "br_go", "type": "jump", "to": "escaped" }
+            {
+              "id": "br_go",
+              "type": "jump",
+              "to": "escaped"
+            }
           ]
         },
         {
           "id": "fight",
           "name": "Fight",
           "blocks": [
+            {
+              "id": "fi_shake",
+              "type": "action",
+              "action": "stage.shake",
+              "params": {
+                "strength": 0.6
+              }
+            },
+            {
+              "id": "fi_flash",
+              "type": "action",
+              "action": "stage.flash",
+              "params": {
+                "color": "white"
+              }
+            },
             {
               "id": "fi_1",
               "type": "narration",
@@ -493,22 +760,54 @@
             {
               "id": "fi_choice",
               "type": "choice",
-              "prompt": { "id": "fi_prompt", "en": "The blade comes down!", "tr": "Kılıç iniyor!" },
-              "timer": { "seconds": 8, "default": "f_freeze" },
+              "prompt": {
+                "id": "fi_prompt",
+                "en": "The blade comes down!",
+                "tr": "Kılıç iniyor!"
+              },
+              "timer": {
+                "seconds": 8,
+                "default": "f_freeze"
+              },
               "options": [
                 {
                   "id": "f_parry",
-                  "text": { "id": "f_parry", "en": "Parry", "tr": "Savuştur" },
+                  "text": {
+                    "id": "f_parry",
+                    "en": "Parry",
+                    "tr": "Savuştur"
+                  },
                   "showOdds": true,
                   "then": [
                     {
                       "id": "f_parry_check",
                       "type": "check",
-                      "label": { "id": "f_parry_label", "en": "Agility", "tr": "Çeviklik" },
+                      "label": {
+                        "id": "f_parry_label",
+                        "en": "Agility",
+                        "tr": "Çeviklik"
+                      },
                       "dice": "2d6",
                       "modifier": "agility",
                       "target": 11,
                       "success": [
+                        {
+                          "id": "f_parry_sparks",
+                          "type": "action",
+                          "action": "stage.burst",
+                          "params": {
+                            "preset": "sparks",
+                            "color": "gold"
+                          }
+                        },
+                        {
+                          "id": "f_parry_stop",
+                          "type": "action",
+                          "action": "stage.hitstop",
+                          "params": {
+                            "seconds": 0.08
+                          }
+                        },
                         {
                           "id": "f_parry_ok",
                           "type": "narration",
@@ -559,7 +858,11 @@
                 },
                 {
                   "id": "f_dodge",
-                  "text": { "id": "f_dodge", "en": "Dodge left", "tr": "Sola kaç" },
+                  "text": {
+                    "id": "f_dodge",
+                    "en": "Dodge left",
+                    "tr": "Sola kaç"
+                  },
                   "then": [
                     {
                       "id": "f_dodge_line",
@@ -570,12 +873,20 @@
                         "tr": "Bir su birikintisinin içinden yuvarlanıp koşarak kalkıyorsun."
                       }
                     },
-                    { "id": "f_dodge_go", "type": "jump", "to": "escaped" }
+                    {
+                      "id": "f_dodge_go",
+                      "type": "jump",
+                      "to": "escaped"
+                    }
                   ]
                 },
                 {
                   "id": "f_freeze",
-                  "text": { "id": "f_freeze", "en": "Freeze", "tr": "Donup kal" },
+                  "text": {
+                    "id": "f_freeze",
+                    "en": "Freeze",
+                    "tr": "Donup kal"
+                  },
                   "then": [
                     {
                       "id": "f_freeze_line",
@@ -620,9 +931,17 @@
             {
               "id": "es_2",
               "type": "narration",
-              "text": { "id": "es_2", "en": "Your phone buzzes.", "tr": "Telefonun titriyor." }
+              "text": {
+                "id": "es_2",
+                "en": "Your phone buzzes.",
+                "tr": "Telefonun titriyor."
+              }
             },
-            { "id": "es_go", "type": "jump", "to": "texts" }
+            {
+              "id": "es_go",
+              "type": "jump",
+              "to": "texts"
+            }
           ]
         },
         {
@@ -634,13 +953,21 @@
               "id": "tx_1",
               "type": "dialogue",
               "speaker": "mira",
-              "text": { "id": "tx_1", "en": "you ok??", "tr": "iyi misin??" }
+              "text": {
+                "id": "tx_1",
+                "en": "you ok??",
+                "tr": "iyi misin??"
+              }
             },
             {
               "id": "tx_2",
               "type": "dialogue",
               "speaker": "player",
-              "text": { "id": "tx_2", "en": "made it out", "tr": "çıktım" }
+              "text": {
+                "id": "tx_2",
+                "en": "made it out",
+                "tr": "çıktım"
+              }
             },
             {
               "id": "tx_3",
@@ -678,7 +1005,11 @@
                   "id": "tx_5",
                   "type": "dialogue",
                   "speaker": "mira",
-                  "text": { "id": "tx_5", "en": "meet me at the bridge", "tr": "köprüde buluşalım" }
+                  "text": {
+                    "id": "tx_5",
+                    "en": "meet me at the bridge",
+                    "tr": "köprüde buluşalım"
+                  }
                 }
               ]
             },
@@ -687,7 +1018,11 @@
               "type": "end",
               "ending": {
                 "id": "dark",
-                "title": { "id": "end_dark", "en": "Into the dark", "tr": "Karanlığa doğru" }
+                "title": {
+                  "id": "end_dark",
+                  "en": "Into the dark",
+                  "tr": "Karanlığa doğru"
+                }
               }
             }
           ]
@@ -719,7 +1054,11 @@
               "id": "la_3",
               "type": "dialogue",
               "speaker": "stranger",
-              "text": { "id": "la_3", "en": "Hello, sister.", "tr": "Merhaba, kardeşim." }
+              "text": {
+                "id": "la_3",
+                "en": "Hello, sister.",
+                "tr": "Merhaba, kardeşim."
+              }
             },
             {
               "id": "la_4",
@@ -735,7 +1074,11 @@
               "type": "end",
               "ending": {
                 "id": "family",
-                "title": { "id": "end_family", "en": "Family", "tr": "Aile" }
+                "title": {
+                  "id": "end_family",
+                  "en": "Family",
+                  "tr": "Aile"
+                }
               }
             }
           ]

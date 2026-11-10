@@ -15,6 +15,8 @@ import { EmptyView } from './views/EmptyView.tsx';
 import { FlowView } from './views/FlowView.tsx';
 import { PlayView } from './views/PlayView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
+import { SoundView } from './views/SoundView.tsx';
+import { StageView } from './views/StageView.tsx';
 import { WriteView } from './views/WriteView.tsx';
 
 function isTyping(target: EventTarget | null): boolean {
@@ -91,6 +93,8 @@ function CurrentView() {
   if (view === 'flow') return <FlowView />;
   if (view === 'play') return <PlayView />;
   if (view === 'data') return <DataView />;
+  if (view === 'sound') return <SoundView />;
+  if (view === 'stage') return <StageView />;
   return <EmptyView key={view} info={VIEWS[view]} />;
 }
 

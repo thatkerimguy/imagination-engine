@@ -8,6 +8,7 @@ import type { Block, Formula, LocalText, Scope } from './schema.ts';
 import { reconcileState } from './reconcile.ts';
 import {
   pageStart,
+  rememberScene,
   type Beat,
   type Frame,
   type Mutable,
@@ -89,6 +90,11 @@ export class StoryRuntime {
 
   get ended(): boolean {
     return this.s.ended;
+  }
+
+  /** What `.set` actions say should be playing now (see `StoryState.scene`). */
+  get scene(): Readonly<Record<string, unknown>> {
+    return this.s.scene ?? {};
   }
 
   get log(): readonly Beat[] {
@@ -317,6 +323,7 @@ export class StoryRuntime {
         }
         return this.finish(block);
       case 'action':
+        this.s.scene = rememberScene(this.s.scene, block.action, block.params ?? {});
         this.host.runAction?.(block.action, block.params ?? {});
         return false;
       case 'note':

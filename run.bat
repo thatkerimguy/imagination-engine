@@ -23,10 +23,11 @@ if /i "%~1"=="preview" (
 )
 title Imagination Engine - %TASK% - close this window to stop
 
-where pnpm >nul 2>nul || (echo pnpm was not found. Install Node.js 24+ and run: corepack enable & goto :failed)
-if not exist node_modules (
-  call pnpm install || goto :failed
-)
+call :need_node || goto :failed
+call :need_pnpm || goto :failed
+rem Always install: it takes under a second when nothing changed, and picks up packages added
+rem since the last run (a new workspace package or dependency), not just a missing node_modules.
+call pnpm install --prefer-offline || goto :failed
 if "%TASK%"=="preview" (
   call pnpm build || goto :failed
 )
@@ -41,6 +42,35 @@ set "CODE=%errorlevel%"
 rem Stopping with Ctrl+C isn't an error (130, or STATUS_CONTROL_C_EXIT as a signed or unsigned code).
 for %%c in (0 130 -1073741510 3221225786) do if "%CODE%"=="%%c" exit /b 0
 goto :failed
+
+rem Node.js 24 or newer (package.json "engines"). Offers to install the LTS release with winget.
+:need_node
+where node >nul 2>nul && node -e "process.exit(+process.versions.node.split('.')[0] < 24 ? 1 : 0)" && exit /b 0
+where node >nul 2>nul && (echo Node.js 24 or newer is needed; this computer has:& node -v) || echo Node.js was not found.
+where winget >nul 2>nul || (echo Install Node.js 24+ from https://nodejs.org and run this again.& exit /b 1)
+choice /m "Install Node.js LTS with winget now"
+if errorlevel 2 exit /b 1
+winget install --id OpenJS.NodeJS.LTS --exact --source winget || exit /b 1
+rem The installer changes PATH for new windows only, so add its folders to this one by hand.
+set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;%PATH%"
+where node >nul 2>nul && node -e "process.exit(+process.versions.node.split('.')[0] < 24 ? 1 : 0)" && exit /b 0
+echo Node.js was installed, but this window can't see it yet. Run this again.
+exit /b 1
+
+rem pnpm, at the version package.json names. npm installs it for this user, so no admin rights
+rem are needed (corepack would need them, and newer Node releases no longer ship it).
+:need_pnpm
+where pnpm >nul 2>nul && exit /b 0
+set "PM="
+for /f "delims=" %%v in ('node -p "require('./package.json').packageManager.split('+')[0]"') do set "PM=%%v"
+if not defined PM set "PM=pnpm"
+echo pnpm was not found; installing %PM%.
+rem pnpm runs fine without its install scripts, which newer npm skips with a long warning.
+call npm install --global --loglevel=error %PM% || exit /b 1
+set "PATH=%APPDATA%\npm;%PATH%"
+where pnpm >nul 2>nul && exit /b 0
+echo pnpm was installed, but this window can't see it yet. Run this again.
+exit /b 1
 
 :failed
 rem Keep the window open so the error can be read.

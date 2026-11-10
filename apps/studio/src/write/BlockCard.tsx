@@ -1,10 +1,12 @@
-import type { Block } from '@ie/story';
+import { isAudioAction, isStageAction, type Block } from '@ie/story';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { MenuButton } from '../components/Menu.tsx';
 import { useProject } from '../project/store.ts';
 import { useT } from '../store.ts';
-import { BLOCK_ICON, blockName } from './blockInfo.ts';
+import { BLOCK_ICON, blockKind, blockName } from './blockInfo.ts';
+import { AudioEditor } from './blocks/AudioEditors.tsx';
+import { StageEditor } from './blocks/StageEditors.tsx';
 import { focusBlock, useWrite } from './context.ts';
 import { ChoiceEditor } from './blocks/ChoiceEditor.tsx';
 import { CheckEditor, IfEditor, RandomEditor } from './blocks/BranchEditors.tsx';
@@ -52,7 +54,10 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
     case 'jump':
     case 'call':
     case 'return':
+      return <FlowEditor block={block} />;
     case 'action':
+      if (isAudioAction(block.action)) return <AudioEditor block={block} />;
+      if (isStageAction(block.action)) return <StageEditor block={block} />;
       return <FlowEditor block={block} />;
   }
 }
@@ -65,7 +70,8 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
   const clearReveal = useProject((s) => s.clearReveal);
   const ref = useRef<HTMLElement>(null);
   const make = useNewBlock();
-  const Icon = BLOCK_ICON[block.type];
+  const kind = blockKind(block);
+  const Icon = BLOCK_ICON[kind];
   // Translation gaps are normal while drafting in one language; they live in the problems list
   // and the Translate view, not under every line.
   const own = (problems.get(block.id) ?? []).filter((p) => p.code !== 'missing-translation');
@@ -85,10 +91,10 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
       ref={ref}
       className={`block block--${block.type}`}
       data-block-id={block.id}
-      data-testid={`block-${block.type}`}
-      aria-label={t(blockName(block.type))}
+      data-testid={`block-${kind}`}
+      aria-label={t(blockName(kind))}
     >
-      <span className="block__icon" title={t(blockName(block.type))} aria-hidden="true">
+      <span className="block__icon" title={t(blockName(kind))} aria-hidden="true">
         <Icon size={16} strokeWidth={1.5} />
       </span>
       <div className="block__body">

@@ -119,6 +119,19 @@ test.describe('Player', () => {
     expect(errors).toEqual([]);
   });
 
+  test('remembers the music volume', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto(PLAYER);
+    let sheet = await openSettings(page);
+    const music = sheet.getByRole('slider', { name: 'Music' });
+    await expect(music).toHaveValue('100');
+    await music.fill('40');
+    await page.reload();
+    sheet = await openSettings(page);
+    await expect(sheet.getByRole('slider', { name: 'Music' })).toHaveValue('40');
+    expect(errors).toEqual([]);
+  });
+
   test('shows the device report', async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto(`${PLAYER}#diagnostics`);

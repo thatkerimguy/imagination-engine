@@ -1,4 +1,6 @@
 export { analyzeProject, leaves } from './analyze.ts';
+export * from './audio.ts';
+export * from './stage.ts';
 export {
   checkStory,
   compileStory,
@@ -40,6 +42,7 @@ export * from './schema.ts';
 export {
   beatSchema,
   pageStart,
+  sceneKey,
   storyStateSchema,
   type Beat,
   type Frame,

@@ -3,7 +3,7 @@ import { LOCALES } from '@ie/i18n';
 import { TEXT_SPEEDS } from '@ie/present';
 import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { z } from 'zod';
-import { TEXT_SIZES, type PlayerSettings } from './settings.ts';
+import { TEXT_SIZES, VOLUME_BUSES, type PlayerSettings } from './settings.ts';
 
 export const PANELS = ['settings', 'diagnostics', 'history', 'saves'] as const;
 export type Panel = (typeof PANELS)[number];
@@ -82,6 +82,15 @@ export function createShellModule(host: ShellHost): EngineModule {
           description: 'Show or hide the performance overlay.',
           params: z.object({ visible: z.boolean() }),
           run: ({ visible }) => update({ hud: visible }),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'ui.volume.set',
+          description: 'Remember a volume (master, music, ambience, effects or voices).',
+          params: z.object({ bus: z.enum(VOLUME_BUSES), volume: z.number().min(0).max(1) }),
+          run: ({ bus, volume }) =>
+            update({ volumes: { ...host.getSettings().volumes, [bus]: volume } }),
         }),
       );
       actions.register(

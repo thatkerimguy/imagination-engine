@@ -1,6 +1,7 @@
 import { valueSchema, type Value } from '@ie/core';
 import { LOCALES, type Locale } from '@ie/i18n';
 import { z } from 'zod';
+import { audioLibrarySchema, voiceSchema, type AudioLibrary, type Voice } from './audio.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
@@ -70,12 +71,15 @@ export interface CharacterDef {
   readonly color?: string;
   /** Spelling the Turkish suffix engine should hear instead (Kemal → "Kemel"). */
   readonly suffixAs?: string;
+  /** Dialogue blips while this character's lines type in. */
+  readonly voice?: Voice;
 }
 export const characterSchema = z.object({
   id: idSchema,
   name: labelSchema,
   color: z.string().optional(),
   suffixAs: z.string().optional(),
+  voice: voiceSchema.optional(),
 });
 
 interface BlockBase {
@@ -335,6 +339,7 @@ export interface StoryProject {
   readonly variables: readonly VariableDef[];
   readonly characters: readonly CharacterDef[];
   readonly chapters: readonly Chapter[];
+  readonly audio?: AudioLibrary;
 }
 export const storyProjectSchema = z.object({
   format: z.literal(STORY_FORMAT),
@@ -348,4 +353,5 @@ export const storyProjectSchema = z.object({
   variables: z.array(variableSchema),
   characters: z.array(characterSchema),
   chapters: z.array(chapterSchema).min(1),
+  audio: audioLibrarySchema.optional(),
 });

@@ -4,11 +4,13 @@ import { Countdown } from './countdown.ts';
 import { buildLine, type LineContext, type LineMode } from './lines.ts';
 import { presentMessages, type PresentKey } from './messages.ts';
 import { buildChoice, buildEnd, buildInput, type PromptHandlers } from './prompts.ts';
-import { CHARS_PER_SECOND, Typewriter, type TextSpeed } from './typewriter.ts';
+import { CHARS_PER_SECOND, reportTyped, Typewriter, type TextSpeed } from './typewriter.ts';
 
 export interface PresenterHost extends PromptHandlers {
   /** A timed pause ran out. */
   advance(): void;
+  /** Characters were just typed in; `speaker` is null for narration. Drives voice blips. */
+  typed?(speaker: string | null, text: string): void;
 }
 
 export interface PresenterOptions {
@@ -147,7 +149,7 @@ export class StoryPresenter {
       if (built.steps.length) steps = built;
     }
     const done = () => this.showWaiting();
-    if (steps) this.typewriter.play(steps.steps, done);
+    if (steps) this.typewriter.play(this.withVoice(steps), done);
     else done();
   }
 
@@ -166,6 +168,13 @@ export class StoryPresenter {
       if (built) this.appendLine(built.element, false);
     }
     this.showWaiting(false);
+  }
+
+  private withVoice(line: NonNullable<ReturnType<typeof buildLine>>) {
+    const typed = this.host.typed?.bind(this.host);
+    if (!typed) return line.steps;
+    const speaker = line.element.dataset.speaker ?? null;
+    return reportTyped(line.steps, (text) => typed(speaker, text));
   }
 
   dispose(): void {

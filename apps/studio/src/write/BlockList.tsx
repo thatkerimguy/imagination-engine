@@ -1,4 +1,4 @@
-import type { Block, BlockType } from '@ie/story';
+import type { Block } from '@ie/story';
 import { Plus } from 'lucide-react';
 import { MenuButton, type MenuItem } from '../components/Menu.tsx';
 import { BLOCK_MENU, newBlock, type MenuBlockType } from '../project/factory.ts';
@@ -17,13 +17,15 @@ export function useNewBlock(): (type: MenuBlockType) => Block {
       variable: doc.variables[0]?.id,
       textVariable: doc.variables.find((v) => v.type === 'text')?.id,
       passage: allPassages(doc).find((p) => p.id !== doc.start)?.id ?? doc.start,
+      track: doc.audio?.tracks[0]?.id,
+      sound: doc.audio?.sounds[0]?.id,
     });
 }
 
 /** The block menu: every block an author can add, with a one-line hint. */
 export function useBlockMenu(onPick: (type: MenuBlockType) => void): MenuItem[] {
   const t = useT();
-  return BLOCK_MENU.map((type: BlockType & MenuBlockType) => ({
+  return BLOCK_MENU.map((type: MenuBlockType) => ({
     id: type,
     label: t(blockName(type)),
     hint: t(blockHint(type)),

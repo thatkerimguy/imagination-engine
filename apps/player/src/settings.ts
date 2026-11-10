@@ -11,6 +11,10 @@ export const TEXT_SCALE: Readonly<Record<TextSize, number>> = {
   large: 1.15,
 };
 
+/** The volumes a reader can set; `ui` stays at full (it is the menu's own clicks). */
+export const VOLUME_BUSES = ['master', 'music', 'ambience', 'sfx', 'voice'] as const;
+export type VolumeBus = (typeof VOLUME_BUSES)[number];
+
 export interface PlayerSettings {
   readonly locale: Locale;
   readonly theme: ThemePreference;
@@ -19,6 +23,8 @@ export interface PlayerSettings {
   /** Off: timed choices wait for the reader. */
   readonly timers: boolean;
   readonly hud: boolean;
+  /** 0..1 per bus. */
+  readonly volumes: Readonly<Record<VolumeBus, number>>;
 }
 
 const KEYS = {
@@ -29,6 +35,11 @@ const KEYS = {
   timers: 'ie.player.timers',
   hud: 'ie.player.hud',
 } as const;
+
+function readVolume(bus: VolumeBus): number {
+  const v = Number(readPref(`ie.player.volume.${bus}`) ?? '1');
+  return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+}
 
 function oneOf<T extends string>(values: readonly T[], value: unknown): value is T {
   return typeof value === 'string' && (values as readonly string[]).includes(value);
@@ -47,6 +58,10 @@ export function loadSettings(search: string = location.search): PlayerSettings {
     textSpeed: oneOf(TEXT_SPEEDS, textSpeed) ? textSpeed : 'normal',
     timers: readPref(KEYS.timers) !== 'off',
     hud: new URLSearchParams(search).has('hud') || readPref(KEYS.hud) === 'on',
+    volumes: Object.fromEntries(VOLUME_BUSES.map((b) => [b, readVolume(b)])) as Record<
+      VolumeBus,
+      number
+    >,
   };
 }
 
@@ -57,4 +72,6 @@ export function saveSettings(settings: PlayerSettings): void {
   writePref(KEYS.textSpeed, settings.textSpeed);
   writePref(KEYS.timers, settings.timers ? 'on' : 'off');
   writePref(KEYS.hud, settings.hud ? 'on' : 'off');
+  for (const bus of VOLUME_BUSES)
+    writePref(`ie.player.volume.${bus}`, String(Math.round(settings.volumes[bus] * 100) / 100));
 }

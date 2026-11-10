@@ -1,0 +1,193 @@
+/* Sound: tracks, the catalogue, the beat check, sound effects and audio blocks. */
+
+.sound__add {
+  margin-top: 0;
+}
+
+.card__title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.track-head {
+  display: flex;
+  min-height: var(--touch-target);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.track-head__title {
+  font-weight: 600;
+}
+
+.track-head__toggle {
+  flex: 1;
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.track-summary {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.track-head .track-summary {
+  margin-inline-start: auto;
+}
+
+[data-error] {
+  color: var(--color-ink);
+}
+
+.track-detail,
+.sound-editor,
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.beat-check {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.beat-strip {
+  display: block;
+  width: 100%;
+  height: 3rem;
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+}
+
+.beat-check__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.beat-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.beat-dots__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: 999px;
+}
+
+.beat-dots__dot[data-down='true'] {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.beat-dots__dot[data-on='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.check {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.check input {
+  accent-color: var(--color-accent);
+}
+
+.catalog__search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.catalog__search .field {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.catalog__results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catalog__result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: var(--hairline) solid var(--color-line);
+}
+
+.catalog__name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+
+.tap-calibration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* YouTube's terms want the player visible; a small 16:9 box is enough. */
+.tap-calibration__player {
+  width: min(320px, 100%);
+  aspect-ratio: 16 / 9;
+}
+
+.tap-button {
+  min-width: 8rem;
+  touch-action: manipulation;
+}
+
+.audio-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.voice-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.voice-field .labelled {
+  min-width: 9rem;
+}

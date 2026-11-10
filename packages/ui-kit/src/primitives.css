@@ -125,6 +125,31 @@
   padding: var(--space-4);
   overflow: auto;
 }
+.ie-range {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem; /* a comfortable thumb target on a phone */
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+.ie-progress {
+  flex: 1 1 10rem;
+  height: 0.5rem;
+  border: 0;
+  border-radius: var(--radius-1);
+  background: var(--color-line);
+  accent-color: var(--color-accent);
+  overflow: hidden;
+}
+.ie-progress::-webkit-progress-bar {
+  background: var(--color-line);
+}
+.ie-progress::-webkit-progress-value {
+  background: var(--color-accent);
+}
+.ie-progress::-moz-progress-bar {
+  background: var(--color-accent);
+}
 .ie-field + .ie-field {
   margin-top: var(--space-5);
 }

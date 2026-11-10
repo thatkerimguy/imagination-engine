@@ -197,6 +197,15 @@
 }
 
 /* Spacing like the Player's reader, so lines wrap where readers will see them wrap. */
+.play__frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .play__page {
   position: relative;
   flex: 1;

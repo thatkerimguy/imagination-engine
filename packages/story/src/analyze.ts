@@ -1,4 +1,6 @@
 import { parseDice } from './dice.ts';
+import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
+import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
 import type {
@@ -316,6 +318,10 @@ export function analyzeProject(project: StoryProject): Analysis {
         case 'end':
           if (block.ending) useText(block.ending.title, block.id);
           break;
+        case 'action':
+          checkAudioAction(block, project, report);
+          checkStageAction(block, project, report);
+          break;
         default:
           break;
       }
@@ -324,6 +330,7 @@ export function analyzeProject(project: StoryProject): Analysis {
 
   for (const { passage } of passages.values())
     walk(passage.blocks, listKey.passage(passage.id), passage.id);
+  checkAudioLibrary(project, report);
 
   for (const refs of pendingRefs) {
     for (const id of refs.passages) {

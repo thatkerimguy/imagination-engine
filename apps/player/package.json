@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ie/audio": "workspace:*",
     "@ie/core": "workspace:*",
     "@ie/diagnostics": "workspace:*",
     "@ie/i18n": "workspace:*",
@@ -16,7 +17,8 @@
     "@ie/samples": "workspace:*",
     "@ie/story": "workspace:*",
     "@ie/ui-kit": "workspace:*",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@ie/stage": "workspace:*"
   },
   "devDependencies": {
     "vite": "^8.3.7",

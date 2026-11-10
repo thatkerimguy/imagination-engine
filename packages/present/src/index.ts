@@ -12,6 +12,7 @@ export { StoryPresenter, type PresenterHost, type PresenterOptions } from './pre
 export { buildText, type BuildOptions, type BuiltText } from './text-dom.ts';
 export {
   CHARS_PER_SECOND,
+  reportTyped,
   TEXT_SPEEDS,
   Typewriter,
   timeoutScheduler,

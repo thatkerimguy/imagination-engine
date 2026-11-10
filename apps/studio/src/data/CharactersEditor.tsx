@@ -6,6 +6,7 @@ import { useProject } from '../project/store.ts';
 import { useT } from '../store.ts';
 import { nextName, useEditor } from '../write/edit.ts';
 import { DeleteButton } from './DeleteButton.tsx';
+import { VoiceField } from './VoiceField.tsx';
 
 const COLORS = ['accent', 'muted', 'faint', 'ink'] as const;
 
@@ -86,6 +87,15 @@ export function CharactersEditor({ doc }: { readonly doc: StoryProject }) {
               />
             </label>
           </div>
+          <VoiceField
+            voice={c.voice}
+            onChange={(voice) =>
+              set(c.id, (x) => {
+                const { voice: _old, ...rest } = x;
+                return voice ? { ...rest, voice } : rest;
+              })
+            }
+          />
           <div className="card__foot">
             <span className="hint">{t('data.uses', { count: usages.get(c.id) ?? 0 })}</span>
             <DeleteButton

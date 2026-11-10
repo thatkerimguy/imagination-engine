@@ -19,6 +19,8 @@ test.describe('Studio', () => {
     test.skip(isMobile, 'Keyboard shortcut; the phone opens the palette from the top bar.');
     const errors = watchErrors(page);
     await page.goto(STUDIO);
+    // Shortcuts are listened for once the Studio has rendered, which is after the load event.
+    await expect(page.getByTestId('line-text')).toHaveCount(1);
     await page.keyboard.press('Control+K');
     const palette = page.getByTestId('palette');
     await expect(palette).toBeVisible();

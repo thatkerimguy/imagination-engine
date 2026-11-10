@@ -13,6 +13,7 @@ import {
   type VariableDef,
   type VariableType,
 } from '@ie/story';
+import { newStageBlock, STAGE_KIND_LIST, type StageKind } from './stage-kinds.ts';
 
 /** A new, empty line in both languages. The line ID is its translation key. */
 export function newText(en = '', tr = ''): LocalText {
@@ -43,14 +44,36 @@ export const BLOCK_MENU = [
   'pause',
   'end',
   'note',
-] as const satisfies readonly BlockType[];
-export type MenuBlockType = (typeof BLOCK_MENU)[number];
+  'music',
+  'sfx',
+  'ambience',
+  ...STAGE_KIND_LIST,
+] as const satisfies readonly (BlockType | AudioKind | StageKind)[];
+/** Action blocks are made through their kinds (audio, stage), never bare. */
+export type MenuBlockType = Exclude<BlockType, 'action'> | AudioKind | StageKind;
+
+/** Audio blocks are action blocks; the menu shows each as a block of its own. */
+export const AUDIO_KINDS = {
+  music: 'audio.music.set',
+  sfx: 'audio.sfx.play',
+  ambience: 'audio.ambience.set',
+} as const;
+export type AudioKind = keyof typeof AUDIO_KINDS;
+
+/** The audio kind of an action block, or null for any other block. */
+export function audioKind(block: Block): AudioKind | null {
+  if (block.type !== 'action') return null;
+  const found = Object.entries(AUDIO_KINDS).find(([, action]) => action === block.action);
+  return found ? (found[0] as AudioKind) : null;
+}
 
 export interface BlockDefaults {
   readonly speaker?: string;
   readonly variable?: string;
   readonly textVariable?: string;
   readonly passage?: string;
+  readonly track?: string;
+  readonly sound?: string;
 }
 
 /** A new block of a type, filled with sensible defaults so it is valid straight away. */
@@ -91,6 +114,29 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
       return { id, type };
     case 'note':
       return { id, type, text: '' };
+    case 'music':
+      return {
+        id,
+        type: 'action',
+        action: AUDIO_KINDS.music,
+        params: { track: defaults.track ?? null, fade: 2 },
+      };
+    case 'sfx':
+      return {
+        id,
+        type: 'action',
+        action: AUDIO_KINDS.sfx,
+        params: { sound: defaults.sound ?? '' },
+      };
+    case 'ambience':
+      return {
+        id,
+        type: 'action',
+        action: AUDIO_KINDS.ambience,
+        params: { slot: 'rain', volume: 0.6, fade: 3 },
+      };
+    default:
+      return newStageBlock(id, type);
   }
 }
 

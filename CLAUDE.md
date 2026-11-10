@@ -17,6 +17,8 @@ pnpm preview        # serve builds on 127.0.0.1:4173 / 4174 (use this to test of
 pnpm check          # typecheck + lint + unit tests: run before calling any task done
 pnpm e2e            # Playwright smoke tests (uses installed Microsoft Edge)
 pnpm icons          # regenerate PWA icons from tools/icons/*.svg
+run.bat [preview]   # Windows: install if needed, start dev (or build + preview), open the Player
+publish.bat         # build the Player and push it to the `deploy` branch (host files only)
 ```
 
 Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone connects through
@@ -26,10 +28,13 @@ Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone 
 
 ```
 packages/core         kernel, modules, action bus, event bus, state store, services, ids, storage
-packages/i18n         locales (en, tr), Turkish-aware casing/collation/search folding, message catalogs
+packages/i18n         locales (en, tr), Turkish casing/collation/search, suffixes, hyphenation, catalogs
+packages/story        story schema, formulas, text markup, the interpreter (no DOM)
+packages/present      DOM presenter: layouts, effects, typewriter, choices (no UI framework)
+packages/samples      sample stories as JSON (The Rain Alley), with an auto-play test
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
-apps/player           vanilla TS reader shell (PWA); no UI framework
+apps/player           vanilla TS reader shell (PWA): story session, saves, rewind, panels; no UI framework
 apps/studio           React 19 + Zustand editor shell (PWA)
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator

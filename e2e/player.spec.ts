@@ -1,35 +1,121 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { watchErrors } from './console.ts';
 
 const PLAYER = 'http://127.0.0.1:5173/';
 
+/** Taps the empty lower part of the page, like a reader moving on. */
+async function tap(page: Page): Promise<void> {
+  const size = page.viewportSize() ?? { width: 800, height: 800 };
+  await page.mouse.click(size.width / 2, size.height - 60);
+}
+
+/** Taps until `target` appears (finishing each typed line on the way). */
+async function tapUntil(page: Page, target: Locator): Promise<void> {
+  await expect(async () => {
+    if (!(await target.isVisible())) await tap(page);
+    await expect(target).toBeVisible({ timeout: 300 });
+  }).toPass({ timeout: 20_000 });
+}
+
+/** Plays the prologue up to the crossroads choice, as "Ayşe". */
+async function playToCrossroads(page: Page): Promise<void> {
+  await tapUntil(page, page.getByTestId('answer'));
+  await page.getByTestId('answer').fill('Ayşe');
+  await page.keyboard.press('Enter');
+  await tapUntil(page, page.getByTestId('choice').filter({ hasText: 'She' }));
+  await page.getByTestId('choice').filter({ hasText: 'She' }).click();
+  await tapUntil(page, page.getByTestId('choice').filter({ hasText: 'A quick tongue' }));
+  await page.getByTestId('choice').filter({ hasText: 'A quick tongue' }).click();
+  await tapUntil(page, page.getByTestId('choice').filter({ hasText: 'Draw your blade' }));
+}
+
+async function openSettings(page: Page): Promise<Locator> {
+  await page.getByTestId('menu-zone').click();
+  await expect(page.getByTestId('menu')).toHaveAttribute('data-open', 'true');
+  await page.getByTestId('menu-settings').click();
+  const sheet = page.getByTestId('settings-dialog');
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
 test.describe('Player', () => {
-  test('reveals the page line by line', async ({ page }) => {
+  test('plays the sample story and switches language mid-scene', async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto(PLAYER);
-    const lines = page.locator('.reader__line');
-    await expect(lines).toHaveCount(3);
-    await expect(lines.nth(0)).toHaveAttribute('data-shown', 'true');
-    await expect(lines.nth(1)).toHaveAttribute('data-shown', 'false');
+    const story = page.getByTestId('story');
+    await expect(story).toContainText('Rain. The kind that gets into your bones.');
+    await expect(page).toHaveTitle('The Rain Alley');
 
-    await page.getByTestId('reader').click({ position: { x: 150, y: 400 } });
-    await expect(lines.nth(1)).toHaveAttribute('data-shown', 'true');
+    await playToCrossroads(page);
+    await expect(story).toContainText('Your call, Ayşe.');
+    await expect(
+      page.getByTestId('choice').filter({ hasText: 'Talk them down' }),
+    ).not.toHaveAttribute('aria-disabled');
+    const coins = page.getByTestId('choice').filter({ hasText: 'Offer coins' });
+    await expect(coins).toHaveAttribute('aria-disabled', 'true');
+    await expect(coins).toContainText('Not enough Gold');
+
+    const sheet = await openSettings(page);
+    await sheet.getByRole('button', { name: 'Türkçe' }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'tr-TR');
+    await sheet.getByRole('button', { name: 'Kapat' }).click();
+
+    // Same scene, same choices, now in Turkish, with the suffix harmonized for the name.
+    await expect(story).toContainText("Karar Ayşe'nin.");
+    await expect(page.getByTestId('choice').filter({ hasText: 'Kılıcını çek' })).toBeVisible();
+    await expect(page.getByTestId('choice').filter({ hasText: 'Para teklif et' })).toContainText(
+      'Yeterli Altın yok',
+    );
+    await expect(page).toHaveTitle('Yağmurlu Sokak');
+    expect(errors).toEqual([]);
+  });
+
+  test('resumes after a reload and steps back', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto(PLAYER);
+    await playToCrossroads(page);
+    await page.reload();
+    await expect(page.getByTestId('choice').filter({ hasText: 'Draw your blade' })).toBeVisible();
+    await expect(page.getByTestId('story')).toContainText('Your call, Ayşe.');
+
+    // Back returns to the line before the choice; the choice comes again on the next tap.
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('choice')).toHaveCount(0);
+    await tapUntil(page, page.getByTestId('choice').filter({ hasText: 'Draw your blade' }));
+    expect(errors).toEqual([]);
+  });
+
+  test('saves to a slot and plays to an ending', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto(PLAYER);
+    await playToCrossroads(page);
+    await page.getByTestId('menu-zone').click();
+    await page.getByTestId('menu-saves').click();
+    const saves = page.getByTestId('saves-dialog');
+    await saves.getByTestId('save-1').click();
+    await expect(saves.getByTestId('load-1')).toBeEnabled();
+    await expect(saves).toContainText('Your call, Ayşe.');
+    await saves.getByRole('button', { name: 'Close' }).click();
+
+    await page.getByTestId('choice').filter({ hasText: 'Talk them down' }).click();
+    await tapUntil(page, page.getByTestId('story-end'));
+    await expect(page.getByTestId('story-end')).toContainText('Ending: Words, not steel');
+
+    await page.getByTestId('menu-zone').click();
+    await page.getByTestId('menu-saves').click();
+    await saves.getByTestId('load-1').click();
+    await expect(page.getByTestId('choice').filter({ hasText: 'Draw your blade' })).toBeVisible();
     expect(errors).toEqual([]);
   });
 
   test('switches to Turkish from the settings sheet', async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto(PLAYER);
-    await page.getByTestId('menu-zone').click();
-    await expect(page.getByTestId('menu')).toHaveAttribute('data-open', 'true');
-    await page.getByTestId('menu-settings').click();
-
-    const sheet = page.getByTestId('settings-dialog');
-    await expect(sheet).toBeVisible();
+    const sheet = await openSettings(page);
     await sheet.getByRole('button', { name: 'Türkçe' }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'tr-TR');
     await expect(sheet.getByRole('button', { name: 'Kâğıt' })).toBeVisible();
-    await expect(page).toHaveTitle('Hikâye yok');
+    await expect(page.getByTestId('story')).toContainText('Yağmur. İliklerine işleyen cinsten.');
     expect(errors).toEqual([]);
   });
 

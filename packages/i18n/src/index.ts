@@ -27,3 +27,11 @@ export {
   type MessageParams,
   type Translator,
 } from './messages.ts';
+export { loadHyphenators, type Hyphenate, type PatternLoader } from './hyphenation.ts';
+export { indefiniteArticle, withArticle } from './english.ts';
+export {
+  harmonizeSuffix,
+  turkishNumberReading,
+  turkishReading,
+  type TurkishSuffixHints,
+} from './turkish.ts';

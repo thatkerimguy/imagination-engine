@@ -5,6 +5,7 @@ import type { Panel } from './shell-module.ts';
 
 export interface MenuHandlers {
   close(): void;
+  back(): void;
   openPanel(panel: Panel): void;
 }
 
@@ -62,6 +63,9 @@ export class Menu {
     };
     const items = [
       item(t('menu.continue'), () => this.handlers.close(), 'menu-continue'),
+      item(t('menu.back'), () => this.handlers.back(), 'menu-back'),
+      item(t('menu.history'), () => this.handlers.openPanel('history'), 'menu-history'),
+      item(t('menu.saves'), () => this.handlers.openPanel('saves'), 'menu-saves'),
       item(t('menu.settings'), () => this.handlers.openPanel('settings'), 'menu-settings'),
       item(t('menu.diagnostics'), () => this.handlers.openPanel('diagnostics'), 'menu-diagnostics'),
     ];

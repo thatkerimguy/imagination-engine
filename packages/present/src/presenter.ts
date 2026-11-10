@@ -14,6 +14,8 @@ export interface PresenterHost extends PromptHandlers, RpgHandlers {
   typed?(speaker: string | null, text: string): void;
   /** A fight waits: the host plays it and resolves it on the runtime. Called again on a redraw. */
   fight?(beat: Extract<Beat, { kind: 'fight' }>): void;
+  /** A sequence waits: the host plays it and advances when it ends. Called again on a redraw. */
+  sequence?(beat: Extract<Beat, { kind: 'sequence' }>): void;
 }
 
 export interface PresenterOptions {
@@ -139,7 +141,7 @@ export class StoryPresenter {
     let steps: ReturnType<typeof buildLine> = null;
     for (const beat of beats) {
       if (beat.kind === 'passage') {
-        this.enterPassage(beat);
+        this.enterPassage(beat, true);
         continue;
       }
       const built = buildLine(
@@ -201,10 +203,28 @@ export class StoryPresenter {
     };
   }
 
-  private enterPassage(beat: Extract<Beat, { kind: 'passage' }>): void {
-    if (!beat.keepPage) this.page.replaceChildren();
+  private enterPassage(beat: Extract<Beat, { kind: 'passage' }>, turn = false): void {
+    if (!beat.keepPage) {
+      this.page.replaceChildren();
+      if (turn) this.turnPage();
+    }
     this.layout = beat.layout;
     this.element.dataset.layout = beat.layout;
+  }
+
+  /** The story theme's page transition (ADR 0018): one compositor-only animation per new page. */
+  private turnPage(): void {
+    const kind = this.element.closest<HTMLElement>('[data-transition]')?.dataset.transition;
+    if (!kind || kind === 'none' || reducedMotion() || typeof this.page.animate !== 'function')
+      return;
+    const frames =
+      kind === 'rise'
+        ? [
+            { opacity: 0, transform: 'translateY(0.75rem)' },
+            { opacity: 1, transform: 'none' },
+          ]
+        : [{ opacity: 0 }, { opacity: 1 }];
+    this.page.animate(frames, { duration: 320, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' });
   }
 
   private appendLine(line: HTMLElement, scroll = true): void {
@@ -246,6 +266,8 @@ export class StoryPresenter {
       shown = buildEnd(beat, { runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'fight') {
       handlers.fight?.(beat);
+    } else if (beat.kind === 'sequence') {
+      handlers.sequence?.(beat);
     } else if (beat.kind === 'shop') {
       shown = buildShop({ runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'battle') {

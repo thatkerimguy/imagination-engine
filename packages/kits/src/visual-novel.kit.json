@@ -1,0 +1,357 @@
+{
+  "id": "visual-novel",
+  "name": {
+    "en": "Visual novel",
+    "tr": "Görsel roman"
+  },
+  "blurb": {
+    "en": "Characters talk in a box at the bottom of the screen. A title screen, two endings and an endings gallery.",
+    "tr": "Karakterler ekranın altındaki kutuda konuşur. Başlık ekranı, iki son ve bir sonlar galerisi."
+  },
+  "theme": "night",
+  "layout": "box",
+  "project": {
+    "start": "platform",
+    "variables": [
+      {
+        "id": "trust",
+        "name": {
+          "en": "Trust",
+          "tr": "Güven"
+        },
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 3
+      }
+    ],
+    "characters": [
+      {
+        "id": "hana",
+        "name": {
+          "en": "Hana",
+          "tr": "Hana"
+        },
+        "color": "accent"
+      },
+      {
+        "id": "ren",
+        "name": {
+          "en": "Ren",
+          "tr": "Ren"
+        }
+      }
+    ],
+    "screens": [
+      {
+        "id": "title",
+        "name": {
+          "en": "Title screen",
+          "tr": "Başlık ekranı"
+        },
+        "kind": "title",
+        "children": [
+          {
+            "id": "vn_title_stack",
+            "type": "stack",
+            "direction": "column",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "vn_title",
+                "type": "text",
+                "text": {
+                  "id": "vn_title",
+                  "en": "The Last Train",
+                  "tr": "Son Tren"
+                },
+                "style": "title"
+              },
+              {
+                "id": "vn_subtitle",
+                "type": "text",
+                "text": {
+                  "id": "vn_subtitle",
+                  "en": "A visual novel starter",
+                  "tr": "Görsel roman başlangıcı"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "vn_start",
+                "type": "button",
+                "label": {
+                  "id": "vn_start",
+                  "en": "Start",
+                  "tr": "Başla"
+                },
+                "actions": [
+                  {
+                    "type": "start"
+                  }
+                ]
+              },
+              {
+                "id": "vn_continue",
+                "type": "button",
+                "label": {
+                  "id": "vn_continue",
+                  "en": "Continue",
+                  "tr": "Devam et"
+                },
+                "actions": [
+                  {
+                    "type": "continue"
+                  }
+                ]
+              },
+              {
+                "id": "vn_endings_open",
+                "type": "button",
+                "label": {
+                  "id": "vn_endings_open",
+                  "en": "Endings",
+                  "tr": "Sonlar"
+                },
+                "actions": [
+                  {
+                    "type": "open",
+                    "screen": "endings"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "endings",
+        "name": {
+          "en": "Endings",
+          "tr": "Sonlar"
+        },
+        "kind": "panel",
+        "children": [
+          {
+            "id": "vn_endings",
+            "type": "list",
+            "source": "endings"
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": {
+          "en": "Midnight",
+          "tr": "Gece yarısı"
+        },
+        "passages": [
+          {
+            "id": "platform",
+            "name": "Platform",
+            "blocks": [
+              {
+                "id": "vn_1",
+                "type": "narration",
+                "text": {
+                  "id": "vn_1",
+                  "en": "Midnight. The departure board flickers, but the last train hasn’t come.",
+                  "tr": "Gece yarısı. Kalkış tabelası titriyor ama son tren hâlâ gelmedi."
+                }
+              },
+              {
+                "id": "vn_2",
+                "type": "dialogue",
+                "speaker": "hana",
+                "text": {
+                  "id": "vn_2",
+                  "en": "You missed it too? I thought I was the only one.",
+                  "tr": "Sen de mi kaçırdın? Bir tek ben sanıyordum."
+                }
+              },
+              {
+                "id": "vn_3",
+                "type": "dialogue",
+                "speaker": "ren",
+                "text": {
+                  "id": "vn_3",
+                  "en": "Nobody missed anything. It’s late. It’s always late.",
+                  "tr": "Kimse bir şey kaçırmadı. Gecikiyor. Hep gecikir."
+                }
+              },
+              {
+                "id": "vn_choice",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "vn_wait",
+                    "text": {
+                      "id": "vn_wait",
+                      "en": "Sit with Hana and wait",
+                      "tr": "Hana’nın yanına otur ve bekle"
+                    },
+                    "then": [
+                      {
+                        "id": "vn_trust",
+                        "type": "set",
+                        "var": "trust",
+                        "op": "add",
+                        "value": 1
+                      },
+                      {
+                        "id": "vn_go_wait",
+                        "type": "jump",
+                        "to": "wait"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "vn_ask",
+                    "text": {
+                      "id": "vn_ask",
+                      "en": "Ask Ren how he knows",
+                      "tr": "Ren’e nereden bildiğini sor"
+                    },
+                    "then": [
+                      {
+                        "id": "vn_go_ask",
+                        "type": "jump",
+                        "to": "ask"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "wait",
+            "name": "Waiting",
+            "blocks": [
+              {
+                "id": "vn_4",
+                "type": "dialogue",
+                "speaker": "hana",
+                "text": {
+                  "id": "vn_4",
+                  "en": "I’m going to see my sister. First time in six years.",
+                  "tr": "Kız kardeşimi görmeye gidiyorum. Altı yıldır ilk kez."
+                }
+              },
+              {
+                "id": "vn_5",
+                "type": "narration",
+                "text": {
+                  "id": "vn_5",
+                  "en": "A light grows in the tunnel.",
+                  "tr": "Tünelde bir ışık büyüyor."
+                }
+              },
+              {
+                "id": "vn_6",
+                "type": "jump",
+                "to": "arrival"
+              }
+            ]
+          },
+          {
+            "id": "ask",
+            "name": "Ren",
+            "blocks": [
+              {
+                "id": "vn_7",
+                "type": "dialogue",
+                "speaker": "ren",
+                "text": {
+                  "id": "vn_7",
+                  "en": "I drive it. Or I did, until tonight.",
+                  "tr": "Ben sürüyorum onu. Ya da bu geceye kadar sürüyordum."
+                }
+              },
+              {
+                "id": "vn_8",
+                "type": "narration",
+                "text": {
+                  "id": "vn_8",
+                  "en": "Hana looks away. A light grows in the tunnel.",
+                  "tr": "Hana başını çeviriyor. Tünelde bir ışık büyüyor."
+                }
+              },
+              {
+                "id": "vn_9",
+                "type": "jump",
+                "to": "arrival"
+              }
+            ]
+          },
+          {
+            "id": "arrival",
+            "name": "Arrival",
+            "blocks": [
+              {
+                "id": "vn_if",
+                "type": "if",
+                "branches": [
+                  {
+                    "id": "vn_if_trust",
+                    "when": "trust >= 1",
+                    "then": [
+                      {
+                        "id": "vn_10",
+                        "type": "dialogue",
+                        "speaker": "hana",
+                        "text": {
+                          "id": "vn_10",
+                          "en": "Sit with me? The ride is long.",
+                          "tr": "Yanıma oturur musun? Yol uzun."
+                        }
+                      },
+                      {
+                        "id": "vn_end_together",
+                        "type": "end",
+                        "ending": {
+                          "id": "together",
+                          "title": {
+                            "id": "vn_end_together_t",
+                            "en": "Together on the last train",
+                            "tr": "Son trende birlikte"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "else": [
+                  {
+                    "id": "vn_11",
+                    "type": "narration",
+                    "text": {
+                      "id": "vn_11",
+                      "en": "The doors close between you and the others.",
+                      "tr": "Kapılar seninle ötekiler arasında kapanıyor."
+                    }
+                  },
+                  {
+                    "id": "vn_end_alone",
+                    "type": "end",
+                    "ending": {
+                      "id": "alone",
+                      "title": {
+                        "id": "vn_end_alone_t",
+                        "en": "The platform, alone",
+                        "tr": "Peronda yalnız"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

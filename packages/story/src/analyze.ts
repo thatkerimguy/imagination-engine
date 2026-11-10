@@ -3,6 +3,8 @@ import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
 import { checkEnemies, checkFightBlock } from './analyze-fight.ts';
 import { checkReferences, type PendingRefs } from './analyze-refs.ts';
 import { checkRpgBlock, checkRpgData, type RpgCheckContext } from './analyze-rpg.ts';
+import { checkScreens } from './analyze-screens.ts';
+import { checkFightChart, checkSequenceBlock, checkSequences } from './analyze-sequence.ts';
 import { checkStageAction } from './analyze-stage.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
@@ -338,6 +340,7 @@ export function analyzeProject(project: StoryProject): Analysis {
           break;
         case 'fight':
           checkFightBlock(block, project, report);
+          checkFightChart(block, project, report);
           if (block.score) needVar(block.score, block.id, 'number');
           walk(block.win, listKey.win(block.id), passageId);
           walk(block.lose, listKey.lose(block.id), passageId);
@@ -348,6 +351,9 @@ export function analyzeProject(project: StoryProject): Analysis {
         case 'battle':
         case 'routine':
           checkRpgBlock(block, passageId, rpg);
+          break;
+        case 'sequence':
+          checkSequenceBlock(block, project, report);
           break;
         case 'action':
           checkAudioAction(block, project, report);
@@ -378,6 +384,8 @@ export function analyzeProject(project: StoryProject): Analysis {
   checkRpgData(rpg);
   checkAudioLibrary(project, report);
   checkEnemies(project, report);
+  checkSequences(project, report);
+  checkScreens({ project, report, needVar, useFormula, useText });
 
   checkReferences({ project, passages, options, targets, pendingRefs, leaves, report });
 

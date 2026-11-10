@@ -79,14 +79,22 @@ export function checkStory(input: unknown): StoryProblem[] {
   return 'problem' in parsed ? [parsed.problem] : analyzeProject(parsed.project).problems;
 }
 
+export interface CompileOptions {
+  /**
+   * Index a story that still has errors. Only for previews that read values and render texts
+   * (the Studio's screen preview); a story compiled this way must never be played.
+   */
+  readonly allowErrors?: boolean;
+}
+
 /** Validates and indexes a story. Throws {@link StoryLoadError} when it can't be played. */
-export function compileStory(input: unknown): CompiledStory {
+export function compileStory(input: unknown, options: CompileOptions = {}): CompiledStory {
   const parsed = parseProject(input);
   if ('problem' in parsed) throw new StoryLoadError([parsed.problem]);
   const { project } = parsed;
   const a = analyzeProject(project);
   const errors = a.problems.filter((p) => p.severity === 'error');
-  if (errors.length) throw new StoryLoadError(errors);
+  if (errors.length && !options.allowErrors) throw new StoryLoadError(errors);
 
   return {
     project,

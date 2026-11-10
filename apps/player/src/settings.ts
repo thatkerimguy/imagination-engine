@@ -26,6 +26,8 @@ export interface PlayerSettings {
   readonly textSpeed: TextSpeed;
   /** Off: timed choices wait for the reader. */
   readonly timers: boolean;
+  /** Off: every story uses the reader's own Paper or Night, not the look its author chose. */
+  readonly storyLook: boolean;
   readonly hud: boolean;
   readonly fightAssist: FightAssist;
   /** Short vibrations on hits in fights, where the device has them. */
@@ -40,6 +42,7 @@ const KEYS = {
   textSize: 'ie.player.textSize',
   textSpeed: 'ie.player.textSpeed',
   timers: 'ie.player.timers',
+  storyLook: 'ie.player.storyLook',
   hud: 'ie.player.hud',
   fightAssist: 'ie.player.fightAssist',
   haptics: 'ie.player.haptics',
@@ -67,6 +70,7 @@ export function loadSettings(search: string = location.search): PlayerSettings {
     textSize: oneOf(TEXT_SIZES, textSize) ? textSize : 'medium',
     textSpeed: oneOf(TEXT_SPEEDS, textSpeed) ? textSpeed : 'normal',
     timers: readPref(KEYS.timers) !== 'off',
+    storyLook: readPref(KEYS.storyLook) !== 'off',
     hud: new URLSearchParams(search).has('hud') || readPref(KEYS.hud) === 'on',
     fightAssist: oneOf(FIGHT_ASSISTS, fightAssist) ? fightAssist : 'off',
     haptics: readPref(KEYS.haptics) !== 'off',
@@ -83,6 +87,7 @@ export function saveSettings(settings: PlayerSettings): void {
   writePref(KEYS.textSize, settings.textSize);
   writePref(KEYS.textSpeed, settings.textSpeed);
   writePref(KEYS.timers, settings.timers ? 'on' : 'off');
+  writePref(KEYS.storyLook, settings.storyLook ? 'on' : 'off');
   writePref(KEYS.hud, settings.hud ? 'on' : 'off');
   writePref(KEYS.fightAssist, settings.fightAssist);
   writePref(KEYS.haptics, settings.haptics ? 'on' : 'off');

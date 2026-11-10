@@ -66,14 +66,25 @@ export class StorySession {
     return this.runtimeRef;
   }
 
+  /** True once the reader has read anything of this playthrough (a title screen's Continue). */
+  get hasProgress(): boolean {
+    // A new playthrough has entered its first passage but not yet run to anything to read.
+    return this.runtime.waiting !== null || this.runtime.ended;
+  }
+
+  /** Saves a change made between steps, such as a screen button that sets a variable. */
+  commit(): void {
+    this.autosave();
+  }
+
   get canGoBack(): boolean {
     return this.history.length > 0;
   }
 
-  /** True when a tap should move the story on (a line, a check or a pause is waiting). */
+  /** True when a tap should move the story on (a line, check, pause or sequence is waiting). */
   get canAdvance(): boolean {
     const kind = this.runtime.waiting?.kind;
-    return kind === 'line' || kind === 'check' || kind === 'pause';
+    return kind === 'line' || kind === 'check' || kind === 'pause' || kind === 'sequence';
   }
 
   /**

@@ -4,11 +4,19 @@ import { voiceSchema, type Voice } from './audio.ts';
 import { DIFFICULTIES, FIGHT_BARS, FIGHT_MODES, type Difficulty, type FightMode } from './fight.ts';
 import { logicSchemas, type RoutineBlock } from './logic.ts';
 import { rpgBlockSchemas, type RpgBlock } from './rpg.ts';
+import { sequenceBlockSchema, type SequenceBlock } from './sequence.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
   .string()
   .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'IDs use letters, digits and _');
+
+/**
+ * A reference to something defined elsewhere (a variable, passage, character…). Empty means "not
+ * chosen yet": an unfinished block is still a valid document, so it saves and loads, and analysis
+ * reports it as an error, so it never plays.
+ */
+export const refSchema = z.union([idSchema, z.literal('')]);
 
 /** A story line in both languages under one translation key. */
 export interface LocalText {
@@ -197,6 +205,8 @@ export interface FightBlock extends BlockBase {
   readonly bars?: number;
   /** A number variable that receives the score (0–100). */
   readonly score?: string;
+  /** A scene sequence whose notes are the whole fight, instead of a generated chart (ADR 0019). */
+  readonly chart?: string;
   readonly win: readonly Block[];
   readonly lose: readonly Block[];
 }
@@ -223,6 +233,7 @@ export type Block =
   | RandomBlock
   | EndBlock
   | FightBlock
+  | SequenceBlock
   | RpgBlock
   | RoutineBlock
   | ActionBlock;
@@ -237,7 +248,7 @@ const optionSchema = z.object({
   visibleIf: formulaSchema.optional(),
   enabledIf: formulaSchema.optional(),
   lockedText: localTextSchema.optional(),
-  cost: z.object({ var: idSchema, amount: formulaSchema }).optional(),
+  cost: z.object({ var: refSchema, amount: formulaSchema }).optional(),
   once: z.boolean().optional(),
   showOdds: z.boolean().optional(),
   get then() {
@@ -251,7 +262,7 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     z.object({
       id: idSchema,
       type: z.literal('dialogue'),
-      speaker: idSchema,
+      speaker: refSchema,
       text: localTextSchema,
     }),
     z.object({
@@ -280,7 +291,7 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     z.object({
       id: idSchema,
       type: z.literal('input'),
-      var: idSchema,
+      var: refSchema,
       prompt: localTextSchema,
       maxLength: z.number().int().positive().optional(),
     }),
@@ -289,12 +300,12 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     z.object({
       id: idSchema,
       type: z.literal('set'),
-      var: idSchema,
+      var: refSchema,
       op: z.enum(SET_OPS).optional(),
       value: formulaSchema.optional(),
     }),
-    z.object({ id: idSchema, type: z.literal('jump'), to: idSchema }),
-    z.object({ id: idSchema, type: z.literal('call'), to: idSchema }),
+    z.object({ id: idSchema, type: z.literal('jump'), to: refSchema }),
+    z.object({ id: idSchema, type: z.literal('call'), to: refSchema }),
     z.object({ id: idSchema, type: z.literal('return') }),
     z.object({
       id: idSchema,
@@ -311,15 +322,17 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     z.object({
       id: idSchema,
       type: z.literal('fight'),
-      enemy: idSchema,
+      enemy: refSchema,
       track: idSchema.optional(),
       mode: z.enum(FIGHT_MODES).optional(),
       difficulty: z.enum(DIFFICULTIES).optional(),
       bars: z.number().int().min(FIGHT_BARS.min).max(FIGHT_BARS.max).optional(),
       score: idSchema.optional(),
+      chart: idSchema.optional(),
       win: blocks(),
       lose: blocks(),
     }),
+    sequenceBlockSchema,
     ...rpgBlockSchemas(blocks),
     logic.routineBlock,
     z.object({

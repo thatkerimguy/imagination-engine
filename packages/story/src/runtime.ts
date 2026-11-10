@@ -3,9 +3,10 @@ import type { Locale } from '@ie/i18n';
 import { battleAction, battleMenu, type BattleAction, type BattleMenu } from './battle.ts';
 import { optionView } from './choices.ts';
 import { listKey, type CompiledStory } from './compile.ts';
-import { valueText } from './formula.ts';
+import { truthy, valueText } from './formula.ts';
 import type { FightResult } from './fight.ts';
-import type { LocalText } from './schema.ts';
+import type { Formula, LocalText } from './schema.ts';
+import type { ScreenAction } from './screens.ts';
 import { reconcileState } from './reconcile.ts';
 import { buy, leaveShop, sell, shopMenu, type ShopMenu } from './rpg-run.ts';
 import { runBlock } from './run-block.ts';
@@ -141,6 +142,20 @@ export class StoryRuntime {
     const beats = this.core.s.log.slice(this.delivered);
     this.delivered = this.core.s.log.length;
     return beats;
+  }
+
+  /**
+   * A screen button's Set action (ADR 0018): the set block's operation, applied between steps.
+   * Rules it triggers run at the next step.
+   */
+  screenSet(action: Extract<ScreenAction, { type: 'set' }>): void {
+    const value = action.value === undefined ? null : this.core.compute(action.value);
+    this.core.applySet(action.var, action.op ?? 'set', value);
+  }
+
+  /** Whether a formula holds right now: a screen component's visibility. */
+  holds(formula: Formula): boolean {
+    return truthy(this.core.compute(formula));
   }
 
   choose(optionId: string): void {

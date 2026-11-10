@@ -107,6 +107,36 @@ export function problemMessage(
       return t('problem.inputClash', { name: id });
     case 'enum-values':
       return t('problem.enumValues', { name: variableName });
+    case 'unknown-screen':
+      return id ? t('problem.unknownScreen', { name: id }) : t('problem.noScreen');
+    case 'title-only-action':
+      return t('problem.titleOnly');
+    case 'two-titles':
+      return t('problem.twoTitles');
+    case 'list-needs-var':
+      return t('problem.listNeedsVar');
+    case 'unknown-sequence':
+      return id ? t('problem.unknownSequence', { name: id }) : t('problem.noSequence');
+    case 'sequence-move':
+      return t('problem.sequenceMove');
+    case 'unknown-chart':
+      return t('problem.unknownChart');
+    case 'clip-action':
+      return t('problem.clipAction');
+    case 'clip-outside':
+      return t('problem.clipOutside');
+    case 'move-strike':
+      return t('problem.moveStrike');
+    case 'move-empty':
+      return t('problem.moveEmpty', {
+        name: labelText(doc.sequences?.find((s) => s.id === id)?.name, t.locale, id),
+      });
+    case 'unknown-move-sequence':
+      return t('problem.unknownMoveSequence');
+    case 'sequence-name':
+      return t('problem.sequenceName', {
+        language: t(p.locale === 'tr' ? 'language.tr' : 'language.en'),
+      });
     default:
       return problem.message;
   }

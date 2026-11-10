@@ -1,0 +1,451 @@
+{
+  "id": "mystery",
+  "name": {
+    "en": "Mystery",
+    "tr": "Gizem"
+  },
+  "blurb": {
+    "en": "Search for clues, keep them in a journal, and accuse a suspect once the evidence is in.",
+    "tr": "İpucu topla, deftere yaz ve kanıtlar tamamlanınca bir şüpheliyi suçla."
+  },
+  "theme": "noir",
+  "layout": "page",
+  "project": {
+    "start": "arrival",
+    "variables": [
+      {
+        "id": "clue_count",
+        "name": {
+          "en": "Clues found",
+          "tr": "Bulunan ipuçları"
+        },
+        "type": "number",
+        "default": 0
+      }
+    ],
+    "characters": [
+      {
+        "id": "iris",
+        "name": {
+          "en": "Iris",
+          "tr": "İris"
+        },
+        "color": "accent"
+      },
+      {
+        "id": "hale",
+        "name": {
+          "en": "Mr. Hale",
+          "tr": "Bay Hale"
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "clue_boots",
+        "name": {
+          "en": "Muddy boots",
+          "tr": "Çamurlu çizmeler"
+        },
+        "kind": "key",
+        "description": {
+          "en": "Size eleven. The mud is from the riverbank, not the garden.",
+          "tr": "Kırk dört numara. Çamur bahçeden değil, nehir kıyısından."
+        }
+      },
+      {
+        "id": "clue_letter",
+        "name": {
+          "en": "Torn letter",
+          "tr": "Yırtık mektup"
+        },
+        "kind": "key",
+        "description": {
+          "en": "“…the glasshouse at nine. Come alone. —H.”",
+          "tr": "“…dokuzda serada. Yalnız gel. —H.”"
+        }
+      },
+      {
+        "id": "clue_key",
+        "name": {
+          "en": "Brass key",
+          "tr": "Pirinç anahtar"
+        },
+        "kind": "key",
+        "description": {
+          "en": "It opens the glasshouse. Iris says she lost hers weeks ago.",
+          "tr": "Serayı açıyor. İris kendininkini haftalar önce kaybettiğini söylüyor."
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "count_clue_boots",
+        "name": "Count the boots",
+        "on": "gained",
+        "target": "clue_boots",
+        "do": [
+          {
+            "id": "mx_count_clue_boots",
+            "type": "set",
+            "var": "clue_count",
+            "op": "add",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "count_clue_letter",
+        "name": "Count the letter",
+        "on": "gained",
+        "target": "clue_letter",
+        "do": [
+          {
+            "id": "mx_count_clue_letter",
+            "type": "set",
+            "var": "clue_count",
+            "op": "add",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "count_clue_key",
+        "name": "Count the key",
+        "on": "gained",
+        "target": "clue_key",
+        "do": [
+          {
+            "id": "mx_count_clue_key",
+            "type": "set",
+            "var": "clue_count",
+            "op": "add",
+            "value": 1
+          }
+        ]
+      }
+    ],
+    "screens": [
+      {
+        "id": "hud",
+        "name": {
+          "en": "Case bar",
+          "tr": "Dosya çubuğu"
+        },
+        "kind": "hud",
+        "edge": "top",
+        "children": [
+          {
+            "id": "mx_hud_row",
+            "type": "stack",
+            "direction": "row",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "mx_hud_icon",
+                "type": "icon",
+                "icon": "search"
+              },
+              {
+                "id": "mx_hud_count",
+                "type": "text",
+                "text": {
+                  "id": "mx_hud_count",
+                  "en": "Clues: {clue_count} of 3",
+                  "tr": "İpuçları: {clue_count} / 3"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "mx_hud_journal",
+                "type": "button",
+                "label": {
+                  "id": "mx_hud_journal",
+                  "en": "Journal",
+                  "tr": "Defter"
+                },
+                "actions": [
+                  {
+                    "type": "open",
+                    "screen": "journal"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "journal",
+        "name": {
+          "en": "Clue journal",
+          "tr": "İpucu defteri"
+        },
+        "kind": "panel",
+        "children": [
+          {
+            "id": "mx_clues",
+            "type": "list",
+            "source": "inventory",
+            "empty": {
+              "id": "mx_none",
+              "en": "No clues yet. Look around.",
+              "tr": "Henüz ipucu yok. Etrafa bak."
+            }
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": {
+          "en": "The glasshouse",
+          "tr": "Cam sera"
+        },
+        "passages": [
+          {
+            "id": "arrival",
+            "name": "Arrival",
+            "blocks": [
+              {
+                "id": "mx_1",
+                "type": "narration",
+                "text": {
+                  "id": "mx_1",
+                  "en": "Rain on glass. The gardener is dead among the orchids, and the house wants an answer by morning.",
+                  "tr": "Camda yağmur. Bahçıvan orkidelerin arasında ölü yatıyor ve ev sabaha kadar bir cevap istiyor."
+                }
+              },
+              {
+                "id": "mx_2",
+                "type": "dialogue",
+                "speaker": "iris",
+                "text": {
+                  "id": "mx_2",
+                  "en": "My uncle found him. Ask him yourself, if you can stand him.",
+                  "tr": "Amcam buldu onu. Katlanabiliyorsan kendine sor."
+                }
+              },
+              {
+                "id": "mx_3",
+                "type": "jump",
+                "to": "search"
+              }
+            ]
+          },
+          {
+            "id": "search",
+            "name": "Search",
+            "blocks": [
+              {
+                "id": "mx_search",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "mx_boots",
+                    "text": {
+                      "id": "mx_boots",
+                      "en": "Look at the boots by the door",
+                      "tr": "Kapının yanındaki çizmelere bak"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_get_boots",
+                        "type": "item",
+                        "op": "give",
+                        "item": "clue_boots"
+                      },
+                      {
+                        "id": "mx_b_go",
+                        "type": "jump",
+                        "to": "search"
+                      }
+                    ],
+                    "once": true
+                  },
+                  {
+                    "id": "mx_letter",
+                    "text": {
+                      "id": "mx_letter",
+                      "en": "Search the gardener’s coat",
+                      "tr": "Bahçıvanın ceketini ara"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_get_letter",
+                        "type": "item",
+                        "op": "give",
+                        "item": "clue_letter"
+                      },
+                      {
+                        "id": "mx_l_go",
+                        "type": "jump",
+                        "to": "search"
+                      }
+                    ],
+                    "once": true
+                  },
+                  {
+                    "id": "mx_hale",
+                    "text": {
+                      "id": "mx_hale",
+                      "en": "Question Mr. Hale",
+                      "tr": "Bay Hale’i sorgula"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_4",
+                        "type": "dialogue",
+                        "speaker": "hale",
+                        "text": {
+                          "id": "mx_4",
+                          "en": "I was in the library all evening. Ask the dog.",
+                          "tr": "Bütün akşam kütüphanedeydim. Köpeğe sor."
+                        }
+                      },
+                      {
+                        "id": "mx_get_key",
+                        "type": "item",
+                        "op": "give",
+                        "item": "clue_key"
+                      },
+                      {
+                        "id": "mx_5",
+                        "type": "narration",
+                        "text": {
+                          "id": "mx_5",
+                          "en": "He drops a brass key as he turns away.",
+                          "tr": "Arkasını dönerken pirinç bir anahtar düşürüyor."
+                        }
+                      },
+                      {
+                        "id": "mx_h_go",
+                        "type": "jump",
+                        "to": "search"
+                      }
+                    ],
+                    "once": true
+                  },
+                  {
+                    "id": "mx_accuse",
+                    "text": {
+                      "id": "mx_accuse",
+                      "en": "Make your accusation",
+                      "tr": "Suçlamanı yap"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_a_go",
+                        "type": "jump",
+                        "to": "accuse"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keepPage": true
+          },
+          {
+            "id": "accuse",
+            "name": "Accusation",
+            "blocks": [
+              {
+                "id": "mx_6",
+                "type": "narration",
+                "text": {
+                  "id": "mx_6",
+                  "en": "Everyone gathers in the glasshouse. The rain gets louder.",
+                  "tr": "Herkes serada toplanıyor. Yağmur sesi yükseliyor."
+                }
+              },
+              {
+                "id": "mx_who",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "mx_who_hale",
+                    "text": {
+                      "id": "mx_who_hale",
+                      "en": "It was Mr. Hale",
+                      "tr": "Bay Hale’di"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_end_solved",
+                        "type": "end",
+                        "ending": {
+                          "id": "solved",
+                          "title": {
+                            "id": "mx_end_solved_t",
+                            "en": "Case closed",
+                            "tr": "Dava kapandı"
+                          }
+                        }
+                      }
+                    ],
+                    "enabledIf": "owned(\"clue_boots\") > 0 and owned(\"clue_letter\") > 0",
+                    "lockedText": {
+                      "id": "mx_need",
+                      "en": "You need the boots and the letter.",
+                      "tr": "Çizmelere ve mektuba ihtiyacın var."
+                    }
+                  },
+                  {
+                    "id": "mx_who_iris",
+                    "text": {
+                      "id": "mx_who_iris",
+                      "en": "It was Iris",
+                      "tr": "İris’ti"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_7",
+                        "type": "dialogue",
+                        "speaker": "iris",
+                        "text": {
+                          "id": "mx_7",
+                          "en": "You’ll regret this.",
+                          "tr": "Buna pişman olacaksın."
+                        }
+                      },
+                      {
+                        "id": "mx_end_wrong",
+                        "type": "end",
+                        "ending": {
+                          "id": "wrong",
+                          "title": {
+                            "id": "mx_end_wrong_t",
+                            "en": "The wrong name",
+                            "tr": "Yanlış isim"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "mx_back",
+                    "text": {
+                      "id": "mx_back",
+                      "en": "Not yet",
+                      "tr": "Henüz değil"
+                    },
+                    "then": [
+                      {
+                        "id": "mx_back_go",
+                        "type": "jump",
+                        "to": "search"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -22,6 +22,16 @@ describe('StorySession', () => {
     expect(session.canGoBack).toBe(false);
   });
 
+  it('has progress to continue only once the story has run to something to read', async () => {
+    const store = createMemoryStore();
+    const session = await StorySession.open(story, store, host);
+    expect(session.hasProgress).toBe(false);
+    session.start();
+    expect(session.hasProgress).toBe(true);
+    await session.flush();
+    expect((await StorySession.open(story, store, host)).hasProgress).toBe(true);
+  });
+
   it('steps back through reader actions', async () => {
     const session = await StorySession.open(story, createMemoryStore(), host);
     session.start();

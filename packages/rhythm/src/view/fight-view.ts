@@ -1,7 +1,8 @@
 import { Conductor, type AudioEngine } from '@ie/audio';
 import { stageColor, themePalette, type Rgb, type StageDirector } from '@ie/stage';
 import { createTranslator, type Locale } from '@ie/i18n';
-import type { Difficulty, EnemyDef, FightMode, FightResult } from '@ie/story';
+import { compileSequence, CueQueue, steadyTime, type SequenceCue } from '@ie/sequencer';
+import type { Difficulty, EnemyDef, FightMode, FightResult, SequenceDef } from '@ie/story';
 import { FightSession, type Assist, type FightClock, type FightEvent } from '../fight.ts';
 import { WINDOWS } from '../judge.ts';
 import { FightHud, type FightText } from './fight-hud.ts';
@@ -32,6 +33,11 @@ export interface FightViewOptions {
   readonly assist: Assist;
   readonly haptics: boolean;
   readonly locale: Locale;
+  /** Move sequences and charts (ADR 0019). */
+  readonly sequences?: readonly SequenceDef[];
+  readonly chart?: SequenceDef;
+  /** Runs a choreography cue the way a block would (the app's action bus). */
+  readonly dispatch?: (action: string, params: unknown) => void;
   readonly onDone: (result: FightResult) => void;
 }
 
@@ -49,6 +55,10 @@ export class FightView {
   private readonly colors: FightColors;
   private readonly text: FightText;
   private session: FightSession | null = null;
+  private clock: FightClock | null = null;
+  /** Choreography of the moves and chart being played, at fight beats. */
+  private readonly cues = new CueQueue();
+  private readonly fire: (cue: SequenceCue) => void;
   private frame = 0;
   private onStage = false;
   private closed = false;
@@ -58,6 +68,7 @@ export class FightView {
 
   constructor(private readonly options: FightViewOptions) {
     const { music } = options;
+    this.fire = (cue) => options.dispatch?.(cue.action, cue.params);
     this.conductor = new Conductor(music.tempo, music.source, { latency: options.outputLatency });
     this.text = createTranslator(fightMessages, options.locale);
     this.hud = new FightHud(options.host, this.text, options.enemyName, options.presence);
@@ -120,7 +131,7 @@ export class FightView {
   }
 
   private start(): void {
-    const { music, enemy, mode, difficulty, bars, seed, assist } = this.options;
+    const { music, enemy, mode, difficulty, bars, seed, assist, sequences, chart } = this.options;
     const tempo = music.tempo;
     const bpb = tempo.beatsPerBar;
     // Count in from the next downbeat at least a beat away.
@@ -129,6 +140,7 @@ export class FightView {
       timeAt: (beat) => tempo.timeAt(origin + beat),
       beatAt: (time) => tempo.beatAt(time) - origin,
     };
+    this.clock = clock;
     const sectionBars = music.sections
       .map((s) => Math.round((tempo.beatAt(s) - origin) / bpb) - 1)
       .filter((b) => b > 0);
@@ -143,6 +155,8 @@ export class FightView {
       sectionBars,
       clock,
       assist,
+      ...(sequences ? { sequences } : {}),
+      ...(chart ? { chart } : {}),
     });
   }
 
@@ -157,6 +171,7 @@ export class FightView {
     if (s.done) return;
     const now = this.conductor.time();
     this.handle(s.update(now));
+    if (this.clock && this.cues.size > 0) this.cues.advance(this.clock.beatAt(now), this.fire);
     // Bars are planned ahead, so the cue follows the music: the turn whose notes are arriving.
     if (!s.done && now >= this.announceUntil) this.hud.setTurn(s.turnAt(now + this.approach / 2));
   }
@@ -184,7 +199,10 @@ export class FightView {
     const stage = this.options.stage;
     const now = this.conductor.time();
     for (const e of events) {
-      if (e.type === 'bar') continue;
+      if (e.type === 'bar') {
+        this.queueCues(e.plan.cues);
+        continue;
+      }
       if (e.type === 'phase') {
         this.hud.announce(this.text('fight.phase', { name: this.options.enemyName }));
         this.announceUntil = now + 1.5;
@@ -211,7 +229,21 @@ export class FightView {
     this.options.music.setIntensity(Math.min(1, s.combo / 24 + (s.phase === 2 ? 0.35 : 0)));
   }
 
+  /** Queues the choreography of the moves (or the chart) a bar starts. */
+  private queueCues(cues: readonly { beat: number; sequence: string }[] | undefined): void {
+    if (!cues || !this.options.dispatch) return;
+    const time = steadyTime(this.options.music.tempo.bpm);
+    for (const cue of cues) {
+      const sequence =
+        this.options.chart?.id === cue.sequence
+          ? this.options.chart
+          : this.options.sequences?.find((q) => q.id === cue.sequence);
+      if (sequence) this.cues.add(compileSequence(sequence, time).cues, cue.beat);
+    }
+  }
+
   private end(won: boolean, score: number): void {
+    this.cues.clear();
     const name = this.options.enemyName;
     if (won)
       this.options.stage?.title({ text: { en: name, tr: name }, seconds: 0.6, exit: 'shatter' });

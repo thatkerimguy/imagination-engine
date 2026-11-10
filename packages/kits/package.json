@@ -1,0 +1,15 @@
+{
+  "name": "@ie/kits",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Genre kits as data: themes, screens, definitions and a bilingual starter story (ADR 0018).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@ie/i18n": "workspace:*",
+    "@ie/story": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}

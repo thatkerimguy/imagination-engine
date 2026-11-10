@@ -78,6 +78,14 @@ export function createShellModule(host: ShellHost): EngineModule {
       );
       actions.register(
         defineAction({
+          id: 'ui.storyLook.set',
+          description: "Use the story's own theme, or the reader's Paper or Night.",
+          params: z.object({ enabled: z.boolean() }),
+          run: ({ enabled }) => update({ storyLook: enabled }),
+        }),
+      );
+      actions.register(
+        defineAction({
           id: 'ui.fightAssist.set',
           description: 'Choose how much help rhythm fights give.',
           params: z.object({ assist: z.enum(FIGHT_ASSISTS) }),

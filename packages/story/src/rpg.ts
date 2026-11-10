@@ -8,6 +8,8 @@ import type { Block, Formula, Label } from './schema.ts';
  */
 
 const id = z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'IDs use letters, digits and _');
+/** A reference; empty means not chosen yet (see refSchema in schema.ts). */
+const ref = z.union([id, z.literal('')]);
 const label = z.object({ en: z.string().optional(), tr: z.string().optional() });
 const formula = z.union([z.string(), z.number(), z.boolean()]);
 
@@ -36,7 +38,7 @@ export const itemSchema = z.object({
   kind: z.enum(ITEM_KINDS).optional(),
   price: z.number().int().min(0).max(1_000_000).optional(),
   effects: z
-    .array(z.object({ var: id, amount: z.number() }))
+    .array(z.object({ var: ref, amount: z.number() }))
     .max(8)
     .optional(),
 });
@@ -149,29 +151,29 @@ export function rpgBlockSchemas(blocks: () => z.ZodType<readonly Block[]>) {
       id,
       type: z.literal('item'),
       op: z.enum(ITEM_OPS),
-      item: id,
+      item: ref,
       count: formula.optional(),
     }),
     z.object({
       id,
       type: z.literal('quest'),
       op: z.enum(QUEST_OPS),
-      quest: id,
+      quest: ref,
       step: id.optional(),
     }),
     z.object({
       id,
       type: z.literal('shop'),
-      currency: id,
+      currency: ref,
       stock: z
-        .array(z.object({ item: id, price: z.number().int().min(0).max(1_000_000).optional() }))
+        .array(z.object({ item: ref, price: z.number().int().min(0).max(1_000_000).optional() }))
         .max(40),
       sells: z.boolean().optional(),
     }),
     z.object({
       id,
       type: z.literal('battle'),
-      enemy: id,
+      enemy: ref,
       flee: z.boolean().optional(),
       get win() {
         return blocks();

@@ -1,8 +1,10 @@
 import { defineCatalogs } from '@ie/i18n';
+import { designMessages } from './messages-design.ts';
 import { fightStudioMessages } from './messages-fight.ts';
 import { logicMessages } from './messages-logic.ts';
 import { projectMessages } from './messages-project.ts';
 import { rpgBlockMessages } from './messages-rpg.ts';
+import { sequencerMessages } from './messages-sequencer.ts';
 import { soundMessages } from './messages-sound.ts';
 import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
@@ -28,7 +30,7 @@ const shellMessages = defineCatalogs({
     'desc.flow': 'See every passage and branch as a map, and play from any point.',
     'desc.logic': 'Rules and routines made from sentence blocks: When, If, Do.',
     'desc.sound': 'Music library, beat analysis, sound effects and character voices.',
-    'desc.stage': 'Kinetic typography, effects, the sequencer and the material graph.',
+    'desc.stage': 'Kinetic typography, effects, particles and looks, tried out live.',
     'desc.data': 'Characters, items, skills, enemies and quests.',
     'desc.play': 'Preview your novel exactly as readers will see it.',
     phase: 'Arrives in phase {n}',
@@ -74,7 +76,7 @@ const shellMessages = defineCatalogs({
     'desc.flow': 'Tüm pasajları ve dalları bir harita olarak gör, istediğin noktadan oynat.',
     'desc.logic': 'Cümle bloklarından kurallar ve rutinler: Olduğunda, Eğer, Yap.',
     'desc.sound': 'Müzik kitaplığı, ritim analizi, ses efektleri ve karakter sesleri.',
-    'desc.stage': 'Kinetik tipografi, efektler, zaman çizelgesi ve materyal grafiği.',
+    'desc.stage': 'Kinetik tipografi, efektler, parçacıklar ve görünümler, canlı denenir.',
     'desc.data': 'Karakterler, eşyalar, yetenekler, düşmanlar ve görevler.',
     'desc.play': 'Romanını okuyucuların göreceği şekilde önizle.',
     phase: 'Aşama {n} ile geliyor',
@@ -115,6 +117,8 @@ export const messages = {
     ...fightStudioMessages.en,
     ...rpgBlockMessages.en,
     ...logicMessages.en,
+    ...designMessages.en,
+    ...sequencerMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -125,6 +129,8 @@ export const messages = {
     ...fightStudioMessages.tr,
     ...rpgBlockMessages.tr,
     ...logicMessages.tr,
+    ...designMessages.tr,
+    ...sequencerMessages.tr,
   },
 };
 

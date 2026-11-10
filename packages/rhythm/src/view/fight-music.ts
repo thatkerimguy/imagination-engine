@@ -1,5 +1,11 @@
-import { ProceduralBeat, TempoMap, type AudioDirector, type ClockSource } from '@ie/audio';
-import type { AudioLibrary, Track } from '@ie/story';
+import {
+  ProceduralBeat,
+  trackTempo,
+  type AudioDirector,
+  type ClockSource,
+  type TempoMap,
+} from '@ie/audio';
+import type { AudioLibrary } from '@ie/story';
 
 /** The song a fight plays to, with its beat grid. */
 export interface FightMusic {
@@ -11,16 +17,6 @@ export interface FightMusic {
   setIntensity(value: number): void;
   /** Stops what the fight started. */
   release(): void;
-}
-
-function gridOf(track: Track | undefined): TempoMap | null {
-  try {
-    if (track?.analysis) return TempoMap.fromAnalysis(track.analysis);
-    if (track?.calibration) return TempoMap.fromCalibration(track.calibration);
-  } catch {
-    // Too few beats for a grid: treat the track as having none.
-  }
-  return null;
 }
 
 const quiet = { setIntensity: () => undefined, release: () => undefined };
@@ -37,7 +33,7 @@ export async function prepareFightMusic(
   const tracks = library?.tracks ?? [];
   if (trackId) {
     const track = tracks.find((t) => t.id === trackId);
-    const tempo = gridOf(track);
+    const tempo = trackTempo(track);
     if (track && tempo) {
       await audio.musicSet({ track: track.id, fade: 0.5 });
       if (audio.music.trackId === track.id)
@@ -50,7 +46,7 @@ export async function prepareFightMusic(
     }
   }
   const playing = tracks.find((t) => t.id === audio.music.trackId);
-  const playingGrid = gridOf(playing);
+  const playingGrid = trackTempo(playing);
   if (playing && playingGrid && audio.music.clock.playing)
     return {
       source: audio.music.clock,

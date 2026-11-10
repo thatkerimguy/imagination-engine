@@ -4,7 +4,6 @@ import { storyProjectSchema, type StoryProject } from '@ie/story';
 import { BookOpen, Download, FilePlus2, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { DeleteButton } from '../data/DeleteButton.tsx';
-import { newProject } from '../project/factory.ts';
 import {
   projectStore,
   listProjects,
@@ -21,7 +20,8 @@ import {
 } from '../project/store.ts';
 import { useStudio, useT } from '../store.ts';
 import { labelText } from '../write/edit.ts';
-import { UNTITLED } from '../messages.ts';
+import { KitsSection } from './KitsSection.tsx';
+import { NewProjectWizard } from './NewProjectWizard.tsx';
 
 async function loadProjects(): Promise<ProjectSummary[]> {
   await flushSave();
@@ -51,6 +51,7 @@ export function ProjectSheet({ onClose }: { readonly onClose: () => void }) {
   const file = useRef<HTMLInputElement>(null);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [error, setError] = useState('');
+  const [wizard, setWizard] = useState(false);
 
   const reload = () => void loadProjects().then(setProjects);
 
@@ -96,7 +97,7 @@ export function ProjectSheet({ onClose }: { readonly onClose: () => void }) {
     >
       <header className="ie-dialog__header">
         <h2 className="ie-dialog__title" id="project-title">
-          {t('project.title')}
+          {wizard ? t('wizard.title') : t('project.title')}
         </h2>
         <button
           type="button"
@@ -106,111 +107,119 @@ export function ProjectSheet({ onClose }: { readonly onClose: () => void }) {
           {t('close')}
         </button>
       </header>
-      <div className="ie-dialog__body">
-        <div className="card__grid">
-          <label className="labelled">
-            <span className="ie-label">{t('project.nameEn')}</span>
-            <input
-              className="field"
-              value={doc.title.en ?? ''}
-              data-testid="project-name-en"
-              onChange={(e) => setTitle('en', e.target.value)}
-            />
-          </label>
-          <label className="labelled">
-            <span className="ie-label">{t('project.nameTr')}</span>
-            <input
-              className="field"
-              lang="tr"
-              value={doc.title.tr ?? ''}
-              onChange={(e) => setTitle('tr', e.target.value)}
-            />
-          </label>
-        </div>
-        <div className="page__actions">
-          <button
-            type="button"
-            className="ie-button"
-            data-testid="project-new"
-            onClick={() =>
-              void adoptProject(newProject(UNTITLED, t('passage.first'))).then(() =>
-                ref.current?.close(),
-              )
-            }
-          >
-            <FilePlus2 size={16} strokeWidth={1.5} aria-hidden="true" />
-            {t('project.new')}
-          </button>
-          <button
-            type="button"
-            className="ie-button"
-            data-testid="project-sample"
-            onClick={() => {
-              const sample = storyProjectSchema.parse(samples.rainAlley) as StoryProject;
-              void adoptProject({ ...sample, id: createId('n') }).then(() => ref.current?.close());
-            }}
-          >
-            <BookOpen size={16} strokeWidth={1.5} aria-hidden="true" />
-            {t('project.sample')}
-          </button>
-          <button type="button" className="ie-button" onClick={() => file.current?.click()}>
-            <Upload size={16} strokeWidth={1.5} aria-hidden="true" />
-            {t('project.import')}
-          </button>
-          <button
-            type="button"
-            className="ie-button"
-            data-testid="project-export"
-            onClick={() => download(doc)}
-          >
-            <Download size={16} strokeWidth={1.5} aria-hidden="true" />
-            {t('project.export')}
-          </button>
-          <input
-            ref={file}
-            type="file"
-            accept=".json,application/json"
-            hidden
-            onChange={(event) => {
-              const picked = event.target.files?.[0];
-              event.target.value = '';
-              if (picked) void importFile(picked);
-            }}
+      {wizard ? (
+        <div className="ie-dialog__body">
+          <NewProjectWizard
+            onCreated={() => ref.current?.close()}
+            onCancel={() => setWizard(false)}
           />
         </div>
-        {error && (
-          <p className="formula__error" role="alert">
-            {error}
-          </p>
-        )}
-        <h3 className="ie-label project-sheet__list-title">{t('project.all')}</h3>
-        <ul className="project-list" data-testid="project-list">
-          {projects.map((p) => (
-            <li
-              key={p.id}
-              className="project-list__item"
-              aria-current={p.id === doc.id ? 'true' : undefined}
+      ) : (
+        <div className="ie-dialog__body">
+          <div className="card__grid">
+            <label className="labelled">
+              <span className="ie-label">{t('project.nameEn')}</span>
+              <input
+                className="field"
+                value={doc.title.en ?? ''}
+                data-testid="project-name-en"
+                onChange={(e) => setTitle('en', e.target.value)}
+              />
+            </label>
+            <label className="labelled">
+              <span className="ie-label">{t('project.nameTr')}</span>
+              <input
+                className="field"
+                lang="tr"
+                value={doc.title.tr ?? ''}
+                onChange={(e) => setTitle('tr', e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="page__actions">
+            <button
+              type="button"
+              className="ie-button"
+              data-testid="project-new"
+              onClick={() => setWizard(true)}
             >
-              <button
-                type="button"
-                className="project-list__open"
-                disabled={p.id === doc.id}
-                onClick={() => void openProject(p.id).then(() => ref.current?.close())}
+              <FilePlus2 size={16} strokeWidth={1.5} aria-hidden="true" />
+              {t('project.new')}
+            </button>
+            <button
+              type="button"
+              className="ie-button"
+              data-testid="project-sample"
+              onClick={() => {
+                const sample = storyProjectSchema.parse(samples.rainAlley) as StoryProject;
+                void adoptProject({ ...sample, id: createId('n') }).then(() =>
+                  ref.current?.close(),
+                );
+              }}
+            >
+              <BookOpen size={16} strokeWidth={1.5} aria-hidden="true" />
+              {t('project.sample')}
+            </button>
+            <button type="button" className="ie-button" onClick={() => file.current?.click()}>
+              <Upload size={16} strokeWidth={1.5} aria-hidden="true" />
+              {t('project.import')}
+            </button>
+            <button
+              type="button"
+              className="ie-button"
+              data-testid="project-export"
+              onClick={() => download(doc)}
+            >
+              <Download size={16} strokeWidth={1.5} aria-hidden="true" />
+              {t('project.export')}
+            </button>
+            <input
+              ref={file}
+              type="file"
+              accept=".json,application/json"
+              hidden
+              onChange={(event) => {
+                const picked = event.target.files?.[0];
+                event.target.value = '';
+                if (picked) void importFile(picked);
+              }}
+            />
+          </div>
+          {error && (
+            <p className="formula__error" role="alert">
+              {error}
+            </p>
+          )}
+          <KitsSection doc={doc} />
+          <h3 className="ie-label project-sheet__list-title">{t('project.all')}</h3>
+          <ul className="project-list" data-testid="project-list">
+            {projects.map((p) => (
+              <li
+                key={p.id}
+                className="project-list__item"
+                aria-current={p.id === doc.id ? 'true' : undefined}
               >
-                <span className="project-list__name">
-                  {labelText(p.title, locale, t('app.untitled'))}
-                </span>
-                <span className="hint">
-                  {p.id === doc.id ? t('project.open') : date.format(p.updatedAt)}
-                </span>
-              </button>
-              {p.id !== doc.id && (
-                <DeleteButton uses={1} onDelete={() => void removeProject(p.id).then(reload)} />
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+                <button
+                  type="button"
+                  className="project-list__open"
+                  disabled={p.id === doc.id}
+                  onClick={() => void openProject(p.id).then(() => ref.current?.close())}
+                >
+                  <span className="project-list__name">
+                    {labelText(p.title, locale, t('app.untitled'))}
+                  </span>
+                  <span className="hint">
+                    {p.id === doc.id ? t('project.open') : date.format(p.updatedAt)}
+                  </span>
+                </button>
+                {p.id !== doc.id && (
+                  <DeleteButton uses={1} onDelete={() => void removeProject(p.id).then(reload)} />
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </dialog>
   );
 }

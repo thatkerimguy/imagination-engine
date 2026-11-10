@@ -34,11 +34,13 @@ packages/present      DOM presenter: layouts, effects, typewriter, choices (no U
 packages/audio        mixer, music + conductor, beat analysis worker, sfxr, voices, ambience, catalogues, Spotify/YouTube
 packages/stage        GPU stage on WebGL2: SDF glyph atlas, particles, titles, screen FX, looks, tiers
 packages/rhythm       rhythm fights: chart director, judge, fight state (pure), and the fight presenter
+packages/sequencer    sequence playback: compiled cues, allocation-free cursor, audio-clock player and runner
 packages/samples      sample stories as JSON (The Rain Alley), with an auto-play test
+packages/kits         genre kits as data (VN, Gamebook, Chat, Mystery): createFromKit, applyKit
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
 apps/player           vanilla TS reader shell (PWA): story session, saves, rewind, panels; no UI framework
-apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Play
+apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Play
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator
 e2e                   Playwright smoke tests (desktop + Redmi Note 12 viewport)

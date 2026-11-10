@@ -8,11 +8,17 @@ import {
 } from '@ie/core';
 import { PerfHud } from '@ie/diagnostics';
 import { LOCALE_INFO, createTranslator, loadHyphenators, type Locale } from '@ie/i18n';
-import { StoryPresenter, type PresenterOptions } from '@ie/present';
+import {
+  ScreenHost,
+  StoryPresenter,
+  applyStoryTheme,
+  resolveStoryTheme,
+  type PresenterOptions,
+} from '@ie/present';
 import { FightRunner, type Assist } from '@ie/rhythm';
-import { samples } from '@ie/samples';
+import { createSequenceModule, SequenceRunner } from '@ie/sequencer';
 import { createStageHost, createStageModule } from '@ie/stage';
-import { StoryLoadError, compileStory, type CompiledStory } from '@ie/story';
+import { StoryLoadError, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
 import { Dialogs } from './dialogs.ts';
 import { Menu } from './menu.ts';
@@ -29,6 +35,7 @@ import {
 } from './settings.ts';
 import { createShellModule } from './shell-module.ts';
 import { StoryController } from './story/controller.ts';
+import { loadStory } from './story/load.ts';
 import { createStoryModule } from './story/module.ts';
 import { StorySession } from './story/session.ts';
 
@@ -53,16 +60,6 @@ async function openStore(): Promise<KeyValueStore> {
   }
 }
 
-/** The bundled sample until the Studio can publish stories to the Player. */
-function loadStory(): CompiledStory | StoryLoadError {
-  try {
-    return compileStory(samples.rainAlley);
-  } catch (error) {
-    if (error instanceof StoryLoadError) return error;
-    throw error;
-  }
-}
-
 function storyTitle(story: CompiledStory, locale: Locale): string {
   const { title } = story.project;
   return title[locale] || title.en || title.tr || '';
@@ -80,6 +77,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     runAsync(id, params, source).catch((error: unknown) => console.error(error));
   };
   let story: StoryController | null = null;
+  let screens: ScreenHost | null = null;
   const engine = new AudioEngine();
   const audio = new AudioDirector({
     engine,
@@ -105,7 +103,14 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       haptics: settings.haptics,
       tapLatency: 0, // the Player has no tap-timing test yet
     }),
+    dispatch: (id, params) => run(id, params, 'story'),
     resolve: (result) => run('story.fight', result),
+  });
+  // Sequences the story plays (ADR 0019); their cues go through the action bus like blocks.
+  const sequences = new SequenceRunner({
+    audio,
+    dispatch: (id, params) => run(id, params, 'story'),
+    done: () => run('story.advance'),
   });
   let hyphenate: PresenterOptions['hyphenate'];
   const hyphenation = loadHyphenators().then(
@@ -127,12 +132,15 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
 
   /** A tap on the page: finish the line being typed, or move on. */
   const tap = () => {
-    if (!story || menu.isOpen) return;
+    if (!story || menu.isOpen || screens?.covering) return;
     if (story.presenter.busy) story.presenter.skip();
     else if (story.session.canAdvance) run('story.advance');
   };
   // Timed choices wait while the menu, a sheet, or another app covers the page.
-  const holdClocks = () => story?.presenter.hold(menu.isOpen || dialogs.isOpen || document.hidden);
+  const holdClocks = () =>
+    story?.presenter.hold(
+      menu.isOpen || dialogs.isOpen || document.hidden || screens?.covering === true,
+    );
 
   const reader = new Reader(t, tap);
   const dialogs = new Dialogs(t, {
@@ -156,6 +164,15 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         run('ui.panel.open', { panel });
       },
       hasSheet: () => (story ? hasSheet(story.session.runtime.story) : false),
+      screens: () =>
+        (screens?.panels ?? []).map((s) => ({
+          id: s.id,
+          label: s.name[settings.locale] || s.name.en || s.name.tr || '',
+        })),
+      openScreen: (id) => {
+        run('ui.menu.set', { open: false });
+        screens?.open(id);
+      },
     },
     () => run('ui.menu.set', { open: !menu.isOpen }),
   );
@@ -165,6 +182,9 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     settings = next;
     saveSettings(next);
     applyTheme(next.theme);
+    // The author's look sits on top of the reader's Paper/Night, unless the reader turned it off.
+    const look = story && next.storyLook ? story.session.story.project.theme : undefined;
+    applyStoryTheme(document.documentElement, look ? resolveStoryTheme(look) : null);
     stage.refreshPalette();
     document.documentElement.lang = LOCALE_INFO[next.locale].tag;
     document.documentElement.style.setProperty('--reader-scale', String(TEXT_SCALE[next.textSize]));
@@ -172,7 +192,10 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     for (const bus of VOLUME_BUSES) engine.setVolume(bus, next.volumes[bus]);
     if (next.hud && !hud.mounted) hud.mount();
     if (!next.hud && hud.mounted) hud.unmount();
-    if (localeChanged) t = createTranslator(messages, next.locale);
+    if (localeChanged) {
+      t = createTranslator(messages, next.locale);
+      screens?.setLocale(next.locale);
+    }
     // The story redraws the page in the new language, mid-scene, keeping any running clock.
     story?.presenter.setOptions(presenterOptions(next));
     if (story) document.title = storyTitle(story.session.story, next.locale);
@@ -195,11 +218,12 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   kernel.use(createStoryModule(() => story));
   kernel.use(createAudioModule(audio));
   kernel.use(createStageModule(stage));
+  kernel.use(createSequenceModule(sequences, () => story?.session.story.project));
   await kernel.start();
 
   root.replaceChildren(reader.element, menu.trigger, menu.element);
 
-  const loaded = loadStory();
+  const loaded = await loadStory();
   if (loaded instanceof StoryLoadError) {
     reader.showError(
       t('story.error'),
@@ -222,22 +246,45 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         battle: (action) => run('story.battle', action),
         typed: (speaker, text) => audio.typed(speaker, text),
         fight: (beat) => fights.start(session.runtime, beat),
+        sequence: (beat) => sequences.start(session.runtime, beat),
       },
       presenterOptions(settings),
     );
     story = new StoryController(session, presenter, kernel.events, (scene) => {
       fights.sync(session.runtime);
+      sequences.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
     });
+    const begin = () => {
+      story?.begin();
+      if (session.runtime.log.length <= 2) reader.showHint(); // still on the very first line
+    };
+    screens = new ScreenHost(
+      session.runtime,
+      {
+        start: () => (session.hasProgress ? run('story.restart') : begin()),
+        continue: begin,
+        menu: (panel) => run('ui.panel.open', { panel }),
+        changed: () => {
+          session.commit();
+          story?.presenter.redraw();
+        },
+        toggled: holdClocks,
+      },
+      { locale: settings.locale, canContinue: () => session.hasProgress },
+    );
+    story.useScreens(screens);
     reader.mount(presenter.element);
+    reader.element.before(screens.hudTop);
+    reader.element.after(screens.hudBottom);
+    root.append(screens.overlay);
     menu.render(t);
     // The patterns are small and usually cached: wait briefly so the first page is hyphenated.
     await Promise.race([hyphenation, new Promise((resolve) => setTimeout(resolve, 500))]);
     presenter.setOptions(presenterOptions(settings));
-    story.begin();
+    if (!screens.showTitle()) begin();
     void hyphenation.then(() => story?.presenter.setOptions(presenterOptions(settings)));
-    if (session.runtime.log.length <= 2) reader.showHint(); // still on the very first line
   }
   apply(settings);
 
@@ -256,11 +303,13 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     if (dialogs.isOpen || event.defaultPrevented) return;
     const target = event.target instanceof Element ? event.target : null;
     if (event.key === 'Escape') {
-      run('ui.menu.set', { open: !menu.isOpen });
+      if (screens?.showing === 'panel') screens.close();
+      else run('ui.menu.set', { open: !menu.isOpen });
       return;
     }
     // A fight reads its own keys (arrows dodge there, not step back).
-    if (menu.isOpen || fights.running || target?.closest('input, textarea, select')) return;
+    if (menu.isOpen || fights.running || screens?.covering) return;
+    if (target?.closest('input, textarea, select')) return;
     if (event.key === '`') {
       run('ui.hud.set', { visible: !settings.hud });
     } else if (story?.presenter.handleKey(event.key)) {

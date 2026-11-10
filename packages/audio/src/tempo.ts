@@ -1,4 +1,4 @@
-import type { TrackAnalysis, TrackCalibration } from '@ie/story';
+import type { Track, TrackAnalysis, TrackCalibration } from '@ie/story';
 
 /**
  * Converts between playback time (seconds) and musical time (beats). Beat 0 is the first downbeat;
@@ -82,4 +82,15 @@ export class TempoMap {
   nextOnGrid(time: number, grid = 1): number {
     return this.timeAt(Math.ceil(this.beatAt(time) / grid - 1e-6) * grid);
   }
+}
+
+/** A track's beat grid from its analysis, else its tap calibration; null when it has neither. */
+export function trackTempo(track: Track | undefined): TempoMap | null {
+  try {
+    if (track?.analysis) return TempoMap.fromAnalysis(track.analysis);
+    if (track?.calibration) return TempoMap.fromCalibration(track.calibration);
+  } catch {
+    // Too few beats for a grid: treat the track as having none.
+  }
+  return null;
 }

@@ -36,7 +36,9 @@ its drum hits, which can be found again.
 
 - Fights don't use the drum hits yet. Placing notes on beats near a drum hit belongs in the fight
   director and needs song time mapped to fight beats; that is follow-up work.
-- The runner hasn't been checked against the downloaded model in this repository's tests (it would
-  download 180 MB). The first separation on a desktop is the check. If the export's outputs differ,
-  the runner fails with "unknown shape" and nothing is saved.
+- The repository's tests don't download the model. `stems/real-model.test.ts` runs it when
+  `IE_DEMUCS_MODEL` points at a downloaded copy. Checked on 2026-11-11 against the pinned export
+  (WASM, one thread): eight seconds of drums over a chord separate in about 25 s, the drum stem is
+  about 56 dB below the chord stems between hits, and all 16 hits are found within 6 ms. If a later
+  export's outputs differ, the runner fails with "unknown shape" and nothing is saved.
 - Stem-reactive visuals (PLAN §5) and adaptive stems for music are separate features.

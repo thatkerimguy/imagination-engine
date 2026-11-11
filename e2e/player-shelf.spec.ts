@@ -5,7 +5,7 @@ import { SHELF } from './player-helpers.ts';
 
 // Phase 11 (ADR 0022): the bookshelf main menu, credits and the accessibility settings.
 test.describe('Player bookshelf', () => {
-  test('slides between novels, opens one and comes back', async ({ page }) => {
+  test('slides between novels, opens one and comes back', async ({ page, isMobile }) => {
     const errors = watchErrors(page);
     await page.goto(SHELF);
     await expect(page).toHaveTitle('Bookshelf');
@@ -14,12 +14,35 @@ test.describe('Player bookshelf', () => {
     await expect(books).toHaveCount(14); // the sample and thirteen kit starters
     await expect(books.first()).toHaveAttribute('data-active', 'true');
 
-    await page.getByTestId('shelf-next').click();
+    // No buttons: a tap on the next book brings it to the middle, a tap in the middle opens it.
+    await expect(page.getByTestId('shelf-prev')).toHaveCount(0);
+    // (On the phone, Playwright would scroll the side book to the middle before clicking it.)
+    const tapSide = (n: number) =>
+      isMobile
+        ? books.nth(n).getByTestId('book-cover').dispatchEvent('click')
+        : books.nth(n).getByTestId('book-cover').click();
+    await tapSide(1);
     await expect(books.nth(1)).toHaveAttribute('data-active', 'true');
-    await page.getByTestId('shelf-prev').click();
-    await expect(books.first()).toHaveAttribute('data-active', 'true');
+    await expect(page).not.toHaveURL(/\?novel=/);
 
-    await books.first().getByTestId('book-open').click();
+    // A mouse drag slides the row; letting go settles on a book without opening it.
+    if (!isMobile) {
+      const box = await page.getByTestId('shelf-track').boundingBox();
+      if (!box) throw new Error('no track');
+      const y = box.y + box.height / 2;
+      await page.mouse.move(box.x + box.width * 0.3, y);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width * 0.5, y, { steps: 8 });
+      await page.mouse.move(box.x + box.width * 0.9, y, { steps: 8 });
+      await page.mouse.up();
+      await expect(books.first()).toHaveAttribute('data-active', 'true');
+      await expect(page).not.toHaveURL(/\?novel=/);
+    } else {
+      await tapSide(0);
+      await expect(books.first()).toHaveAttribute('data-active', 'true');
+    }
+
+    await books.first().getByTestId('book-cover').click();
     await expect(page).toHaveURL(/\?novel=rain_alley/);
     await expect(page.getByTestId('story')).toContainText('Rain. The kind');
 
@@ -34,7 +57,7 @@ test.describe('Player bookshelf', () => {
     await page.getByTestId('menu-shelf').click();
     await expect(page.getByTestId('shelf')).toBeVisible();
     // The sample has an autosave now, so the shelf offers to continue it.
-    await expect(books.first().getByTestId('book-open')).toHaveText('Continue');
+    await expect(books.first().getByTestId('book-action')).toHaveText('Continue');
     expect(errors).toEqual([]);
   });
 
@@ -49,6 +72,11 @@ test.describe('Player bookshelf', () => {
     ) as { id: string; title: { en: string; tr: string } };
     raw.id = 'my_copy';
     raw.title = { en: 'My Copy', tr: 'Kopyam' };
+    // A one-pixel PNG cover: the shelf shows the picture instead of the drawn title.
+    (raw as { cover?: unknown }).cover = {
+      kind: 'inline',
+      data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    };
     const path = info.outputPath('copy.story.json');
     await import('node:fs/promises').then((fs) => fs.writeFile(path, JSON.stringify(raw)));
 
@@ -56,7 +84,8 @@ test.describe('Player bookshelf', () => {
     await expect(page.getByTestId('shelf-status')).toHaveText('Added "My Copy" to the shelf.');
     const copy = page.locator('[data-testid="book"][data-id="my_copy"]');
     await expect(copy).toHaveAttribute('data-active', 'true');
-    await expect(copy).toContainText('Added by you');
+    await expect(copy.locator('img.book__art')).toBeVisible();
+    await expect(copy.getByTestId('book-cover')).toHaveAttribute('aria-label', /My Copy/);
 
     // Not a novel: nothing changes.
     await page.getByTestId('shelf-add-file').setInputFiles({

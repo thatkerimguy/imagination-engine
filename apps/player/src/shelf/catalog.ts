@@ -1,7 +1,7 @@
 import { readParsed, type KeyValueStore } from '@ie/core';
 import { LOCALES } from '@ie/i18n';
 import { samples } from '@ie/samples';
-import { compileStory, StoryLoadError, type StoryTheme } from '@ie/story';
+import { compileStory, mediaSourceSchema, StoryLoadError, type StoryTheme } from '@ie/story';
 import { z } from 'zod';
 import { readSave } from '../story/saves.ts';
 
@@ -17,6 +17,8 @@ export interface Book {
   readonly id: string;
   readonly title: Readonly<Partial<Record<'en' | 'tr', string>>>;
   readonly author?: string;
+  /** A picture to show instead of the drawn cover: a web address or a data URL. */
+  readonly cover?: string;
   readonly languages: readonly string[];
   readonly theme?: StoryTheme;
   readonly source: BookSource;
@@ -42,6 +44,8 @@ const coverSchema = z.object({
   id: z.string(),
   title: z.object({ en: z.string().optional(), tr: z.string().optional() }),
   author: z.string().optional(),
+  // A broken picture falls back to the drawn cover rather than hiding the novel.
+  cover: mediaSourceSchema.optional().catch(undefined),
   languages: z.array(z.enum(LOCALES)),
   theme: z.unknown().optional(),
 });
@@ -120,6 +124,7 @@ export async function loadShelf(store: KeyValueStore): Promise<Shelf> {
         id: c.id,
         title: c.title,
         ...(c.author ? { author: c.author } : {}),
+        ...(c.cover ? { cover: c.cover.kind === 'url' ? c.cover.url : c.cover.data } : {}),
         languages: c.languages,
         ...(c.theme ? { theme: c.theme as StoryTheme } : {}),
         source,

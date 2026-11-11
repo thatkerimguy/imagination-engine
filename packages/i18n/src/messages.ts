@@ -30,9 +30,62 @@ function formatNumber(value: number, locale: Locale): string {
   return format.format(value);
 }
 
-/** Replaces `{name}` placeholders. Numbers use the locale's digit grouping; unknown names stay visible. */
+/** The case bodies of a plural block starting just after `plural,`, and where the block ends. */
+function pluralCases(
+  template: string,
+  from: number,
+): { cases: Map<string, string>; end: number } | null {
+  const cases = new Map<string, string>();
+  let i = from;
+  for (;;) {
+    while (/\s/.test(template[i] ?? '')) i++;
+    if (template[i] === '}') return { cases, end: i + 1 };
+    const name = /^[=\w]+/.exec(template.slice(i))?.[0];
+    if (!name) return null;
+    i += name.length;
+    while (/\s/.test(template[i] ?? '')) i++;
+    if (template[i] !== '{') return null;
+    let depth = 1;
+    const start = i + 1;
+    for (i = start; i < template.length && depth > 0; i++) {
+      if (template[i] === '{') depth++;
+      else if (template[i] === '}') depth--;
+    }
+    if (depth > 0) return null;
+    cases.set(name, template.slice(start, i - 1));
+  }
+}
+
+/**
+ * Picks the plural case for `{count, plural, one {# line} other {# lines}}` (ICU style: `=0`
+ * exact cases, then the CLDR category, then `other`). `#` is the count, grouped for the locale.
+ */
+function formatPlurals(template: string, params: MessageParams, locale: Locale): string {
+  const head = /\{(\w+),\s*plural,/g;
+  let out = '';
+  let last = 0;
+  for (let m = head.exec(template); m; m = head.exec(template)) {
+    const parsed = pluralCases(template, m.index + m[0].length);
+    const value = params[m[1] ?? ''];
+    if (!parsed || typeof value !== 'number') continue;
+    const body =
+      parsed.cases.get(`=${value}`) ??
+      parsed.cases.get(pluralCategory(locale, value)) ??
+      parsed.cases.get('other') ??
+      '';
+    out += template.slice(last, m.index) + body.replaceAll('#', formatNumber(value, locale));
+    last = parsed.end;
+    head.lastIndex = parsed.end;
+  }
+  return out + template.slice(last);
+}
+
+/**
+ * Replaces `{name}` placeholders and picks plural cases. Numbers use the locale's digit grouping;
+ * unknown names stay visible.
+ */
 export function formatMessage(template: string, params: MessageParams, locale: Locale): string {
-  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+  return formatPlurals(template, params, locale).replace(/\{(\w+)\}/g, (match, name: string) => {
     const value = params[name];
     if (value === undefined) return match;
     return typeof value === 'number' ? formatNumber(value, locale) : value;

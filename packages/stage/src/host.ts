@@ -58,7 +58,8 @@ export function createStageHost(options: StageHostOptions): StageDirector {
     const locale = options.locale();
     return label[locale] || label.en || label.tr || '';
   };
-  const family = getComputedStyle(document.documentElement).getPropertyValue('--font-prose') || 'serif';
+  const family =
+    getComputedStyle(document.documentElement).getPropertyValue('--font-prose') || 'serif';
   // Glyphs are drawn from the loaded font, so start loading it before the first title needs it.
   void document.fonts?.load(`48px ${family}`).catch(() => undefined);
   const director = new StageDirector({

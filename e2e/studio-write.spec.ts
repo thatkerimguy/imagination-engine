@@ -58,7 +58,7 @@ test.describe('Studio writing', () => {
     await page.keyboard.type('One two three.');
     await page.keyboard.press('Enter');
     await page.keyboard.type('Four.');
-    await expect(page.getByTestId('passage-words')).toContainText('Words: 4');
+    await expect(page.getByTestId('passage-words')).toContainText('4 words');
 
     // Alt+↑ moves the line being written above the one before it, and the caret stays.
     await page.keyboard.press('Alt+ArrowUp');

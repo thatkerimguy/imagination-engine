@@ -40,3 +40,19 @@ test('a picture block shows its picture behind the text', async ({ page }) => {
   await expect(layer).toHaveCSS('--ie-media-dim', '0.3');
   expect(errors).toEqual([]);
 });
+
+// The bookshelf cover: an optional picture chosen in the novel's sheet, saved in the novel.
+test('a novel can have a picture as its bookshelf cover', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto(STUDIO);
+  await page.getByTestId('project-button').click();
+  const sheet = page.getByTestId('project-sheet');
+  await expect(sheet.getByTestId('cover-thumb')).toHaveCount(0);
+  await sheet
+    .getByTestId('cover-file')
+    .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: PIXEL });
+  await expect(sheet.getByTestId('cover-thumb')).toHaveAttribute('src', /^data:image\//);
+  await sheet.getByTestId('cover-remove').click();
+  await expect(sheet.getByTestId('cover-thumb')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

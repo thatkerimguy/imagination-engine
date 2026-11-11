@@ -14,6 +14,7 @@ import {
   type SkillDef,
 } from './rpg.ts';
 import { materialSchema, type MaterialDef } from './material.ts';
+import { mediaSourceSchema, type MediaSource } from './media.ts';
 import { screenSchema, type ScreenDef } from './screens.ts';
 import { sequenceSchema, type SequenceDef } from './sequence.ts';
 import { themeSchema, type StoryTheme } from './theme.ts';
@@ -44,6 +45,8 @@ export interface StoryProject {
   readonly id: string;
   readonly title: Label;
   readonly author?: string;
+  /** A picture for the bookshelf instead of the drawn title cover (optional). */
+  readonly cover?: MediaSource;
   readonly languages: readonly Locale[];
   readonly start: string;
   readonly layout?: Layout;
@@ -73,6 +76,7 @@ export const storyProjectSchema = z.object({
   id: idSchema,
   title: labelSchema,
   author: z.string().optional(),
+  cover: mediaSourceSchema.optional(),
   languages: z.array(z.enum(LOCALES)).min(1),
   start: idSchema,
   layout: z.enum(LAYOUTS).optional(),

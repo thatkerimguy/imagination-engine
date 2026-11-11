@@ -3,7 +3,7 @@
 .shelf {
   --book-width: min(68vw, 15rem);
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
   min-height: 100dvh;
   padding-block: var(--space-5) var(--space-6);
   background: var(--color-bg);
@@ -38,6 +38,19 @@
   padding-block: var(--space-5);
   /* The shelf the books stand on. */
   border-bottom: var(--hairline) solid var(--color-line);
+}
+.shelf__track {
+  cursor: grab;
+  touch-action: pan-x;
+}
+/* While a mouse drags, the row follows it instead of snapping. */
+.shelf__track[data-dragging='true'] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+.shelf__track[data-dragging='true'] .book__cover {
+  cursor: grabbing;
 }
 .shelf__track::-webkit-scrollbar {
   display: none;
@@ -95,8 +108,30 @@
   color: var(--color-ink-muted);
   font-size: var(--text-sm);
 }
+.book__cover--art {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+}
+.book__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.book__cta {
+  min-height: 1.5em;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  visibility: hidden;
+}
+.book[data-active='true'] .book__cta {
+  visibility: visible;
+}
 .book__actions {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-2);
@@ -120,24 +155,15 @@
   display: none;
 }
 
-.shelf__nav {
-  display: grid;
-  grid-template-columns: var(--touch-target) 1fr var(--touch-target);
-  align-items: center;
-  gap: var(--space-3);
-  padding-inline: var(--space-5);
-}
-.shelf__arrow {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  border: var(--hairline) solid var(--color-line);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--color-ink);
-  font-size: var(--text-lg);
-  cursor: pointer;
+.shelf__hint {
+  margin: 0;
+  padding: var(--space-3) var(--space-5) 0;
+  text-align: center;
+  color: var(--color-ink-faint);
+  font-size: var(--text-xs);
 }
 .shelf__status {
+  padding-inline: var(--space-5);
   margin: 0;
   min-height: 1.5em;
   text-align: center;

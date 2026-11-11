@@ -20,6 +20,7 @@ import {
 } from '../project/store.ts';
 import { useStudio, useT } from '../store.ts';
 import { labelText } from '../write/edit.ts';
+import { CoverPicker } from './CoverPicker.tsx';
 import { KitsSection } from './KitsSection.tsx';
 import { NewProjectWizard } from './NewProjectWizard.tsx';
 
@@ -136,6 +137,7 @@ export function ProjectSheet({ onClose }: { readonly onClose: () => void }) {
               />
             </label>
           </div>
+          <CoverPicker />
           <div className="page__actions">
             <button
               type="button"

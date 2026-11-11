@@ -11,9 +11,13 @@ export interface ShelfHandlers {
   settings(): void;
 }
 
+/** How far a mouse moves before a press becomes a drag rather than a click. */
+const DRAG_SLOP = 6;
+
 /**
- * The bookshelf (ADR 0022): novels side by side on a row that slides with a swipe, the mouse wheel,
- * the arrow keys or the buttons below it. The book in the middle is the one Enter opens.
+ * The bookshelf (ADR 0022): novels side by side on a row that slides with a swipe, a mouse drag,
+ * the wheel or the arrow keys. There are no buttons to move it: a tap on a book at the side brings
+ * it to the middle, and a tap on the book in the middle opens it.
  */
 export class ShelfView {
   readonly element: HTMLElement;
@@ -24,6 +28,8 @@ export class ShelfView {
   private frame = 0;
   /** A remove button pressed once; the second press removes. */
   private confirming: string | null = null;
+  /** A mouse drag in progress, and whether it has moved far enough to swallow the click. */
+  private drag: { x: number; left: number; moved: boolean } | null = null;
 
   constructor(
     private t: Translator<MessageKey>,
@@ -47,6 +53,47 @@ export class ShelfView {
       { passive: false },
     );
     this.element.addEventListener('keydown', (event) => this.key(event));
+    this.listenForDrags();
+  }
+
+  /**
+   * Fingers scroll the row natively; a mouse or pen drags it here. While dragging, snapping is off
+   * so the row follows the pointer, and on release the nearest book glides to the middle.
+   */
+  private listenForDrags(): void {
+    const track = this.track;
+    track.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'touch' || event.button !== 0) return;
+      this.drag = { x: event.clientX, left: track.scrollLeft, moved: false };
+    });
+    track.addEventListener('pointermove', (event) => {
+      const drag = this.drag;
+      if (!drag) return;
+      const dx = event.clientX - drag.x;
+      if (!drag.moved && Math.abs(dx) < DRAG_SLOP) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        track.setPointerCapture(event.pointerId);
+        track.dataset.dragging = 'true';
+      }
+      track.scrollLeft = drag.left - dx;
+    });
+    const end = () => {
+      const drag = this.drag;
+      if (!drag) return;
+      this.drag = null;
+      if (!drag.moved) return;
+      delete track.dataset.dragging;
+      this.findActive();
+      this.scrollTo(this.active, 'smooth');
+      // The click that ends a drag isn't a tap on a book. It arrives right after pointerup, if at
+      // all, so the guard goes away on the next task either way.
+      const swallow = (e: Event) => e.stopPropagation();
+      track.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => track.removeEventListener('click', swallow, { capture: true }), 0);
+    };
+    track.addEventListener('pointerup', end);
+    track.addEventListener('pointercancel', end);
   }
 
   show(books: readonly Book[], focusId?: string): void {
@@ -66,8 +113,6 @@ export class ShelfView {
     const locale = t.locale;
     const books = this.books.map((book, i) => this.bookCard(book, i, locale));
     this.track.replaceChildren(...books, this.addCard());
-    const prev = this.navButton('‹', t('shelf.prev'), -1, 'shelf-prev');
-    const next = this.navButton('›', t('shelf.next'), 1, 'shelf-next');
     const settings = h(
       'button',
       { type: 'button', class: 'ie-button ie-button--quiet', 'data-testid': 'shelf-settings' },
@@ -82,7 +127,8 @@ export class ShelfView {
         settings,
       ),
       this.track,
-      h('div', { class: 'shelf__nav' }, prev, this.status, next),
+      h('p', { class: 'shelf__hint' }, t('shelf.hint')),
+      this.status,
     );
     this.markActive();
   }
@@ -91,13 +137,27 @@ export class ShelfView {
     const t = this.t;
     const title = book.title[locale] || book.title.en || book.title.tr || book.id;
     const look = resolveStoryTheme(book.theme);
+    const action = t(book.started ? 'shelf.continue' : 'shelf.read');
     const cover = h(
       'button',
-      { type: 'button', class: 'book__cover', 'data-testid': 'book-cover', 'aria-label': title },
-      h('span', { class: 'book__langs' }, book.languages.map((l) => upper(l, 'en')).join(' · ')),
-      h('span', { class: 'book__title' }, title),
-      h('span', { class: 'book__author' }, book.author ?? ''),
-      h('span', { class: 'book__source' }, t(`shelf.source.${book.source}` as MessageKey)),
+      {
+        type: 'button',
+        class: book.cover ? 'book__cover book__cover--art' : 'book__cover',
+        'data-testid': 'book-cover',
+        'aria-label': `${title}. ${action}`,
+      },
+      ...(book.cover
+        ? [h('img', { class: 'book__art', src: book.cover, alt: '', draggable: 'false' })]
+        : [
+            h(
+              'span',
+              { class: 'book__langs' },
+              book.languages.map((l) => upper(l, 'en')).join(' · '),
+            ),
+            h('span', { class: 'book__title' }, title),
+            h('span', { class: 'book__author' }, book.author ?? ''),
+            h('span', { class: 'book__source' }, t(`shelf.source.${book.source}` as MessageKey)),
+          ]),
     );
     // The cover wears the novel's own look: its theme's tokens, scoped to this book.
     for (const [name, value] of Object.entries(look.vars))
@@ -106,13 +166,12 @@ export class ShelfView {
       if (index === this.active) this.handlers.open(book);
       else this.scrollTo(index, 'smooth');
     });
-    const open = h(
-      'button',
-      { type: 'button', class: 'ie-button ie-button--primary', 'data-testid': 'book-open' },
-      t(book.started ? 'shelf.continue' : 'shelf.read'),
+    // Under the book in the middle: what a tap on it does.
+    const actions = h(
+      'div',
+      { class: 'book__actions' },
+      h('span', { class: 'book__cta', 'data-testid': 'book-action' }, action),
     );
-    open.addEventListener('click', () => this.handlers.open(book));
-    const actions = h('div', { class: 'book__actions' }, open);
     if (book.source === 'added') {
       const asking = this.confirming === book.id;
       const remove = h(
@@ -162,16 +221,6 @@ export class ShelfView {
     );
     button.addEventListener('click', () => input.click());
     return h('article', { class: 'book book--add', role: 'listitem' }, button, input);
-  }
-
-  private navButton(glyph: string, label: string, step: number, testId: string) {
-    const button = h(
-      'button',
-      { type: 'button', class: 'shelf__arrow', 'aria-label': label, 'data-testid': testId },
-      glyph,
-    );
-    button.addEventListener('click', () => this.scrollTo(this.active + step, 'smooth'));
-    return button;
   }
 
   private cards(): HTMLElement[] {

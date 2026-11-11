@@ -11,7 +11,7 @@ export const writingMessages = defineCatalogs({
     'picker.group.game': 'Game',
     'picker.group.sound': 'Sound',
     'picker.group.stage': 'Stage and pictures',
-    'passage.words': 'Words: {count} · about {minutes} min to read',
+    'passage.words': '{count, plural, one {# word} other {# words}} · about {minutes} min to read',
     'passage.wordsHint':
       'Words in this passage in the writing language, its choices and branches included.',
     'block.upKeys': 'Alt + ↑',
@@ -26,7 +26,7 @@ export const writingMessages = defineCatalogs({
     'picker.group.game': 'Oyun',
     'picker.group.sound': 'Ses',
     'picker.group.stage': 'Sahne ve resimler',
-    'passage.words': 'Kelime: {count} · yaklaşık {minutes} dk okuma',
+    'passage.words': '{count} kelime · yaklaşık {minutes} dk okuma',
     'passage.wordsHint': 'Bu pasajdaki kelimeler, yazı dilinde; seçenekler ve dallar dahil.',
     'block.upKeys': 'Alt + ↑',
     'block.downKeys': 'Alt + ↓',

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .deploy/
+.merge/
 dev-dist/
 coverage/
 test-results/

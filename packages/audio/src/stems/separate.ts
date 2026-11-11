@@ -1,6 +1,7 @@
 import type { InferenceSession, Tensor } from 'onnxruntime-web';
 import { DEMUCS, STEMS, type Stem } from './model.ts';
 import { modelInput, segmentStarts, segmentWeight, stemOutput } from './spec.ts';
+import { loadOrt } from '../ort.ts';
 
 const S = DEMUCS.segment;
 
@@ -24,8 +25,7 @@ export interface DemucsRunner {
 }
 
 export async function loadDemucs(onnx: ArrayBuffer): Promise<DemucsRunner> {
-  // Loaded on demand, so nothing of onnxruntime reaches the Player.
-  const ort = await import('onnxruntime-web/webgpu');
+  const ort = await loadOrt();
   ort.env.logLevel = 'error';
   const gpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
   let provider = gpu ? 'webgpu' : 'wasm';

@@ -3,6 +3,7 @@ import { aggregate, windowAt, windowStarts } from './chunks.ts';
 import { trackDownbeats, type DbnResult } from './dbn.ts';
 import { logMelSpectrogram } from './melspec.ts';
 import { BEAT_THIS, type BeatThisModel } from './model.ts';
+import { loadOrt } from '../ort.ts';
 
 /** A loaded Beat This! network. Creating one parses ~190 MB, so the worker keeps it. */
 export interface BeatThisRunner {
@@ -15,8 +16,7 @@ export interface BeatThisRunner {
 }
 
 export async function loadBeatThis(model: BeatThisModel): Promise<BeatThisRunner> {
-  // Loaded on demand, so nothing of onnxruntime reaches the Player or the DSP path.
-  const ort = await import('onnxruntime-web/webgpu');
+  const ort = await loadOrt();
   // The export leaves a few unused initializers, which onnxruntime reports as console errors.
   ort.env.logLevel = 'error';
   const filterbank = new Float32Array(model.filterbank);

@@ -21,7 +21,7 @@ run.bat [preview]   # Windows: install if needed, start dev (or build + preview)
                     # if the servers already run in another window, it just opens the Player
 publish.bat         # merge this branch into main and push, then push the built Player to `deploy`
 pnpm publish:novel <f.story.json> [--zip] [--pages p]   # public Player build with novels (ADR 0022)
-pnpm publish:studio [--pages p]   # private Studio for Cloudflare Pages + Access
+pnpm publish:studio [--pages p]   # private Studio for Cloudflare Workers (wrangler.jsonc) or Pages, behind Access (ADR 0030)
 ```
 
 Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone connects through

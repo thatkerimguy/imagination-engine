@@ -12,6 +12,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/dev-dist/**',
       'coverage/**',
+      'out/**',
+      '.wrangler/**',
       'test-results/**',
       'playwright-report/**',
     ],
@@ -23,6 +25,8 @@ export default tseslint.config(
       parserOptions: {
         projectService: {
           allowDefaultProject: ['*.js', 'tools/*/*.mjs', 'tools/*/*/*.js'],
+          // The plain-JS tools and Cloudflare functions are a dozen small files.
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 16,
         },
         tsconfigRootDir: import.meta.dirname,
       },

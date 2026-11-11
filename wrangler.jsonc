@@ -1,0 +1,19 @@
+// The hosted Studio on Cloudflare Workers (ADR 0030). Cloudflare's Git builds run
+// `pnpm publish:studio` (which builds into out/studio/public) and then `npx wrangler deploy`.
+// Keep the site behind Cloudflare Access: the Studio is private.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "imagination-engine",
+  "main": "tools/publish/studio-worker.mjs",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "out/studio/public",
+    "binding": "ASSETS",
+    // A route the Studio handles itself (a reload on a deep link) gets index.html.
+    "not_found_handling": "single-page-application",
+    // Server routes go to the Worker before the asset lookup, or they would get index.html.
+    "run_worker_first": ["/fetch", "/sync", "/sync/*"]
+  }
+  // Device sync (ADR 0024): create an R2 bucket, then add it here and redeploy, e.g.
+  // "r2_buckets": [{ "binding": "SYNC", "bucket_name": "imagination-sync" }]
+}

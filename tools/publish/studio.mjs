@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // `pnpm publish:studio`: the private Studio on Cloudflare Pages, behind Cloudflare Access (ADR 0022).
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,7 +38,13 @@ const build = !args.includes('--no-build');
 
 if (build) {
   console.log('Building the Studio...');
-  execSync('pnpm --filter @ie/studio build', { cwd: root, stdio: 'inherit' });
+  // Cloudflare refuses files over 25 MiB: the analysis models fetch onnxruntime's 27 MiB
+  // .wasm from jsDelivr instead (packages/audio/src/ort.ts, ADR 0030).
+  execSync('pnpm --filter @ie/studio build', {
+    cwd: root,
+    stdio: 'inherit',
+    env: { ...process.env, VITE_ORT_WASM_CDN: '1' },
+  });
 }
 const dist = join(root, 'apps', 'studio', 'dist');
 if (!existsSync(join(dist, 'index.html'))) {
@@ -48,7 +54,21 @@ if (!existsSync(join(dist, 'index.html'))) {
 const out = join(root, 'out', 'studio');
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'functions'), { recursive: true });
-cpSync(dist, join(out, 'public'), { recursive: true, filter: (src) => !src.endsWith('.map') });
+const MAX_FILE = 25 * 1024 * 1024;
+const left = [];
+cpSync(dist, join(out, 'public'), {
+  recursive: true,
+  filter: (src) => {
+    if (src.endsWith('.map')) return false;
+    if (statSync(src).isFile() && statSync(src).size > MAX_FILE) {
+      left.push(src.slice(dist.length + 1));
+      return false;
+    }
+    return true;
+  },
+});
+if (left.length)
+  console.log(`Left out (over 25 MiB, loaded from a CDN instead): ${left.join(', ')}`);
 cpSync(
   join(root, 'tools', 'publish', 'studio-functions', 'fetch.js'),
   join(out, 'functions', 'fetch.js'),

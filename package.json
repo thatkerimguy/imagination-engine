@@ -14,6 +14,8 @@
     "preview": "pnpm --filter \"./apps/*\" --parallel preview",
     "phone": "node tools/phone/phone.mjs",
     "icons": "node tools/icons/generate.mjs",
+    "publish:novel": "node tools/publish/novel.mjs",
+    "publish:studio": "node tools/publish/studio.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",

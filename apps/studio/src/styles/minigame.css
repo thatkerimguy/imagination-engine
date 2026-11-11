@@ -128,3 +128,36 @@
 .lib-status[data-kind='error'] {
   color: var(--color-accent);
 }
+
+/* The minigame builder (ADR 0025): parts and rules as rows of fields. */
+.bg {
+  display: grid;
+  gap: var(--space-4);
+}
+.bg__heading {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.bg-part {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2) var(--space-3);
+}
+.bg-rule {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-2);
+}
+.bg-clause {
+  align-items: center;
+}
+.bg-word {
+  min-width: 3.5rem;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}

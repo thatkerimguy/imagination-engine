@@ -4,13 +4,20 @@ import { fightStudioMessages } from './messages-fight.ts';
 import { logicMessages } from './messages-logic.ts';
 import { libraryMessages } from './messages-library.ts';
 import { materialMessages } from './messages-material.ts';
+import { mediaMessages } from './messages-media.ts';
+import { builtMessages } from './messages-built.ts';
 import { minigameStudioMessages } from './messages-minigame.ts';
 import { projectMessages } from './messages-project.ts';
+import { publishMessages } from './messages-publish.ts';
+import { scriptMessages } from './messages-script.ts';
 import { rpgBlockMessages } from './messages-rpg.ts';
 import { sequencerMessages } from './messages-sequencer.ts';
 import { soundMessages } from './messages-sound.ts';
+import { stemsMessages } from './messages-stems.ts';
+import { presetMessages } from './messages-presets.ts';
 import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
+import { writingMessages } from './messages-writing.ts';
 
 /** The shell: workspaces, palette, settings and diagnostics. */
 const shellMessages = defineCatalogs({
@@ -114,9 +121,13 @@ export const messages = {
   en: {
     ...shellMessages.en,
     ...writeMessages.en,
+    ...writingMessages.en,
     ...projectMessages.en,
     ...soundMessages.en,
+    ...stemsMessages.en,
     ...stageMessages.en,
+    ...presetMessages.en,
+    ...mediaMessages.en,
     ...fightStudioMessages.en,
     ...rpgBlockMessages.en,
     ...logicMessages.en,
@@ -124,14 +135,21 @@ export const messages = {
     ...sequencerMessages.en,
     ...materialMessages.en,
     ...minigameStudioMessages.en,
+    ...builtMessages.en,
     ...libraryMessages.en,
+    ...publishMessages.en,
+    ...scriptMessages.en,
   },
   tr: {
     ...shellMessages.tr,
     ...writeMessages.tr,
+    ...writingMessages.tr,
     ...projectMessages.tr,
     ...soundMessages.tr,
+    ...stemsMessages.tr,
     ...stageMessages.tr,
+    ...presetMessages.tr,
+    ...mediaMessages.tr,
     ...fightStudioMessages.tr,
     ...rpgBlockMessages.tr,
     ...logicMessages.tr,
@@ -139,7 +157,10 @@ export const messages = {
     ...sequencerMessages.tr,
     ...materialMessages.tr,
     ...minigameStudioMessages.tr,
+    ...builtMessages.tr,
     ...libraryMessages.tr,
+    ...publishMessages.tr,
+    ...scriptMessages.tr,
   },
 };
 

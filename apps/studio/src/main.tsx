@@ -4,6 +4,7 @@ import '@ie/ui-kit/primitives.css';
 import '@ie/diagnostics/diagnostics.css';
 import '@ie/present/present.css';
 import '@ie/stage/stage.css';
+import '@ie/media/media.css';
 import '@ie/rhythm/fight.css';
 import '@ie/minigame/minigame.css';
 import './styles.css';
@@ -17,7 +18,9 @@ import './styles/design.css';
 import './styles/sequencer.css';
 import './styles/material.css';
 import './styles/minigame.css';
+import './styles/publish.css';
 import { createAudioModule } from '@ie/audio';
+import { createMediaModule } from '@ie/media';
 import { createStageModule } from '@ie/stage';
 import { requestPersistentStorage } from '@ie/core';
 import { StrictMode } from 'react';
@@ -25,20 +28,23 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { initSpotify } from './audio/spotify-auth.ts';
 import { director } from './audio/studio-audio.ts';
-import { stage } from './stage/studio-stage.ts';
+import { media, stage } from './stage/studio-stage.ts';
 import { kernel } from './kernel.ts';
 import { messages, UNTITLED } from './messages.ts';
 import { startProjects } from './project/store.ts';
 import { useStudio } from './store.ts';
 import { registerServiceWorker } from './pwa.ts';
+import { startSync } from './sync/run.ts';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element.');
 
 kernel.use(createAudioModule(director));
 kernel.use(createStageModule(stage));
+kernel.use(createMediaModule(media));
 await kernel.start();
 await startProjects(UNTITLED, messages[useStudio.getState().locale]['passage.first']);
+startSync();
 createRoot(root).render(
   <StrictMode>
     <App />

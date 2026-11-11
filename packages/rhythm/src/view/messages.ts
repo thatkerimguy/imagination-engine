@@ -5,7 +5,9 @@ export const fightMessages = defineCatalogs({
   en: {
     'fight.label': 'Fight',
     'fight.help':
-      'Tap on the beat to strike and parry; swipe to dodge. Keys: F or J to tap, D or K to dodge.',
+      'Tap on the beat for round and square marks; swipe for the arrow. Keys: Z, X, F or J to tap, D or K to swipe.',
+    'fight.tap': 'Tap',
+    'fight.swipe': 'Swipe',
     'fight.ready': 'Ready',
     'fight.defend': 'Defend',
     'fight.strike': 'Strike',
@@ -26,7 +28,9 @@ export const fightMessages = defineCatalogs({
   tr: {
     'fight.label': 'Dövüş',
     'fight.help':
-      'Vurmak ve savuşturmak için ritimde dokunun; kaçmak için kaydırın. Tuşlar: dokunmak için F veya J, kaçmak için D veya K.',
+      'Yuvarlak ve kare işaretler için ritimde dokunun; ok için kaydırın. Tuşlar: dokunmak için Z, X, F veya J, kaydırmak için D veya K.',
+    'fight.tap': 'Dokun',
+    'fight.swipe': 'Kaydır',
     'fight.ready': 'Hazır',
     'fight.defend': 'Savun',
     'fight.strike': 'Vur',

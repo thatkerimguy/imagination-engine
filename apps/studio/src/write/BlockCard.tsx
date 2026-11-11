@@ -1,4 +1,4 @@
-import { isAudioAction, isStageAction, type Block } from '@ie/story';
+import { isAudioAction, isMediaAction, isStageAction, type Block } from '@ie/story';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { MenuButton } from '../components/Menu.tsx';
@@ -7,6 +7,7 @@ import { useT } from '../store.ts';
 import { BLOCK_ICON, blockKind, blockName } from './blockInfo.ts';
 import { AudioEditor } from './blocks/AudioEditors.tsx';
 import { StageEditor } from './blocks/StageEditors.tsx';
+import { MediaEditor } from './blocks/MediaEditor.tsx';
 import { focusBlock, useWrite } from './context.ts';
 import { ChoiceEditor } from './blocks/ChoiceEditor.tsx';
 import { FightEditor } from './blocks/FightEditor.tsx';
@@ -84,6 +85,7 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
     case 'action':
       if (isAudioAction(block.action)) return <AudioEditor block={block} />;
       if (isStageAction(block.action)) return <StageEditor block={block} />;
+      if (isMediaAction(block.action)) return <MediaEditor block={block} />;
       return <FlowEditor block={block} />;
   }
 }
@@ -119,6 +121,26 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
       data-block-id={block.id}
       data-testid={`block-${kind}`}
       aria-label={t(blockName(kind))}
+      onKeyDown={(event) => {
+        if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        // Handled by the innermost card only, so a nested block moves inside its own list.
+        event.preventDefault();
+        event.stopPropagation();
+        const step = event.key === 'ArrowUp' ? -1 : 1;
+        if (index + step < 0 || index + step >= count) return;
+        const active = document.activeElement;
+        editor.move(block.id, step);
+        // Reordering can drop the focus; the author keeps typing where they were.
+        setTimeout(() => {
+          if (
+            active instanceof HTMLElement &&
+            active.isConnected &&
+            document.activeElement !== active
+          )
+            active.focus();
+        }, 0);
+      }}
     >
       <span className="block__icon" title={t(blockName(kind))} aria-hidden="true">
         <Icon size={16} strokeWidth={1.5} />
@@ -154,6 +176,7 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
           {
             id: 'up',
             label: t('block.up'),
+            hint: t('block.upKeys'),
             icon: ArrowUp,
             disabled: index === 0,
             onSelect: () => editor.move(block.id, -1),
@@ -161,6 +184,7 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
           {
             id: 'down',
             label: t('block.down'),
+            hint: t('block.downKeys'),
             icon: ArrowDown,
             disabled: index === count - 1,
             onSelect: () => editor.move(block.id, 1),

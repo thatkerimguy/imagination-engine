@@ -2,8 +2,14 @@ export { analyzeProject, leaves } from './analyze.ts';
 export * from './audio.ts';
 export * from './fight.ts';
 export * from './minigame.ts';
+export * from './minigame-built.ts';
 export * from './library.ts';
+export * from './playtest.ts';
+export * from './publish.ts';
+export * from './script.ts';
+export * from './script-apply.ts';
 export * from './stage.ts';
+export * from './media.ts';
 export {
   checkStory,
   compileStory,

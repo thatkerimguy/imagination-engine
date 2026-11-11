@@ -1,0 +1,481 @@
+{
+  "id": "horror",
+  "name": {
+    "en": "Horror",
+    "tr": "Korku"
+  },
+  "blurb": {
+    "en": "Sanity that slips, screen effects that grow with it, and text that stops being reliable.",
+    "tr": "Kayan akıl sağlığı, onunla büyüyen ekran efektleri ve güvenilmez olmaya başlayan metin."
+  },
+  "theme": "noir",
+  "layout": "page",
+  "project": {
+    "start": "house",
+    "variables": [
+      {
+        "id": "sanity",
+        "name": {
+          "en": "Sanity",
+          "tr": "Akıl sağlığı"
+        },
+        "type": "number",
+        "default": 7,
+        "min": 0,
+        "max": 10,
+        "stat": true
+      }
+    ],
+    "characters": [
+      {
+        "id": "voice",
+        "name": {
+          "en": "A voice",
+          "tr": "Bir ses"
+        },
+        "color": "red"
+      }
+    ],
+    "rules": [
+      {
+        "id": "distort",
+        "name": "The house leans in at low sanity",
+        "on": "changed",
+        "target": "sanity",
+        "if": "sanity <= 4",
+        "once": true,
+        "do": [
+          {
+            "id": "ho_1",
+            "type": "action",
+            "action": "stage.look.set",
+            "params": {
+              "look": "noir"
+            }
+          },
+          {
+            "id": "ho_2",
+            "type": "action",
+            "action": "stage.shake",
+            "params": {
+              "strength": 0.3
+            }
+          }
+        ]
+      },
+      {
+        "id": "break",
+        "name": "Static at the edge of breaking",
+        "on": "changed",
+        "target": "sanity",
+        "if": "sanity <= 2",
+        "once": true,
+        "do": [
+          {
+            "id": "ho_3",
+            "type": "action",
+            "action": "stage.look.set",
+            "params": {
+              "look": "crt"
+            }
+          },
+          {
+            "id": "ho_4",
+            "type": "action",
+            "action": "stage.flash",
+            "params": {
+              "color": "red"
+            }
+          }
+        ]
+      }
+    ],
+    "screens": [
+      {
+        "id": "title",
+        "name": {
+          "en": "Title screen",
+          "tr": "Başlık ekranı"
+        },
+        "kind": "title",
+        "children": [
+          {
+            "id": "ho_s13",
+            "type": "stack",
+            "direction": "column",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "ho_s5",
+                "type": "text",
+                "text": {
+                  "id": "ho_t6",
+                  "en": "Below Stairs",
+                  "tr": "Merdiven Altı"
+                },
+                "style": "title"
+              },
+              {
+                "id": "ho_s7",
+                "type": "text",
+                "text": {
+                  "id": "ho_t8",
+                  "en": "A horror starter",
+                  "tr": "Korku başlangıcı"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "ho_s9",
+                "type": "button",
+                "label": {
+                  "id": "ho_t10",
+                  "en": "Start",
+                  "tr": "Başla"
+                },
+                "actions": [
+                  {
+                    "type": "start"
+                  }
+                ]
+              },
+              {
+                "id": "ho_s11",
+                "type": "button",
+                "label": {
+                  "id": "ho_t12",
+                  "en": "Continue",
+                  "tr": "Devam et"
+                },
+                "actions": [
+                  {
+                    "type": "continue"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hud",
+        "name": {
+          "en": "Sanity",
+          "tr": "Akıl sağlığı"
+        },
+        "kind": "hud",
+        "edge": "top",
+        "children": [
+          {
+            "id": "ho_s16",
+            "type": "stack",
+            "direction": "row",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "ho_s14",
+                "type": "bar",
+                "var": "sanity",
+                "label": {
+                  "id": "ho_t15",
+                  "en": "Sanity",
+                  "tr": "Akıl sağlığı"
+                },
+                "max": 10
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": {
+          "en": "The cellar",
+          "tr": "Bodrum"
+        },
+        "passages": [
+          {
+            "id": "house",
+            "name": "House",
+            "blocks": [
+              {
+                "id": "ho_17",
+                "type": "action",
+                "action": "stage.background.set",
+                "params": {
+                  "preset": "rain",
+                  "amount": 0.4
+                }
+              },
+              {
+                "id": "ho_18",
+                "type": "narration",
+                "text": {
+                  "id": "ho_18",
+                  "en": "Your aunt’s house. The cellar door is open, and it was not open a minute ago.",
+                  "tr": "Teyzenin evi. Bodrum kapısı açık; bir dakika önce açık değildi."
+                }
+              },
+              {
+                "id": "ho_26",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "ho_o20",
+                    "text": {
+                      "id": "ho_t21",
+                      "en": "Go down",
+                      "tr": "Aşağı in"
+                    },
+                    "then": [
+                      {
+                        "id": "ho_19",
+                        "type": "jump",
+                        "to": "cellar"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ho_o24",
+                    "text": {
+                      "id": "ho_t25",
+                      "en": "Get back in the car",
+                      "tr": "Arabaya geri bin"
+                    },
+                    "then": [
+                      {
+                        "id": "ho_22",
+                        "type": "end",
+                        "ending": {
+                          "id": "drove_away",
+                          "title": {
+                            "id": "ho_t23",
+                            "en": "Headlights and the long road",
+                            "tr": "Farlar ve uzun yol"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "cellar",
+            "name": "Cellar",
+            "blocks": [
+              {
+                "id": "ho_29",
+                "type": "if",
+                "branches": [
+                  {
+                    "id": "ho_br30",
+                    "when": "sanity <= 4",
+                    "then": [
+                      {
+                        "id": "ho_27",
+                        "type": "narration",
+                        "text": {
+                          "id": "ho_27",
+                          "en": "The stairs go down. They went down before. They are still going down.",
+                          "tr": "Merdiven aşağı iniyor. Daha önce de iniyordu. Hâlâ iniyor."
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "else": [
+                  {
+                    "id": "ho_28",
+                    "type": "narration",
+                    "text": {
+                      "id": "ho_28",
+                      "en": "Damp stone, jars on shelves, a single bulb.",
+                      "tr": "Nemli taş, raflarda kavanozlar, tek bir ampul."
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "ho_48",
+                "type": "choice",
+                "options": [
+                  {
+                    "id": "ho_o38",
+                    "text": {
+                      "id": "ho_t39",
+                      "en": "Strike a match",
+                      "tr": "Bir kibrit çak"
+                    },
+                    "then": [
+                      {
+                        "id": "ho_34",
+                        "type": "random",
+                        "branches": [
+                          {
+                            "id": "ho_br35",
+                            "then": [
+                              {
+                                "id": "ho_31",
+                                "type": "narration",
+                                "text": {
+                                  "id": "ho_31",
+                                  "en": "The shadows move a moment after you do.",
+                                  "tr": "Gölgeler senden bir an sonra kımıldıyor."
+                                }
+                              },
+                              {
+                                "id": "ho_32",
+                                "type": "set",
+                                "var": "sanity",
+                                "op": "subtract",
+                                "value": 1
+                              }
+                            ]
+                          },
+                          {
+                            "id": "ho_br36",
+                            "then": [
+                              {
+                                "id": "ho_33",
+                                "type": "narration",
+                                "text": {
+                                  "id": "ho_33",
+                                  "en": "Only jars. Only jars.",
+                                  "tr": "Sadece kavanozlar. Sadece kavanozlar."
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "ho_37",
+                        "type": "jump",
+                        "to": "cellar"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ho_o43",
+                    "text": {
+                      "id": "ho_t44",
+                      "en": "Call out",
+                      "tr": "Seslen"
+                    },
+                    "then": [
+                      {
+                        "id": "ho_40",
+                        "type": "dialogue",
+                        "speaker": "voice",
+                        "text": {
+                          "id": "ho_40",
+                          "en": "Down here, love.",
+                          "tr": "Buradayım, canım."
+                        }
+                      },
+                      {
+                        "id": "ho_41",
+                        "type": "set",
+                        "var": "sanity",
+                        "op": "subtract",
+                        "value": 2
+                      },
+                      {
+                        "id": "ho_42",
+                        "type": "jump",
+                        "to": "cellar"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ho_o46",
+                    "text": {
+                      "id": "ho_t47",
+                      "en": "Go deeper",
+                      "tr": "Daha derine in"
+                    },
+                    "then": [
+                      {
+                        "id": "ho_45",
+                        "type": "jump",
+                        "to": "depths"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "depths",
+            "name": "Depths",
+            "blocks": [
+              {
+                "id": "ho_55",
+                "type": "if",
+                "branches": [
+                  {
+                    "id": "ho_br56",
+                    "when": "sanity <= 3",
+                    "then": [
+                      {
+                        "id": "ho_49",
+                        "type": "narration",
+                        "text": {
+                          "id": "ho_49",
+                          "en": "Your aunt is waiting at the bottom. She has been waiting for years.",
+                          "tr": "Teyzen aşağıda bekliyor. Yıllardır bekliyor."
+                        }
+                      },
+                      {
+                        "id": "ho_50",
+                        "type": "end",
+                        "ending": {
+                          "id": "lost",
+                          "title": {
+                            "id": "ho_t51",
+                            "en": "Down here, love",
+                            "tr": "Buradayım, canım"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "else": [
+                  {
+                    "id": "ho_52",
+                    "type": "narration",
+                    "text": {
+                      "id": "ho_52",
+                      "en": "A fuse box. You flip the switch and the house is only a house.",
+                      "tr": "Bir sigorta kutusu. Şalteri kaldırıyorsun ve ev yalnızca bir ev."
+                    }
+                  },
+                  {
+                    "id": "ho_53",
+                    "type": "end",
+                    "ending": {
+                      "id": "dawn",
+                      "title": {
+                        "id": "ho_t54",
+                        "en": "The lights come on",
+                        "tr": "Işıklar yanıyor"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

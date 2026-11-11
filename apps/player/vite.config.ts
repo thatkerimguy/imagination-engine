@@ -42,6 +42,14 @@ export default defineConfig({
         // wasm: hyphenation patterns, so Turkish breaks correctly offline too.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
         navigateFallback: 'index.html',
+        // Published novels sit beside the build (ADR 0022): read them offline, refresh when online.
+        runtimeCaching: [
+          {
+            urlPattern: /\/novels\/[\w.-]+\.json$/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'novels' },
+          },
+        ],
       },
       devOptions: { enabled: false },
     }),

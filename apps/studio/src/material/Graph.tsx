@@ -1,6 +1,7 @@
 import { NODES } from '@ie/material';
 import type { MaterialDef } from '@ie/story';
-import type { RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
+import { usePanZoom } from '../components/usePanZoom.ts';
 import { useT } from '../store.ts';
 import { link, moveNode, unlink } from './edit.ts';
 import { canvasSize, nodePorts, portPoint, wirePath } from './layout.ts';
@@ -21,11 +22,28 @@ export interface GraphProps {
  * is tap to connect: tap an output, then an input. Tapping a linked input with nothing armed
  * unlinks it.
  */
+/** The empty canvas, not a card or its ports. */
+const isBackground = (target: Element) =>
+  target.classList.contains('mg') ||
+  target.classList.contains('mg__canvas') ||
+  target.closest('.mg__wires') !== null;
+
 export function Graph({ material, problemNodes, scrollRef, onEdit }: GraphProps) {
   const t = useT();
   const ui = useMaterialUi();
   const size = canvasSize(material);
   const byId = new Map(material.nodes.map((n) => [n.id, n]));
+  // Drag the background (or with the middle button anywhere) to look around a big graph.
+  usePanZoom(scrollRef, { panSurface: isBackground });
+  // Escape lets go of a half-made wire, wherever focus is.
+  const armed = ui.armed !== null;
+  const disarm = ui.arm;
+  useEffect(() => {
+    if (!armed) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && disarm(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [armed, disarm]);
 
   const wires = material.nodes.flatMap((node) =>
     Object.entries(node.inputs ?? {}).flatMap(([port, l]) => {
@@ -46,6 +64,13 @@ export function Graph({ material, problemNodes, scrollRef, onEdit }: GraphProps)
       role="group"
       aria-label={t('mat.graph')}
       data-testid="mg-canvas"
+      title={t('mat.canvasHint')}
+      onContextMenu={(e) => {
+        // Right-click, or a long-press on touch, drops a half-made wire.
+        if (!ui.armed) return;
+        e.preventDefault();
+        ui.arm(null);
+      }}
     >
       <div
         className="mg__canvas"

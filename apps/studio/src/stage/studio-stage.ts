@@ -1,3 +1,4 @@
+import { MediaLayer } from '@ie/media';
 import { createStageHost } from '@ie/stage';
 import type { Locale } from '@ie/i18n';
 import { director as audio } from '../audio/studio-audio.ts';
@@ -22,6 +23,9 @@ export const stage = createStageHost({
   materials: () => useProject.getState().history?.present.materials,
 });
 
+/** Pictures and video behind Play's page (ADR 0026), moved with the stage. */
+export const media = new MediaLayer({ locale: () => locale, contained: true });
+
 /**
  * Shows the stage in `panel` (positioned), moving `text` with the camera. Returns a function that
  * takes it away again and clears what was on it.
@@ -35,9 +39,12 @@ export function attachStage(
   root = text;
   locale = language;
   stage.attach(panel);
+  media.attach(panel);
   return () => {
     stage.applyScene({});
     stage.attach(null);
+    media.applyScene({});
+    media.attach(null);
     if (mount === panel) mount = null;
     if (root === text) root = null;
   };
@@ -45,4 +52,5 @@ export function attachStage(
 
 export function setStageLocale(language: Locale): void {
   locale = language;
+  media.refreshLocale();
 }

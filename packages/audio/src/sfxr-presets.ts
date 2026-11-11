@@ -1,7 +1,8 @@
 import type { SfxrParams } from '@ie/story';
+import { generateScene, SCENE_PRESETS, type ScenePreset } from './sfxr-scene.ts';
 import { SFXR_DEFAULTS } from './sfxr.ts';
 
-/** sfxr's classic generators: each makes a random sound of its kind. */
+/** sfxr's classic generators, then story sounds; each makes a random sound of its kind. */
 export const SFXR_PRESETS = [
   'pickup',
   'laser',
@@ -10,6 +11,7 @@ export const SFXR_PRESETS = [
   'hit',
   'jump',
   'blip',
+  ...SCENE_PRESETS,
   'random',
 ] as const;
 export type SfxrPreset = (typeof SFXR_PRESETS)[number];
@@ -22,6 +24,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 export function generateSfxr(kind: SfxrPreset, random: () => number = Math.random): SfxrParams {
   const f = (range: number) => random() * range;
   const pick = (n: number) => Math.floor(random() * (n + 1));
+  if ((SCENE_PRESETS as readonly string[]).includes(kind))
+    return generateScene(kind as ScenePreset, random);
   const p: Mutable = { ...SFXR_DEFAULTS };
   switch (kind) {
     case 'pickup':
@@ -143,6 +147,8 @@ export function generateSfxr(kind: SfxrPreset, random: () => number = Math.rando
         random,
         1,
       );
+    default:
+      break;
   }
   return p;
 }

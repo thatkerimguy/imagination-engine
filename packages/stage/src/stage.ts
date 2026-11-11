@@ -1,6 +1,7 @@
 import type { CompiledMaterial } from '@ie/material';
 import type { MaterialParam, StageBackground, StageLook } from '@ie/story';
-import { AMBIENTS, TitleActor, type Rgb } from './actors.ts';
+import { TitleActor, type Rgb } from './actors.ts';
+import { AMBIENTS } from './ambients.ts';
 import { GlyphAtlas, BASE_CHARS } from './atlas.ts';
 import { ScreenFx, type FxState } from './fx.ts';
 import { PARTICLE_PRESETS, ParticleSystem, type ParticlePreset } from './particles.ts';
@@ -174,10 +175,9 @@ export class Stage {
     };
     this.atlas.ensure(spec.glyphs);
     const reduced = this.fx.reducedMotion;
-    const at =
-      preset === 'sparks'
-        ? { x: this.view.w / 2, y: this.view.h * 0.6 }
-        : { x: this.view.w / 2, y: this.view.h * 0.42 };
+    // Sparks and smoke rise from low on the screen; the rest open around the title line.
+    const low = preset === 'sparks' || preset === 'smoke' || preset === 'confetti';
+    const at = { x: this.view.w / 2, y: this.view.h * (low ? 0.6 : 0.42) };
     this.particles.emit(
       reduced ? { ...spec, speed: [10, 40], gravity: 0 } : spec,
       at,
@@ -337,7 +337,8 @@ export class Stage {
     if (this.fx.active || this.fxWasActive) this.options.onFx?.(fx);
     this.fxWasActive = this.fx.active;
     const storyDt = dt * fx.timeScale;
-    const ambient = AMBIENTS[this.background.preset];
+    const preset = this.background.preset;
+    const ambient = preset === 'none' ? undefined : AMBIENTS[preset];
     if (ambient) {
       this.emitDebt +=
         ambient.rate * this.background.amount * storyDt * (this.fx.reducedMotion ? 0.4 : 1);

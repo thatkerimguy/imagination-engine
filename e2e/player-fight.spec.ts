@@ -18,6 +18,9 @@ test.describe('Player fights', () => {
     const fight = page.getByTestId('fight');
     await tapUntil(page, fight);
     await expect(fight).toContainText('The stranger');
+    // The legend says which notes are tapped and which are swiped.
+    await expect(page.getByTestId('fight-legend')).toContainText('Tap');
+    await expect(page.getByTestId('fight-legend')).toContainText('Swipe');
     // The count-in, then the first turn.
     await expect(page.getByTestId('fight-cue')).toHaveText(/Defend|Strike/, { timeout: 15_000 });
 

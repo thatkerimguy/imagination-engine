@@ -17,14 +17,31 @@ if not "%IE_RUN_WINDOW%"=="1" (
 if /i "%~1"=="preview" (
   set "URL=http://127.0.0.1:4173/"
   set "TASK=preview"
+  set "PORTS=4173 4174"
 ) else (
   set "URL=http://127.0.0.1:5173/"
   set "TASK=dev"
+  set "PORTS=5173 5174"
 )
 title Imagination Engine - %TASK% - close this window to stop
 
 call :need_node || goto :failed
 call :need_pnpm || goto :failed
+
+rem Servers left running (another run.bat window, a test run) hold the ports, and vite would
+rem stop with "Port is already in use". If both answer, they are ours: just open the Player.
+call :busy_ports %PORTS%
+if errorlevel 2 (
+  echo The servers are already running in another window. Opening the Player.
+  start "" %URL%
+  ping -n 4 127.0.0.1 >nul
+  exit /b 0
+)
+if errorlevel 1 (
+  echo One of the ports %PORTS% is taken by another program.
+  echo Close it, or the other run.bat window, and run this again.
+  goto :failed
+)
 rem Always install: it takes under a second when nothing changed, and picks up packages added
 rem since the last run (a new workspace package or dependency), not just a missing node_modules.
 call pnpm install --prefer-offline || goto :failed
@@ -56,6 +73,11 @@ set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;%PATH%"
 where node >nul 2>nul && node -e "process.exit(+process.versions.node.split('.')[0] < 24 ? 1 : 0)" && exit /b 0
 echo Node.js was installed, but this window can't see it yet. Run this again.
 exit /b 1
+
+rem How many of the given ports on 127.0.0.1 already accept connections (as the exit code).
+:busy_ports
+node -e "const net=require('net');const ports=process.argv.slice(1);let busy=0,left=ports.length;const done=()=>{if(--left===0)process.exit(busy)};for(const p of ports){const s=net.connect(+p,'127.0.0.1');s.setTimeout(800);s.on('connect',()=>{busy++;s.destroy();done()});s.on('timeout',()=>{s.destroy();done()});s.on('error',done)}" %*
+exit /b %errorlevel%
 
 rem pnpm, at the version package.json names. npm installs it for this user, so no admin rights
 rem are needed (corepack would need them, and newer Node releases no longer ship it).

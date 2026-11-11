@@ -108,6 +108,26 @@
   color: var(--color-accent);
 }
 
+.ie-fight__legend {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-5);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.ie-fight__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.ie-fight__legend-mark {
+  color: var(--color-ink);
+  font-size: var(--text-md);
+}
+.ie-fight__legend-item[data-input='tap'] .ie-fight__legend-mark {
+  color: var(--color-accent);
+}
+
 .ie-fight__combo {
   min-height: 1lh;
   color: var(--color-ink-muted);
@@ -141,8 +161,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ie-fight__judgement.is-shown {
+  :root:not([data-motion='full']) .ie-fight__judgement.is-shown {
     animation: none;
     opacity: 1;
   }
+}
+:root[data-motion='reduce'] .ie-fight__judgement.is-shown {
+  animation: none;
+  opacity: 1;
 }

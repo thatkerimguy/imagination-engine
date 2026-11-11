@@ -1,0 +1,610 @@
+{
+  "id": "roguelite",
+  "name": {
+    "en": "Roguelite",
+    "tr": "Roguelite"
+  },
+  "blurb": {
+    "en": "Runs through a deck of random encounters, with unlocks that carry over to the next run.",
+    "tr": "Rastgele karşılaşmalardan bir destede denemeler; açılanlar bir sonraki denemeye geçer."
+  },
+  "theme": "night",
+  "layout": "page",
+  "project": {
+    "start": "run",
+    "variables": [
+      {
+        "id": "hp",
+        "name": {
+          "en": "Health",
+          "tr": "Can"
+        },
+        "type": "number",
+        "default": 3,
+        "min": 0,
+        "stat": true
+      },
+      {
+        "id": "depth",
+        "name": {
+          "en": "Depth",
+          "tr": "Derinlik"
+        },
+        "type": "number",
+        "default": 0,
+        "stat": true
+      },
+      {
+        "id": "relics",
+        "name": {
+          "en": "Relics",
+          "tr": "Kalıntılar"
+        },
+        "type": "number",
+        "default": 0,
+        "stat": true
+      },
+      {
+        "id": "runs",
+        "name": {
+          "en": "Runs",
+          "tr": "Denemeler"
+        },
+        "type": "number",
+        "default": 0,
+        "scope": "persistent"
+      },
+      {
+        "id": "best_depth",
+        "name": {
+          "en": "Deepest",
+          "tr": "En derin"
+        },
+        "type": "number",
+        "default": 0,
+        "scope": "persistent"
+      },
+      {
+        "id": "lantern",
+        "name": {
+          "en": "Lantern unlocked",
+          "tr": "Fener açıldı"
+        },
+        "type": "bool",
+        "default": false,
+        "scope": "persistent"
+      }
+    ],
+    "characters": [],
+    "screens": [
+      {
+        "id": "title",
+        "name": {
+          "en": "Title screen",
+          "tr": "Başlık ekranı"
+        },
+        "kind": "title",
+        "children": [
+          {
+            "id": "rg_s11",
+            "type": "stack",
+            "direction": "column",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "rg_s3",
+                "type": "text",
+                "text": {
+                  "id": "rg_t4",
+                  "en": "Under the Well",
+                  "tr": "Kuyunun Altında"
+                },
+                "style": "title"
+              },
+              {
+                "id": "rg_s5",
+                "type": "text",
+                "text": {
+                  "id": "rg_t6",
+                  "en": "A roguelite starter",
+                  "tr": "Roguelite başlangıcı"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "rg_s7",
+                "type": "button",
+                "label": {
+                  "id": "rg_t8",
+                  "en": "Start",
+                  "tr": "Başla"
+                },
+                "actions": [
+                  {
+                    "type": "start"
+                  }
+                ]
+              },
+              {
+                "id": "rg_s9",
+                "type": "button",
+                "label": {
+                  "id": "rg_t10",
+                  "en": "Continue",
+                  "tr": "Devam et"
+                },
+                "actions": [
+                  {
+                    "type": "continue"
+                  }
+                ]
+              },
+              {
+                "id": "rg_s1",
+                "type": "text",
+                "text": {
+                  "id": "rg_t2",
+                  "en": "Runs: {runs} · Deepest: {best_depth}",
+                  "tr": "Denemeler: {runs} · En derin: {best_depth}"
+                },
+                "style": "caption"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hud",
+        "name": {
+          "en": "Run",
+          "tr": "Deneme"
+        },
+        "kind": "hud",
+        "edge": "top",
+        "children": [
+          {
+            "id": "rg_s21",
+            "type": "stack",
+            "direction": "row",
+            "gap": "medium",
+            "align": "center",
+            "children": [
+              {
+                "id": "rg_s12",
+                "type": "icon",
+                "icon": "heart"
+              },
+              {
+                "id": "rg_s13",
+                "type": "text",
+                "text": {
+                  "id": "rg_t14",
+                  "en": "{hp}",
+                  "tr": "{hp}"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "rg_s15",
+                "type": "icon",
+                "icon": "map"
+              },
+              {
+                "id": "rg_s16",
+                "type": "text",
+                "text": {
+                  "id": "rg_t17",
+                  "en": "Depth {depth}",
+                  "tr": "Derinlik {depth}"
+                },
+                "style": "caption"
+              },
+              {
+                "id": "rg_s18",
+                "type": "icon",
+                "icon": "star"
+              },
+              {
+                "id": "rg_s19",
+                "type": "text",
+                "text": {
+                  "id": "rg_t20",
+                  "en": "{relics}",
+                  "tr": "{relics}"
+                },
+                "style": "caption"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": {
+          "en": "The well",
+          "tr": "Kuyu"
+        },
+        "passages": [
+          {
+            "id": "run",
+            "name": "New run",
+            "blocks": [
+              {
+                "id": "rg_22",
+                "type": "set",
+                "var": "runs",
+                "op": "add",
+                "value": 1
+              },
+              {
+                "id": "rg_23",
+                "type": "set",
+                "var": "hp",
+                "op": "set",
+                "value": 3
+              },
+              {
+                "id": "rg_24",
+                "type": "set",
+                "var": "depth",
+                "op": "set",
+                "value": 0
+              },
+              {
+                "id": "rg_25",
+                "type": "set",
+                "var": "relics",
+                "op": "set",
+                "value": 0
+              },
+              {
+                "id": "rg_26",
+                "type": "narration",
+                "text": {
+                  "id": "rg_26",
+                  "en": "Run {runs}. You climb down the rope into the dark.",
+                  "tr": "{runs}. deneme. İpten karanlığa iniyorsun."
+                }
+              },
+              {
+                "id": "rg_29",
+                "type": "if",
+                "branches": [
+                  {
+                    "id": "rg_br30",
+                    "when": "lantern",
+                    "then": [
+                      {
+                        "id": "rg_27",
+                        "type": "narration",
+                        "text": {
+                          "id": "rg_27",
+                          "en": "The lantern from an earlier run lights the way. +1 health.",
+                          "tr": "Önceki denemeden kalan fener yolu aydınlatıyor. +1 can."
+                        }
+                      },
+                      {
+                        "id": "rg_28",
+                        "type": "set",
+                        "var": "hp",
+                        "op": "add",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "rg_31",
+                "type": "jump",
+                "to": "descend"
+              }
+            ]
+          },
+          {
+            "id": "descend",
+            "name": "Descend",
+            "blocks": [
+              {
+                "id": "rg_32",
+                "type": "set",
+                "var": "depth",
+                "op": "add",
+                "value": 1
+              },
+              {
+                "id": "rg_33",
+                "type": "narration",
+                "text": {
+                  "id": "rg_33",
+                  "en": "Depth {depth}.",
+                  "tr": "Derinlik {depth}."
+                }
+              },
+              {
+                "id": "rg_54",
+                "type": "random",
+                "branches": [
+                  {
+                    "id": "rg_br55",
+                    "weight": 2,
+                    "then": [
+                      {
+                        "id": "rg_34",
+                        "type": "narration",
+                        "text": {
+                          "id": "rg_34",
+                          "en": "Something with too many legs.",
+                          "tr": "Fazla bacaklı bir şey."
+                        }
+                      },
+                      {
+                        "id": "rg_39",
+                        "type": "check",
+                        "label": {
+                          "id": "rg_t40",
+                          "en": "Fight it",
+                          "tr": "Dövüş"
+                        },
+                        "dice": "1d6",
+                        "target": 4,
+                        "success": [
+                          {
+                            "id": "rg_35",
+                            "type": "narration",
+                            "text": {
+                              "id": "rg_35",
+                              "en": "It flees, dropping a relic.",
+                              "tr": "Kaçıyor, bir kalıntı düşürüyor."
+                            }
+                          },
+                          {
+                            "id": "rg_36",
+                            "type": "set",
+                            "var": "relics",
+                            "op": "add",
+                            "value": 1
+                          }
+                        ],
+                        "fail": [
+                          {
+                            "id": "rg_37",
+                            "type": "narration",
+                            "text": {
+                              "id": "rg_37",
+                              "en": "It bites before it flees.",
+                              "tr": "Kaçmadan önce ısırıyor."
+                            }
+                          },
+                          {
+                            "id": "rg_38",
+                            "type": "set",
+                            "var": "hp",
+                            "op": "subtract",
+                            "value": 1
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "rg_br56",
+                    "then": [
+                      {
+                        "id": "rg_41",
+                        "type": "narration",
+                        "text": {
+                          "id": "rg_41",
+                          "en": "A pressure plate clicks.",
+                          "tr": "Bir basınç plakası tıklıyor."
+                        }
+                      },
+                      {
+                        "id": "rg_44",
+                        "type": "check",
+                        "label": {
+                          "id": "rg_t45",
+                          "en": "Jump clear",
+                          "tr": "Sıçra"
+                        },
+                        "dice": "1d6",
+                        "target": 3,
+                        "success": [],
+                        "fail": [
+                          {
+                            "id": "rg_42",
+                            "type": "narration",
+                            "text": {
+                              "id": "rg_42",
+                              "en": "Darts. Ow.",
+                              "tr": "Oklar. Ah."
+                            }
+                          },
+                          {
+                            "id": "rg_43",
+                            "type": "set",
+                            "var": "hp",
+                            "op": "subtract",
+                            "value": 1
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "rg_br57",
+                    "then": [
+                      {
+                        "id": "rg_46",
+                        "type": "narration",
+                        "text": {
+                          "id": "rg_46",
+                          "en": "A shrine with clean water.",
+                          "tr": "Temiz sulu bir sunak."
+                        }
+                      },
+                      {
+                        "id": "rg_47",
+                        "type": "set",
+                        "var": "hp",
+                        "op": "add",
+                        "value": 1
+                      }
+                    ]
+                  },
+                  {
+                    "id": "rg_br58",
+                    "then": [
+                      {
+                        "id": "rg_48",
+                        "type": "narration",
+                        "text": {
+                          "id": "rg_48",
+                          "en": "A chest, half buried.",
+                          "tr": "Yarı gömülü bir sandık."
+                        }
+                      },
+                      {
+                        "id": "rg_49",
+                        "type": "set",
+                        "var": "relics",
+                        "op": "add",
+                        "value": 1
+                      },
+                      {
+                        "id": "rg_52",
+                        "type": "if",
+                        "branches": [
+                          {
+                            "id": "rg_br53",
+                            "when": "!lantern && relics >= 2",
+                            "then": [
+                              {
+                                "id": "rg_50",
+                                "type": "set",
+                                "var": "lantern",
+                                "op": "set",
+                                "value": true
+                              },
+                              {
+                                "id": "rg_51",
+                                "type": "narration",
+                                "text": {
+                                  "id": "rg_51",
+                                  "en": "Inside: a lantern. It will be with you on every run from now on.",
+                                  "tr": "İçinde bir fener. Bundan sonra her denemede seninle olacak."
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "rg_59",
+                "type": "set",
+                "var": "best_depth",
+                "op": "set",
+                "value": "max(best_depth, depth)"
+              },
+              {
+                "id": "rg_72",
+                "type": "if",
+                "branches": [
+                  {
+                    "id": "rg_br73",
+                    "when": "hp <= 0",
+                    "then": [
+                      {
+                        "id": "rg_60",
+                        "type": "end",
+                        "ending": {
+                          "id": "fallen",
+                          "title": {
+                            "id": "rg_t61",
+                            "en": "Another name on the wall",
+                            "tr": "Duvarda bir isim daha"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "rg_br74",
+                    "when": "depth >= 5",
+                    "then": [
+                      {
+                        "id": "rg_62",
+                        "type": "end",
+                        "ending": {
+                          "id": "escaped",
+                          "title": {
+                            "id": "rg_t63",
+                            "en": "Out the other side",
+                            "tr": "Öbür taraftan çıkış"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "else": [
+                  {
+                    "id": "rg_71",
+                    "type": "choice",
+                    "options": [
+                      {
+                        "id": "rg_o65",
+                        "text": {
+                          "id": "rg_t66",
+                          "en": "Go deeper",
+                          "tr": "Daha derine in"
+                        },
+                        "then": [
+                          {
+                            "id": "rg_64",
+                            "type": "jump",
+                            "to": "descend"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "rg_o69",
+                        "text": {
+                          "id": "rg_t70",
+                          "en": "Climb out with what you have",
+                          "tr": "Elindekilerle yukarı tırman"
+                        },
+                        "then": [
+                          {
+                            "id": "rg_67",
+                            "type": "end",
+                            "ending": {
+                              "id": "retired",
+                              "title": {
+                                "id": "rg_t68",
+                                "en": "Out with {relics} relics",
+                                "tr": "{relics} kalıntıyla dışarı"
+                              }
+                            }
+                          }
+                        ],
+                        "visibleIf": "depth >= 2"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

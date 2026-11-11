@@ -25,7 +25,8 @@ export function createStageModule(director: StageDirector): EngineModule {
       actions.register(
         defineAction({
           id: 'stage.background.set',
-          description: 'Set the moving background: rain, embers, stars, snow, or none.',
+          description:
+            'Set the moving background: rain, embers, stars, snow, leaves, petals, fireflies, ash, bubbles, dust, or none.',
           params: backgroundSetSchema,
           run: (p) => director.backgroundSet(p),
         }),
@@ -33,7 +34,8 @@ export function createStageModule(director: StageDirector): EngineModule {
       actions.register(
         defineAction({
           id: 'stage.look.set',
-          description: 'Set the look over the whole screen: film, CRT, noir, dream, or none.',
+          description:
+            'Set the look over the whole screen: film, CRT, noir, dream, sepia, VHS, night, dread, or none.',
           params: lookSetSchema,
           run: (p) => director.lookSet(p),
         }),

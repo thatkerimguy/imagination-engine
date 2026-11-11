@@ -12,6 +12,7 @@ import { WriteCtx, type WriteContext } from '../write/context.ts';
 import { useEditor, usePassageId, useWriteLocale } from '../write/edit.ts';
 import { PassageHeader } from '../write/PassageHeader.tsx';
 import { PassageList } from '../write/PassageList.tsx';
+import { ScriptView } from '../write/ScriptView.tsx';
 import { TranslationView } from '../write/TranslationView.tsx';
 
 /** Problems of the open project, recomputed only when the document changes. */
@@ -29,7 +30,7 @@ export function WriteView() {
   const setWriteLocale = useProject((s) => s.setWriteLocale);
   const passageId = usePassageId(doc);
   const problems = useProblems();
-  const [mode, setMode] = useState<'write' | 'translate'>('write');
+  const [mode, setMode] = useState<'write' | 'script' | 'translate'>('write');
   const [drawer, setDrawer] = useState(false);
   const passage = allPassages(doc).find((p) => p.id === passageId);
 
@@ -76,11 +77,12 @@ export function WriteView() {
               value={mode}
               options={[
                 { value: 'write', label: t('write.manuscript') },
+                { value: 'script', label: t('write.script') },
                 { value: 'translate', label: t('write.translate') },
               ]}
               onChange={setMode}
             />
-            {mode === 'write' && (
+            {mode !== 'translate' && (
               <Segmented
                 className="write__lang"
                 label={t('write.language')}
@@ -92,6 +94,8 @@ export function WriteView() {
           </div>
           {mode === 'translate' ? (
             <TranslationView doc={doc} onOpen={() => setMode('write')} />
+          ) : passage && mode === 'script' ? (
+            <ScriptView key={passage.id} passage={passage} />
           ) : passage ? (
             <article className="manuscript" key={passage.id}>
               <PassageHeader doc={doc} passage={passage} />

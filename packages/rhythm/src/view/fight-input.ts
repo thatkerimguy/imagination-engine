@@ -4,8 +4,11 @@ export interface FightAction {
   readonly at: number;
 }
 
-/** Keys by physical position, so Turkish Q and F layouts play the same (ADR 0016). */
-const TAP_KEYS = new Set(['KeyF', 'KeyJ', 'Space', 'Enter']);
+/**
+ * Keys by physical position, so Turkish Q and F layouts play the same (ADR 0016). Z and X sit
+ * under the left hand the way rhythm games on desktop usually have them.
+ */
+const TAP_KEYS = new Set(['KeyZ', 'KeyX', 'KeyF', 'KeyJ', 'Space', 'Enter']);
 const SWIPE_KEYS = new Set(['KeyD', 'KeyK', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
 /** Gamepad buttons in the standard mapping: A and B strike; X, Y and the shoulders dodge. */
 const TAP_BUTTONS = [0, 1];

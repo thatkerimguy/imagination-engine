@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Segmented } from '../components/Segmented.tsx';
 import { runAction } from '../kernel.ts';
 import { useStudio, useT } from '../store.ts';
+import { SyncSection } from '../sync/SyncSection.tsx';
 
 function Field({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (
@@ -51,6 +52,7 @@ export function SettingsView() {
           onChange={(v) => runAction('ui.hud.set', { visible: v === 'on' })}
         />
       </Field>
+      <SyncSection />
     </section>
   );
 }

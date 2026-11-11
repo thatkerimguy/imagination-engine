@@ -17,8 +17,11 @@ pnpm preview        # serve builds on 127.0.0.1:4173 / 4174 (use this to test of
 pnpm check          # typecheck + lint + unit tests: run before calling any task done
 pnpm e2e            # Playwright smoke tests (uses installed Microsoft Edge)
 pnpm icons          # regenerate PWA icons from tools/icons/*.svg
-run.bat [preview]   # Windows: install if needed, start dev (or build + preview), open the Player
-publish.bat         # build the Player and push it to the `deploy` branch (host files only)
+run.bat [preview]   # Windows: install if needed, start dev (or build + preview), open the Player;
+                    # if the servers already run in another window, it just opens the Player
+publish.bat         # merge this branch into main and push, then push the built Player to `deploy`
+pnpm publish:novel <f.story.json> [--zip] [--pages p]   # public Player build with novels (ADR 0022)
+pnpm publish:studio [--pages p]   # private Studio for Cloudflare Pages + Access
 ```
 
 Dev servers bind to `127.0.0.1` only. Never change that to `0.0.0.0`; the phone connects through
@@ -33,6 +36,7 @@ packages/story        story schema, formulas, text markup, the interpreter, rule
 packages/present      DOM presenter: layouts, effects, typewriter, choices (no UI framework)
 packages/audio        mixer, music + conductor, beat analysis worker, sfxr, voices, ambience, catalogues, Spotify/YouTube
 packages/stage        GPU stage on WebGL2: SDF glyph atlas, particles, titles, screen FX, looks, tiers
+packages/media        optional media: a picture or muted video behind the text (ADR 0026)
 packages/rhythm       rhythm fights: chart director, judge, fight state (pure), and the fight presenter
 packages/sequencer    sequence playback: compiled cues, allocation-free cursor, audio-clock player and runner
 packages/material     material graphs: node table, GLSL compiler (pure), starter templates
@@ -41,10 +45,11 @@ packages/samples      sample stories as JSON (The Rain Alley), with an auto-play
 packages/kits         genre kits as data (VN, Gamebook, Chat, Mystery): createFromKit, applyKit
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
-apps/player           vanilla TS reader shell (PWA): story session, saves, rewind, panels; no UI framework
-apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Materials, Library, Play
+apps/player           vanilla TS reader shell (PWA): bookshelf, story session, saves, rewind, panels; no UI framework
+apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Materials, Library, Publish, Play
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator
+tools/publish         public novel builds, itch.io zips, the hosted Studio, its audio relay and sync store
 e2e                   Playwright smoke tests (desktop + Redmi Note 12 viewport)
 docs/adr              architecture decision records
 ```

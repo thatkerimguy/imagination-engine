@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '@ie/core';
 import { createTranslator, localeTag, type Locale, type Translator } from '@ie/i18n';
 import type { Beat, Layout, StoryRuntime } from '@ie/story';
 import { Countdown } from './countdown.ts';
@@ -36,7 +37,7 @@ interface Timed {
 }
 
 function reducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return prefersReducedMotion();
 }
 
 /**

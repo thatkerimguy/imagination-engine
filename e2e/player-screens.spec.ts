@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { watchErrors } from './console.ts';
-import { PLAYER, tapUntil } from './player-helpers.ts';
+import { SHELF, tapUntil } from './player-helpers.ts';
 
 // `?kit=` plays a kit's starter story in development builds (the Player bundles one sample).
-const GAMEBOOK = `${PLAYER}?kit=gamebook`;
+const GAMEBOOK = `${SHELF}?kit=gamebook`;
 
 test.describe('Player screens and themes', () => {
   test('title screen, HUD, a panel, and the story look setting', async ({ page }) => {

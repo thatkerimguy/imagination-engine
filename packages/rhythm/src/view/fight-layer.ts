@@ -9,11 +9,22 @@ export interface FightColors {
   readonly miss: Rgb;
 }
 
-/** The glyph inside each note's mark: strike, parry, dodge. */
+/**
+ * The glyph inside each note's mark. It says what to do, not only what happens: the two tap notes
+ * are solid shapes, the swipe note is a two-way arrow (and gets a double ring), so colour is never
+ * the only difference.
+ */
 export const NOTE_GLYPHS: Readonly<Record<NoteKind, string>> = {
-  strike: '+',
-  parry: '!',
-  dodge: '~',
+  strike: '●',
+  parry: '■',
+  dodge: '↔',
+};
+
+/** Which input a note wants. */
+export const NOTE_INPUT: Readonly<Record<NoteKind, 'tap' | 'swipe'>> = {
+  strike: 'tap',
+  parry: 'tap',
+  dodge: 'swipe',
 };
 
 /** How long a judged note's flash lasts, and how long a slash stays. */
@@ -38,6 +49,8 @@ export interface FightLayerOptions {
   readonly colors: () => FightColors;
   /** The fight's own per-frame work, run before drawing. */
   readonly onFrame: () => void;
+  /** Seconds either side of a note that still count (the "good" window, wider with the assist). */
+  readonly hitWindow: number;
 }
 
 /**
@@ -98,7 +111,8 @@ export class FightLayer implements StageLayer {
     const colors = this.options.colors();
     const { approach } = this.options;
     const notes = this.options.notes();
-    const unit = Math.max(22, Math.min(40, Math.min(pen.width, pen.height) * 0.06));
+    // Big enough to read on a phone at arm's length: about a fingertip across the target ring.
+    const unit = Math.max(28, Math.min(52, Math.min(pen.width, pen.height) * 0.085));
     while (this.first < notes.length && (notes[this.first]?.time ?? 0) < now - HIT_FADE - 0.2)
       this.first++;
     for (let i = this.first; i < notes.length; i++) {
@@ -152,8 +166,13 @@ export class FightLayer implements StageLayer {
     const p = Math.max(0, until / this.options.approach); // 1 when it appears, 0 when it lands
     const rgb = colors[note.kind];
     const fadeIn = Math.min(1, (1 - p) * 4);
-    pen.ring(x, y, unit, 2, rgb, 0.45 * fadeIn + 0.4 * (1 - p));
-    pen.ring(x, y, unit * (1 + 2.2 * p), 2.5, rgb, fadeIn * (0.35 + 0.65 * (1 - p)));
-    pen.glyph(glyph, x, y, unit * 1.1, rgb, fadeIn);
+    // Inside the window that still scores, the target ring thickens: "now" is visible, not guessed.
+    const now_ = Math.abs(until) <= this.options.hitWindow;
+    const target = now_ ? 5 : 2.5;
+    pen.ring(x, y, unit, target, rgb, now_ ? 1 : 0.5 * fadeIn + 0.4 * (1 - p));
+    if (NOTE_INPUT[note.kind] === 'swipe')
+      pen.ring(x, y, unit * 0.78, target * 0.6, rgb, now_ ? 1 : 0.4 * fadeIn + 0.4 * (1 - p));
+    pen.ring(x, y, unit * (1 + 2.2 * p), 3, rgb, fadeIn * (0.4 + 0.6 * (1 - p)));
+    pen.glyph(glyph, x, y, unit * (NOTE_INPUT[note.kind] === 'swipe' ? 1.15 : 0.9), rgb, fadeIn);
   }
 }

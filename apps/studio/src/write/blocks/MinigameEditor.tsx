@@ -2,7 +2,7 @@ import {
   defaultGame,
   listKey,
   MINIGAME_TEMPLATES,
-  MINIGAME_VALUES,
+  minigameValues,
   type MinigameBlock,
   type MinigameGame,
   type MinigameTemplate,
@@ -34,7 +34,13 @@ export function MinigameEditor({ block }: { readonly block: MinigameBlock }) {
   const set = (change: (b: MinigameBlock) => MinigameBlock, mergeKey?: string) =>
     editor.block(block.id, (b) => change(b as MinigameBlock), mergeKey);
   const numbers = doc.variables.filter((v) => v.type === 'number');
-  const values: readonly string[] = MINIGAME_VALUES[block.game.template];
+  const values = minigameValues(block.game);
+  const game = block.game;
+  /** A fixed template's value has a name in the catalogue; a built game's is a meter. */
+  const valueName = (name: string) =>
+    game.template === 'built'
+      ? labelText(game.meters.find((m) => m.id === name)?.label, locale, name)
+      : t(`mg.v.${name}` as MessageKey);
 
   const variablePicker = (
     value: string | undefined,
@@ -76,14 +82,15 @@ export function MinigameEditor({ block }: { readonly block: MinigameBlock }) {
                   set((b) => {
                     const template = e.target.value as MinigameTemplate;
                     // Stored values belong to the old template; keep only those the new one has.
-                    const keep: readonly string[] = MINIGAME_VALUES[template];
+                    const next = switchTemplate(b.game, template);
+                    const keep = minigameValues(next);
                     const store = Object.fromEntries(
                       Object.entries(b.store ?? {}).filter(([name]) => keep.includes(name)),
                     );
                     const { store: _old, ...rest } = b;
                     return {
                       ...rest,
-                      game: switchTemplate(b.game, template),
+                      game: next,
                       ...(Object.keys(store).length ? { store } : {}),
                     };
                   })
@@ -132,7 +139,7 @@ export function MinigameEditor({ block }: { readonly block: MinigameBlock }) {
         {values.map((name) =>
           variablePicker(
             block.store?.[name],
-            t('mg.store', { value: t(`mg.v.${name}` as MessageKey) }),
+            t('mg.store', { value: valueName(name) }),
             (id) =>
               set((b) => {
                 const { [name]: _old, ...others } = b.store ?? {};

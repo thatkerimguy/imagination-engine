@@ -299,3 +299,15 @@
   color: var(--color-ink-faint);
   font-size: var(--text-xs);
 }
+
+/* A preset select with the chosen preset's icon in front of it */
+.preset-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-ink-muted);
+}
+
+.preset-choice .picker {
+  color: var(--color-ink);
+}

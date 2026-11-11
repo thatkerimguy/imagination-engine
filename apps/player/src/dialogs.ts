@@ -7,6 +7,7 @@ import {
 import type { Locale, Translator } from '@ie/i18n';
 import { h } from './dom.ts';
 import type { MessageKey } from './messages.ts';
+import { fillCredits } from './panels/credits-panel.ts';
 import { fillHistory } from './panels/history-panel.ts';
 import { fillSaves } from './panels/saves-panel.ts';
 import { fillSettings } from './panels/settings-panel.ts';
@@ -33,6 +34,7 @@ const TITLES: Readonly<Record<Panel, MessageKey>> = {
   history: 'history.title',
   saves: 'saves.title',
   sheet: 'sheet.title',
+  credits: 'menu.credits',
 };
 
 function dialogShell(title: string, closeLabel: string, testId: string) {
@@ -139,6 +141,9 @@ export class Dialogs {
         break;
       case 'sheet':
         if (story) fillSheet(body, t, story);
+        break;
+      case 'credits':
+        if (story) fillCredits(body, t, story);
         break;
     }
   }

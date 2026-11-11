@@ -1,3 +1,4 @@
+import { prefersReducedMotion, watchReducedMotion } from '@ie/core';
 import type { Label, MaterialDef } from '@ie/story';
 import { parseCssColor } from './color.ts';
 import { StageDirector } from './director.ts';
@@ -28,8 +29,7 @@ export function themePalette(): StagePalette {
   };
 }
 
-const reducedMotion = () =>
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = () => prefersReducedMotion();
 
 /**
  * The stage as both apps use it: a director whose canvas sits over the page, a live region that
@@ -58,7 +58,8 @@ export function createStageHost(options: StageHostOptions): StageDirector {
     const locale = options.locale();
     return label[locale] || label.en || label.tr || '';
   };
-  const family = getComputedStyle(document.documentElement).getPropertyValue('--font-prose') || 'serif';
+  const family =
+    getComputedStyle(document.documentElement).getPropertyValue('--font-prose') || 'serif';
   // Glyphs are drawn from the loaded font, so start loading it before the first title needs it.
   void document.fonts?.load(`48px ${family}`).catch(() => undefined);
   const director = new StageDirector({
@@ -74,9 +75,6 @@ export function createStageHost(options: StageHostOptions): StageDirector {
     ...(options.beat ? { beat: options.beat } : {}),
     ...(options.materials ? { materials: options.materials } : {}),
   });
-  if (typeof matchMedia === 'function')
-    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) =>
-      director.setReducedMotion(e.matches),
-    );
+  watchReducedMotion((reduce) => director.setReducedMotion(reduce));
   return director;
 }

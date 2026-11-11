@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { checkMaterialRef } from './analyze-material.ts';
 import type { ActionBlock, StoryProject } from './schema.ts';
+import { isMediaAction, MEDIA_ACTIONS } from './media.ts';
 import { isStageAction, STAGE_ACTIONS, type Title } from './stage.ts';
 
 type Report = (
@@ -11,10 +12,15 @@ type Report = (
   where?: string,
 ) => void;
 
-/** Params of a known stage action, and a title written in only some of the novel's languages. */
+/** Params of a known stage or media action, and a title written in only some of the novel's languages. */
 export function checkStageAction(block: ActionBlock, project: StoryProject, report: Report): void {
-  if (!isStageAction(block.action)) return;
-  const parsed = STAGE_ACTIONS[block.action].safeParse(block.params ?? {});
+  const schema = isStageAction(block.action)
+    ? STAGE_ACTIONS[block.action]
+    : isMediaAction(block.action)
+      ? MEDIA_ACTIONS[block.action]
+      : null;
+  if (!schema) return;
+  const parsed = schema.safeParse(block.params ?? {});
   if (!parsed.success) {
     const detail = z.prettifyError(parsed.error);
     report(

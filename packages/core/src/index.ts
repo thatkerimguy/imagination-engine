@@ -55,3 +55,10 @@ export {
   requestPersistentStorage,
   type StorageStatus,
 } from './storage/persist.ts';
+export {
+  prefersReducedMotion,
+  setMotionPreference,
+  watchReducedMotion,
+  type MotionPreference,
+} from './motion.ts';
+export { jsonEqual, merge3, type Json, type MergeResult } from './merge.ts';

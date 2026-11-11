@@ -1,5 +1,9 @@
 import react from '@vitejs/plugin-react';
+import { createHash } from 'node:crypto';
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -69,6 +73,106 @@ function audioRelay(): Plugin {
   return { name: 'ie-audio-relay', configureServer: use, configurePreviewServer: use };
 }
 
+/**
+ * `/sync/…`: the device-sync store for dev and preview (ADR 0024), files in `.sync/` (or
+ * IE_SYNC_DIR). Same protocol as the hosted store (tools/publish/studio-functions/sync.js), so the
+ * Studio syncs between two browsers on this machine, which is what the e2e test does.
+ */
+function syncStore(): Plugin {
+  const dir = resolve(
+    process.env.IE_SYNC_DIR ?? join(fileURLToPath(new URL('.', import.meta.url)), '.sync'),
+  );
+  const ID = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
+  const etagOf = (text: string) => `"${createHash('sha1').update(text).digest('hex')}"`;
+  const send = (
+    res: ServerResponse,
+    status: number,
+    body?: string,
+    headers: Record<string, string> = {},
+  ) => {
+    res.statusCode = status;
+    res.setHeader('Cache-Control', 'no-store');
+    for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);
+    res.end(body);
+  };
+  const readBody = (req: IncomingMessage) =>
+    new Promise<string>((done, fail) => {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      req.on('data', (c: Buffer) => {
+        size += c.byteLength;
+        if (size > 25 * 1024 * 1024) req.destroy(new Error('too big'));
+        else chunks.push(c);
+      });
+      req.on('end', () => done(Buffer.concat(chunks).toString('utf8')));
+      req.on('error', fail);
+    });
+  const handle = async (req: IncomingMessage, res: ServerResponse) => {
+    const parts = new URL(req.url ?? '', 'http://sync').pathname.split('/').filter(Boolean);
+    if (parts[0] !== 'projects' || parts.length > 2) return send(res, 404);
+    await mkdir(dir, { recursive: true });
+    if (parts.length === 1) {
+      if (req.method !== 'GET') return send(res, 405);
+      const list = [];
+      for (const name of await readdir(dir)) {
+        if (!name.endsWith('.json')) continue;
+        const file = join(dir, name);
+        try {
+          const doc = JSON.parse(await readFile(file, 'utf8')) as { title?: unknown };
+          list.push({
+            id: name.slice(0, -5),
+            title: doc.title ?? {},
+            updatedAt: (await stat(file)).mtimeMs,
+          });
+        } catch {
+          // a half-written file: skip it
+        }
+      }
+      return send(res, 200, JSON.stringify(list), { 'Content-Type': 'application/json' });
+    }
+    const id = parts[1] ?? '';
+    if (!ID.test(id)) return send(res, 400, 'Bad id');
+    const file = join(dir, `${id}.json`);
+    const current = await readFile(file, 'utf8').catch(() => null);
+    if (req.method === 'GET') {
+      // 204, not 404: no copy yet is a normal answer, and browsers log every 404.
+      if (current === null) return send(res, 204);
+      return send(res, 200, current, { 'Content-Type': 'application/json', ETag: etagOf(current) });
+    }
+    if (req.method !== 'PUT') return send(res, 405);
+    const text = await readBody(req);
+    let doc: { format?: unknown; id?: unknown };
+    try {
+      doc = JSON.parse(text) as typeof doc;
+    } catch {
+      return send(res, 400, 'Not JSON');
+    }
+    if (doc.format !== 'imagination.story' || doc.id !== id)
+      return send(res, 400, 'Not this story');
+    const ifMatch = req.headers['if-match'];
+    const ifNone = req.headers['if-none-match'];
+    if (ifMatch === undefined && ifNone !== '*') return send(res, 428);
+    if (ifNone === '*' ? current !== null : current === null || etagOf(current) !== ifMatch)
+      return send(res, 412);
+    await writeFile(`${file}.tmp`, text);
+    await rename(`${file}.tmp`, file);
+    return send(res, 200, '{"ok":true}', {
+      'Content-Type': 'application/json',
+      ETag: etagOf(text),
+    });
+  };
+  const use = (server: {
+    middlewares: {
+      use(path: string, fn: (req: IncomingMessage, res: ServerResponse) => void): void;
+    };
+  }) => {
+    server.middlewares.use('/sync', (req, res) => {
+      handle(req, res).catch(() => send(res, 500));
+    });
+  };
+  return { name: 'ie-sync-store', configureServer: use, configurePreviewServer: use };
+}
+
 // Bound to 127.0.0.1 only; the phone reaches it through `adb reverse` (see tools/phone).
 export default defineConfig({
   server: { host: '127.0.0.1', port: 5174, strictPort: true },
@@ -81,6 +185,7 @@ export default defineConfig({
   plugins: [
     react(),
     audioRelay(),
+    syncStore(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,
@@ -112,7 +217,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/fetch/],
+        navigateFallbackDenylist: [/^\/fetch/, /^\/sync\//],
         // onnxruntime's ~30 MB .wasm is cached the first time Beat This! runs, not on install.
         runtimeCaching: [
           {

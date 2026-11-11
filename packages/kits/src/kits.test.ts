@@ -14,27 +14,65 @@ const options = {
   languages: ['en', 'tr'] as const,
 };
 
-/** Random choices until the story ends; returns the ending reached. */
+/** A tiny auto-playtester: random answers to every beat until the story ends. */
 function playthrough(project: StoryProject, seed: number): string | undefined {
   const runtime = new StoryRuntime(compileStory(project), { seed });
   let pick = seed;
-  for (let steps = 0; steps < 300; steps++) {
+  const roll = () => {
+    const next = nextRandom(pick);
+    pick = next.state;
+    return next.value;
+  };
+  for (let steps = 0; steps < 400; steps++) {
     const beat = runtime.advance().at(-1) ?? runtime.waiting;
     if (!beat) return undefined;
     if (beat.kind === 'end') return beat.endingId;
     if (beat.kind === 'choice') {
       const open = beat.options.filter((o) => o.enabled);
-      const roll = nextRandom(pick);
-      pick = roll.state;
-      runtime.choose(open[Math.floor(roll.value * open.length)]?.id ?? '');
+      runtime.choose(open[Math.floor(roll() * open.length)]?.id ?? '');
+    } else if (beat.kind === 'input') {
+      runtime.submit('Ada');
+    } else if (beat.kind === 'fight') {
+      const r = roll();
+      runtime.resolveFight({ won: r < 0.5, score: Math.round(r * 100) });
+    } else if (beat.kind === 'minigame') {
+      const r = roll();
+      runtime.resolveMinigame({ won: r < 0.5, score: Math.round(r * 100) });
+    } else if (beat.kind === 'shop' || beat.kind === 'traded') {
+      const offers = runtime.shopMenu()?.stock.filter((s) => s.affordable) ?? [];
+      const r = roll();
+      const offer = offers[Math.floor(r * offers.length)];
+      if (offer && r < 0.7) runtime.buy(offer.item);
+      else runtime.leaveShop();
+    } else if (runtime.battleMenu()) {
+      const menu = runtime.battleMenu();
+      const r = roll();
+      const skill = menu?.skills.find((s) => s.enabled);
+      if (menu?.flee && r < 0.1) runtime.battleAction({ act: 'flee' });
+      else if (skill && r < 0.4) runtime.battleAction({ act: 'skill', id: skill.id });
+      else runtime.battleAction({ act: 'attack' });
     }
   }
   throw new Error(`Seed ${seed} never reached an ending.`);
 }
 
 describe('starter kits', () => {
-  it('ship the four kits the plan names, each with a title and blurb in both languages', () => {
-    expect(KITS.map((k) => k.id)).toEqual(['visual-novel', 'gamebook', 'chat', 'mystery']);
+  it('ship every kit the plan names, each with a title and blurb in both languages', () => {
+    expect(KITS.map((k) => k.id)).toEqual([
+      'visual-novel',
+      'gamebook',
+      'chat',
+      'mystery',
+      'text-rpg',
+      'rhythm-action',
+      'social',
+      'survival',
+      'roguelite',
+      'explorer',
+      'horror',
+      'terminal',
+      'kinetic-poetry',
+    ]);
     for (const kit of KITS) {
       expect(kit.name.en && kit.name.tr).toBeTruthy();
       expect(kit.blurb.en && kit.blurb.tr).toBeTruthy();

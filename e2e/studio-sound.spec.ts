@@ -86,6 +86,11 @@ test.describe('Studio sound', () => {
     await expect(page.getByTestId('beat-this-download')).toHaveText(
       /Download the model \(191 MB\)/,
     );
+    // Stem separation is opt-in too, and only offered where there is a mouse (ADR 0028).
+    const stems = page.getByTestId('stems-download');
+    await expect(stems).toHaveText(/Download the model \(181 MB\)/);
+    if (isMobile) await expect(stems).toBeDisabled();
+    else await expect(stems).toBeEnabled();
     expect(errors).toEqual([]);
   });
 

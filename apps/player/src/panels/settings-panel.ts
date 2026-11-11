@@ -4,7 +4,11 @@ import { THEME_PREFERENCES } from '@ie/ui-kit';
 import { h, segmented } from '../dom.ts';
 import type { MessageKey } from '../messages.ts';
 import {
+  CONTRASTS,
   FIGHT_ASSISTS,
+  LETTERS,
+  MOTIONS,
+  SPACINGS,
   TEXT_SIZES,
   VOLUME_BUSES,
   type PlayerSettings,
@@ -55,6 +59,26 @@ function volume(
   input.addEventListener('input', () => run('audio.volume.set', { bus, volume: level() }));
   input.addEventListener('change', () => run('ui.volume.set', { bus, volume: level() }));
   return field(label, input);
+}
+
+/** One accessibility choice, sent as part of `ui.access.set`. */
+function access<V extends string>(
+  t: Translator<MessageKey>,
+  name: 'spacing' | 'letters' | 'contrast' | 'motion',
+  values: readonly V[],
+  current: V,
+  run: Run,
+): HTMLElement {
+  const label = t(`settings.${name}`);
+  return field(
+    label,
+    segmented(
+      values.map((v) => ({ value: v, label: t(`settings.${name}.${v}` as MessageKey) })),
+      current,
+      (value) => run('ui.access.set', { [name]: value }),
+      label,
+    ),
+  );
 }
 
 /** Every control changes a setting through its action, so it applies (and re-renders) at once. */
@@ -110,6 +134,10 @@ export function fillSettings(
         t('settings.textSpeed'),
       ),
     ),
+    access(t, 'spacing', SPACINGS, s.spacing, run),
+    access(t, 'letters', LETTERS, s.letters, run),
+    access(t, 'contrast', CONTRASTS, s.contrast, run),
+    access(t, 'motion', MOTIONS, s.motion, run),
     field(
       t('settings.timers'),
       onOff(t, s.timers, (enabled) => run('ui.timers.set', { enabled }), t('settings.timers')),

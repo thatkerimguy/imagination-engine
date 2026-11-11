@@ -114,7 +114,7 @@ uniform float u_vignette;
 uniform float u_grain;
 uniform float u_scanlines;
 uniform vec4 u_cover;       // rgb of the transition cover, progress 0..1
-uniform float u_coverKind;  // 0 none, 1 noise dissolve, 2 ink spread, 3 wipe
+uniform float u_coverKind;  // 0 none, 1 dissolve, 2 ink, 3 wipe, 4 fade, 5 blinds, 6 iris
 out vec4 outColor;
 
 float hash(vec2 p) {
@@ -159,8 +159,15 @@ void main() {
       vec2 d = (v_uv - 0.5) * vec2(u_resolution.x / u_resolution.y, 1.0);
       float r = length(d) + noise(gl_FragCoord.xy / 40.0) * 0.25;
       m = step(r, p * 1.2);
-    } else {
+    } else if (u_coverKind < 3.5) {
       m = step(v_uv.x + noise(vec2(0.0, gl_FragCoord.y / 30.0)) * 0.1, p * 1.1);
+    } else if (u_coverKind < 4.5) {
+      m = smoothstep(0.0, 1.0, p);
+    } else if (u_coverKind < 5.5) {
+      m = step(fract(v_uv.y * 9.0), p);
+    } else {
+      vec2 d = (v_uv - 0.5) * vec2(u_resolution.x / u_resolution.y, 1.0);
+      m = step((1.0 - p) * 0.95 - 0.01, length(d));
     }
     rgb = mix(rgb, u_cover.rgb, m);
     a = mix(a, 1.0, m);

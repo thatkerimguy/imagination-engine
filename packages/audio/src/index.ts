@@ -57,4 +57,13 @@ export {
 export { ProceduralBeat, renderDrums } from './procedural.ts';
 export { renderSfxr, SFXR_DEFAULTS, SFXR_RATE } from './sfxr.ts';
 export { generateSfxr, mutateSfxr, SFXR_PRESETS, type SfxrPreset } from './sfxr-presets.ts';
+export {
+  decodeStereo,
+  StemSeparator,
+  type StemModelSource,
+  type StemsRequest,
+  type StemsResponse,
+} from './stems/client.ts';
+export { drumHits, MAX_HITS } from './stems/hits.ts';
+export { DEMUCS, DEMUCS_FILES, DEMUCS_SIZE, STEMS, type Stem } from './stems/model.ts';
 export { TempoMap, trackTempo } from './tempo.ts';

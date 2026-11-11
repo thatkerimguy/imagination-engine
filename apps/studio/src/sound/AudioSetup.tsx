@@ -12,6 +12,7 @@ import {
 } from '../audio/spotify-auth.ts';
 import { useT } from '../store.ts';
 import { BeatThisSetup } from './BeatThisSetup.tsx';
+import { StemsSetup } from './StemsSetup.tsx';
 import { readLatency, writeLatency } from './format.ts';
 
 const CLICKS = 12;
@@ -152,6 +153,7 @@ export function AudioSetup() {
   return (
     <div className="cards" data-testid="audio-setup">
       <BeatThisSetup />
+      <StemsSetup />
       <LatencyTest />
       <SpotifySetup />
     </div>

@@ -1,4 +1,4 @@
-import { MINIGAME_DEFAULTS, MINIGAME_VALUES } from './minigame.ts';
+import { MINIGAME_DEFAULTS, minigameValues } from './minigame.ts';
 import type { MinigameBlock, StoryProject, VariableType } from './schema.ts';
 
 type Report = (
@@ -20,7 +20,7 @@ export function checkMinigameBlock(
 ): void {
   const { game } = block;
   if (block.score) needVar(block.score, block.id, 'number');
-  const names: readonly string[] = MINIGAME_VALUES[game.template];
+  const names = minigameValues(game);
   for (const [name, variable] of Object.entries(block.store ?? {})) {
     if (names.includes(name)) needVar(variable, block.id, 'number');
     else

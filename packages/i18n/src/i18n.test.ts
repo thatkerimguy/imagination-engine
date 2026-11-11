@@ -75,6 +75,22 @@ describe('messages', () => {
     expect(formatMessage('Hi {who}', {}, 'en')).toBe('Hi {who}');
   });
 
+  it('picks plural cases, with # as the count', () => {
+    const lines = '{n, plural, one {# line} other {# lines}} left';
+    expect(formatMessage(lines, { n: 1 }, 'en')).toBe('1 line left');
+    expect(formatMessage(lines, { n: 1200 }, 'en')).toBe('1,200 lines left');
+    expect(formatMessage('{n, plural, =0 {none} other {#}}', { n: 0 }, 'en')).toBe('none');
+    // Turkish has only "other" after numbers.
+    expect(formatMessage('{n, plural, other {# satır}} kaldı', { n: 1 }, 'tr')).toBe(
+      '1 satır kaldı',
+    );
+    // Plain placeholders around a plural still fill in; a plural without its number stays as is.
+    expect(
+      formatMessage('{who}: {n, plural, one {# win} other {# wins}}', { who: 'Mira', n: 2 }, 'en'),
+    ).toBe('Mira: 2 wins');
+    expect(formatMessage('{n, plural, other {#}}', {}, 'en')).toBe('{n, plural, other {#}}');
+  });
+
   it('exposes plural categories', () => {
     expect(pluralCategory('en', 1)).toBe('one');
     expect(pluralCategory('en', 2)).toBe('other');

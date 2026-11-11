@@ -5,8 +5,8 @@ import {
   defaultGame,
   MINIGAME_DEFAULTS,
   MINIGAME_TEMPLATES,
-  MINIGAME_VALUES,
   minigameGameSchema,
+  minigameValues,
   minigameResultSchema,
 } from './minigame.ts';
 import { StoryRuntime } from './runtime.ts';
@@ -54,7 +54,7 @@ const game = (overrides: Partial<Minigame> = {}): Block => ({
 describe('minigame data', () => {
   it('has defaults, result values and a playable starter for every template', () => {
     for (const template of MINIGAME_TEMPLATES) {
-      expect(MINIGAME_VALUES[template].length).toBeGreaterThan(0);
+      expect(minigameValues(defaultGame(template)).length).toBeGreaterThan(0);
       expect(minigameGameSchema.safeParse(defaultGame(template)).success).toBe(true);
       expect(
         minigameGameSchema.safeParse({ ...defaultGame(template), ...MINIGAME_DEFAULTS[template] })

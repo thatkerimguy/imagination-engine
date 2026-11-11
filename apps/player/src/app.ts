@@ -15,11 +15,11 @@ import {
   resolveStoryTheme,
   type PresenterOptions,
 } from '@ie/present';
-import { MinigameRunner } from '@ie/minigame';
-import { FightRunner, type Assist } from '@ie/rhythm';
+import type { Assist } from '@ie/rhythm';
 import { createSequenceModule, SequenceRunner } from '@ie/sequencer';
+import { createMediaModule, MediaLayer } from '@ie/media';
 import { createStageHost, createStageModule } from '@ie/stage';
-import { StoryLoadError, type CompiledStory } from '@ie/story';
+import { StoryLoadError, type Beat, type CompiledStory } from '@ie/story';
 import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
 import { Dialogs } from './dialogs.ts';
 import { Menu } from './menu.ts';
@@ -27,18 +27,23 @@ import { hasSheet } from './panels/sheet-panel.ts';
 import { messages } from './messages.ts';
 import { Reader } from './reader.ts';
 import {
-  TEXT_SCALE,
   VOLUME_BUSES,
   loadSettings,
   saveSettings,
   type FightAssist,
   type PlayerSettings,
 } from './settings.ts';
+import { LazyRunner } from './lazy-runner.ts';
+import { mountShelf } from './shelf/mount.ts';
+import { applyAccess } from './access.ts';
 import { createShellModule } from './shell-module.ts';
 import { StoryController } from './story/controller.ts';
-import { loadStory } from './story/load.ts';
+import { novelUrl, openStory } from './story/load.ts';
 import { createStoryModule } from './story/module.ts';
 import { StorySession } from './story/session.ts';
+
+type FightBeat = Extract<Beat, { kind: 'fight' }>;
+type MinigameBeat = Extract<Beat, { kind: 'minigame' }>;
 
 const ASSISTS: Readonly<Record<FightAssist, Assist>> = {
   off: {},
@@ -96,28 +101,37 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     beat: () => audio.beatInfo(),
     materials: () => story?.session.story.project.materials,
   });
-  const fights = new FightRunner({
-    audio,
-    stage,
-    host: () => document.body,
-    settings: () => ({
-      locale: settings.locale,
-      assist: ASSISTS[settings.fightAssist],
-      haptics: settings.haptics,
-      tapLatency: 0, // the Player has no tap-timing test yet
-    }),
-    dispatch: (id, params) => run(id, params, 'story'),
-    resolve: (result) => run('story.fight', result),
+  // Pictures and video behind the text; the layer exists only while a scene shows one (ADR 0026).
+  const media = new MediaLayer({ locale: () => settings.locale });
+  // Fights and minigames load their code on first use (ADR 0022).
+  const fights = new LazyRunner<FightBeat>(async () => {
+    const { FightRunner } = await import('@ie/rhythm');
+    return new FightRunner({
+      audio,
+      stage,
+      host: () => document.body,
+      settings: () => ({
+        locale: settings.locale,
+        assist: ASSISTS[settings.fightAssist],
+        haptics: settings.haptics,
+        tapLatency: 0, // the Player has no tap-timing test yet
+      }),
+      dispatch: (id, params) => run(id, params, 'story'),
+      resolve: (result) => run('story.fight', result),
+    });
   });
   // Minigames (ADR 0021); the fight-assist setting eases them too.
-  const minigames = new MinigameRunner({
-    host: () => document.body,
-    settings: () => ({
-      locale: settings.locale,
-      relaxed: settings.fightAssist !== 'off',
-      haptics: settings.haptics,
-    }),
-    resolve: (result) => run('story.minigame', result),
+  const minigames = new LazyRunner<MinigameBeat>(async () => {
+    const { MinigameRunner } = await import('@ie/minigame');
+    return new MinigameRunner({
+      host: () => document.body,
+      settings: () => ({
+        locale: settings.locale,
+        relaxed: settings.fightAssist !== 'off',
+        haptics: settings.haptics,
+      }),
+      resolve: (result) => run('story.minigame', result),
+    });
   });
   // Sequences the story plays (ADR 0019); their cues go through the action bus like blocks.
   const sequences = new SequenceRunner({
@@ -186,6 +200,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         run('ui.menu.set', { open: false });
         screens?.open(id);
       },
+      shelf: () => location.assign(novelUrl(null)),
     },
     () => run('ui.menu.set', { open: !menu.isOpen }),
   );
@@ -195,13 +210,16 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     settings = next;
     saveSettings(next);
     applyTheme(next.theme);
-    // The author's look sits on top of the reader's Paper/Night, unless the reader turned it off.
-    const look = story && next.storyLook ? story.session.story.project.theme : undefined;
+    // The author's look sits on top of the reader's Paper/Night, unless the reader turned it off
+    // or asked for high contrast (which needs the reader's own, tested colours).
+    const ownLook = next.storyLook && next.contrast !== 'high';
+    const look = story && ownLook ? story.session.story.project.theme : undefined;
     applyStoryTheme(document.documentElement, look ? resolveStoryTheme(look) : null);
     stage.refreshPalette();
     document.documentElement.lang = LOCALE_INFO[next.locale].tag;
-    document.documentElement.style.setProperty('--reader-scale', String(TEXT_SCALE[next.textSize]));
+    applyAccess(document.documentElement, next);
     hud.setLocale(next.locale);
+    media.refreshLocale();
     for (const bus of VOLUME_BUSES) engine.setVolume(bus, next.volumes[bus]);
     if (next.hud && !hud.mounted) hud.mount();
     if (!next.hud && hud.mounted) hud.unmount();
@@ -215,6 +233,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     reader.render(t);
     menu.render(t);
     dialogs.render(t);
+    shelf?.render(t);
   };
 
   kernel.use(
@@ -231,19 +250,27 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   kernel.use(createStoryModule(() => story));
   kernel.use(createAudioModule(audio));
   kernel.use(createStageModule(stage));
+  kernel.use(createMediaModule(media));
   kernel.use(createSequenceModule(sequences, () => story?.session.story.project));
   await kernel.start();
 
   root.replaceChildren(reader.element, menu.trigger, menu.element);
 
-  const loaded = await loadStory();
-  if (loaded instanceof StoryLoadError) {
+  const store = await openStore();
+  const loaded = await openStory(store);
+  let shelf: ReturnType<typeof mountShelf> | null = null;
+  if ('shelf' in loaded) {
+    shelf = mountShelf(root, loaded.shelf, t, {
+      store,
+      openSettings: () => run('ui.panel.open', { panel: 'settings' }),
+    });
+  } else if (loaded instanceof StoryLoadError) {
     reader.showError(
       t('story.error'),
       loaded.problems.map((p) => p.message),
     );
   } else {
-    const session = await StorySession.open(loaded, await openStore(), {
+    const session = await StorySession.open(loaded, store, {
       runAction: (id, params) => run(id, params, 'story'),
     });
     const presenter = new StoryPresenter(
@@ -270,6 +297,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       sequences.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
+      media.applyScene(scene);
     });
     const begin = () => {
       story?.begin();
@@ -315,7 +343,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   );
 
   document.addEventListener('keydown', (event) => {
-    if (dialogs.isOpen || event.defaultPrevented) return;
+    if (dialogs.isOpen || event.defaultPrevented || shelf) return;
     const target = event.target instanceof Element ? event.target : null;
     if (event.key === 'Escape') {
       if (screens?.showing === 'panel') screens.close();

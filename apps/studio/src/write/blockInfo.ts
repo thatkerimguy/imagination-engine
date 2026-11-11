@@ -1,5 +1,6 @@
 import type { Block, BlockType } from '@ie/story';
 import { audioKind, type AudioKind } from '../project/factory.ts';
+import { mediaKind, type MediaKind } from '../project/media-kinds.ts';
 import { stageKind, type StageKind } from '../project/stage-kinds.ts';
 import {
   AlignLeft,
@@ -8,6 +9,8 @@ import {
   SlidersHorizontal,
   CloudRain,
   Heading,
+  Image,
+  Clapperboard,
   Film,
   Sparkles,
   SunDim,
@@ -40,7 +43,7 @@ import {
 } from 'lucide-react';
 import type { MessageKey } from '../messages.ts';
 
-export type BlockKind = BlockType | AudioKind | StageKind;
+export type BlockKind = BlockType | AudioKind | StageKind | MediaKind;
 
 export const BLOCK_ICON: Readonly<Record<BlockKind, LucideIcon>> = {
   background: CloudRain,
@@ -51,6 +54,8 @@ export const BLOCK_ICON: Readonly<Record<BlockKind, LucideIcon>> = {
   transition: Blend,
   post: Layers,
   param: SlidersHorizontal,
+  picture: Image,
+  video: Clapperboard,
   sequence: Film,
   music: Music,
   sfx: Volume2,
@@ -82,7 +87,7 @@ export const BLOCK_ICON: Readonly<Record<BlockKind, LucideIcon>> = {
 export const blockName = (type: BlockKind): MessageKey => `block.${type}`;
 export const blockHint = (type: BlockKind): MessageKey => `blockHint.${type}`;
 
-/** What the author sees a block as: its type, or its audio or stage kind for those actions. */
+/** What the author sees a block as: its type, or its audio, stage or media kind for actions. */
 export function blockKind(block: Block): BlockKind {
-  return audioKind(block) ?? stageKind(block) ?? block.type;
+  return audioKind(block) ?? stageKind(block) ?? mediaKind(block) ?? block.type;
 }

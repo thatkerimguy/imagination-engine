@@ -18,6 +18,7 @@ import { presetMessages } from './messages-presets.ts';
 import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
 import { writingMessages } from './messages-writing.ts';
+import { worldMessages } from './messages-world.ts';
 
 /** The shell: workspaces, palette, settings and diagnostics. */
 const shellMessages = defineCatalogs({
@@ -139,6 +140,7 @@ export const messages = {
     ...libraryMessages.en,
     ...publishMessages.en,
     ...scriptMessages.en,
+    ...worldMessages.en,
   },
   tr: {
     ...shellMessages.tr,
@@ -161,6 +163,7 @@ export const messages = {
     ...libraryMessages.tr,
     ...publishMessages.tr,
     ...scriptMessages.tr,
+    ...worldMessages.tr,
   },
 };
 

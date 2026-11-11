@@ -30,6 +30,9 @@ export function reconcileState(story: CompiledStory, state: Mutable<StoryState>)
   }
   if (state.battle && story.blocks.get(state.battle.blockId)?.block.type !== 'battle')
     delete state.battle;
+  // Rooms that were deleted are forgotten; the map simply doesn't show them.
+  if (state.room && !story.rooms.has(state.room)) delete state.room;
+  if (state.rooms) state.rooms = state.rooms.filter((id) => story.rooms.has(id));
   return null;
 }
 

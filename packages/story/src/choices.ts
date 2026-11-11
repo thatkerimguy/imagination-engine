@@ -2,7 +2,7 @@ import type { Value } from '@ie/core';
 import { parseDice, successChance } from './dice.ts';
 import { simpleRequirement, truthy, type Expr } from './formula.ts';
 import type { ChoiceBlock, Formula } from './schema.ts';
-import type { Mutable, OptionView } from './state.ts';
+import type { Mutable, OptionLock, OptionView } from './state.ts';
 
 /** What an option needs to know about the running story to describe itself. */
 export interface OptionContext {
@@ -38,12 +38,7 @@ export function optionView(
   }
   if (option.enabledIf !== undefined && !truthy(ctx.compute(option.enabledIf))) {
     view.enabled = false;
-    const requirement = simpleRequirement(ctx.formula(option.enabledIf));
-    view.lock = option.lockedText
-      ? { kind: 'text' }
-      : requirement
-        ? { kind: 'requirement', requirement }
-        : { kind: 'unknown' };
+    view.lock = lockFor(option.enabledIf, option.lockedText !== undefined, ctx);
   }
   const first = option.then[0];
   if (option.showOdds && first?.type === 'check') {
@@ -55,6 +50,20 @@ export function optionView(
     );
   }
   return view;
+}
+
+/**
+ * Why something gated by `enabledIf` is locked: the author's own words, the requirement the
+ * reader can be told ("Needs Strength 3"), or no explanation.
+ */
+export function lockFor(
+  enabledIf: Formula,
+  hasText: boolean,
+  ctx: Pick<OptionContext, 'formula'>,
+): OptionLock {
+  if (hasText) return { kind: 'text' };
+  const requirement = simpleRequirement(ctx.formula(enabledIf));
+  return requirement ? { kind: 'requirement', requirement } : { kind: 'unknown' };
 }
 
 /** The timer of a timed choice; it falls back to the first enabled option if the default is locked. */

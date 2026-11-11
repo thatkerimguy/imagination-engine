@@ -18,6 +18,7 @@ import { mediaSourceSchema, type MediaSource } from './media.ts';
 import { screenSchema, type ScreenDef } from './screens.ts';
 import { sequenceSchema, type SequenceDef } from './sequence.ts';
 import { themeSchema, type StoryTheme } from './theme.ts';
+import { MAX_SPACES, spaceSchema, worldSchema, type SpaceDef, type WorldDef } from './world.ts';
 import {
   blockSchema,
   chapterSchema,
@@ -69,6 +70,10 @@ export interface StoryProject {
   readonly materials?: readonly MaterialDef[];
   /** The kits this project was made from or mixed with (ADR 0018). */
   readonly kits?: readonly string[];
+  /** Rooms joined by exits, and how the map shows them (ADR 0031). */
+  readonly world?: WorldDef;
+  /** Views beside the story, reached with a swipe or the screen's edge (ADR 0031). */
+  readonly spaces?: readonly SpaceDef[];
 }
 export const storyProjectSchema = z.object({
   format: z.literal(STORY_FORMAT),
@@ -96,4 +101,6 @@ export const storyProjectSchema = z.object({
   sequences: z.array(sequenceSchema).max(100).optional(),
   materials: z.array(materialSchema).max(60).optional(),
   kits: z.array(z.string().max(40)).max(12).optional(),
+  world: worldSchema.optional(),
+  spaces: z.array(spaceSchema).max(MAX_SPACES).optional(),
 });

@@ -69,7 +69,8 @@ export function PlayView() {
       tapLatency: readLatency,
     });
     session.current = play;
-    host.current.replaceChildren(play.presenter.element);
+    host.current.replaceChildren(play.element);
+    host.current.toggleAttribute('data-spaces', play.spaces !== null);
     // HUDs sit above and below the page; the title screen and panels cover the whole frame.
     panel.insertBefore(play.screens.hudTop, host.current);
     host.current.after(play.screens.hudBottom);

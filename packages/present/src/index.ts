@@ -11,6 +11,15 @@ export { presentMessages, type PresentKey } from './messages.ts';
 export { rpgLineText, rpgNames } from './rpg-lines.ts';
 export { buildBattle, buildShop, type RpgHandlers } from './rpg-prompts.ts';
 export { StoryPresenter, type PresenterHost, type PresenterOptions } from './presenter.ts';
+export { SpaceDeck, type SpaceDeckHost } from './space-deck.ts';
+export {
+  buildExits,
+  buildMap,
+  roomName,
+  wentText,
+  type WorldContext,
+  type WorldHandlers,
+} from './world-view.ts';
 export {
   ScreenHost,
   type PlayerPanel,

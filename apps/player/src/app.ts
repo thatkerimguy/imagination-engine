@@ -11,6 +11,7 @@ import { LOCALE_INFO, createTranslator, loadHyphenators, type Locale } from '@ie
 import {
   ScreenHost,
   StoryPresenter,
+  type SpaceDeck,
   applyStoryTheme,
   resolveStoryTheme,
   type PresenterOptions,
@@ -37,6 +38,7 @@ import { LazyRunner } from './lazy-runner.ts';
 import { mountShelf } from './shelf/mount.ts';
 import { applyAccess } from './access.ts';
 import { createShellModule } from './shell-module.ts';
+import { mountSpaces } from './spaces.ts';
 import { StoryController } from './story/controller.ts';
 import { novelUrl, openStory } from './story/load.ts';
 import { createStoryModule } from './story/module.ts';
@@ -84,6 +86,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   };
   let story: StoryController | null = null;
   let screens: ScreenHost | null = null;
+  let spaces: SpaceDeck | null = null;
   const engine = new AudioEngine();
   const audio = new AudioDirector({
     engine,
@@ -166,7 +169,11 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
   // Timed choices wait while the menu, a sheet, or another app covers the page.
   const holdClocks = () =>
     story?.presenter.hold(
-      menu.isOpen || dialogs.isOpen || document.hidden || screens?.covering === true,
+      menu.isOpen ||
+        dialogs.isOpen ||
+        document.hidden ||
+        screens?.covering === true ||
+        spaces?.atStory === false,
     );
 
   const reader = new Reader(t, tap);
@@ -226,6 +233,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     if (localeChanged) {
       t = createTranslator(messages, next.locale);
       screens?.setLocale(next.locale);
+      spaces?.setLocale(next.locale);
     }
     // The story redraws the page in the new language, mid-scene, keeping any running clock.
     story?.presenter.setOptions(presenterOptions(next));
@@ -284,6 +292,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         sell: (itemId) => run('story.sell', { itemId }),
         leaveShop: () => run('story.leaveShop'),
         battle: (action) => run('story.battle', action),
+        go: (roomId) => run('story.go', { roomId }),
         typed: (speaker, text) => audio.typed(speaker, text),
         fight: (beat) => fights.start(session.runtime, beat),
         minigame: (beat) => minigames.start(session.runtime, beat),
@@ -321,6 +330,16 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     reader.mount(presenter.element);
     reader.element.before(screens.hudTop);
     reader.element.after(screens.hudBottom);
+    spaces = mountSpaces({
+      story: loaded,
+      reader: reader.element,
+      screens,
+      controller: story,
+      locale: settings.locale,
+      canMove: () => !menu.isOpen && !fights.running && !minigames.running,
+      go: (roomId) => run('story.go', { roomId }),
+      moved: holdClocks,
+    });
     root.append(screens.overlay);
     menu.render(t);
     // The patterns are small and usually cached: wait briefly so the first page is hyphenated.
@@ -347,11 +366,14 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     const target = event.target instanceof Element ? event.target : null;
     if (event.key === 'Escape') {
       if (screens?.showing === 'panel') screens.close();
+      else if (spaces && !spaces.atStory) spaces.home();
       else run('ui.menu.set', { open: !menu.isOpen });
       return;
     }
     // A fight or a minigame reads its own keys (arrows act there, not step back).
     if (menu.isOpen || fights.running || minigames.running || screens?.covering) return;
+    // Away from the story, keys don't turn its pages; Escape already went back above.
+    if (spaces && !spaces.atStory) return;
     if (target?.closest('input, textarea, select')) return;
     if (event.key === '`') {
       run('ui.hud.set', { visible: !settings.hud });

@@ -18,6 +18,7 @@ import './styles/design.css';
 import './styles/sequencer.css';
 import './styles/material.css';
 import './styles/minigame.css';
+import './styles/world.css';
 import './styles/publish.css';
 import { createAudioModule } from '@ie/audio';
 import { createMediaModule } from '@ie/media';

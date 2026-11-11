@@ -18,6 +18,7 @@
 | Sequences       | arrows, `Delete`                        | Nudge, remove the selected clip                              |
 | Fights (Player) | `F` `J` `Space` `Z` `X`                 | Tap (strike, parry)                                          |
 | Fights (Player) | `D` `K` arrows                          | Swipe (dodge)                                                |
+| Player          | edge arrows / `Esc`                     | Open a space beside the story / back to the story            |
 
 On a Mac, use `⌘` where it says `Ctrl`.
 
@@ -83,6 +84,7 @@ Translate views.
 | The stage stays blank                           | The browser has no WebGL2. The story still works; try Diagnostics                |
 | Taps in fights feel late                        | Run **Sound → Setup → Tap timing** on that device                                |
 | Device sync says **No sync store**              | The hosted Studio needs an R2 bucket (chapter 8)                                 |
+| "An exit leads nowhere yet"                     | In World, pick where the exit leads, or remove it                                |
 | `run.bat` says a port is busy                   | Another program uses port 5173 or 5174. Close it, or restart the computer        |
 | The Studio looks old after an update            | It's an installed app. Close every Studio tab and window, then open it again     |
 

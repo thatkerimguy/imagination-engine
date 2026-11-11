@@ -6,6 +6,7 @@ import { minigameBlockShape, type MinigameGame } from './minigame.ts';
 import { logicSchemas, type RoutineBlock } from './logic.ts';
 import { rpgBlockSchemas, type RpgBlock } from './rpg.ts';
 import { sequenceBlockSchema, type SequenceBlock } from './sequence.ts';
+import { exitsBlockSchema, type ExitsBlock } from './world.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
@@ -250,6 +251,7 @@ export type Block =
   | SequenceBlock
   | RpgBlock
   | RoutineBlock
+  | ExitsBlock
   | ActionBlock;
 export type BlockType = Block['type'];
 
@@ -350,6 +352,7 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     sequenceBlockSchema,
     ...rpgBlockSchemas(blocks),
     logic.routineBlock,
+    exitsBlockSchema,
     z.object({
       id: idSchema,
       type: z.literal('action'),

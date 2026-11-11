@@ -3,6 +3,7 @@
  * Layout is chosen per passage through [data-layout] on .story.
  */
 @import './screens.css';
+@import './world.css';
 
 .story {
   width: min(var(--measure), 100%);

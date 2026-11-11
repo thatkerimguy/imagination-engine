@@ -8,6 +8,7 @@ import type { StoryHost } from './runtime-options.ts';
 import type { Block, Formula, LocalText, Scope } from './schema.ts';
 import { emptyState, type Beat, type Frame, type Mutable, type StoryState } from './state.ts';
 import { applyOperation, coerceValue } from './variables.ts';
+import { enterRoom } from './world-run.ts';
 
 /**
  * The interpreter's working parts, shared by the block runner, the RPG blocks, battles and rules
@@ -161,6 +162,7 @@ export class RuntimeCore {
     }
     this.resetScope('passage');
     this.s.visits = { ...this.s.visits, [passageId]: (this.s.visits[passageId] ?? 0) + 1 };
+    enterRoom(this, passageId);
     const layout = passage.layout ?? chapter.layout ?? this.story.project.layout ?? 'page';
     this.record({ kind: 'passage', passageId, layout, keepPage: passage.keepPage ?? false });
     this.push({ list: listKey.passage(passageId), index: 0 });

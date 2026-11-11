@@ -9,6 +9,7 @@ import { ENDINGS_KEY } from './runtime-options.ts';
 import type { Block } from './schema.ts';
 import { rememberScene, type OptionView } from './state.ts';
 import { sequenceSceneChanges, type SequenceBlock } from './sequence.ts';
+import { runExits } from './world-run.ts';
 
 /** Runs one block. Returns true when a beat now waits for the reader. */
 export function runBlock(core: RuntimeCore, block: Block): boolean {
@@ -124,6 +125,8 @@ export function runBlock(core: RuntimeCore, block: Block): boolean {
     case 'routine':
       runRoutine(core, block);
       return false;
+    case 'exits':
+      return runExits(core, block);
     case 'note':
       return false;
   }

@@ -287,6 +287,8 @@ export function blockTexts(block: Block): LocalText[] {
       return block.label ? [block.label] : [];
     case 'input':
       return [block.prompt];
+    case 'exits':
+      return block.prompt ? [block.prompt] : [];
     case 'end':
       return block.ending ? [block.ending.title] : [];
     default:
@@ -314,6 +316,8 @@ function replaceText(block: Block, text: LocalText): Block {
       return block.label ? { ...block, label: swap(block.label) } : block;
     case 'input':
       return { ...block, prompt: swap(block.prompt) };
+    case 'exits':
+      return block.prompt ? { ...block, prompt: swap(block.prompt) } : block;
     case 'end':
       return block.ending
         ? { ...block, ending: { ...block.ending, title: swap(block.ending.title) } }

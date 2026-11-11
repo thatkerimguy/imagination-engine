@@ -16,10 +16,12 @@ import { type RuntimeOptions } from './runtime-options.ts';
 import { fireRules } from './rules.ts';
 import { emptyState, pageStart, type Beat, type Mutable, type StoryState } from './state.ts';
 import { renderMarkup, type Piece, type TextContext } from './text.ts';
+import { mapView, travel, type MapView } from './world-run.ts';
 
 export { ENDINGS_KEY, type RuntimeOptions, type StoryHost } from './runtime-options.ts';
 export type { BattleAction, BattleMenu } from './battle.ts';
 export type { ShopMenu } from './rpg-run.ts';
+export type { MapLink, MapRoom, MapRoomState, MapView } from './world-run.ts';
 
 const LOG_LIMIT = 400;
 const STEP_LIMIT = 10_000;
@@ -91,6 +93,21 @@ export class StoryRuntime {
     return this.core.s.quests ?? {};
   }
 
+  /** The room the reader is in, if the story has a world (ADR 0031). */
+  get room(): string | null {
+    return this.core.s.room ?? null;
+  }
+
+  /** What the reader's map shows now, and where they can go from the waiting Exits block. */
+  map(): MapView {
+    return mapView(this.core);
+  }
+
+  /** Walks to a room from the waiting Exits block (an exit, or fast travel on the map). */
+  go(roomId: string): void {
+    travel(this.core, roomId);
+  }
+
   value(id: string): Value {
     return this.core.value(id);
   }
@@ -124,8 +141,16 @@ export class StoryRuntime {
     const current = this.waiting;
     if (current?.kind === 'shop' || current?.kind === 'battle') return this.takeBeats();
     const kind = current?.kind;
-    if (kind === 'choice' || kind === 'input' || kind === 'fight' || kind === 'minigame') {
-      throw new Error('The story is waiting for a choice, an answer, a fight or a minigame.');
+    if (
+      kind === 'choice' ||
+      kind === 'input' ||
+      kind === 'fight' ||
+      kind === 'minigame' ||
+      kind === 'exits'
+    ) {
+      throw new Error(
+        'The story is waiting for a choice, an answer, a fight, a minigame or a way out.',
+      );
     }
     s.waiting = null;
     for (let steps = 0; ; steps++) {

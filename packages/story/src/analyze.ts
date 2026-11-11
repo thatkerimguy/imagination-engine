@@ -8,6 +8,8 @@ import { checkScreens } from './analyze-screens.ts';
 import { checkFightChart, checkSequenceBlock, checkSequences } from './analyze-sequence.ts';
 import { checkMaterials } from './analyze-material.ts';
 import { checkStageAction } from './analyze-stage.ts';
+import { checkWorld } from './analyze-world.ts';
+import type { ExitsBlock } from './world.ts';
 import { compileFormula, FormulaError, references, type Expr } from './formula.ts';
 import { markupReferences, MarkupError, parseMarkup, type MarkupNode } from './markup.ts';
 import type {
@@ -75,6 +77,7 @@ export function leaves(list: readonly Block[]): boolean {
       case 'jump':
       case 'end':
       case 'return':
+      case 'exits':
         return true;
       case 'if':
         return (
@@ -128,6 +131,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   const nodeIds = new Set<string>();
   const targets = { jump: new Set<string>(), call: new Set<string>() };
   const pendingRefs: PendingRefs[] = [];
+  const exitsBlocks: { block: ExitsBlock; passage: string }[] = [];
   // A routine's inputs, readable like variables while its blocks are checked.
   let locals: ReadonlySet<string> = new Set();
   const known = (id: string) => variables.has(id) || locals.has(id);
@@ -363,6 +367,10 @@ export function analyzeProject(project: StoryProject): Analysis {
         case 'sequence':
           checkSequenceBlock(block, project, report);
           break;
+        case 'exits':
+          if (block.prompt) useText(block.prompt, block.id);
+          exitsBlocks.push({ block, passage: passageId });
+          break;
         case 'action':
           checkAudioAction(block, project, report);
           checkStageAction(block, project, report);
@@ -395,6 +403,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   checkSequences(project, report);
   checkMaterials(project, report);
   checkScreens({ project, report, needVar, useFormula, useText });
+  checkWorld({ project, report, passages, exitsBlocks, useFormula, useText, jumps: targets.jump });
 
   checkReferences({ project, passages, options, targets, pendingRefs, leaves, report });
 

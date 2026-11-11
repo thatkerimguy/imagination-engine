@@ -14,7 +14,8 @@ body {
   display: flex;
   flex-direction: column;
 }
-#app > .reader {
+#app > .reader,
+#app > .spaces {
   flex: 1;
   min-height: 0;
 }
@@ -25,7 +26,8 @@ body {
 #app > .screen-hud[data-edge='bottom'] {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
 }
-#app > .screen-hud[data-edge='top']:not([hidden]) ~ .reader {
+#app > .screen-hud[data-edge='top']:not([hidden]) ~ .reader,
+#app > .screen-hud[data-edge='top']:not([hidden]) ~ .spaces .spaces__pane {
   padding-top: var(--space-6);
 }
 #app > .screen-overlay {

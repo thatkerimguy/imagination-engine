@@ -4,6 +4,7 @@ import {
   Database,
   Film,
   LibraryBig,
+  Map as MapIcon,
   Spline,
   Palette,
   PenLine,
@@ -20,6 +21,7 @@ import type { MessageKey } from './messages.ts';
 export const VIEW_IDS = [
   'write',
   'flow',
+  'world',
   'logic',
   'sound',
   'stage',
@@ -47,6 +49,7 @@ export interface ViewInfo {
 export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
   write: { id: 'write', icon: PenLine, label: 'view.write', description: 'desc.write' },
   flow: { id: 'flow', icon: Workflow, label: 'view.flow', description: 'desc.flow' },
+  world: { id: 'world', icon: MapIcon, label: 'view.world', description: 'desc.world' },
   logic: { id: 'logic', icon: Zap, label: 'view.logic', description: 'desc.logic' },
   sound: { id: 'sound', icon: AudioLines, label: 'view.sound', description: 'desc.sound' },
   stage: { id: 'stage', icon: Sparkles, label: 'view.stage', description: 'desc.stage' },
@@ -80,6 +83,7 @@ export const VIEWS: Readonly<Record<ViewId, ViewInfo>> = {
 export const RAIL_MAIN: readonly ViewId[] = [
   'write',
   'flow',
+  'world',
   'logic',
   'sound',
   'stage',
@@ -96,6 +100,7 @@ export const RAIL_BOTTOM: readonly ViewId[] = ['settings', 'diagnostics'];
 /** Phone tab bar: the three most-used views; everything else lives under More. */
 export const TABS: readonly ViewId[] = ['write', 'flow', 'play'];
 export const MORE: readonly ViewId[] = [
+  'world',
   'logic',
   'sound',
   'stage',

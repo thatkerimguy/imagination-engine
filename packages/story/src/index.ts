@@ -51,6 +51,10 @@ export {
   StoryRuntime,
   type BattleAction,
   type BattleMenu,
+  type MapLink,
+  type MapRoom,
+  type MapRoomState,
+  type MapView,
   type RuntimeOptions,
   type ShopMenu,
   type StoryHost,
@@ -64,6 +68,7 @@ export {
   storyStateSchema,
   type Beat,
   type Frame,
+  type ExitView,
   type OptionLock,
   type OptionView,
   type StoryState,
@@ -79,6 +84,7 @@ export {
 export { applyOperation, coerceValue } from './variables.ts';
 export * from './logic.ts';
 export * from './rpg.ts';
+export * from './world.ts';
 export * from './state-rpg.ts';
 export * from './screens.ts';
 export * from './theme.ts';

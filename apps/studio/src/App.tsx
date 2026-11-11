@@ -24,6 +24,7 @@ import { SettingsView } from './views/SettingsView.tsx';
 import { SoundView } from './views/SoundView.tsx';
 import { StageView } from './views/StageView.tsx';
 import { WriteView } from './views/WriteView.tsx';
+import { WorldView } from './views/WorldView.tsx';
 
 function isTyping(target: EventTarget | null): boolean {
   return (
@@ -97,6 +98,7 @@ function CurrentView() {
   if (view === 'diagnostics') return <DiagnosticsView />;
   if (view === 'write') return <WriteView />;
   if (view === 'flow') return <FlowView />;
+  if (view === 'world') return <WorldView />;
   if (view === 'play') return <PlayView />;
   if (view === 'data') return <DataView />;
   if (view === 'sound') return <SoundView />;

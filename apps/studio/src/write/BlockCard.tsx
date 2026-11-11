@@ -30,6 +30,7 @@ import {
   PauseEditor,
 } from './blocks/TextEditors.tsx';
 import { ProblemText } from './ProblemText.tsx';
+import { ExitsEditor } from './blocks/ExitsEditor.tsx';
 import { useNewBlock } from './BlockList.tsx';
 
 interface BlockCardProps {
@@ -78,6 +79,8 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
       return <BattleEditor block={block} />;
     case 'routine':
       return <RoutineCallEditor block={block} />;
+    case 'exits':
+      return <ExitsEditor block={block} />;
     case 'jump':
     case 'call':
     case 'return':

@@ -186,6 +186,23 @@ export class PlaytestTally {
         runtime.resolveMinigame({ won, score: Math.round(roll() * 100) });
         return true;
       }
+      case 'exits': {
+        // Walk out through an open exit, or take the map somewhere already seen.
+        const targets = runtime
+          .map()
+          .rooms.filter((r) => r.reachable)
+          .map((r) => r.id);
+        const open = [
+          ...new Set([...beat.exits.filter((e) => e.enabled).map((e) => e.to), ...targets]),
+        ];
+        const to = pick(open);
+        if (!to) {
+          this.bump(this.spots.softlocks, passage, beat.blockId);
+          return false;
+        }
+        runtime.go(to);
+        return true;
+      }
       default:
         break;
     }

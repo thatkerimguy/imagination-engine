@@ -6,9 +6,10 @@ import { buildLine, type LineContext, type LineMode } from './lines.ts';
 import { presentMessages, type PresentKey } from './messages.ts';
 import { buildChoice, buildEnd, buildInput, type PromptHandlers } from './prompts.ts';
 import { buildBattle, buildShop, type RpgHandlers } from './rpg-prompts.ts';
+import { buildExits, type WorldHandlers } from './world-view.ts';
 import { CHARS_PER_SECOND, reportTyped, Typewriter, type TextSpeed } from './typewriter.ts';
 
-export interface PresenterHost extends PromptHandlers, RpgHandlers {
+export interface PresenterHost extends PromptHandlers, RpgHandlers, WorldHandlers {
   /** A timed pause ran out. */
   advance(): void;
   /** Characters were just typed in; `speaker` is null for narration. Drives voice blips. */
@@ -277,6 +278,8 @@ export class StoryPresenter {
       shown = buildShop({ runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'battle') {
       shown = buildBattle({ runtime: this.runtime, t: this.t }, handlers);
+    } else if (beat.kind === 'exits') {
+      shown = buildExits(beat, { runtime: this.runtime, t: this.t }, handlers);
     } else if (beat.kind === 'pause' && beat.seconds !== undefined) {
       this.timer(key, beat.seconds, () => handlers.advance());
     }

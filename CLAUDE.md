@@ -46,7 +46,7 @@ packages/kits         genre kits as data (VN, Gamebook, Chat, Mystery): createFr
 packages/ui-kit       design tokens, Paper/Night themes, fonts (latin + latin-ext), theme helpers
 packages/diagnostics  device/GPU report, refresh-rate probe, performance HUD
 apps/player           vanilla TS reader shell (PWA): bookshelf, story session, saves, rewind, panels; no UI framework
-apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, Logic, Data, Design, Sequences, Materials, Library, Publish, Play
+apps/studio           React 19 + Zustand Studio (PWA): project store + undo, Write, Flow, World, Logic, Data, Design, Sequences, Materials, Library, Publish, Play
 tools/phone           adb helper behind `pnpm phone`
 tools/icons           icon sources + generator
 tools/publish         public novel builds, itch.io zips, the hosted Studio, its audio relay and sync store

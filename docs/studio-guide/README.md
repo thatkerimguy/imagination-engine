@@ -17,6 +17,7 @@ Read it in order the first time. Later, jump to the chapter you need.
 | [7. Design](07-design.md)                                            | Theme, fonts, colours, title screens, HUDs and panels                                                  |
 | [8. Library, Publish and Play](08-library-publish-play.md)           | Reusing work, auto-playtesting, music rights, exporting, the Player, hosting                           |
 | [9. Quick reference](09-reference.md)                                | Keyboard shortcuts, the formula language, text markup, troubleshooting                                 |
+| [10. World and spaces](10-world.md)                                  | Rooms on a map, exits, the Exits block, and the map and screens readers swipe to                       |
 
 ## The ten-minute tour
 

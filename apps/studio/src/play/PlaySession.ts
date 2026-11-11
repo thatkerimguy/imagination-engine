@@ -1,6 +1,6 @@
 import type { AudioDirector } from '@ie/audio';
 import type { Locale } from '@ie/i18n';
-import { ScreenHost, StoryPresenter } from '@ie/present';
+import { ScreenHost, SpaceDeck, StoryPresenter } from '@ie/present';
 import { MinigameRunner } from '@ie/minigame';
 import { FightRunner } from '@ie/rhythm';
 import { SequenceRunner } from '@ie/sequencer';
@@ -31,6 +31,8 @@ export class PlaySession {
   readonly presenter: StoryPresenter;
   /** The story's title screen, HUDs and panels; the view places its elements. */
   readonly screens: ScreenHost;
+  /** The spaces beside the story (ADR 0031), when the novel has any; the view places it. */
+  readonly spaces: SpaceDeck | null;
   private runtime: StoryRuntime;
   private readonly history: StoryState[] = [];
   private readonly fights: FightRunner | null;
@@ -95,6 +97,7 @@ export class PlaySession {
         sell: (item) => this.act(() => this.runtime.sell(item)),
         leaveShop: () => this.act(() => this.runtime.leaveShop()),
         battle: (action) => this.act(() => this.runtime.battleAction(action)),
+        go: (roomId) => this.act(() => this.runtime.go(roomId)),
         ...(audio
           ? { typed: (speaker: string | null, text: string) => audio.typed(speaker, text) }
           : {}),
@@ -112,6 +115,29 @@ export class PlaySession {
       },
       { locale, canContinue: () => false },
     );
+    const sides = story.project.spaces ?? [];
+    if (sides.length) {
+      const pane = document.createElement('div');
+      pane.className = 'play__story';
+      pane.append(this.presenter.element);
+      this.spaces = new SpaceDeck(
+        pane,
+        sides,
+        {
+          go: (roomId) => this.act(() => this.runtime.go(roomId)),
+          screen: (element, screenId) => this.screens.showIn(element, screenId),
+          canMove: () => !this.fighting && !this.screens.covering,
+          moved: (atStory) => this.presenter.hold(!atStory || this.screens.covering),
+        },
+        locale,
+      );
+      this.spaces.refresh(this.runtime);
+    } else this.spaces = null;
+  }
+
+  /** What the view puts on the page: the spaces around the story, or the story alone. */
+  get element(): HTMLElement {
+    return this.spaces?.element ?? this.presenter.element;
   }
 
   /** True while a fight or a minigame has the screen (its keys are its own). */
@@ -131,7 +157,13 @@ export class PlaySession {
 
   private play(): void {
     this.presenter.show(this.runtime.advance());
+    this.refreshAround();
+  }
+
+  /** HUDs, open screens and spaces follow every step. */
+  private refreshAround(): void {
     this.screens.refresh();
+    this.spaces?.refresh(this.runtime);
   }
 
   /** A tap: finish the line being typed, or move on when a line, check, pause or sequence waits. */
@@ -155,7 +187,7 @@ export class PlaySession {
     this.minigames?.sync(this.runtime);
     this.sequences?.sync(this.runtime);
     this.presenter.redraw();
-    this.screens.refresh();
+    this.refreshAround();
     this.audio?.applyScene(this.runtime.scene);
     this.onChange(this.canBack);
   }
@@ -169,6 +201,8 @@ export class PlaySession {
     this.presenter.attach(this.runtime);
     this.screens.close();
     this.screens.attach(this.runtime);
+    this.spaces?.home();
+    this.spaces?.refresh(this.runtime);
     this.audio?.applyScene({});
     this.begin();
     this.onChange(this.canBack);
@@ -178,6 +212,7 @@ export class PlaySession {
     this.locale = locale;
     this.presenter.setOptions({ locale, speed: 'normal', timers: true });
     this.screens.setLocale(locale);
+    this.spaces?.setLocale(locale);
   }
 
   dispose(): void {
@@ -215,7 +250,7 @@ export class PlaySession {
     this.history.push(before);
     if (this.history.length > 200) this.history.shift();
     this.presenter.show(this.runtime.advance());
-    this.screens.refresh();
+    this.refreshAround();
     this.onChange(this.canBack);
   }
 }

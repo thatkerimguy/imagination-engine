@@ -207,12 +207,21 @@
 }
 
 .play__page {
-  position: relative;
   flex: 1;
+}
+/* The story's pane among spaces keeps the deck's own width (flex: 0 0 100%). */
+.play__page,
+.play__story {
+  position: relative;
   min-height: 0;
   padding: clamp(var(--space-6), 8vh, var(--space-7)) var(--space-5) var(--space-7);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+/* With spaces (ADR 0031), each pane scrolls on its own and the page only holds them. */
+.play__page[data-spaces] {
+  padding: 0;
+  overflow: hidden;
 }
 
 /* Data */

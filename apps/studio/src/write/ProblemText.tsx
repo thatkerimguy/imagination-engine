@@ -4,10 +4,16 @@ import type { MessageKey } from '../messages.ts';
 import { useDoc } from '../project/store.ts';
 import { useStudio, useT } from '../store.ts';
 import { labelText } from './edit.ts';
+import { worldProblem } from '../world/problems.ts';
 
 /** The name of an item, skill or quest by ID, for problems about them. */
 function dataName(doc: StoryProject, id: string, locale: Translator<MessageKey>['locale']): string {
-  const entry = [...(doc.items ?? []), ...(doc.skills ?? []), ...(doc.quests ?? [])].find(
+  const entry = [
+    ...(doc.items ?? []),
+    ...(doc.skills ?? []),
+    ...(doc.quests ?? []),
+    ...(doc.world?.rooms ?? []),
+  ].find(
     (e) => e.id === id,
   );
   return labelText(entry?.name, locale, id);
@@ -174,7 +180,7 @@ export function problemMessage(
     case 'material-missing':
       return t('problem.noMaterial');
     default:
-      return problem.message;
+      return worldProblem(t, problem, doc) ?? problem.message;
   }
 }
 

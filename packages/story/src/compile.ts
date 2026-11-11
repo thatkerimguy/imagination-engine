@@ -5,6 +5,7 @@ import { analyzeProject, type BlockInfo, type StoryProblem } from './analyze.ts'
 import { compileFormula, type Expr } from './formula.ts';
 import { storyProjectSchema } from './project.ts';
 import type { MarkupNode } from './markup.ts';
+import type { RoomDef } from './world.ts';
 import {
   type Block,
   type Chapter,
@@ -40,6 +41,9 @@ export interface CompiledStory {
   readonly lists: ReadonlyMap<string, readonly Block[]>;
   readonly variables: ReadonlyMap<string, VariableDef>;
   readonly characters: ReadonlyMap<string, CharacterDef>;
+  /** The world's rooms by ID, and the room each room passage belongs to (ADR 0031). */
+  readonly rooms: ReadonlyMap<string, RoomDef>;
+  readonly roomOf: ReadonlyMap<string, string>;
   readonly problems: readonly StoryProblem[];
   formula(formula: Formula): Expr;
   /** Parsed markup of a line in a language, falling back to the other language. */
@@ -95,6 +99,7 @@ export function compileStory(input: unknown, options: CompileOptions = {}): Comp
   const a = analyzeProject(project);
   const errors = a.problems.filter((p) => p.severity === 'error');
   if (errors.length && !options.allowErrors) throw new StoryLoadError(errors);
+  const rooms = project.world?.rooms ?? [];
 
   return {
     project,
@@ -104,6 +109,9 @@ export function compileStory(input: unknown, options: CompileOptions = {}): Comp
     lists: a.lists,
     variables: a.variables,
     characters: a.characters,
+    rooms: new Map(rooms.map((r) => [r.id, r])),
+    // The first room that names a passage owns it (analysis reports the clash).
+    roomOf: new Map(rooms.toReversed().map((r) => [r.passage, r.id])),
     problems: a.problems,
     formula(formula) {
       const key = String(formula);

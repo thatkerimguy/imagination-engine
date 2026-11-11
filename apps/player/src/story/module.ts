@@ -28,6 +28,7 @@ export interface StoryActionsHost {
   sell(itemId: string): void;
   leaveShop(): void;
   battle(action: BattleAction): void;
+  go(roomId: string): void;
   back(): void;
   rewind(to: number): void;
   restart(): void;
@@ -122,6 +123,14 @@ export function createStoryModule(host: () => StoryActionsHost | null): EngineMo
           description: 'Take a turn in the battle on screen: attack, a skill, an item or run.',
           params: z.object({ act: z.enum(BATTLE_ACTS), id: z.string().min(1).optional() }),
           run: ({ act, id }) => call((s) => s.battle(id === undefined ? { act } : { act, id })),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.go',
+          description: 'Walk to a room through an exit, or travel there on the map.',
+          params: z.object({ roomId: z.string().min(1) }),
+          run: ({ roomId }) => call((s) => s.go(roomId)),
         }),
       );
       actions.register(

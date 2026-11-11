@@ -45,6 +45,8 @@ export class ScreenHost {
   private readonly tabs = new Map<string, string>();
   /** What each element last showed, so an unchanged screen is never rebuilt. */
   private readonly drawn = new Map<HTMLElement, string>();
+  /** Elements of the reader's spaces that show a panel screen (ADR 0031), by screen ID. */
+  private readonly spaces = new Map<HTMLElement, string>();
   private t: Translator<PresentKey>;
 
   constructor(
@@ -115,6 +117,12 @@ export class ScreenHost {
     if (screen) this.show(screen);
   }
 
+  /** Draws a panel screen into a space beside the story; refresh() keeps it up to date. */
+  showIn(element: HTMLElement, screenId: string): void {
+    this.spaces.set(element, screenId);
+    this.drawSpace(element, screenId);
+  }
+
   close(): void {
     if (!this.current) return;
     this.current = null;
@@ -142,6 +150,23 @@ export class ScreenHost {
       element.hidden = element.childElementCount === 0;
     }
     if (this.current) this.draw(this.current);
+    for (const [element, screenId] of this.spaces) {
+      if (element.isConnected) this.drawSpace(element, screenId);
+      else this.spaces.delete(element);
+    }
+  }
+
+  private drawSpace(element: HTMLElement, screenId: string): void {
+    const screen = this.screens.find((s) => s.id === screenId);
+    if (!screen) {
+      element.replaceChildren();
+      this.drawn.delete(element);
+      return;
+    }
+    const nodes = this.model(screen);
+    if (this.unchanged(element, [screen.id, nodes])) return;
+    element.lang = localeTag(this.options.locale);
+    element.replaceChildren(this.box(screen, nodes));
   }
 
   dispose(): void {

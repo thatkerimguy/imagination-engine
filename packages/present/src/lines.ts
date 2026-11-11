@@ -10,6 +10,7 @@ import {
 } from '@ie/story';
 import { checkText } from './labels.ts';
 import { rpgLineText } from './rpg-lines.ts';
+import { wentText } from './world-view.ts';
 import type { PresentKey } from './messages.ts';
 import { buildText, type BuildOptions } from './text-dom.ts';
 import type { RevealStep } from './typewriter.ts';
@@ -195,6 +196,13 @@ export function buildLine(beat: Beat, ctx: LineContext, mode: LineMode): BuiltLi
       const line = el('p', `line line--check line--rpg line--${beat.kind}`);
       line.dataset.tone = said.tone;
       line.textContent = said.text;
+      return { element: line, steps: [] };
+    }
+    case 'went': {
+      // A walk reads like a choice the reader made.
+      const line = el('p', 'line line--chosen');
+      line.dataset.self = 'true';
+      line.textContent = wentText(beat, { runtime: ctx.runtime, t: ctx.t });
       return { element: line, steps: [] };
     }
     default:

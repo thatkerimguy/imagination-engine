@@ -1,0 +1,118 @@
+/* World: the room grid, the room inspector and spaces (ADR 0031). Tokens only. */
+
+.world {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 26rem);
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 60rem) {
+  .world {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.world__settings {
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.wmap {
+  overflow: auto;
+  max-height: 70vh;
+  border: var(--hairline) solid var(--color-line);
+  border-radius: var(--radius-2);
+  background: var(--color-bg);
+  overscroll-behavior: contain;
+}
+.wmap__board {
+  position: relative;
+  margin: var(--space-2) auto;
+}
+.wmap__links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  stroke: var(--color-line-strong);
+  stroke-width: 2;
+  pointer-events: none;
+}
+.wmap__links [data-bent] {
+  stroke-dasharray: 4 4;
+}
+.wmap__cell,
+.wmap__room {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  border: 0;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.wmap__cell {
+  color: transparent;
+}
+.wmap__cell::before {
+  position: absolute;
+  inset: var(--space-3);
+  border: var(--hairline) dashed var(--color-line);
+  border-radius: var(--radius-2);
+  content: '';
+}
+.wmap__cell:hover,
+.wmap__cell:focus-visible,
+.wmap__cell[data-joined] {
+  color: var(--color-ink-faint);
+}
+.wmap__cell[data-joined]::before {
+  border-color: var(--color-line-strong);
+}
+.wmap__room span {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: var(--hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.wmap__room[data-secret] span {
+  border-style: dashed;
+}
+.wmap__room[aria-pressed='true'] span {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+.wexits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wexit__more {
+  padding: var(--space-2) 0 var(--space-2) var(--space-4);
+  border-left: var(--hairline) solid var(--color-line);
+}
+.wroom__tip {
+  align-self: flex-start;
+}
+.exits-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

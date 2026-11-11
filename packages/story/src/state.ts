@@ -20,6 +20,14 @@ export type OptionLock =
   | { readonly kind: 'cost' }
   | { readonly kind: 'unknown' };
 
+/** An exit of the current room as the reader sees it right now (ADR 0031). */
+export interface ExitView {
+  readonly id: string;
+  readonly to: string;
+  readonly enabled: boolean;
+  readonly lock?: OptionLock;
+}
+
 export interface OptionView {
   readonly id: string;
   readonly enabled: boolean;
@@ -87,6 +95,19 @@ export type Beat =
       readonly score: number;
     }
   | RpgBeat
+  | {
+      readonly kind: 'exits';
+      readonly blockId: string;
+      readonly room: string;
+      readonly exits: readonly ExitView[];
+    }
+  | {
+      readonly kind: 'went';
+      readonly blockId: string;
+      readonly room: string;
+      /** The exit taken; absent when the map took the reader there (fast travel). */
+      readonly exit?: string;
+    }
   | { readonly kind: 'end'; readonly blockId: string | null; readonly endingId?: string };
 
 /** One level of the execution stack: a block list and the next block to run in it. */
@@ -129,6 +150,10 @@ export interface StoryState {
   readonly events?: readonly string[];
   /** How often each rule has fired, for `once` rules. */
   readonly fired?: Readonly<Record<string, number>>;
+  /** The room the reader is in (ADR 0031). */
+  readonly room?: string;
+  /** Rooms the reader has been in, in the order they first arrived. */
+  readonly rooms?: readonly string[];
 }
 
 /** Scene key of a `.set` action: the action id, plus `:slot` when the params name a slot. */
@@ -206,6 +231,20 @@ export const beatSchema: z.ZodType<Beat> = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('fought'), blockId: z.string(), won: z.boolean(), score: z.number() }),
   ...rpgBeatSchemas,
   z.object({
+    kind: z.literal('exits'),
+    blockId: z.string(),
+    room: z.string(),
+    exits: z.array(
+      z.object({ id: z.string(), to: z.string(), enabled: z.boolean(), lock: lock.optional() }),
+    ),
+  }),
+  z.object({
+    kind: z.literal('went'),
+    blockId: z.string(),
+    room: z.string(),
+    exit: z.string().optional(),
+  }),
+  z.object({
     kind: z.literal('end'),
     blockId: z.string().nullable(),
     endingId: z.string().optional(),
@@ -234,6 +273,8 @@ export const storyStateSchema: z.ZodType<StoryState> = z.object({
   ended: z.boolean(),
   scene: z.record(z.string(), z.json()).optional(),
   ...rpgStateShape,
+  room: z.string().optional(),
+  rooms: z.array(z.string()).optional(),
 });
 
 /** Index of the beat that starts the page currently on screen. */

@@ -63,6 +63,7 @@ export const BLOCK_MENU = [
   ...STAGE_KIND_LIST,
   ...MEDIA_KIND_LIST,
   'sequence',
+  'exits',
 ] as const satisfies readonly (BlockType | AudioKind | StageKind | MediaKind)[];
 /** Action blocks are made through their kinds (audio, stage, media), never bare. */
 export type MenuBlockType = Exclude<BlockType, 'action'> | AudioKind | StageKind | MediaKind;
@@ -121,6 +122,7 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
     case 'call':
       return { id, type, to: defaults.passage ?? '' };
     case 'return':
+    case 'exits':
       return { id, type };
     case 'random':
       return {

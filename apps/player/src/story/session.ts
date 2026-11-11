@@ -139,6 +139,11 @@ export class StorySession {
     return this.act(() => this.runtime.battleAction(action));
   }
 
+  /** Walks to a room from the waiting Exits block, or from the map (ADR 0031). */
+  go(roomId: string): Beat[] {
+    return this.act(() => this.runtime.go(roomId));
+  }
+
   /** Steps back one reader action. */
   back(): boolean {
     return this.rewindTo(this.history.length - 1);

@@ -1,12 +1,13 @@
 import { generateSfxr, mutateSfxr, SFXR_PRESETS, type SfxrPreset } from '@ie/audio';
 import { createId } from '@ie/core';
 import { SFXR_WAVES, type SfxrParams, type SoundDef, type StoryProject } from '@ie/story';
-import { Dices, Play, Plus, Shuffle } from 'lucide-react';
+import { Play, Plus, Shuffle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { director, editAudio, engine } from '../audio/studio-audio.ts';
 import { MenuButton } from '../components/Menu.tsx';
 import { Segmented } from '../components/Segmented.tsx';
 import { DeleteButton } from '../data/DeleteButton.tsx';
+import { SFX_ICON } from '../project/preset-icons.ts';
 import { countUsages } from '../project/usages.ts';
 import { useT } from '../store.ts';
 import { nextName } from '../write/edit.ts';
@@ -71,20 +72,24 @@ function SoundEditor({ sound, uses }: { readonly sound: SoundDef; readonly uses:
           <Shuffle size={16} strokeWidth={1.5} aria-hidden="true" />
           {t('sound.mutate')}
         </button>
-        {SFXR_PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            className="ie-button ie-button--quiet"
-            onClick={() => {
-              const next = generateSfxr(preset);
-              set(next);
-              play(next);
-            }}
-          >
-            {t(`sfxr.${preset}`)}
-          </button>
-        ))}
+        {SFXR_PRESETS.map((preset) => {
+          const Icon = SFX_ICON[preset];
+          return (
+            <button
+              key={preset}
+              type="button"
+              className="ie-button ie-button--quiet"
+              onClick={() => {
+                const next = generateSfxr(preset);
+                set(next);
+                play(next);
+              }}
+            >
+              <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+              {t(`sfxr.${preset}`)}
+            </button>
+          );
+        })}
       </div>
       <Segmented
         label={t('sound.wave')}
@@ -157,7 +162,7 @@ export function SoundDesigner({ doc }: { readonly doc: StoryProject }) {
           items={SFXR_PRESETS.map((preset) => ({
             id: preset,
             label: t(`sfxr.${preset}`),
-            icon: preset === 'random' ? Dices : Plus,
+            icon: SFX_ICON[preset],
             onSelect: () => add(preset),
           }))}
         >

@@ -1,4 +1,5 @@
-export { AMBIENTS, TitleActor, type Rgb } from './actors.ts';
+export { TitleActor, type Rgb } from './actors.ts';
+export { AMBIENTS, type Ambient } from './ambients.ts';
 export {
   BASE_CHARS,
   GlyphAtlas,

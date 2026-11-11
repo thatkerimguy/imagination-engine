@@ -14,8 +14,10 @@ import { rpgBlockMessages } from './messages-rpg.ts';
 import { sequencerMessages } from './messages-sequencer.ts';
 import { soundMessages } from './messages-sound.ts';
 import { stemsMessages } from './messages-stems.ts';
+import { presetMessages } from './messages-presets.ts';
 import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
+import { writingMessages } from './messages-writing.ts';
 
 /** The shell: workspaces, palette, settings and diagnostics. */
 const shellMessages = defineCatalogs({
@@ -119,10 +121,12 @@ export const messages = {
   en: {
     ...shellMessages.en,
     ...writeMessages.en,
+    ...writingMessages.en,
     ...projectMessages.en,
     ...soundMessages.en,
     ...stemsMessages.en,
     ...stageMessages.en,
+    ...presetMessages.en,
     ...mediaMessages.en,
     ...fightStudioMessages.en,
     ...rpgBlockMessages.en,
@@ -139,10 +143,12 @@ export const messages = {
   tr: {
     ...shellMessages.tr,
     ...writeMessages.tr,
+    ...writingMessages.tr,
     ...projectMessages.tr,
     ...soundMessages.tr,
     ...stemsMessages.tr,
     ...stageMessages.tr,
+    ...presetMessages.tr,
     ...mediaMessages.tr,
     ...fightStudioMessages.tr,
     ...rpgBlockMessages.tr,

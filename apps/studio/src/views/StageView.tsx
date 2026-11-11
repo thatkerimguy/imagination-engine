@@ -1,9 +1,10 @@
 import type { TierName } from '@ie/stage';
-import { STAGE_BACKGROUNDS, STAGE_LOOKS } from '@ie/story';
+import { STAGE_BACKGROUNDS, STAGE_LOOKS, type StageBackground, type StageLook } from '@ie/story';
 import { useEffect, useRef, useState } from 'react';
 import { Segmented } from '../components/Segmented.tsx';
 import { runAction } from '../kernel.ts';
 import { messages, type MessageKey } from '../messages.ts';
+import { BACKGROUND_ICON, LOOK_ICON } from '../project/preset-icons.ts';
 import { attachStage, setStageLocale, stage } from '../stage/studio-stage.ts';
 import { useStudio, useT } from '../store.ts';
 
@@ -91,6 +92,8 @@ export function StageView() {
     pickLook('none');
   };
 
+  const BackgroundIcon = BACKGROUND_ICON[background as StageBackground] ?? BACKGROUND_ICON.none;
+  const LookIcon = LOOK_ICON[look as StageLook] ?? LOOK_ICON.none;
   return (
     <section className="page page--wide" data-testid="view-stage">
       <h2 className="page__title">{t('view.stage')}</h2>
@@ -111,28 +114,34 @@ export function StageView() {
             <legend>{t('stageView.scene')}</legend>
             <label className="labelled">
               <span>{t('block.background')}</span>
-              <select
-                className="picker"
-                value={background}
-                data-testid="stage-background"
-                onChange={(e) => pickBackground(e.target.value)}
-              >
-                {STAGE_BACKGROUNDS.map((b) => (
-                  <option key={b} value={b}>
-                    {t(`stage.background.${b}`)}
-                  </option>
-                ))}
-              </select>
+              <span className="preset-choice">
+                <BackgroundIcon size={16} strokeWidth={1.5} aria-hidden="true" />
+                <select
+                  className="picker"
+                  value={background}
+                  data-testid="stage-background"
+                  onChange={(e) => pickBackground(e.target.value)}
+                >
+                  {STAGE_BACKGROUNDS.map((b) => (
+                    <option key={b} value={b}>
+                      {t(`stage.background.${b}`)}
+                    </option>
+                  ))}
+                </select>
+              </span>
             </label>
             <label className="labelled">
               <span>{t('block.look')}</span>
-              <select className="picker" value={look} onChange={(e) => pickLook(e.target.value)}>
-                {STAGE_LOOKS.map((l) => (
-                  <option key={l} value={l}>
-                    {t(`stage.look.${l}`)}
-                  </option>
-                ))}
-              </select>
+              <span className="preset-choice">
+                <LookIcon size={16} strokeWidth={1.5} aria-hidden="true" />
+                <select className="picker" value={look} onChange={(e) => pickLook(e.target.value)}>
+                  {STAGE_LOOKS.map((l) => (
+                    <option key={l} value={l}>
+                      {t(`stage.look.${l}`)}
+                    </option>
+                  ))}
+                </select>
+              </span>
             </label>
           </fieldset>
           <fieldset className="stage-view__group">

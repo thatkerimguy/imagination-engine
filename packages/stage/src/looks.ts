@@ -12,6 +12,8 @@ export interface LookSettings {
   readonly tint: number;
   /** Soft glow around title glyphs. */
   readonly glow: number;
+  /** The tint's colour; without one, dream tints toward the accent and the rest toward black. */
+  readonly color?: Rgb;
 }
 
 /** Looks as overlay settings: what the reader sees over everything, text included. */
@@ -21,10 +23,38 @@ export const LOOKS: Readonly<Record<StageLook, LookSettings>> = {
   crt: { vignette: 0.3, grain: 0.04, scanlines: 0.1, aberration: 0.7, tint: 0, glow: 0 },
   noir: { vignette: 0.55, grain: 0.06, scanlines: 0, aberration: 0, tint: 0.1, glow: 0 },
   dream: { vignette: 0.2, grain: 0, scanlines: 0, aberration: 0, tint: 0.06, glow: 0.35 },
+  sepia: {
+    vignette: 0.3,
+    grain: 0.05,
+    scanlines: 0,
+    aberration: 0,
+    tint: 0.16,
+    glow: 0,
+    color: [0.55, 0.36, 0.16],
+  },
+  vhs: { vignette: 0.25, grain: 0.09, scanlines: 0.14, aberration: 1, tint: 0, glow: 0 },
+  night: {
+    vignette: 0.5,
+    grain: 0.03,
+    scanlines: 0,
+    aberration: 0,
+    tint: 0.28,
+    glow: 0,
+    color: [0.04, 0.07, 0.22],
+  },
+  dread: {
+    vignette: 0.65,
+    grain: 0.05,
+    scanlines: 0,
+    aberration: 0.3,
+    tint: 0.12,
+    glow: 0,
+    color: [0.45, 0, 0.02],
+  },
 };
 
 /** Transition kinds as the overlay shader's cover modes. */
-export const COVER = { dissolve: 1, ink: 2, wipe: 3 } as const;
+export const COVER = { dissolve: 1, ink: 2, wipe: 3, fade: 4, blinds: 5, iris: 6 } as const;
 
 export interface Cover {
   readonly kind: number;
@@ -47,7 +77,7 @@ export function overlayUniforms(
 ): OverlayUniforms {
   const look = LOOKS[name];
   // Dream warms toward the theme's accent; noir only darkens.
-  const tint: Rgb = name === 'dream' ? accent : [0, 0, 0];
+  const tint: Rgb = look.color ?? (name === 'dream' ? accent : [0, 0, 0]);
   const f = fx.flashAmount;
   return {
     flash: [fx.flash[0] * f, fx.flash[1] * f, fx.flash[2] * f, f],

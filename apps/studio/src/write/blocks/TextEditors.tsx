@@ -9,11 +9,12 @@ import type {
   PauseBlock,
 } from '@ie/story';
 import { useState } from 'react';
-import { MenuButton } from '../../components/Menu.tsx';
 import { newText, type MenuBlockType } from '../../project/factory.ts';
 import { useT } from '../../store.ts';
-import { useBlockMenu, useNewBlock } from '../BlockList.tsx';
+import { useNewBlock } from '../BlockList.tsx';
+import { BlockPickerPanel } from '../BlockPicker.tsx';
 import { focusBlock, useWrite } from '../context.ts';
+import { listBlocks, replyingSpeaker } from '../dialogue.ts';
 import { CharacterPicker, VariablePicker } from '../pickers.tsx';
 import { TextField } from '../TextField.tsx';
 
@@ -53,7 +54,6 @@ export function LineEditor({
     editor.block(block.id, () => next);
     focusBlock(next.id);
   };
-  const menu = useBlockMenu(replaceWith);
 
   return (
     <div
@@ -80,8 +80,8 @@ export function LineEditor({
         )}
         testId="line-text"
         onChange={(next) => {
-          const shortcut =
-            block.type === 'narration' ? speakerShortcut(next, doc.characters) : null;
+          // "Name: " works on dialogue lines too, to hand the line to someone else.
+          const shortcut = speakerShortcut(next, doc.characters);
           if (!shortcut) return editor.text(block.text.id, locale, next);
           editor.block(block.id, () => ({
             id: block.id,
@@ -92,7 +92,10 @@ export function LineEditor({
           focusBlock(block.id);
         }}
         onEnter={() => {
-          const next = make('narration');
+          const speaker =
+            block.type === 'dialogue' ? replyingSpeaker(listBlocks(doc, listKey), index) : null;
+          const made = make(speaker ? 'dialogue' : 'narration');
+          const next = speaker ? ({ ...made, speaker } as DialogueBlock) : made;
           editor.insert(listKey, index + 1, next);
           focusBlock(next.id);
         }}
@@ -109,16 +112,14 @@ export function LineEditor({
       />
       {picking && (
         <div className="line-editor__picker">
-          <MenuButton label={t('block.turnInto')} items={menu} className="line-editor__menu">
-            <span>{t('block.turnInto')}</span>
-          </MenuButton>
-          <button
-            type="button"
-            className="ie-button ie-button--quiet"
-            onClick={() => setPicking(false)}
-          >
-            {t('cancel')}
-          </button>
+          <BlockPickerPanel
+            testId="slash-block"
+            onPick={replaceWith}
+            onClose={() => {
+              setPicking(false);
+              focusBlock(block.id);
+            }}
+          />
         </div>
       )}
     </div>

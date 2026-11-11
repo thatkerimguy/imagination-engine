@@ -41,6 +41,15 @@ describe('sfxr', () => {
     }
   });
 
+  it('gives story sounds their own length: a click is short, thunder rolls on', () => {
+    const seconds = (kind: Parameters<typeof generateSfxr>[0]) =>
+      renderSfxr(generateSfxr(kind, seeded(5)), seeded(6)).length / SFXR_RATE;
+    expect(seconds('click')).toBeLessThan(0.1);
+    expect(seconds('footstep')).toBeLessThan(0.3);
+    expect(seconds('thunder')).toBeGreaterThan(1.2);
+    expect(seconds('thunder')).toBeLessThan(6);
+  });
+
   it('mutates within range', () => {
     const p = mutateSfxr(generateSfxr('laser', seeded(3)), seeded(4));
     expect(sfxrParamsSchema.safeParse(p).success).toBe(true);

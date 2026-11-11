@@ -6,8 +6,15 @@ import {
   STAGE_TRANSITIONS,
   type ActionBlock,
 } from '@ie/story';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { MessageKey } from '../../messages.ts';
+import {
+  BACKGROUND_ICON,
+  BURST_ICON,
+  LOOK_ICON,
+  TRANSITION_ICON,
+} from '../../project/preset-icons.ts';
 import { stageKind, type STAGE_KINDS } from '../../project/stage-kinds.ts';
 import { useT } from '../../store.ts';
 import { useWrite } from '../context.ts';
@@ -26,16 +33,20 @@ function Choice({
   value,
   prefix,
   label,
+  icons,
   onChange,
 }: {
   readonly choices: readonly string[];
   readonly value: string;
   readonly prefix: string;
   readonly label: string;
+  /** The chosen preset's icon sits beside the select, which can't show icons itself. */
+  readonly icons?: Readonly<Record<string, LucideIcon>>;
   readonly onChange: (value: string) => void;
 }) {
   const t = useT();
-  return (
+  const Icon = icons?.[value];
+  const select = (
     <select
       className="picker"
       aria-label={label}
@@ -48,6 +59,13 @@ function Choice({
         </option>
       ))}
     </select>
+  );
+  if (!Icon) return select;
+  return (
+    <span className="preset-choice">
+      <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+      {select}
+    </span>
   );
 }
 
@@ -149,6 +167,7 @@ export function StageEditor({
                 choices={STAGE_BACKGROUNDS}
                 value={str(params.preset, 'rain')}
                 prefix="stage.background"
+                icons={BACKGROUND_ICON}
                 label={t('stageBlock.preset')}
                 onChange={(preset) => set({ preset })}
               />
@@ -174,6 +193,7 @@ export function StageEditor({
                 choices={STAGE_LOOKS}
                 value={str(params.look, 'film')}
                 prefix="stage.look"
+                icons={LOOK_ICON}
                 label={t('stageBlock.lookLabel')}
                 onChange={(look) => set({ look })}
               />
@@ -197,6 +217,7 @@ export function StageEditor({
                 choices={STAGE_BURSTS}
                 value={str(params.preset, 'burst')}
                 prefix="stage.burst"
+                icons={BURST_ICON}
                 label={t('stageBlock.burstLabel')}
                 onChange={(preset) => set({ preset })}
               />
@@ -271,6 +292,7 @@ export function StageEditor({
                 choices={STAGE_TRANSITIONS}
                 value={str(params.kind, 'dissolve')}
                 prefix="stage.transition"
+                icons={TRANSITION_ICON}
                 label={t('stageBlock.kind')}
                 onChange={(k) => set({ kind: k })}
               />

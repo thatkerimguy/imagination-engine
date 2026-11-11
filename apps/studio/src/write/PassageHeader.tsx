@@ -1,11 +1,12 @@
 import { LAYOUTS, type Layout, type Passage, type StoryProject } from '@ie/story';
 import { Flag, Play, Settings2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { runAction } from '../kernel.ts';
 import { useProject } from '../project/store.ts';
 import { allPassages, updatePassage } from '../project/tree.ts';
 import { useT } from '../store.ts';
-import { useEditor } from './edit.ts';
+import { useEditor, useWriteLocale } from './edit.ts';
+import { wordStats } from './word-stats.ts';
 
 /** The open passage's name, its settings, and "Play from here". */
 export function PassageHeader({
@@ -20,6 +21,8 @@ export function PassageHeader({
   const setPlayFrom = useProject((s) => s.setPlayFrom);
   const openPassage = useProject((s) => s.openPassage);
   const [settings, setSettings] = useState(false);
+  const locale = useWriteLocale();
+  const stats = useMemo(() => wordStats(passage.blocks, locale), [passage.blocks, locale]);
   const isStart = doc.start === passage.id;
   const passages = allPassages(doc);
   const set = (change: (p: Passage) => Passage) =>
@@ -59,6 +62,13 @@ export function PassageHeader({
           {t('passage.playFromHere')}
         </button>
       </div>
+      <p
+        className="passage-head__stats hint"
+        title={t('passage.wordsHint')}
+        data-testid="passage-words"
+      >
+        {t('passage.words', { count: stats.words, minutes: stats.minutes })}
+      </p>
       {settings && (
         <div className="passage-head__settings">
           <label className="inline-field">

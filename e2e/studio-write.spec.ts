@@ -50,6 +50,44 @@ test.describe('Studio writing', () => {
     expect(errors).toEqual([]);
   });
 
+  test('finds blocks by name, counts words and moves lines with the keyboard', async ({ page }) => {
+    const errors = watchErrors(page);
+    await openStudio(page);
+    const lines = page.getByTestId('line-text');
+    await lines.click();
+    await page.keyboard.type('One two three.');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Four.');
+    await expect(page.getByTestId('passage-words')).toContainText('Words: 4');
+
+    // Alt+↑ moves the line being written above the one before it, and the caret stays.
+    await page.keyboard.press('Alt+ArrowUp');
+    await expect(lines.first()).toHaveText('Four.');
+    await page.keyboard.type(' Five.');
+    await expect(lines.first()).toHaveText('Four. Five.');
+
+    // A slash on an empty line opens the picker; a few letters and Enter choose.
+    await lines.nth(1).click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await expect(lines.nth(2)).toBeFocused();
+    await page.keyboard.type('/');
+    await expect(page.getByTestId('block-picker-search')).toBeFocused();
+    await page.keyboard.type('pau');
+    await expect(page.getByTestId('slash-block-pause')).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('block-pause')).toHaveCount(1);
+    await expect(page.getByTestId('block-picker')).toHaveCount(0);
+
+    // The add button opens the same picker; Escape closes it.
+    await page.getByTestId('add-block').click();
+    await page.keyboard.type('zzzz');
+    await expect(page.getByTestId('block-picker')).toContainText('No block matches.');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('block-picker')).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
   test('undo and redo text edits', async ({ page }) => {
     await openStudio(page);
     const line = page.getByTestId('line-text');

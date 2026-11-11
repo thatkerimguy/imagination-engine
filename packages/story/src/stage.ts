@@ -9,14 +9,36 @@ export { STAGE_COLORS, type StageColor } from './colors.ts';
  * remembers (backgrounds and looks come back after a load or rewind); the rest are moments.
  */
 
-export const STAGE_BACKGROUNDS = ['none', 'rain', 'embers', 'stars', 'snow'] as const;
+export const STAGE_BACKGROUNDS = [
+  'none',
+  'rain',
+  'embers',
+  'stars',
+  'snow',
+  'leaves',
+  'petals',
+  'fireflies',
+  'ash',
+  'bubbles',
+  'dust',
+] as const;
 export type StageBackground = (typeof STAGE_BACKGROUNDS)[number];
 
-export const STAGE_LOOKS = ['none', 'film', 'crt', 'noir', 'dream'] as const;
+export const STAGE_LOOKS = [
+  'none',
+  'film',
+  'crt',
+  'noir',
+  'dream',
+  'sepia',
+  'vhs',
+  'night',
+  'dread',
+] as const;
 export type StageLook = (typeof STAGE_LOOKS)[number];
 
-export const STAGE_BURSTS = ['burst', 'sparks'] as const;
-export const STAGE_TRANSITIONS = ['dissolve', 'ink', 'wipe'] as const;
+export const STAGE_BURSTS = ['burst', 'sparks', 'confetti', 'hearts', 'smoke', 'magic'] as const;
+export const STAGE_TRANSITIONS = ['dissolve', 'ink', 'wipe', 'fade', 'blinds', 'iris'] as const;
 
 const unit = z.number().min(0).max(1);
 const materialId = z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/);

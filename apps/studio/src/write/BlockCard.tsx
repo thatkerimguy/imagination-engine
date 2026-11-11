@@ -121,6 +121,26 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
       data-block-id={block.id}
       data-testid={`block-${kind}`}
       aria-label={t(blockName(kind))}
+      onKeyDown={(event) => {
+        if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        // Handled by the innermost card only, so a nested block moves inside its own list.
+        event.preventDefault();
+        event.stopPropagation();
+        const step = event.key === 'ArrowUp' ? -1 : 1;
+        if (index + step < 0 || index + step >= count) return;
+        const active = document.activeElement;
+        editor.move(block.id, step);
+        // Reordering can drop the focus; the author keeps typing where they were.
+        setTimeout(() => {
+          if (
+            active instanceof HTMLElement &&
+            active.isConnected &&
+            document.activeElement !== active
+          )
+            active.focus();
+        }, 0);
+      }}
     >
       <span className="block__icon" title={t(blockName(kind))} aria-hidden="true">
         <Icon size={16} strokeWidth={1.5} />
@@ -156,6 +176,7 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
           {
             id: 'up',
             label: t('block.up'),
+            hint: t('block.upKeys'),
             icon: ArrowUp,
             disabled: index === 0,
             onSelect: () => editor.move(block.id, -1),
@@ -163,6 +184,7 @@ export function BlockCard({ block, listKey, index, count }: BlockCardProps) {
           {
             id: 'down',
             label: t('block.down'),
+            hint: t('block.downKeys'),
             icon: ArrowDown,
             disabled: index === count - 1,
             onSelect: () => editor.move(block.id, 1),

@@ -6,7 +6,8 @@
   "description": "Audio: mixer, music with beat analysis and a conductor clock, sfxr effects, voices and ambience. No UI framework.",
   "exports": {
     ".": "./src/index.ts",
-    "./analysis-worker": "./src/analysis-worker.ts"
+    "./analysis-worker": "./src/analysis-worker.ts",
+    "./stems-worker": "./src/stems-worker.ts"
   },
   "dependencies": {
     "@ie/core": "workspace:*",

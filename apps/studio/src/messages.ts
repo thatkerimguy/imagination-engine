@@ -13,6 +13,7 @@ import { scriptMessages } from './messages-script.ts';
 import { rpgBlockMessages } from './messages-rpg.ts';
 import { sequencerMessages } from './messages-sequencer.ts';
 import { soundMessages } from './messages-sound.ts';
+import { stemsMessages } from './messages-stems.ts';
 import { stageMessages } from './messages-stage.ts';
 import { writeMessages } from './messages-write.ts';
 
@@ -120,6 +121,7 @@ export const messages = {
     ...writeMessages.en,
     ...projectMessages.en,
     ...soundMessages.en,
+    ...stemsMessages.en,
     ...stageMessages.en,
     ...mediaMessages.en,
     ...fightStudioMessages.en,
@@ -139,6 +141,7 @@ export const messages = {
     ...writeMessages.tr,
     ...projectMessages.tr,
     ...soundMessages.tr,
+    ...stemsMessages.tr,
     ...stageMessages.tr,
     ...mediaMessages.tr,
     ...fightStudioMessages.tr,

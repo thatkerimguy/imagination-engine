@@ -76,6 +76,8 @@ export interface TrackAnalysis {
   readonly key?: { readonly tonic: number; readonly mode: 'major' | 'minor' };
   /** Section starts in seconds (the first is 0). */
   readonly sections: readonly number[];
+  /** Seconds of each drum hit, from a separated drum stem (ADR 0028). */
+  readonly drums?: readonly number[];
 }
 export const trackAnalysisSchema = z.object({
   v: z.literal(1),
@@ -90,6 +92,8 @@ export const trackAnalysisSchema = z.object({
     .object({ tonic: z.number().int().min(0).max(11), mode: z.enum(['major', 'minor']) })
     .optional(),
   sections: z.array(z.number().min(0)),
+  /** Seconds of each drum hit, from a separated drum stem (ADR 0028). Desktop-made, optional. */
+  drums: z.array(z.number().min(0)).max(2400).optional(),
 });
 
 /** A tap-calibrated beat grid for sources without raw audio (Spotify, YouTube). */

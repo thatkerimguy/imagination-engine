@@ -30,6 +30,15 @@ function isTyping(target: EventTarget | null): boolean {
   );
 }
 
+/** Keys a focused control uses itself: Space and Enter press it, arrows move in a group. */
+const CONTROL_KEYS = new Set([' ', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
+const CONTROLS =
+  'button, a[href], summary, [role="button"], [role="radio"], [role="tab"], [role="option"], [role="menuitem"]';
+
+function controlKey(e: KeyboardEvent): boolean {
+  return CONTROL_KEYS.has(e.key) && e.target instanceof Element && e.target.closest(CONTROLS) !== null;
+}
+
 /**
  * The note editor's keys: 1–4 pick a tool, Q a new combo, Delete removes, Space plays, arrows step
  * along the grid (Page Up/Down a bar, Home/End the ends), Enter and Escape finish or drop a slider,
@@ -44,7 +53,9 @@ export function useNoteKeys(keys: NoteKeys): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const k = latest.current;
-      if (!k.active || e.altKey || isTyping(e.target)) return;
+      if (!k.active || e.altKey || isTyping(e.target) || controlKey(e)) return;
+      // A dialog over the editor (the project sheet, the palette) owns the keyboard.
+      if (document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]')) return;
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
       const handled = mod ? withMod(k, key) : plain(k, e.key, key, e.shiftKey);
@@ -122,8 +133,10 @@ function plain(k: NoteKeys, raw: string, key: string, shift: boolean): boolean {
       k.finishSlider();
       return true;
     case 'Escape':
+      // Only when there is something to drop; otherwise Escape is left to the rest of the page.
       if (k.draft) k.setDraft(null);
-      else k.setSelected(new Set());
+      else if (k.selected.size > 0) k.setSelected(new Set());
+      else return false;
       return true;
   }
   if (key === 'q' && k.selected.size > 0) {

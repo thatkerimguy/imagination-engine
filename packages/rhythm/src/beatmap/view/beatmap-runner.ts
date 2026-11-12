@@ -19,6 +19,8 @@ export interface BeatmapRunnerOptions {
   readonly audio: AudioDirector;
   readonly host: () => HTMLElement | null;
   readonly contained?: boolean;
+  /** The Studio's Play: Watch and Can't fail settle the block, so the author can try both ways. */
+  readonly author?: boolean;
   readonly settings: () => BeatmapRunnerSettings;
   readonly prefs: { load(): RhythmPrefs; save(prefs: RhythmPrefs): void };
   /** The reader closed the results: resolve the block on the runtime and show what follows. */
@@ -98,6 +100,7 @@ export class BeatmapRunner {
     token.view = new BeatmapView({
       host,
       ...(this.options.contained ? { contained: true } : {}),
+      ...(this.options.author ? { author: true } : {}),
       beatmap: map,
       song,
       engine: audio.engine,

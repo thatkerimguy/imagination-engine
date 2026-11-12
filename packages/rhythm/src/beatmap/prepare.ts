@@ -69,7 +69,16 @@ function checkpointsFor(
   return out;
 }
 
-export function prepareObjects(map: BeatmapDef, rules: PlayRules): PlayObject[] {
+/**
+ * Notes ready to play, in time order. `paths` keeps sampled slider paths by note, so an editor
+ * preparing a chart on every drag move only samples the sliders that changed (notes are never
+ * mutated, so a note's identity stands for its shape).
+ */
+export function prepareObjects(
+  map: BeatmapDef,
+  rules: PlayRules,
+  paths?: WeakMap<HitObject, SampledPath>,
+): PlayObject[] {
   const objects = [...map.objects].sort((a, b) => a.t - b.t);
   const stacks = new Array<number>(objects.length).fill(0);
   for (let i = 1; i < objects.length; i++) {
@@ -136,7 +145,11 @@ export function prepareObjects(map: BeatmapDef, rules: PlayRules): PlayObject[] 
       });
       continue;
     }
-    const path = samplePath(o, o.curve, o.path, o.length);
+    let path = paths?.get(o);
+    if (!path) {
+      path = samplePath(o, o.curve, o.path, o.length);
+      paths?.set(o, path);
+    }
     const end = Math.max(o.t + 1, o.end);
     const span = (end - o.t) / o.slides;
     const tickGap = ticksPerBeat > 0 ? beatLength(map.timing, o.t) / ticksPerBeat : 0;

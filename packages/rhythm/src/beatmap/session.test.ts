@@ -152,6 +152,30 @@ describe('beatmap session', () => {
     run(kept, 0, 9000);
     expect(kept.failed).toBe(false);
     expect(kept.finished).toBe(true);
+    expect(kept.emptied).toBe(true);
+  });
+
+  it('fails the moment strength runs out, even on the last note', () => {
+    const s = session([{ id: 'a', kind: 'circle', t: 500, x: 0.5, y: 0.375 }]);
+    s.stats.health = 0.01;
+    run(s, 0, 1000);
+    expect(s.failed).toBe(true);
+    expect(s.finished).toBe(false);
+    expect(s.result().won).toBe(false);
+  });
+
+  it("counts Watch and a run-out Can't fail as a pass only when they settle", () => {
+    const notes: BeatmapDef['objects'] = [{ id: 'a', kind: 'circle', t: 500, x: 0.5, y: 0.375 }];
+    const watched = session(notes, ['auto']);
+    run(watched, 0, 1000);
+    expect(watched.result()).toMatchObject({ won: false, watched: true });
+    expect(watched.result(0, ['auto'])).toMatchObject({ won: true, watched: false });
+    const kept = session(notes, ['noFail']);
+    kept.stats.health = 0.01;
+    run(kept, 0, 1000);
+    expect(kept.failed).toBe(false);
+    expect(kept.result()).toMatchObject({ won: false, emptied: true });
+    expect(kept.result(0, ['noFail']).won).toBe(true);
   });
 });
 

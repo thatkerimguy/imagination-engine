@@ -1,67 +1,18 @@
 import type { BeatmapDef } from '@ie/story';
 import { autoAim } from './autoplay.ts';
-import {
-  ballAt,
-  BREAK_GAP,
-  FIELD_CENTRE,
-  prepareObjects,
-  type CheckpointKind,
-  type PlayObject,
-} from './prepare.ts';
+import { ballAt, BREAK_GAP, FIELD_CENTRE, prepareObjects, type PlayObject } from './prepare.ts';
 import {
   healthChange,
   judgeOffset,
   JUDGEMENT_VALUE,
   rankFor,
   type Judgement,
+  type Mod,
   type PlayRules,
-  type Rank,
 } from './rules.ts';
+import type { PlayEvent, PlayResult, PlayStats } from './session-types.ts';
 
-export type PlayEvent =
-  | {
-      readonly kind: 'judged';
-      readonly index: number;
-      readonly judgement: Judgement;
-      readonly x: number;
-      readonly y: number;
-      /** Milliseconds early (negative) or late; null when no tap judged it. */
-      readonly offset: number | null;
-    }
-  | {
-      readonly kind: 'part';
-      readonly index: number;
-      readonly part: 'head' | CheckpointKind;
-      readonly ok: boolean;
-      readonly x: number;
-      readonly y: number;
-      readonly offset?: number;
-    }
-  | { readonly kind: 'comboBreak'; readonly combo: number }
-  | { readonly kind: 'failed' }
-  | { readonly kind: 'finished' };
-
-export interface PlayStats {
-  score: number;
-  combo: number;
-  maxCombo: number;
-  readonly counts: Record<Judgement, number>;
-  health: number;
-}
-
-export interface PlayResult {
-  readonly won: boolean;
-  readonly failed: boolean;
-  readonly accuracy: number;
-  readonly rank: Rank;
-  readonly score: number;
-  readonly maxCombo: number;
-  readonly counts: Readonly<Record<Judgement, number>>;
-  /** Mean tap offset in ms (positive: late). */
-  readonly meanOffset: number;
-  /** Standard deviation of tap offsets in ms. */
-  readonly spread: number;
-}
+export type { PlayEvent, PlayResult, PlayStats };
 
 /** Spins faster than this don't count (a spinning mouse wheel of a hand would break it). */
 const MAX_SPINS_PER_SECOND = 8;
@@ -99,6 +50,8 @@ export class BeatmapSession {
   readonly cursor: { x: number; y: number } = { x: FIELD_CENTRE.x, y: FIELD_CENTRE.y };
   failed = false;
   finished = false;
+  /** Strength ran out while Can't fail kept the round going. */
+  emptied = false;
 
   private held = 0;
   private next = 0;
@@ -213,19 +166,30 @@ export class BeatmapSession {
     }
     while (this.next < this.objects.length && this.done[this.next]) this.next++;
     this.drain(t, dt);
+    // Checked every frame, not only while draining: a miss on the last note or just before a
+    // break empties strength too, and must fail then.
+    if (this.stats.health <= 0) this.outOfStrength();
+    if (this.failed) return;
     if (this.next >= this.objects.length && t >= this.lastEnd) {
       this.finished = true;
       this.events.push({ kind: 'finished' });
     }
   }
 
-  result(pass = 0): PlayResult {
+  /**
+   * The outcome. `settles` lists the changes that still count as a pass: the reader's help
+   * setting (and the Studio, for its author). Watch or Can't fail picked on the start card
+   * don't, so they can't wave a reader past any Rhythm block.
+   */
+  result(pass = 0, settles: readonly Mod[] = []): PlayResult {
     const accuracy = this.accuracy;
     const n = this.offsets.length;
     const mean = n ? this.offsets.reduce((a, b) => a + b, 0) / n : 0;
     const spread = n ? Math.sqrt(this.offsets.reduce((a, b) => a + (b - mean) ** 2, 0) / n) : 0;
+    const watched = this.rules.auto && !settles.includes('auto');
+    const emptied = this.emptied && !settles.includes('noFail');
     return {
-      won: !this.failed && accuracy * 100 >= pass,
+      won: !this.failed && !watched && !emptied && accuracy * 100 >= pass,
       failed: this.failed,
       accuracy,
       rank: rankFor(accuracy, this.stats.counts.miss),
@@ -234,6 +198,8 @@ export class BeatmapSession {
       counts: { ...this.stats.counts },
       meanOffset: mean,
       spread,
+      watched,
+      emptied,
     };
   }
 
@@ -381,7 +347,12 @@ export class BeatmapSession {
   private drain(t: number, dt: number): void {
     if (t < this.firstTime || t > this.lastEnd || this.inBreak(t)) return;
     this.stats.health = Math.max(0, this.stats.health - (this.health.perSecond * dt) / 1000);
-    if (this.stats.health <= 0 && !this.rules.noFail && !this.rules.auto) {
+  }
+
+  private outOfStrength(): void {
+    if (this.rules.auto) return;
+    if (this.rules.noFail) this.emptied = true;
+    else if (!this.failed) {
       this.failed = true;
       this.events.push({ kind: 'failed' });
     }

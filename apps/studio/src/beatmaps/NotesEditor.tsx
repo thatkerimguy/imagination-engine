@@ -73,6 +73,20 @@ export function NotesEditor({ map, time }: { readonly map: BeatmapDef; readonly 
     if (playback.playing && song) playback.play(song, map, time.t, true);
   };
 
+  // Restarting the song on every pointer move of a pan would rebuild its audio each time, so a
+  // pan pauses it and it carries on once from where the pan ends.
+  const resumeAfterScrub = useRef(false);
+  const scrub = (at: number, done: boolean) => {
+    if (playback.playing) {
+      resumeAfterScrub.current = true;
+      playback.stop();
+    }
+    time.set(at);
+    if (!done || !resumeAfterScrub.current) return;
+    resumeAfterScrub.current = false;
+    if (song) playback.play(song, map, time.t, true);
+  };
+
   const togglePlay = () => {
     if (playback.playing) return playback.stop();
     if (song) playback.play(song, map, time.t, true);
@@ -241,6 +255,7 @@ export function NotesEditor({ map, time }: { readonly map: BeatmapDef; readonly 
         peaks={song?.peaks ?? null}
         label={t('bmed.timeline')}
         onSeek={seek}
+        onScrub={scrub}
         onSelect={setSelected}
         onCommit={commit}
         onWheelStep={(direction) => seek(stepTime(map.timing, time.t, divisor, direction))}

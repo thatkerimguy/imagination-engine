@@ -35,7 +35,7 @@ export {
 } from './view/fight-runner.ts';
 export { autoAim } from './beatmap/autoplay.ts';
 export { naturalLength, pointAt, samplePath, type SampledPath } from './beatmap/curve.ts';
-export { SAMPLE_OSU } from './beatmap/fixture.ts';
+export { buildZip, SAMPLE_OSU, type RawZipEntry } from './beatmap/fixture.ts';
 export { OsuError, parseOsu, type OsuChart, type OsuProblem } from './beatmap/osu.ts';
 export { writeOsu } from './beatmap/osu-write.ts';
 export { ballAt, FIELD_CENTRE, prepareObjects, type PlayObject } from './beatmap/prepare.ts';

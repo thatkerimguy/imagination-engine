@@ -13,8 +13,11 @@ charts made for other games as `.osu` or `.osz` files, or place the notes yourse
    - one or more `.osu` files, with the song file picked alongside them.
 
    You can also drop the files onto the page.
-3. Each chart in standard mode becomes a beatmap. Charts for other modes are skipped, and the
-   status line says how many.
+3. Each chart in standard mode becomes a beatmap. Charts for other modes are skipped, and so are
+   charts with values the Studio can't keep (a note more than an hour in, say). The status line
+   says how many.
+
+You can import several archives at once: each chart gets the song from its own archive.
 
 The song is added to **Sound** with an unknown licence, because it came with someone else's
 chart. Set its licence there before you publish (see [chapter 8](08-library-publish-play.md)).
@@ -49,7 +52,8 @@ suits most songs, and 1/3 or 1/6 suit swing and triplets. To place notes in time
 - **Page Up** and **Page Down** move a bar. **Home** and **End** go to the start and the last
   note.
 - Turn the mouse wheel over the timeline. Ctrl and the wheel zoom.
-- Click the timeline to jump there, or drag it to scroll.
+- Click the timeline to jump there, or drag it to scroll. Dragging it while the song plays
+  pauses the song, and it carries on from where you let go.
 
 On the timeline, drag a note sideways to move it in time. Drag the end of a slider or spinner to
 make it longer or shorter.
@@ -68,10 +72,16 @@ The inspector edits:
 
 Delete selected notes with **Delete notes** or the Delete key. **Ctrl+C** and **Ctrl+V** copy
 notes to the playhead, keeping their spacing. **Ctrl+A** selects all. **Ctrl+Z** undoes, and each
-drag is one step.
+drag is one step. A click without a drag only selects. When a button has the focus, Space and
+Enter press it rather than playing; click the field to give the keys back to the editor.
+
+Notes can't be moved before the start of the song: a selection dragged too far stops with its
+first note at 0:00, keeping its spacing. Imported sliders that bend past the edge of the field
+still move freely towards the middle.
 
 **Test from here** plays the beatmap from the playhead, exactly as a reader would. Pick **Watch**
-on the start card to see it played perfectly. That's a quick way to check a pattern.
+on the start card to see it played perfectly. That's a quick way to check a pattern. **Close**
+(or Escape) leaves the start card without playing.
 
 ## Timing
 
@@ -119,8 +129,11 @@ Before playing, the reader sees the beatmap's name, credits, dials and length. T
 - **Hard**: the opposite of Easy.
 - **Fade**: circles fade out before they're due.
 - **Slow** and **Fast**: the song at three quarters or one and a half speed.
-- **Can't fail**: health never runs out.
-- **Watch**: it plays itself.
+- **Can't fail**: play on to the end when strength runs out. If it did run out, the round
+  doesn't count as a pass.
+- **Watch**: it plays itself, to show how the chart goes. It doesn't count as a pass: the
+  results offer **Play it yourself** instead of **Continue**. Watch isn't remembered for the
+  next beatmap.
 
 Settings kept on each device:
 
@@ -138,4 +151,8 @@ While playing, the reader can:
 On a phone held upright, the field turns a quarter so it fills the screen.
 
 The Player's help settings carry over: **wide** timing turns on Easy, **no fail** turns on Can't
-fail, and **auto** turns on Watch.
+fail, and **auto** turns on Watch. These show as on and locked on the start card, and with them
+Can't fail and Watch do count as a pass: the reader asked for that help.
+
+In the Studio's **Play**, Watch and Can't fail always count, so you can try both branches of a
+Rhythm block quickly.

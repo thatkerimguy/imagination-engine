@@ -1,7 +1,7 @@
 import type { AudioEngine } from '@ie/audio';
 import { createTranslator, type Locale } from '@ie/i18n';
 import { pickLabel, type BeatmapDef, type RhythmResult } from '@ie/story';
-import { EXCLUSIVE, playRules, type Mod, type PlayRules } from '../rules.ts';
+import { EXCLUSIVE, MODS, playRules, type Mod, type PlayRules } from '../rules.ts';
 import { BeatmapSession, type PlayEvent, type PlayResult } from '../session.ts';
 import { BeatmapHud, type BeatmapText } from './beatmap-hud.ts';
 import { BeatmapInput, type InputKey } from './beatmap-input.ts';
@@ -31,6 +31,8 @@ export interface BeatmapViewOptions {
   readonly autostart?: boolean;
   /** A test play: the results close instead of continuing a story. */
   readonly test?: boolean;
+  /** The Studio's Play: any change settles the block, so the author can try both branches. */
+  readonly author?: boolean;
   readonly haptics?: boolean;
   /** Changes always on, whatever the reader picks (the app's help setting). */
   readonly forceMods?: readonly Mod[];
@@ -131,7 +133,13 @@ export class BeatmapView {
     this.hud.setDim(prefs.dim);
     if (this.clock) this.clock.offset = prefs.offset;
     this.sounds.volume = prefs.hitSounds ? 0.8 : 0;
-    this.options.savePrefs(prefs);
+    // Watch is for a look at one chart; remembered, it would quietly play every later one.
+    this.options.savePrefs({ ...prefs, mods: prefs.mods.filter((m) => m !== 'auto') });
+  }
+
+  /** Changes that still count as a pass: the help setting's, or all when nothing rides on it. */
+  private settles(): readonly Mod[] {
+    return this.options.test || this.options.author ? MODS : (this.options.forceMods ?? []);
   }
 
   private measure(): FieldLayout {
@@ -155,9 +163,11 @@ export class BeatmapView {
         name: this.name,
         hasSong: this.options.song.kind !== 'none',
         length: last - (objects[0]?.t ?? 0),
+        forced: this.options.forceMods ?? [],
         prefs: () => this.prefs,
         save: (p) => this.save(p),
         start: () => this.begin(),
+        ...(this.options.test ? { close: () => this.finish(null) } : {}),
       }),
     );
     this.render();
@@ -304,6 +314,8 @@ export class BeatmapView {
   private togglePause(): void {
     if (this.phase === 'playing') this.pause();
     else if (this.phase === 'paused') this.resume();
+    // A test play can be left from its start card; a story's Rhythm block must be played.
+    else if (this.phase === 'ready' && this.options.test) this.finish(null);
   }
 
   private pause(): void {
@@ -349,13 +361,17 @@ export class BeatmapView {
     this.hud.root.dataset.phase = 'over';
     this.input.releaseAll();
     if (session.failed) this.clock?.pause();
-    const result = session.result(this.options.pass ?? 0);
+    const result = session.result(this.options.pass ?? 0, this.settles());
     this.hud.showPanel(
       resultCard(this.text, {
         result,
         pass: this.options.pass ?? 0,
         test: !!this.options.test,
         retry: () => this.begin(),
+        playYourself: () => {
+          this.save({ ...this.prefs, mods: this.prefs.mods.filter((m) => m !== 'auto') });
+          this.begin();
+        },
         done: () => this.finish(result),
         useOffset:
           this.rules.auto || session.offsets.length < 10

@@ -1,4 +1,4 @@
-import { SAMPLE_OSU, playRules, prepareObjects } from '@ie/rhythm';
+import { buildZip, SAMPLE_OSU, playRules, prepareObjects } from '@ie/rhythm';
 import { analyzeProject, beatmapSchema, storyProjectSchema, type BeatmapDef } from '@ie/story';
 import { describe, expect, it } from 'vitest';
 import { newProject } from '../project/factory.ts';
@@ -12,7 +12,9 @@ import {
   removeObjects,
   removeTiming,
   retimeObjects,
+  setObject,
   shiftMap,
+  stillValid,
   timingFromTrack,
   toggleCombo,
   updateBeatmap,
@@ -78,13 +80,46 @@ describe('beatmap edits', () => {
     expect(beatmapSchema.safeParse(map).success).toBe(true);
   });
 
-  it('retimes notes with their ends, never before zero', () => {
+  it('retimes a selection with its ends, keeping its spacing and stopping at zero', () => {
+    // Asked for 600 ms back, the selection only goes 500: its first note stops at zero.
     const map = retimeObjects(sample(), new Set(['c', 'a']), -600);
     const c = map.objects.find((o) => o.id === 'c');
-    expect(c?.t).toBe(900);
-    expect(c?.kind === 'slider' && c.end).toBe(1400);
+    expect(c?.t).toBe(1000);
+    expect(c?.kind === 'slider' && c.end).toBe(1500);
     expect(map.objects.find((o) => o.id === 'a')?.t).toBe(0);
-    expect(map.objects.map((o) => o.id)).toEqual(['a', 'c', 'b']);
+    expect(map.objects.map((o) => o.id)).toEqual(['a', 'b', 'c']);
+    // A note already before zero (an imported chart) doesn't go further back.
+    const early = addObject(sample(), { id: 'e', kind: 'circle', t: -200, x: 0.5, y: 0.5 });
+    expect(retimeObjects(early, new Set(['e', 'a']), -100)).toBe(early);
+  });
+
+  it('moves a slider bent past the edge without jumping', () => {
+    const bent = addObject(sample(), {
+      id: 's',
+      kind: 'slider',
+      t: 3000,
+      x: 0.1,
+      y: 0.3,
+      curve: 'bezier',
+      path: [
+        { x: -0.05, y: 0.4 },
+        { x: 0.3, y: 0.5 },
+      ],
+      slides: 1,
+      end: 3500,
+    });
+    const at = (m: BeatmapDef) => {
+      const s = m.objects.find((o) => o.id === 's');
+      return s?.kind === 'slider' ? { x: s.x, y: s.y, bend: s.path[0]?.x } : null;
+    };
+    const ids = new Set(['s']);
+    expect(at(moveObjects(bent, ids, 0.01, 0))?.x).toBeCloseTo(0.11);
+    // Further left would take the bend further off the field: it stays put.
+    expect(at(moveObjects(bent, ids, -0.1, 0))?.x).toBeCloseTo(0.1);
+    // A drag straight down moves nothing sideways.
+    const down = at(moveObjects(bent, ids, 0, 0.1));
+    expect(down?.x).toBeCloseTo(0.1);
+    expect(down?.y).toBeCloseTo(0.4);
   });
 
   it('toggles new combos and removes notes', () => {
@@ -103,10 +138,26 @@ describe('beatmap edits', () => {
     expect(map.timing).toHaveLength(1);
   });
 
-  it('shifts the whole chart', () => {
+  it('shifts the whole chart, tempos exactly as far as the notes', () => {
     const map = shiftMap(sample(), 25);
     expect(map.timing[0]?.t).toBe(25);
     expect(map.objects.map((o) => o.t)).toEqual([525, 1025, 1525]);
+    // Near zero the notes can only go 3 ms back, and so does the grid under them.
+    const near = shiftMap(retimeObjects(sample(), new Set(['a', 'b', 'c']), -497), -10);
+    expect(near.objects.map((o) => o.t)).toEqual([0, 500, 1000]);
+    expect(near.timing[0]?.t).toBe(-3);
+  });
+
+  it('drops an edit that would break the schema', () => {
+    const map = sample();
+    const doc = addBeatmaps(newProject(name('Story')), [map]);
+    const late = updateBeatmap(doc, map.id, (m) =>
+      setObject(m, 'a', (o) => ({ ...o, t: 4_000_000 })),
+    );
+    expect(late).toBe(doc);
+    const long = updateBeatmap(doc, map.id, (m) => ({ ...m, credit: { title: 'x'.repeat(201) } }));
+    expect(long).toBe(doc);
+    expect(stillValid(map, { ...map, lead: 100 })).toBe(true);
   });
 
   it('takes a tempo from a calibrated or analysed track', () => {
@@ -190,13 +241,53 @@ describe('chart import', () => {
     const song = new File([new Uint8Array(8)], 'song.mp3', { type: 'audio/mpeg' });
     const set = await readChartFiles([chart, song]);
     expect(set.charts).toHaveLength(1);
-    expect(set.audio?.name).toBe('song.mp3');
+    expect(set.charts[0]?.audio?.name).toBe('song.mp3');
+    expect(set.song).toBeNull();
     expect(set.skipped).toBe(0);
-    const doc = addBeatmaps(newProject(name('Story')), set.charts.map((c) => c.beatmap));
+    const doc = addBeatmaps(
+      newProject(name('Story')),
+      set.charts.map((c) => c.chart.beatmap),
+    );
     expect(storyProjectSchema.safeParse(doc).success).toBe(true);
     // No song in the library yet: only the missing-track warning, no errors.
     const problems = analyzeProject(doc).problems.filter((p) => p.code.startsWith('beatmap'));
     expect(problems.every((p) => p.severity !== 'error' || p.code === 'beatmap-track')).toBe(true);
+  });
+
+  it('gives each archive\'s charts that archive\'s song', async () => {
+    const encode = (text: string) => new TextEncoder().encode(text);
+    const archive = (song: string, bytes: number) => {
+      const chart = encode(SAMPLE_OSU.replace('AudioFilename: song.mp3', `AudioFilename: ${song}`));
+      const audio = new Uint8Array(bytes);
+      return new File(
+        [
+          buildZip([
+            { name: 'easy.osu', data: chart, method: 0, size: chart.length },
+            { name: 'hard.osu', data: chart, method: 0, size: chart.length },
+            { name: 'normal-hitclap.wav', data: new Uint8Array(4), method: 0, size: 4 },
+            { name: song, data: audio, method: 0, size: audio.length },
+          ]),
+        ],
+        `${song}.osz`,
+      );
+    };
+    const set = await readChartFiles([archive('first.mp3', 8), archive('second.ogg', 16)]);
+    expect(set.charts.map((c) => c.audio?.name)).toEqual([
+      'first.mp3',
+      'first.mp3',
+      'second.ogg',
+      'second.ogg',
+    ]);
+    // One File per song, so it is stored once for both of its charts.
+    expect(set.charts[0]?.audio).toBe(set.charts[1]?.audio);
+    expect(set.charts[2]?.audio?.size).toBe(16);
+  });
+
+  it('picks a song on its own for a new beatmap', async () => {
+    const song = new File([new Uint8Array(8)], 'tune.ogg', { type: 'audio/ogg' });
+    const set = await readChartFiles([song]);
+    expect(set.charts).toHaveLength(0);
+    expect(set.song?.name).toBe('tune.ogg');
   });
 
   it('counts charts it cannot read', async () => {

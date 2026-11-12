@@ -42,7 +42,16 @@ accuracy needed to win, an optional number variable for the accuracy, and win an
 
 **Changes ("mods") have plain names:** Easy, Hard, Fade, Slow, Fast, Can't fail and Watch. Easy
 and Hard rule each other out, as do Slow and Fast. The reader's help setting in the Player forces
-some of them on: wide gives Easy, no-fail gives Can't fail, auto gives Watch.
+some of them on: wide gives Easy, no-fail gives Can't fail, auto gives Watch. Forced changes show
+as on and locked on the start card, with the ones they rule out.
+
+**Only help the reader asked for settles a block.** Watch and Can't fail can be picked on any
+start card, so on their own they would wave a reader past every Rhythm block. A round played by
+a picked Watch is "watched": it settles nothing, and the results offer to play it instead. A
+round where strength ran out under a picked Can't fail is played to the end but isn't a pass.
+Both count when the help setting forced them, in test plays, and in the Studio's Play (the author
+trying both branches). Watch is never remembered with the last changes. Strength is checked on
+every frame, so a miss on the last note or just before a break fails at once.
 
 **Conveniences:**
 
@@ -68,7 +77,12 @@ without a song gets a click track scheduled ahead on the audio clock.
   at each tempo change) and the beat length.
 - Charts for other modes are refused.
 - `.osz` archives are read with a small zip reader that inflates through `DecompressionStream`.
-- The song inside an archive is imported as a track whose licence is left unknown.
+- The song inside an archive is imported as a track whose licence is left unknown. Each chart
+  keeps its own archive's song, and each song is stored once.
+- Values are brought within the schema (positions to its margin, tempos the grid can't use, such
+  as a 1 ms beat, left out of it but still timing sliders), then each chart is checked against
+  `beatmapSchema` before it joins the project. A saved project that fails its schema can't be
+  opened again, so nothing unchecked may reach it.
 - `writeOsu` writes v14, adding an inherited point per slider so imported and edited sliders keep
   their timing.
 
@@ -83,7 +97,8 @@ without a song gets a click track scheduled ahead on the audio clock.
 - Settings tab: name, song, dials, credits, `.osu` download and delete.
 
 All edits go through pure functions in `beatmap-edit.ts` and `note-tools.ts`, and each drag is
-one undo step.
+one undo step. `updateBeatmap` drops any edit whose result breaks the schema, checking only the
+notes that changed so a drag on a large chart stays cheap.
 
 ## Consequences
 

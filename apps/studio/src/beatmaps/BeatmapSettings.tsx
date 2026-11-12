@@ -141,6 +141,7 @@ export function BeatmapSettings({ doc, map, onCommit, onDelete }: Props) {
               <span className="ie-label">{t(`bmed.credit.${key}`)}</span>
               <input
                 className="field"
+                maxLength={200}
                 value={map.credit?.[key] ?? ''}
                 onChange={(e) =>
                   onCommit((m) => withCredit(m, key, e.target.value), `credit:${map.id}:${key}`)

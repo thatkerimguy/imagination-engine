@@ -1,5 +1,5 @@
 import { timingAt } from '@ie/rhythm';
-import type { BeatmapDef, TimingPoint, Track } from '@ie/story';
+import { BEATMAP_LIMITS, type BeatmapDef, type TimingPoint, type Track } from '@ie/story';
 import { AudioLines, Plus, Trash2 } from 'lucide-react';
 import { useT } from '../store.ts';
 import { putTiming, removeTiming, shiftMap, timingFromTrack } from './beatmap-edit.ts';
@@ -32,6 +32,7 @@ export function TimingEditor({ map, track, time, onCommit }: Props) {
               label={t('bmed.time')}
               value={p.t}
               min={-10000}
+              max={BEATMAP_LIMITS.ms}
               testId="bmed-tempo-time"
               onCommit={(value) => replace(p, { ...p, t: Math.round(value) })}
             />

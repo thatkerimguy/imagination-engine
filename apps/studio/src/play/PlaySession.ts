@@ -85,6 +85,7 @@ export class PlaySession {
           audio: fights.audio,
           host: fights.host,
           contained: true,
+          author: true,
           settings: () => ({ locale: this.locale, haptics: false, forceMods: [] }),
           prefs: {
             load: () => parsePrefs(readPref(RHYTHM_PREFS)),

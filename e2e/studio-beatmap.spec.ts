@@ -115,15 +115,18 @@ await page.getByTestId('bmed-shift-10').click();
 
 // A test play from the start, watched, ends in a perfect rank and closes again.
     await view.getByRole('button', { name: 'Notes', exact: true }).click();
+    // A test play can be closed from its start card without playing.
+    await page.getByTestId('bmed-test-play').click();
+    await page.getByTestId('beatmap-start').getByTestId('beatmap-close').click();
+    await expect(page.getByTestId('bmed-test')).toHaveCount(0);
     await page.getByTestId('bmed-test-play').click();
     const start = page.getByTestId('beatmap-start');
     await expect(start).toBeVisible();
     await start.locator('[data-mod="auto"]').click();
-await start.getByTestId('beatmap-go').click();
+    await start.getByTestId('beatmap-go').click();
     const result = page.getByTestId('beatmap-result');
     await expect(result).toBeVisible({ timeout: 25_000 });
-await expect(result.getByTestId('beatmap-rank')).toHaveText('S+');
-    
+    await expect(result.getByTestId('beatmap-rank')).toHaveText('S+');
     await result.getByTestId('beatmap-done').click();
     await expect(page.getByTestId('bmed-test')).toHaveCount(0);
     expect(errors).toEqual([]);

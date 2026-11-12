@@ -1,4 +1,10 @@
-import { SLIDER_CURVES, type BeatmapDef, type HitObject, type SliderCurve } from '@ie/story';
+import {
+  BEATMAP_LIMITS,
+  SLIDER_CURVES,
+  type BeatmapDef,
+  type HitObject,
+  type SliderCurve,
+} from '@ie/story';
 import { Trash2 } from 'lucide-react';
 import { useT } from '../store.ts';
 import { removeObjects, setObject, toggleCombo } from './beatmap-edit.ts';
@@ -31,6 +37,7 @@ export function NoteInspector({ map, selected, onCommit, onSelect }: Props) {
           label={t('bmed.noteTime')}
           value={Math.round(only.t)}
           min={0}
+          max={BEATMAP_LIMITS.ms}
           testId="bmed-note-time"
           onCommit={(value) => {
             const time = Math.round(value);

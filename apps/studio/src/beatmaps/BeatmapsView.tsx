@@ -1,4 +1,4 @@
-import type { BeatmapDef, StoryProject } from '@ie/story';
+import type { BeatmapDef, StoryProject, Track } from '@ie/story';
 import { FileUp, Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { importAudioFile } from '../audio/studio-audio.ts';
@@ -79,28 +79,38 @@ export function BeatmapsView() {
     setStatus(t('bmed.importing'));
     try {
       const set = await readChartFiles(files);
-      const first = set.charts[0];
-      if (!first) {
+      if (set.charts.length === 0) {
         // Only a song: a new, empty beatmap to chart it.
-        if (set.audio) {
-          const track = await importAudioFile(set.audio);
+        if (set.song) {
+          const track = await importAudioFile(set.song);
           add([newBeatmap({ en: track.title, tr: track.title }, track)]);
           return setStatus(null);
         }
         return setStatus(set.skipped > 0 ? t('bmed.skipped', { count: set.skipped }) : t('bmed.importFailed'));
       }
-      const credit = first.beatmap.credit;
-      const track = set.audio
-        ? await importAudioFile(set.audio, {
+      // Each song once, however many charts play it; every chart keeps its own archive's song.
+      const tracks = new Map<File, Track>();
+      for (const { chart, audio } of set.charts) {
+        if (!audio || tracks.has(audio)) continue;
+        const credit = chart.beatmap.credit;
+        tracks.set(
+          audio,
+          await importAudioFile(audio, {
             ...(credit?.title ? { title: credit.title } : {}),
             ...(credit?.artist ? { artist: credit.artist } : {}),
             own: false,
-          })
-        : null;
-      add(set.charts.map((c) => (track ? { ...c.beatmap, track: track.id } : c.beatmap)));
+          }),
+        );
+      }
+      add(
+        set.charts.map(({ chart, audio }) => {
+          const track = audio ? tracks.get(audio) : undefined;
+          return track ? { ...chart.beatmap, track: track.id } : chart.beatmap;
+        }),
+      );
       const notes = [t('bmed.imported', { count: set.charts.length })];
       if (set.skipped > 0) notes.push(t('bmed.skipped', { count: set.skipped }));
-      if (!track) notes.push(t('bmed.noSongFound'));
+      if (set.charts.some((c) => !c.audio)) notes.push(t('bmed.noSongFound'));
       setStatus(notes.join(' '));
     } catch (error) {
       console.warn(error);
@@ -120,6 +130,7 @@ export function BeatmapsView() {
       onDrop={(e) => {
         if (e.dataTransfer.files.length === 0) return;
         e.preventDefault();
+        if (busy) return;
         void importFiles([...e.dataTransfer.files]);
       }}
     >

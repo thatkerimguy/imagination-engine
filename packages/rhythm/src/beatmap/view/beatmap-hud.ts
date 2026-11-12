@@ -180,7 +180,11 @@ export class BeatmapHud {
     this.panel.replaceChildren(...(content ? [content] : []));
     this.panel.hidden = !content;
     this.root.classList.toggle('has-panel', !!content);
-    if (content) content.querySelector<HTMLElement>('.ie-button--primary, button')?.focus();
+    // The card's main action takes the focus, so Enter does what the card is for. A selector
+    // list would match the first button in page order instead (a toggle, or Retry).
+    if (!content) return;
+    const main = content.querySelector<HTMLElement>('.ie-button--primary');
+    (main ?? content.querySelector('button'))?.focus();
   }
 
   get panelOpen(): boolean {

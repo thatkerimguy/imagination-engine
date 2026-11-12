@@ -1,7 +1,7 @@
 import { beatmapSchema, type BeatmapDef } from '@ie/story';
 import { describe, expect, it } from 'vitest';
 import { naturalLength, pointAt, samplePath } from './curve.ts';
-import { SAMPLE_OSU } from './fixture.ts';
+import { buildZip, SAMPLE_OSU } from './fixture.ts';
 import { OsuError, parseOsu } from './osu.ts';
 import { writeOsu } from './osu-write.ts';
 import { playRules, rankFor } from './rules.ts';
@@ -42,6 +42,22 @@ describe('.osu charts', () => {
     // After the speed change to 2, a crossing takes half a beat; it crosses twice.
     expect(curve).toMatchObject({ curve: 'bezier', end: 3500, slides: 2, combo: true });
     expect(spinner).toMatchObject({ t: 5000, end: 7000 });
+  });
+
+  it('keeps trick tempos out of the grid and far points within the margin', () => {
+    const text = SAMPLE_OSU.replace(
+      '3000,-50,4,2,0,60,0,0',
+      '3000,-50,4,2,0,60,0,0\n4000,0.5,4,2,0,60,1,0\n4500,500,4,2,0,60,1,0',
+    ).replace('L|240:100,1,140', 'L|-900:100,1,140');
+    const map = parseOsu(text, ids(), 'm').beatmap;
+    // A 0.5 ms beat (120000 BPM) is a trick: the grid keeps the tempo around it.
+    expect(map.timing).toEqual([
+      { t: 1000, bpm: 120 },
+      { t: 4500, bpm: 120 },
+    ]);
+    const line = map.objects.find((o) => o.kind === 'slider' && o.curve === 'line');
+    expect(line?.kind === 'slider' && line.path[0]?.x).toBe(-0.5);
+    expect(beatmapSchema.safeParse(map).success).toBe(true);
   });
 
   it('refuses charts for other modes and files that are not charts', () => {
@@ -161,62 +177,3 @@ describe('chart archives', () => {
       expect(new TextDecoder().decode(await entry.read())).toBe('hello chart');
   });
 });
-
-interface RawEntry {
-  readonly name: string;
-  readonly data: Uint8Array;
-  readonly method: number;
-  readonly size: number;
-}
-
-/** A minimal zip writer for the test (no CRCs: the reader doesn't check them). */
-function buildZip(entries: readonly RawEntry[]): Uint8Array<ArrayBuffer> {
-  const parts: number[] = [];
-  const central: number[] = [];
-  const u16 = (out: number[], v: number) => out.push(v & 0xff, (v >> 8) & 0xff);
-  const u32 = (out: number[], v: number) =>
-    out.push(v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, (v >>> 24) & 0xff);
-  for (const e of entries) {
-    const name = new TextEncoder().encode(e.name);
-    const offset = parts.length;
-    u32(parts, 0x04034b50);
-    u16(parts, 20);
-    u16(parts, 0x800);
-    u16(parts, e.method);
-    u32(parts, 0);
-    u32(parts, 0);
-    u32(parts, e.data.length);
-    u32(parts, e.size);
-    u16(parts, name.length);
-    u16(parts, 0);
-    parts.push(...name, ...e.data);
-    u32(central, 0x02014b50);
-    u16(central, 20);
-    u16(central, 20);
-    u16(central, 0x800);
-    u16(central, e.method);
-    u32(central, 0);
-    u32(central, 0);
-    u32(central, e.data.length);
-    u32(central, e.size);
-    u16(central, name.length);
-    u16(central, 0);
-    u16(central, 0);
-    u16(central, 0);
-    u16(central, 0);
-    u32(central, 0);
-    u32(central, offset);
-    central.push(...name);
-  }
-  const start = parts.length;
-  const end: number[] = [];
-  u32(end, 0x06054b50);
-  u16(end, 0);
-  u16(end, 0);
-  u16(end, entries.length);
-  u16(end, entries.length);
-  u32(end, central.length);
-  u32(end, start);
-  u16(end, 0);
-  return new Uint8Array([...parts, ...central, ...end]);
-}

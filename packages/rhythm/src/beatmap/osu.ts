@@ -76,6 +76,9 @@ const num = (raw: string | undefined, fallback: number): number => {
   return raw !== undefined && raw !== '' && Number.isFinite(n) ? n : fallback;
 };
 const clampDial = (n: number) => Math.max(0, Math.min(10, n));
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+/** Our times run from 10 s before the song to an hour in (BEATMAP_LIMITS). */
+const inTime = (t: number) => t >= -10_000 && t <= BEATMAP_LIMITS.ms;
 const round = (n: number, places = 5) => {
   const f = 10 ** places;
   return Math.round(n * f) / f;
@@ -119,9 +122,13 @@ function readTiming(lines: readonly string[]): {
         bpm: round(60_000 / p.beat, 4),
         ...(p.meter !== 4 && p.meter >= 1 && p.meter <= 16 ? { meter: Math.round(p.meter) } : {}),
       };
-      // Two tempos at one moment: the later line wins.
-      if (timing[timing.length - 1]?.t === point.t) timing[timing.length - 1] = point;
-      else timing.push(point);
+      // Charts use absurd tempos as tricks (a 1 ms beat); they still time sliders through
+      // `states`, but the grid keeps the tempo before them.
+      if (point.bpm >= 1 && point.bpm <= 2000 && inTime(point.t)) {
+        // Two tempos at one moment: the later line wins.
+        if (timing[timing.length - 1]?.t === point.t) timing[timing.length - 1] = point;
+        else timing.push(point);
+      }
       if (first) {
         // Speed changes before the first tempo use it too.
         for (let i = 0; i < states.length; i++) states[i] = { ...(states[i] as TimingState), beat };
@@ -151,8 +158,10 @@ const CURVES: Readonly<Record<string, SliderCurve>> = {
   C: 'smooth',
 };
 
+/** A chart position on our field, kept within the margin the schema allows around it. */
 function field(x: number, y: number): FieldPoint {
-  return { x: round(x / FIELD_UNITS), y: round(y / FIELD_UNITS) };
+  const at = (n: number) => round(clamp(n / FIELD_UNITS, -0.5, 1.5));
+  return { x: at(x), y: at(y) };
 }
 
 function readObjects(
@@ -170,7 +179,7 @@ function readObjects(
     const y = num(f[1], 192);
     const t = Math.round(num(f[2], Number.NaN));
     const type = num(f[3], 0);
-    if (!Number.isFinite(t) || t > BEATMAP_LIMITS.ms) continue;
+    if (!Number.isFinite(t) || !inTime(t)) continue;
     const combo = first || (type & 4) !== 0 ? { combo: true as const } : {};
     const id = newId();
     if (type & 1) {
@@ -199,13 +208,19 @@ function readObjects(
         ...head,
         curve: curve === 'arc' && path.length !== 2 ? 'bezier' : curve,
         path,
-        ...(pixels > 0 ? { length: round(pixels / FIELD_UNITS) } : {}),
+        ...(pixels > 0 ? { length: round(Math.min(20, pixels / FIELD_UNITS)) } : {}),
         slides,
-        end: Math.round(t + span * slides),
+        end: Math.min(BEATMAP_LIMITS.ms, Math.round(t + span * slides)),
       });
     } else if (type & 8) {
       const end = Math.round(num(f[5], t + 1000));
-      out.push({ id, kind: 'spinner', t, ...combo, end: Math.max(t + 50, end) });
+      out.push({
+        id,
+        kind: 'spinner',
+        t,
+        ...combo,
+        end: Math.min(BEATMAP_LIMITS.ms, Math.max(t + 50, end)),
+      });
     } else {
       continue;
     }

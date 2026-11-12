@@ -76,9 +76,13 @@ export interface StartCardOptions {
   readonly name: string;
   readonly hasSong: boolean;
   readonly length: number;
+  /** Changes the help setting turns on: shown on and locked, as are the ones they rule out. */
+  readonly forced: readonly Mod[];
   readonly prefs: () => RhythmPrefs;
   readonly save: (prefs: RhythmPrefs) => void;
   readonly start: () => void;
+  /** A test play can be closed without playing. */
+  readonly close?: () => void;
 }
 
 export function startCard(text: BeatmapText, o: StartCardOptions): HTMLElement {
@@ -106,8 +110,13 @@ export function startCard(text: BeatmapText, o: StartCardOptions): HTMLElement {
   const mods = el('fieldset', 'ie-bm__mods', card);
   el('legend', 'ie-bm__legend', mods, text('bm.mods'));
   const toggles = new Map<Mod, HTMLButtonElement>();
+  // What plays: the reader's picks, less those a forced change rules out, plus the forced ones.
+  const locked = (mod: Mod) => o.forced.includes(mod) || o.forced.some((f) => EXCLUSIVE[f] === mod);
   const refresh = () => {
-    for (const [mod, b] of toggles) b.setAttribute('aria-pressed', String(o.prefs().mods.includes(mod)));
+    for (const [mod, b] of toggles) {
+      const on = o.forced.includes(mod) || (!locked(mod) && o.prefs().mods.includes(mod));
+      b.setAttribute('aria-pressed', String(on));
+    }
   };
   for (const mod of MODS) {
     const b = button(mods, text(`bm.mod.${mod}`), () => {
@@ -115,7 +124,9 @@ export function startCard(text: BeatmapText, o: StartCardOptions): HTMLElement {
       refresh();
     });
     b.classList.add('ie-bm__mod');
-    b.title = text(`bm.modHint.${mod}`);
+    const hint = text(`bm.modHint.${mod}`);
+    b.title = locked(mod) ? `${hint} · ${text('bm.modForced')}` : hint;
+    b.disabled = locked(mod);
     b.dataset.mod = mod;
     toggles.set(mod, b);
   }
@@ -141,9 +152,10 @@ export function startCard(text: BeatmapText, o: StartCardOptions): HTMLElement {
   sound.addEventListener('change', () => o.save({ ...o.prefs(), hitSounds: sound.checked }));
   el('span', 'ie-bm__setting-label', soundRow, text('bm.hitSounds'));
 
-  const go = button(card, text('bm.start'), o.start, true);
+  const actions = el('div', 'ie-bm__actions', card);
+  if (o.close) button(actions, text('bm.close'), o.close).dataset.testid = 'beatmap-close';
+  const go = button(actions, text('bm.start'), o.start, true);
   go.dataset.testid = 'beatmap-go';
-  card.append(go);
   return card;
 }
 
@@ -173,6 +185,8 @@ export interface ResultCardOptions {
   readonly pass: number;
   readonly test: boolean;
   readonly retry: () => void;
+  /** After a watched round: turn Watch off and play. */
+  readonly playYourself: () => void;
   readonly done: () => void;
   readonly useOffset: ((ms: number) => void) | null;
 }
@@ -189,9 +203,19 @@ export function resultCard(text: BeatmapText, o: ResultCardOptions): HTMLElement
   const card = el('div', 'ie-bm__card');
   card.dataset.testid = 'beatmap-result';
   card.dataset.won = String(result.won);
-  const title = result.failed ? 'bm.failed' : result.won ? 'bm.cleared' : 'bm.short';
+  const title = result.failed
+    ? 'bm.failed'
+    : result.watched
+      ? 'bm.watched'
+      : result.emptied
+        ? 'bm.emptied'
+        : result.won
+          ? 'bm.cleared'
+          : 'bm.short';
   el('h2', 'ie-bm__title', card, text(title));
-  if (!result.failed && !result.won && o.pass > 0)
+  if (result.watched) el('p', 'ie-bm__sub', card, text('bm.watchedHint'));
+  else if (result.emptied) el('p', 'ie-bm__sub', card, text('bm.emptiedHint'));
+  else if (!result.failed && !result.won && o.pass > 0)
     el('p', 'ie-bm__sub', card, text('bm.needed', { n: o.pass }));
   if (!result.failed) {
     const rank = el('p', 'ie-bm__rank', card, result.rank);
@@ -218,6 +242,12 @@ export function resultCard(text: BeatmapText, o: ResultCardOptions): HTMLElement
       useOffset(mean);
       fix.disabled = true;
     });
+  }
+  // A watched round settles nothing, so the way on is to play it.
+  if (result.watched) {
+    const play = button(actions, text('bm.playYourself'), o.playYourself, true);
+    play.dataset.testid = 'beatmap-play-yourself';
+    return card;
   }
   button(actions, text('bm.retry'), o.retry).dataset.testid = 'beatmap-retry';
   const done = button(actions, text(o.test ? 'bm.close' : 'bm.continue'), o.done, true);

@@ -11,8 +11,9 @@ import {
   type FieldLayout,
   type PlayObject,
   type PlayRules,
+  type SampledPath,
 } from '@ie/rhythm';
-import { FIELD_HEIGHT, type BeatmapDef, type FieldPoint } from '@ie/story';
+import { FIELD_HEIGHT, type BeatmapDef, type FieldPoint, type HitObject } from '@ie/story';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { moveObjects, setObject } from './beatmap-edit.ts';
 import type { EditorTime } from './editor-time.ts';
@@ -25,7 +26,13 @@ type Drag =
       readonly from: FieldPoint;
       readonly to: FieldPoint;
     }
-  | { readonly kind: 'handle'; readonly id: string; readonly index: number; readonly to: FieldPoint };
+  | {
+      readonly kind: 'handle';
+      readonly id: string;
+      readonly index: number;
+      readonly from: FieldPoint;
+      readonly to: FieldPoint;
+    };
 
 interface Scene {
   readonly objects: readonly PlayObject[];
@@ -37,14 +44,20 @@ interface Scene {
 
 const HANDLE_PX = 7;
 
+const still = (drag: Drag) => drag.to.x === drag.from.x && drag.to.y === drag.from.y;
+
 /** A drag shown before it is committed: notes moved, or one slider point dragged. */
 function applyDrag(map: BeatmapDef, drag: Drag | null): BeatmapDef {
-  if (!drag) return map;
-  if (drag.kind === 'move')
-    return moveObjects(map, drag.ids, drag.to.x - drag.from.x, drag.to.y - drag.from.y);
-  const to = clampToField(drag.to);
+  if (!drag || still(drag)) return map;
+  const dx = drag.to.x - drag.from.x;
+  const dy = drag.to.y - drag.from.y;
+  if (drag.kind === 'move') return moveObjects(map, drag.ids, dx, dy);
   return setObject(map, drag.id, (o) => {
     if (o.kind !== 'slider') return o;
+    // The point moves as far as the pointer did, so grabbing it off-centre doesn't jump it.
+    const was = drag.index < 0 ? o : o.path[drag.index];
+    if (!was) return o;
+    const to = clampToField({ x: was.x + dx, y: was.y + dy });
     // A reshaped slider follows its new path to the end, so an imported length no longer applies.
     const { length: _old, ...rest } = o;
     if (drag.index < 0) return { ...rest, x: to.x, y: to.y };
@@ -79,7 +92,9 @@ export function NoteField(props: NoteFieldProps) {
   };
   const rules = useMemo(() => playRules(map.difficulty), [map.difficulty]);
   const preview = useMemo(() => applyDrag(map, drag), [map, drag]);
-  const objects = useMemo(() => prepareObjects(preview, rules), [preview, rules]);
+  // Each move of a drag prepares the chart again; sliders it didn't touch reuse their paths.
+  const [paths] = useState(() => new WeakMap<HitObject, SampledPath>());
+  const objects = useMemo(() => prepareObjects(preview, rules, paths), [preview, rules, paths]);
   // The one selected slider shows its points as handles (Select tool only).
   const handles = useMemo(() => {
     if (tool !== 'select' || selected.size !== 1) return [];
@@ -215,7 +230,7 @@ export function NoteField(props: NoteFieldProps) {
     const only = [...selected][0];
     if (handle !== null && only) {
       e.currentTarget.setPointerCapture(e.pointerId);
-      return setDrag({ kind: 'handle', id: only, index: handle - 1, to: p });
+      return setDrag({ kind: 'handle', id: only, index: handle - 1, from: p, to: p });
     }
     const hit = hitTest(objects, time.t, rules, p.x, p.y);
     if (!hit) {
@@ -252,7 +267,8 @@ export function NoteField(props: NoteFieldProps) {
     const p = pointAt(e);
     const done = p ? { ...current, to: p } : current;
     setDrag(null);
-    if (done.kind === 'move' && done.to.x === done.from.x && done.to.y === done.from.y) return;
+    // A click on a note or a handle selects it; only a real drag is an edit.
+    if (still(done)) return;
     props.onCommit((m) => applyDrag(m, done));
   };
 

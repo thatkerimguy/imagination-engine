@@ -37,6 +37,8 @@ export interface NoteTimelineProps {
   readonly peaks: Float32Array | null;
   readonly label: string;
   readonly onSeek: (t: number) => void;
+  /** Panning: called as it goes, then once with `done` when the pointer lets go. */
+  readonly onScrub: (t: number, done: boolean) => void;
   readonly onSelect: (ids: ReadonlySet<string>) => void;
   readonly onCommit: (change: (map: BeatmapDef) => BeatmapDef) => void;
   readonly onWheelStep: (direction: 1 | -1) => void;
@@ -253,7 +255,7 @@ export function NoteTimeline(props: NoteTimelineProps) {
     if (d.kind === 'pan') {
       const dx = e.clientX - d.x;
       if (!d.moved && Math.abs(dx) < 4) return d;
-      props.onSeek(Math.max(0, d.t - dx / pxPerMs(e)));
+      props.onScrub(Math.max(0, d.t - dx / pxPerMs(e)), false);
       return { ...d, moved: true };
     }
     const at = timeAt(e);
@@ -274,7 +276,8 @@ export function NoteTimeline(props: NoteTimelineProps) {
     const done = follow(e, current);
     setDrag(null);
     if (done.kind === 'pan') {
-      if (!done.moved) props.onSeek(Math.max(0, snap(timeAt(e), e.shiftKey)));
+      if (done.moved) props.onScrub(time.t, true);
+      else props.onSeek(Math.max(0, snap(timeAt(e), e.shiftKey)));
       return;
     }
     if (done.kind === 'retime' && done.dt === 0) return;
@@ -291,7 +294,10 @@ export function NoteTimeline(props: NoteTimelineProps) {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => setDrag(null)}
+      onPointerCancel={() => {
+        if (live.current?.kind === 'pan' && live.current.moved) props.onScrub(time.t, true);
+        setDrag(null);
+      }}
     />
   );
 }

@@ -1,5 +1,7 @@
 import { createId } from '@ie/core';
 import {
+  BEATMAP_LIMITS,
+  beatmapSchema,
   FIELD_HEIGHT,
   type BeatmapDef,
   type HitObject,
@@ -54,6 +56,21 @@ export function addBeatmaps(doc: StoryProject, maps: readonly BeatmapDef[]): Sto
   return { ...doc, beatmaps: [...beatmapsOf(doc), ...maps].slice(0, 64) };
 }
 
+/**
+ * True when `next` still fits the schema. Notes `prev` already had are known good, so only new
+ * and changed ones are checked: a drag on a 6000-note chart stays cheap.
+ */
+export function stillValid(prev: BeatmapDef, next: BeatmapDef): boolean {
+  if (next.objects.length > BEATMAP_LIMITS.objects) return false;
+  const known = new Set(prev.objects);
+  const changed = next.objects.filter((o) => !known.has(o));
+  return beatmapSchema.safeParse({ ...next, objects: changed }).success;
+}
+
+/**
+ * Applies an edit to one beatmap. An edit that would break the schema (a time past an hour, a
+ * credit too long) is dropped: a saved project that fails its schema can't be opened again.
+ */
 export function updateBeatmap(
   doc: StoryProject,
   id: string,
@@ -64,7 +81,7 @@ export function updateBeatmap(
   const map = maps[i];
   if (!map) return doc;
   const next = change(map);
-  if (next === map) return doc;
+  if (next === map || !stillValid(map, next)) return doc;
   return { ...doc, beatmaps: maps.map((m, k) => (k === i ? next : m)) };
 }
 
@@ -111,14 +128,19 @@ export function moveObjects(
   dy: number,
 ): BeatmapDef {
   if (ids.size === 0 || (dx === 0 && dy === 0)) return map;
-  // One shared shift for the whole selection, limited so no point leaves the field.
+  // One shared shift for the whole selection, limited so no point leaves the field. A point
+  // already off it (imported charts bend sliders past the edge) may come back but not go
+  // further, so every limit allows zero and a small drag never jumps.
   let lo = { x: -Infinity, y: -Infinity };
   let hi = { x: Infinity, y: Infinity };
   for (const o of map.objects) {
     if (!ids.has(o.id) || o.kind === 'spinner') continue;
     for (const p of o.kind === 'slider' ? [o, ...o.path] : [o]) {
-      lo = { x: Math.max(lo.x, -p.x), y: Math.max(lo.y, -p.y) };
-      hi = { x: Math.min(hi.x, 1 - p.x), y: Math.min(hi.y, FIELD_HEIGHT - p.y) };
+      lo = { x: Math.max(lo.x, Math.min(0, -p.x)), y: Math.max(lo.y, Math.min(0, -p.y)) };
+      hi = {
+        x: Math.min(hi.x, Math.max(0, 1 - p.x)),
+        y: Math.min(hi.y, Math.max(0, FIELD_HEIGHT - p.y)),
+      };
     }
   }
   const sx = clamp(dx, lo.x, hi.x);
@@ -138,16 +160,29 @@ export function moveObjects(
   };
 }
 
+/**
+ * The shift a selection can take: all of `dt`, unless that would take its earliest note before
+ * zero (or, for a note already before zero, any further back). One shift for every note, so the
+ * selection keeps its spacing.
+ */
+function allowedShift(objects: readonly HitObject[], ids: ReadonlySet<string>, dt: number): number {
+  let earliest = Infinity;
+  for (const o of objects) if (ids.has(o.id)) earliest = Math.min(earliest, o.t);
+  if (!Number.isFinite(earliest)) return 0;
+  return Math.round(Math.max(dt, Math.min(0, earliest) - earliest));
+}
+
 /** Shifts notes in time, sliders' and spinners' ends with them. */
 export function retimeObjects(
   map: BeatmapDef,
   ids: ReadonlySet<string>,
   dt: number,
 ): BeatmapDef {
-  if (ids.size === 0 || dt === 0) return map;
+  const shift = allowedShift(map.objects, ids, dt);
+  if (shift === 0) return map;
   const objects = map.objects.map((o): HitObject => {
     if (!ids.has(o.id)) return o;
-    const t = Math.max(0, Math.round(o.t + dt));
+    const t = Math.round(o.t + shift);
     return o.kind === 'circle' ? { ...o, t } : { ...o, t, end: o.end + (t - o.t) };
   });
   return { ...map, objects: objects.sort(byTime) };
@@ -183,11 +218,13 @@ export function removeTiming(map: BeatmapDef, t: number): BeatmapDef {
 
 /** Moves every note and tempo change by `dt` ms, for a song that starts sooner or later. */
 export function shiftMap(map: BeatmapDef, dt: number): BeatmapDef {
-  if (dt === 0) return map;
   const all = new Set(map.objects.map((o) => o.id));
+  // Tempos move exactly as far as the notes do, so the grid stays under them.
+  const shift = map.objects.length > 0 ? allowedShift(map.objects, all, dt) : Math.round(dt);
+  if (shift === 0) return map;
   return {
-    ...retimeObjects(map, all, dt),
-    timing: map.timing.map((p) => ({ ...p, t: Math.round(p.t + dt) })),
+    ...retimeObjects(map, all, shift),
+    timing: map.timing.map((p) => ({ ...p, t: Math.round(p.t + shift) })),
   };
 }
 

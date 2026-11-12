@@ -4,12 +4,16 @@
 //   GET  /sync/projects/<id>   → the project JSON, with an ETag (204 when there is none)
 //   PUT  /sync/projects/<id>   → stores it; If-Match <etag> or If-None-Match * guard against
 //                                overwriting a newer copy (412 when the guard fails)
+//   HEAD|GET /sync/files/audio/<id>.<ext>  → an imported song (204 when there is none)
+//   PUT  /sync/files/audio/<id>.<ext>      → stores it once; names are unique, so never replaced
 // The site sits behind Cloudflare Access; as a second lock, a request without Access's identity
 // header is refused unless the SYNC_OPEN variable is "1".
 
 const ID = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const MAX_BYTES = 25 * 1024 * 1024;
 const PREFIX = 'projects/';
+const FILE = /^[A-Za-z][A-Za-z0-9_]{0,63}\.[a-z0-9]{1,5}$/;
+const MAX_FILE_BYTES = 60 * 1024 * 1024;
 
 const json = (body, init = {}) =>
   new Response(JSON.stringify(body), {
@@ -23,6 +27,7 @@ export async function onRequest({ request, env, params }) {
     return new Response('Cloudflare Access is required.', { status: 403 });
 
   const path = Array.isArray(params.path) ? params.path : [];
+  if (path[0] === 'files') return file(request, env, path);
   if (path[0] !== 'projects' || path.length > 2) return new Response(null, { status: 404 });
 
   if (path.length === 1) {
@@ -90,6 +95,40 @@ export async function onRequest({ request, env, params }) {
     return json({ ok: true }, { headers: { ETag: stored.httpEtag } });
   }
 
+  return new Response(null, { status: 405 });
+}
+
+/** Imported songs travel beside the projects that play them (their tracks name `audio/<file>`). */
+async function file(request, env, path) {
+  if (path.length !== 3 || path[1] !== 'audio' || !FILE.test(path[2]))
+    return new Response('Bad file name', { status: 400 });
+  const key = `files/audio/${path[2]}`;
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: (await env.SYNC.head(key)) ? 200 : 204 });
+  }
+  if (request.method === 'GET') {
+    const object = await env.SYNC.get(key);
+    if (!object) return new Response(null, { status: 204 });
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': object.httpMetadata?.contentType ?? 'application/octet-stream',
+        'Cache-Control': 'private, max-age=31536000, immutable',
+      },
+    });
+  }
+  if (request.method === 'PUT') {
+    const size = Number(request.headers.get('Content-Length') ?? 0);
+    if (size > MAX_FILE_BYTES) return new Response(null, { status: 413 });
+    if (await env.SYNC.head(key)) return json({ ok: true });
+    const body = await request.arrayBuffer();
+    if (body.byteLength > MAX_FILE_BYTES) return new Response(null, { status: 413 });
+    await env.SYNC.put(key, body, {
+      httpMetadata: {
+        contentType: request.headers.get('Content-Type') ?? 'application/octet-stream',
+      },
+    });
+    return json({ ok: true });
+  }
   return new Response(null, { status: 405 });
 }
 

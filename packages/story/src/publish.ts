@@ -200,9 +200,15 @@ function creditFor(track: Track): CreditLine | null {
   if (code === 'own') return null;
   if (track.source.kind === 'spotify' || track.source.kind === 'youtube') return null;
   const by = track.license?.attribution ?? track.artist;
+  // A song embedded in the novel file (a data: URL) is no address to show a reader.
+  const sourceUrl =
+    track.source.kind === 'url' && !track.source.url.startsWith('data:')
+      ? track.source.url
+      : undefined;
   const url =
     track.license?.url ??
-    (track.source.kind === 'url' ? (track.source.page ?? track.source.url) : undefined);
+    (track.source.kind === 'url' ? track.source.page : undefined) ??
+    sourceUrl;
   return {
     kind: 'music',
     title: track.title,

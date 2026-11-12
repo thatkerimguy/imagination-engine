@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 // `pnpm publish:studio`: the private Studio on Cloudflare Pages, behind Cloudflare Access (ADR 0022).
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -51,6 +60,22 @@ if (!existsSync(join(dist, 'index.html'))) {
   console.error('No Studio build found. Run without --no-build.');
   process.exit(1);
 }
+// A build made without VITE_ORT_WASM_CDN (plain `pnpm build`) still loads the big .wasm from its
+// own site, so leaving that file out would break beat analysis: refuse instead.
+if (!build) {
+  const assets = join(dist, 'assets');
+  const cdn = readdirSync(assets).some(
+    (f) =>
+      f.endsWith('.js') &&
+      readFileSync(join(assets, f), 'utf8').includes('cdn.jsdelivr.net/npm/onnxruntime-web'),
+  );
+  if (!cdn) {
+    console.error(
+      'The last Studio build serves onnxruntime itself; run without --no-build to rebuild it for Cloudflare.',
+    );
+    process.exit(1);
+  }
+}
 const out = join(root, 'out', 'studio');
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'functions'), { recursive: true });
@@ -60,7 +85,8 @@ cpSync(dist, join(out, 'public'), {
   recursive: true,
   filter: (src) => {
     if (src.endsWith('.map')) return false;
-    if (statSync(src).isFile() && statSync(src).size > MAX_FILE) {
+    const info = statSync(src);
+    if (info.isFile() && info.size > MAX_FILE) {
       left.push(src.slice(dist.length + 1));
       return false;
     }

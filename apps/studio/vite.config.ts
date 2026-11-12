@@ -107,8 +107,49 @@ function syncStore(): Plugin {
       req.on('end', () => done(Buffer.concat(chunks).toString('utf8')));
       req.on('error', fail);
     });
+  const FILE = /^[A-Za-z][A-Za-z0-9_]{0,63}\.[a-z0-9]{1,5}$/;
+  const readBytes = (req: IncomingMessage) =>
+    new Promise<Buffer>((done, fail) => {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      req.on('data', (c: Buffer) => {
+        size += c.byteLength;
+        if (size > 60 * 1024 * 1024) req.destroy(new Error('too big'));
+        else chunks.push(c);
+      });
+      req.on('end', () => done(Buffer.concat(chunks)));
+      req.on('error', fail);
+    });
+  /** Imported songs, beside the projects that play them (same routes as the hosted store). */
+  const handleFile = async (req: IncomingMessage, res: ServerResponse, parts: string[]) => {
+    const name = parts[2] ?? '';
+    if (parts.length !== 3 || parts[1] !== 'audio' || !FILE.test(name))
+      return send(res, 400, 'Bad file name');
+    const folder = join(dir, 'files', 'audio');
+    const file = join(folder, name);
+    const there = await stat(file).then(
+      () => true,
+      () => false,
+    );
+    if (req.method === 'HEAD') return send(res, there ? 200 : 204);
+    if (req.method === 'GET') {
+      if (!there) return send(res, 204);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/octet-stream');
+      return res.end(await readFile(file));
+    }
+    if (req.method !== 'PUT') return send(res, 405);
+    const body = await readBytes(req);
+    if (!there) {
+      await mkdir(folder, { recursive: true });
+      await writeFile(`${file}.tmp`, body);
+      await rename(`${file}.tmp`, file);
+    }
+    return send(res, 200, '{"ok":true}', { 'Content-Type': 'application/json' });
+  };
   const handle = async (req: IncomingMessage, res: ServerResponse) => {
     const parts = new URL(req.url ?? '', 'http://sync').pathname.split('/').filter(Boolean);
+    if (parts[0] === 'files') return handleFile(req, res, parts);
     if (parts[0] !== 'projects' || parts.length > 2) return send(res, 404);
     await mkdir(dir, { recursive: true });
     if (parts.length === 1) {
@@ -221,7 +262,9 @@ export default defineConfig({
         // onnxruntime's ~30 MB .wasm is cached the first time Beat This! runs, not on install.
         runtimeCaching: [
           {
-            urlPattern: /\.wasm$/,
+            // A function, not a regex: Workbox only lets a regex match a cross-origin URL from
+            // its start, and the hosted Studio loads the .wasm from jsDelivr (ADR 0030).
+            urlPattern: ({ url }) => url.pathname.endsWith('.wasm'),
             handler: 'CacheFirst',
             options: { cacheName: 'wasm', expiration: { maxEntries: 4 } },
           },

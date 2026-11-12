@@ -2,7 +2,6 @@
 // `pnpm publish:studio` (which builds into out/studio/public) and then `npx wrangler deploy`.
 // Keep the site behind Cloudflare Access: the Studio is private.
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "imagination-engine",
   "main": "tools/publish/studio-worker.mjs",
   "compatibility_date": "2025-09-01",

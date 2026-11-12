@@ -2,7 +2,10 @@ import type { MusicSet, Track } from '@ie/story';
 import type { ClockSource } from './conductor.ts';
 import type { AudioEngine } from './engine.ts';
 
-/** Turns a track into a playable URL: an object URL for a stored file, or the stream URL. */
+/**
+ * Turns a track into a playable URL: an object URL for a stored file, or the stream URL. The
+ * resolver owns any object URL it makes; the player only reads it.
+ */
 export type TrackResolver = (track: Track) => Promise<string | null>;
 
 interface Playing {
@@ -11,7 +14,6 @@ interface Playing {
   /** Present when the element is routed through the mixer (same-origin or CORS-enabled). */
   readonly gain: GainNode | null;
   volume: number;
-  release?: () => void;
 }
 
 const DEFAULT_FADE = 1.5;
@@ -65,7 +67,6 @@ export class MusicPlayer {
     const next = await this.open(track.id, url);
     if (generation !== this.generation) {
       next.element.pause();
-      next.release?.();
       return;
     }
     next.element.loop = params.loop ?? true;
@@ -104,9 +105,9 @@ export class MusicPlayer {
       gain = ctx.createGain();
       ctx.createMediaElementSource(element).connect(gain).connect(this.engine.input('music'));
     }
-    const playing: Playing = { trackId, element, gain, volume: 0 };
-    if (url.startsWith('blob:')) playing.release = () => URL.revokeObjectURL(url);
-    return playing;
+    // The URL belongs to the resolver, which may cache it and hand it out again (the Studio keeps
+    // one object URL per stored file), so it is never revoked here.
+    return { trackId, element, gain, volume: 0 };
   }
 
   private elementVolume(volume: number): number {
@@ -147,7 +148,6 @@ export class MusicPlayer {
         p.element.removeAttribute('src');
         p.element.load();
         p.gain?.disconnect();
-        p.release?.();
       },
       seconds * 1000 + 100,
     );

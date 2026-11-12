@@ -56,6 +56,11 @@ export function SyncSection() {
       <p className="sync__status" role="status" data-testid="sync-status">
         {status}
       </p>
+      {sync.enabled && sync.missingSongs > 0 && (
+        <p className="hint" data-testid="sync-missing-songs">
+          {t('sync.missingSongs', { count: sync.missingSongs })}
+        </p>
+      )}
       {sync.elsewhere.length > 0 && (
         <div className="sync__elsewhere">
           <span className="ie-label">{t('sync.elsewhere')}</span>

@@ -29,6 +29,8 @@ export const scriptMessages = defineCatalogs({
     'sync.ready': 'On. Not synced yet.',
     'sync.syncing': 'Syncing…',
     'sync.done': 'Synced at {time}.',
+    'sync.missingSongs':
+      '{count, plural, one {# song in this story is} other {# songs in this story are}} still only on the device that imported them. Turn sync on there and open the story once.',
     'sync.doneConflicts':
       'Synced at {time}. {count, plural, one {# value was} other {# values were}} changed on both devices; this device’s version was kept.',
     'sync.unavailable':
@@ -65,6 +67,8 @@ export const scriptMessages = defineCatalogs({
     'sync.ready': 'Açık. Henüz eşitlenmedi.',
     'sync.syncing': 'Eşitleniyor…',
     'sync.done': '{time} itibarıyla eşitlendi.',
+    'sync.missingSongs':
+      'Bu hikâyedeki {count} şarkı hâlâ yalnızca onları içe aktaran cihazda. Orada eşitlemeyi açıp hikâyeyi bir kez açın.',
     'sync.doneConflicts':
       '{time} itibarıyla eşitlendi. {count} değer iki cihazda da değişmişti; bu cihazdaki hâli korundu.',
     'sync.unavailable':

@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { create } from 'zustand';
 import { projectStore, writeProject } from '../project/storage.ts';
 import { useProject } from '../project/store.ts';
+import { audioFiles } from '../audio/studio-audio-files.ts';
 import { syncOnce, type SyncKind } from './engine.ts';
+import { httpFileRemote, syncAudioFiles, type FileRemote, type KnownFiles } from './files.ts';
 import { httpRemote, SyncUnavailable, type RemoteSummary, type SyncRemote } from './remote.ts';
 
 /*
@@ -28,6 +30,8 @@ export interface SyncStatus {
   readonly conflicts: number;
   /** Stories in the store that this device doesn't have yet. */
   readonly elsewhere: readonly RemoteSummary[];
+  /** Songs the open story plays that no device has synced yet. */
+  readonly missingSongs: number;
 }
 
 export const useSync = create<SyncStatus>()(() => ({
@@ -37,15 +41,38 @@ export const useSync = create<SyncStatus>()(() => ({
   lastKind: null,
   conflicts: 0,
   elsewhere: [],
+  missingSongs: 0,
 }));
 
 let remote: SyncRemote = httpRemote();
+let fileRemote: FileRemote = httpFileRemote();
 let running: Promise<void> | null = null;
 let timer: ReturnType<typeof setInterval> | undefined;
 
 /** For tests: a different store. */
-export function setSyncRemote(next: SyncRemote): void {
+export function setSyncRemote(next: SyncRemote, files?: FileRemote): void {
   remote = next;
+  if (files) fileRemote = files;
+}
+
+/** Files the store is known to hold, kept beside the sync bases. */
+const knownFiles: KnownFiles = {
+  async has(path) {
+    return (await (await projectStore()).get(`syncfile:${path}`)) === true;
+  },
+  async add(path) {
+    await (await projectStore()).set(`syncfile:${path}`, true);
+  },
+};
+
+/** Moves the open story's songs both ways; a failure here never fails the story's own sync. */
+async function syncSongs(doc: StoryProject): Promise<number> {
+  try {
+    return (await syncAudioFiles(doc, fileRemote, await audioFiles(), knownFiles)).missing;
+  } catch (error) {
+    if (!(error instanceof SyncUnavailable)) console.warn('Song sync failed.', error);
+    return useSync.getState().missingSongs;
+  }
 }
 
 async function readBase(id: string): Promise<StoryProject | null> {
@@ -75,6 +102,7 @@ async function syncOpen(): Promise<void> {
       const next = current === ours ? outcome.doc : merge3(ours, current, outcome.doc).value;
       if (next !== current) useProject.getState().edit(() => next);
     }
+    const missingSongs = await syncSongs(useProject.getState().history?.present ?? outcome.doc);
     const ids = await localIds();
     const elsewhere = (await remote.list())
       .filter((r) => !ids.has(r.id))
@@ -85,6 +113,7 @@ async function syncOpen(): Promise<void> {
       lastKind: outcome.kind,
       conflicts: outcome.conflicts.length,
       elsewhere,
+      missingSongs,
     });
   } catch (error) {
     useSync.setState({ state: error instanceof SyncUnavailable ? 'unavailable' : 'error' });

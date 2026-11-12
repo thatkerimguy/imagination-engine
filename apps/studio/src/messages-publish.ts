@@ -37,6 +37,9 @@ export const publishMessages = defineCatalogs({
     'pub.runPlaytest': 'Run the auto-playtester first to include dead ends and stuck choices.',
     'pub.allClear': 'Nothing stops this build.',
     'pub.download': 'Download the novel',
+    'pub.packing': 'Packing the songs into the file…',
+    'pub.missingSongs':
+      'These songs aren’t on this device, so the file plays nothing for them: {songs}. Sync or import them here first.',
     'pub.ready': 'Ready to publish.',
     'pub.blocked': 'Fix the red items first.',
     'pub.howTo':
@@ -110,6 +113,9 @@ export const publishMessages = defineCatalogs({
       'Çıkmazları ve takılan seçimleri de görmek için önce otomatik oyuncuyu çalıştır.',
     'pub.allClear': 'Bu yayını durduran bir şey yok.',
     'pub.download': 'Romanı indir',
+    'pub.packing': 'Şarkılar dosyaya ekleniyor…',
+    'pub.missingSongs':
+      'Bu şarkılar bu cihazda yok, dosyada onlar için ses çalmaz: {songs}. Önce burada eşitleyin ya da içe aktarın.',
     'pub.ready': 'Yayına hazır.',
     'pub.blocked': 'Önce kırmızı maddeleri düzelt.',
     'pub.howTo':

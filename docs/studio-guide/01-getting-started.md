@@ -99,7 +99,8 @@ change anything.
 
 - Everything saves **automatically** on this device, a moment after each change. The top bar
   says **Saving…**, then **Saved**. **Not saved** means the browser refused; export the novel to
-  be safe.
+  be safe. **Can't save this change** means the last edit went past one of the story's limits;
+  the copy from before it is kept. Undo that edit and saving goes on.
 - **Undo** `Ctrl+Z`, **Redo** `Ctrl+Y` (or `Ctrl+Shift+Z`). Undo covers every edit in every
   workspace.
 - Novels live in the browser's storage on this device. Clearing the browser's site data deletes

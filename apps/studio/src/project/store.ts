@@ -4,13 +4,21 @@ import { readPref, writePref } from '@ie/ui-kit';
 import { create } from 'zustand';
 import { newProject } from './factory.ts';
 import { createHistory, record, redo, undo, type History } from './history.ts';
-import { deleteProject, listProjects, projectStore, readProject, writeProject } from './storage.ts';
+import {
+  deleteProject,
+  listProjects,
+  projectStore,
+  readProject,
+  unsaveable,
+  writeProject,
+} from './storage.ts';
 import { allPassages } from './tree.ts';
 
 const LAST_PROJECT = 'ie.studio.project';
 const SAVE_DELAY_MS = 500;
 
-export type SaveState = 'saved' | 'pending' | 'error';
+/** `invalid`: the open project breaks its schema, so the last good copy is kept instead. */
+export type SaveState = 'saved' | 'pending' | 'error' | 'invalid';
 
 export interface ProjectState {
   readonly history: History<StoryProject> | null;
@@ -96,6 +104,14 @@ async function save(): Promise<void> {
   timer = undefined;
   const doc = useProject.getState().history?.present;
   if (!doc || doc === saved) return;
+  // Every editor guards its own limits; this is the last line, so one missed guard can't lose
+  // the novel. Undoing the change makes the project saveable again.
+  const problem = unsaveable(doc);
+  if (problem) {
+    console.warn(`The project breaks its schema and was not saved: ${problem}`);
+    useProject.setState({ saveState: 'invalid' });
+    return;
+  }
   try {
     await writeProject(await projectStore(), doc);
     saved = doc;

@@ -110,7 +110,8 @@ export function buildExits(
 /** What the backlog keeps of a walk: the exit taken, or "Travelled to the hall". */
 export function wentText(beat: WentBeat, ctx: WorldContext): string {
   const block = ctx.runtime.story.blocks.get(beat.blockId);
-  const from = block ? ctx.runtime.story.roomOf.get(block.passage) : undefined;
+  // Saves made before `from` was kept fall back to the room that owns the block's passage.
+  const from = beat.from ?? (block ? ctx.runtime.story.roomOf.get(block.passage) : undefined);
   const exit = beat.exit && from ? findExit(ctx, from, beat.exit) : undefined;
   return exit ? exitText(ctx, exit) : ctx.t('went.travel', { room: roomName(ctx, beat.room) });
 }

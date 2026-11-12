@@ -39,7 +39,9 @@ describe('sfxr', () => {
         expect(Number.isFinite(peak(out))).toBe(true);
       }
     }
-  });
+    // Hundreds of full renders: well under the default 5 s alone, but not while the whole suite
+    // runs in parallel on a busy machine.
+  }, 30_000);
 
   it('gives story sounds their own length: a click is short, thunder rolls on', () => {
     const seconds = (kind: Parameters<typeof generateSfxr>[0]) =>

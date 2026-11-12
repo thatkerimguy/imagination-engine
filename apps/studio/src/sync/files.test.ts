@@ -1,7 +1,8 @@
 import { createMemoryFileStore } from '@ie/core';
 import type { StoryProject, Track } from '@ie/story';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { audioPaths, syncAudioFiles, type FileRemote, type KnownFiles } from './files.ts';
+import { SyncUnavailable } from './remote.ts';
 
 const track = (id: string, path: string): Track => ({
   id,
@@ -62,6 +63,7 @@ describe('song sync', () => {
       uploaded: 1,
       downloaded: 0,
       missing: 0,
+      failed: 0,
     });
     await syncAudioFiles(story, remote, local, known);
     expect(remote.puts).toBe(1);
@@ -77,7 +79,34 @@ describe('song sync', () => {
       local,
       memoryKnown(),
     );
-    expect(outcome).toEqual({ uploaded: 0, downloaded: 1, missing: 1 });
+    expect(outcome).toEqual({ uploaded: 0, downloaded: 1, missing: 1, failed: 0 });
     expect(await (await local.read('audio/a.mp3'))?.text()).toBe('song');
+  });
+
+  it('carries on past a song the store refuses, but stops when the store is gone', async () => {
+    const remote = memoryRemote();
+    const put = remote.put.bind(remote);
+    remote.put = (path, data) =>
+      path === 'audio/big.wav' ? Promise.reject(new Error('sync file put: 413')) : put(path, data);
+    const local = createMemoryFileStore();
+    await local.write('audio/big.wav', new Blob(['huge']));
+    await local.write('audio/small.mp3', new Blob(['song']));
+    const story = doc([track('big', 'audio/big.wav'), track('small', 'audio/small.mp3')]);
+    const known = memoryKnown();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(await syncAudioFiles(story, remote, local, known)).toEqual({
+      uploaded: 1,
+      downloaded: 0,
+      missing: 0,
+      failed: 1,
+    });
+    warn.mockRestore();
+    expect(remote.files.has('audio/small.mp3')).toBe(true);
+    // The refused song isn't marked known, so the next sync tries it again.
+    expect(await known.has('audio/big.wav')).toBe(false);
+    remote.has = () => Promise.reject(new SyncUnavailable('offline'));
+    await expect(syncAudioFiles(story, remote, local, known)).rejects.toBeInstanceOf(
+      SyncUnavailable,
+    );
   });
 });

@@ -70,11 +70,13 @@ export function travel(core: RuntimeCore, roomId: string): void {
   if (!target || !core.story.passages.has(target.passage))
     throw new Error(`The room "${roomId}" has no passage to play.`);
   core.resetScope('temp');
-  core.record(
-    exit
-      ? { kind: 'went', blockId: beat.blockId, room: roomId, exit: exit.id }
-      : { kind: 'went', blockId: beat.blockId, room: roomId },
-  );
+  core.record({
+    kind: 'went',
+    blockId: beat.blockId,
+    room: roomId,
+    ...(exit ? { exit: exit.id } : {}),
+    ...(room ? { from: room.id } : {}),
+  });
   core.s.waiting = null;
   while (core.s.frames.length && !core.s.frames.at(-1)?.call)
     core.s.frames = core.s.frames.slice(0, -1);

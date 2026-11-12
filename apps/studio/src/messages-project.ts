@@ -122,6 +122,9 @@ export const projectMessages = defineCatalogs({
     'save.saved': 'Saved',
     'save.pending': 'Saving…',
     'save.error': 'Not saved',
+    'save.invalid': "Can't save this change",
+    'save.invalidHint':
+      'The last change breaks the story format, so it is not saved. Undo it and saving goes on.',
     'translate.filter': 'Show',
     'translate.missing': 'Missing ({count})',
     'translate.all': 'All lines ({count})',
@@ -251,6 +254,9 @@ export const projectMessages = defineCatalogs({
     'save.saved': 'Kaydedildi',
     'save.pending': 'Kaydediliyor…',
     'save.error': 'Kaydedilmedi',
+    'save.invalid': 'Bu değişiklik kaydedilemiyor',
+    'save.invalidHint':
+      'Son değişiklik hikâye biçimini bozuyor, bu yüzden kaydedilmedi. Geri alınca kayıt sürer.',
     'translate.filter': 'Göster',
     'translate.missing': 'Eksik ({count})',
     'translate.all': 'Tüm satırlar ({count})',

@@ -1,6 +1,8 @@
 import { createId } from '@ie/core';
 import {
   directionBetween,
+  MAX_EXITS,
+  MAX_ROOMS,
   MAX_SPACES,
   OPPOSITE,
   type Block,
@@ -40,9 +42,19 @@ function roomPassage(name: string): Passage {
   return { ...passage, blocks: [...passage.blocks, exits] };
 }
 
+/** Whether a room can take another way out (the schema allows MAX_EXITS). */
+export function exitsFull(room: RoomDef | undefined): boolean {
+  return (room?.exits.length ?? 0) >= MAX_EXITS;
+}
+
+export function worldFull(doc: StoryProject): boolean {
+  return worldOf(doc).rooms.length >= MAX_ROOMS;
+}
+
 /**
  * A new room on a square, with its own passage in the first chapter. Given a neighbour, the two
- * are joined both ways through the compass direction between them.
+ * are joined both ways through the compass direction between them (only from the new room when
+ * the neighbour has no exit to spare). A full world gets no room: `roomId` is then empty.
  */
 export function addRoom(
   doc: StoryProject,
@@ -51,6 +63,7 @@ export function addRoom(
   passageName: string,
   joinTo?: string,
 ): { doc: StoryProject; roomId: string } {
+  if (worldFull(doc)) return { doc, roomId: '' };
   const passage = roomPassage(passageName);
   const room: RoomDef = { id: createId('rm'), name, passage: passage.id, ...at, exits: [] };
   let next: StoryProject = {
@@ -62,7 +75,10 @@ export function addRoom(
   next = setWorld(next, (w) => ({ ...w, rooms: [...w.rooms, room] }));
   const neighbour = joinTo ? worldOf(next).rooms.find((r) => r.id === joinTo) : undefined;
   const dir = neighbour ? directionBetween(neighbour, room) : null;
-  if (neighbour && dir) next = addExit(next, neighbour.id, dir, room.id, true);
+  if (neighbour && dir)
+    next = exitsFull(neighbour)
+      ? addExit(next, room.id, OPPOSITE[dir], neighbour.id, false)
+      : addExit(next, neighbour.id, dir, room.id, true);
   return { doc: next, roomId: room.id };
 }
 
@@ -95,10 +111,13 @@ export function addExit(
   to: string,
   twoWay: boolean,
 ): StoryProject {
+  const room = worldOf(doc).rooms.find((r) => r.id === from);
+  if (!room || exitsFull(room)) return doc;
   const exit: ExitDef = { id: createId('ex'), dir, to };
   let next = updateRoom(doc, from, (r) => ({ ...r, exits: [...r.exits, exit] }));
   const target = worldOf(next).rooms.find((r) => r.id === to);
-  if (twoWay && to && target && !target.exits.some((e) => e.to === from)) {
+  // A target with no room for the way back keeps the new exit one-way.
+  if (twoWay && to && target && !exitsFull(target) && !target.exits.some((e) => e.to === from)) {
     const back: ExitDef = { id: createId('ex'), dir: OPPOSITE[dir], to: from };
     next = updateRoom(next, to, (r) => ({ ...r, exits: [...r.exits, back] }));
   }

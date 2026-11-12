@@ -52,6 +52,17 @@ export async function readProject(store: KeyValueStore, id: string): Promise<Sto
   return parsed.data.doc;
 }
 
+/**
+ * Why a project can't be saved, or null when it can. A record that fails its schema is dropped
+ * on read (the novel would vanish from the list), so nothing that fails it may be written.
+ */
+export function unsaveable(doc: StoryProject): string | null {
+  const parsed = storyProjectSchema.safeParse(doc);
+  if (parsed.success) return null;
+  const issue = parsed.error.issues[0];
+  return issue ? `${issue.path.join('.')}: ${issue.message}` : 'invalid';
+}
+
 export async function writeProject(store: KeyValueStore, doc: StoryProject): Promise<void> {
   await store.set(PREFIX + doc.id, { v: 1, updatedAt: Date.now(), doc });
 }

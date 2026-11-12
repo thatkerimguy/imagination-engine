@@ -1,9 +1,15 @@
-import { DIRECTION_STEP, directionBetween, type RoomDef, type StoryProject } from '@ie/story';
+import {
+  DIRECTION_STEP,
+  directionBetween,
+  MAX_ROOMS,
+  type RoomDef,
+  type StoryProject,
+} from '@ie/story';
 import { Plus } from 'lucide-react';
 import { useProject } from '../project/store.ts';
 import { useT } from '../store.ts';
 import { labelText, nextName } from '../write/edit.ts';
-import { addRoom, worldOf } from './world-edit.ts';
+import { addRoom, worldFull, worldOf } from './world-edit.ts';
 
 const CELL = 84;
 const LIMIT = 64;
@@ -47,6 +53,7 @@ export function WorldMap({
   const byId = new Map(rooms.map((r) => [r.id, r]));
   const at = new Map(rooms.map((r) => [`${r.x},${r.y}`, r]));
   const current = selected ? byId.get(selected) : undefined;
+  const full = worldFull(doc);
   const centre = (x: number, y: number) =>
     [(x - bounds.minX + 0.5) * CELL, (y - bounds.minY + 0.5) * CELL] as const;
 
@@ -108,9 +115,11 @@ export function WorldMap({
         continue;
       }
       const joined = current && directionBetween(current, { x, y });
-      const label = joined
-        ? t('world.addJoined', { name: labelText(current.name, t.locale, current.id) })
-        : t('world.addAt');
+      const label = full
+        ? t('world.roomsFull', { n: MAX_ROOMS })
+        : joined
+          ? t('world.addJoined', { name: labelText(current.name, t.locale, current.id) })
+          : t('world.addAt');
       cells.push(
         <button
           key={`${x},${y}`}
@@ -123,6 +132,7 @@ export function WorldMap({
           data-testid="wmap-cell"
           data-x={x}
           data-y={y}
+          disabled={full}
           onClick={() => add(x, y)}
         >
           <Plus size={16} strokeWidth={1.5} aria-hidden="true" />

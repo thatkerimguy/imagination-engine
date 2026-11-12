@@ -371,7 +371,8 @@
   font-size: var(--text-xs);
 }
 
-.topbar__save[data-state='error'] {
+.topbar__save[data-state='error'],
+.topbar__save[data-state='invalid'] {
   color: var(--color-accent);
 }
 
@@ -386,7 +387,8 @@
     padding: var(--space-2);
   }
 
-  .topbar__save {
+  /* Only a save that failed needs the room on a phone. */
+  .topbar__save:not([data-state='error'], [data-state='invalid']) {
     display: none;
   }
 

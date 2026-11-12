@@ -76,6 +76,7 @@ Translate views.
 | What you see                                    | What to do                                                                       |
 | ----------------------------------------------- | -------------------------------------------------------------------------------- |
 | **Not saved** in the top bar                    | The browser refused storage (private mode, full disk). Export the novel now      |
+| **Can't save this change** in the top bar       | The last edit broke a limit of the story format. Undo it; the copy before is kept |
 | Play shows **Fix these to play**                | Click each problem to jump to it; they're story errors                           |
 | "Nothing leads to …"                            | No choice or jump reaches that passage. Link to it, or delete it                 |
 | "… can run out without going anywhere"          | Add an End, a Go to, or a choice at the end of the passage                       |

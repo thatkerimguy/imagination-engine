@@ -1,4 +1,11 @@
-import { analyzeProject, storyProjectSchema, type StoryProject } from '@ie/story';
+import {
+  analyzeProject,
+  MAX_EXITS,
+  MAX_ROOMS,
+  storyProjectSchema,
+  type RoomDef,
+  type StoryProject,
+} from '@ie/story';
 import { describe, expect, it } from 'vitest';
 import { newProject } from '../project/factory.ts';
 import {
@@ -11,10 +18,12 @@ import {
   moveSpace,
   removeExit,
   removeSpace,
+  setWorld,
   suggestDirection,
   updateExit,
   worldOf,
 } from './world-edit.ts';
+import { unsaveable } from '../project/storage.ts';
 
 const name = (n: string) => ({ en: n, tr: n });
 
@@ -25,6 +34,50 @@ function twoRooms(): { doc: StoryProject; hall: string; garden: string } {
 }
 
 describe('world edits', () => {
+  it('keeps a room within its exits and a world within its rooms', () => {
+    const { doc, hall, garden } = twoRooms();
+    let full = doc;
+    while ((worldOf(full).rooms.find((r) => r.id === hall)?.exits.length ?? 0) < MAX_EXITS)
+      full = addExit(full, hall, 'in', garden, false);
+    // One more exit would make a project the Studio can't open again: it is refused.
+    expect(addExit(full, hall, 'out', garden, false)).toBe(full);
+    expect(unsaveable(full)).toBeNull();
+    // A room next to the full one still comes, joined only from its own side.
+    const added = addRoom(full, { x: 0, y: 1 }, name('Cellar'), 'Cellar', hall);
+    const cellar = () => worldOf(added.doc).rooms.find((r) => r.id === added.roomId);
+    expect(cellar()?.exits).toEqual([expect.objectContaining({ dir: 'n', to: hall })]);
+    expect(worldOf(added.doc).rooms.find((r) => r.id === hall)?.exits).toHaveLength(MAX_EXITS);
+    expect(unsaveable(added.doc)).toBeNull();
+    // Two-way into a full room: the exit comes, the way back doesn't.
+    const oneWay = addExit(added.doc, added.roomId, 'up', hall, true);
+    expect(worldOf(oneWay).rooms.find((r) => r.id === added.roomId)?.exits).toHaveLength(2);
+    expect(worldOf(oneWay).rooms.find((r) => r.id === hall)?.exits).toHaveLength(MAX_EXITS);
+
+    const rooms: RoomDef[] = Array.from({ length: MAX_ROOMS }, (_, i) => ({
+      id: `r${i}`,
+      name: name(`Room ${i}`),
+      passage: '',
+      x: (i % 100) - 50,
+      y: Math.floor(i / 100),
+      exits: [],
+    }));
+    const crowded = setWorld(doc, (w) => ({ ...w, rooms }));
+    expect(addRoom(crowded, { x: 0, y: 30 }, name('One more'), 'One more')).toEqual({
+      doc: crowded,
+      roomId: '',
+    });
+  });
+
+  it('says why a project breaks its schema', () => {
+    const { doc, hall } = twoRooms();
+    expect(unsaveable(doc)).toBeNull();
+    const broken = setWorld(doc, (w) => ({
+      ...w,
+      rooms: w.rooms.map((r) => (r.id === hall ? { ...r, x: 500 } : r)),
+    }));
+    expect(unsaveable(broken)).toMatch(/^world\.rooms\.0\.x: /);
+  });
+
   it('adds a room with its own passage ending in an Exits block', () => {
     const { doc, roomId } = addRoom(
       newProject(name('House')),

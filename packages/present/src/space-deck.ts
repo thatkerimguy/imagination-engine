@@ -31,6 +31,17 @@ function div(className: string): HTMLElement {
 }
 
 /**
+ * Scrolls `box` so `target` sits in its middle. Not scrollIntoView: that also scrolls every
+ * ancestor, the deck's own overflow-hidden frame included, and would slide another pane into view.
+ */
+function centreIn(box: HTMLElement, target: HTMLElement): void {
+  const t = target.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  box.scrollLeft += t.left + t.width / 2 - (b.left + b.width / 2);
+  box.scrollTop += t.top + t.height / 2 - (b.top + b.height / 2);
+}
+
+/**
  * Spaces beside the story (ADR 0031): the story's own pane in the middle and the author's spaces
  * to its left and right. A sideways swipe or the edge buttons move between them; vertical
  * scrolling and taps stay the page's own.
@@ -44,6 +55,8 @@ export class SpaceDeck {
   private t: Translator<PresentKey>;
   private runtime: StoryRuntime | null = null;
   private swiped = false;
+  /** Map panes not on screen are drawn when the reader reaches them, not after every step. */
+  private readonly stale = new Set<Pane>();
 
   constructor(
     private readonly story: HTMLElement,
@@ -78,7 +91,11 @@ export class SpaceDeck {
   /** Redraws the spaces from the running story (after every step, load or rewind). */
   refresh(runtime: StoryRuntime | null): void {
     this.runtime = runtime;
-    for (const pane of this.panes) this.draw(pane);
+    for (const pane of this.panes) {
+      if (pane.space !== 'story' && pane.space.kind === 'map' && pane !== this.panes[this.index])
+        this.stale.add(pane);
+      else this.draw(pane);
+    }
     this.updateEdges();
   }
 
@@ -103,11 +120,24 @@ export class SpaceDeck {
       pane.element.setAttribute('aria-hidden', String(i !== next));
     });
     this.updateEdges();
-    if (moved) this.host.moved?.(this.atStory);
+    if (!moved) return;
+    const pane = this.panes[next];
+    if (pane && this.stale.has(pane)) {
+      this.draw(pane);
+      // Arriving at a map: the reader's own room in the middle.
+      const map = pane.element.querySelector<HTMLElement>('.world-map');
+      const here = map?.querySelector<HTMLElement>('[aria-current]');
+      if (map && here) {
+        centreIn(map, here);
+        centreIn(pane.element, here);
+      }
+    }
+    this.host.moved?.(this.atStory);
   }
 
   private build(): void {
     const order = spaceOrder(this.spaces);
+    this.stale.clear();
     this.panes = order.map((space) => {
       if (space === 'story') return { space, element: this.story };
       const element = div('spaces__pane spaces__pane--space');
@@ -125,6 +155,7 @@ export class SpaceDeck {
 
   private draw(pane: Pane): void {
     const { space, element } = pane;
+    this.stale.delete(pane);
     if (space === 'story') return;
     const name = pickLabel(space.name, this.locale, '');
     element.lang = localeTag(this.locale);
@@ -154,13 +185,6 @@ export class SpaceDeck {
       },
     );
     body.replaceChildren(map);
-    if (this.panes[this.index] === pane) return;
-    // Opened later: start with the reader's own room in view.
-    requestAnimationFrame(() =>
-      map
-        .querySelector<HTMLElement>('[aria-current]')
-        ?.scrollIntoView({ block: 'center', inline: 'center' }),
-    );
   }
 
   private edge(side: 'left' | 'right'): HTMLButtonElement {
@@ -263,7 +287,15 @@ export class SpaceDeck {
       { passive: false },
     );
     this.element.addEventListener('pointerup', end);
-    this.element.addEventListener('pointercancel', end);
+    // A swipe the browser or the system took away goes back where it was: a cancelled pointer's
+    // coordinates say nothing about where the reader meant to go.
+    this.element.addEventListener('pointercancel', (event) => {
+      if (!start || event.pointerId !== start.id) return;
+      start = null;
+      if (!dragging) return;
+      dragging = false;
+      this.show(this.index);
+    });
     // The click that ends a swipe isn't a tap on the page.
     this.element.addEventListener(
       'click',

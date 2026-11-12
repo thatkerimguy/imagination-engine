@@ -26,6 +26,8 @@ export interface FileSyncOutcome {
   readonly downloaded: number;
   /** Songs neither this device nor the store has (imported on a device that never synced them). */
   readonly missing: number;
+  /** Songs that couldn't be moved this time (too big for the store, say); tried again next sync. */
+  readonly failed: number;
 }
 
 /** The stored files a story's tracks play. */
@@ -45,27 +47,35 @@ export async function syncAudioFiles(
   let uploaded = 0;
   let downloaded = 0;
   let missing = 0;
+  let failed = 0;
   for (const path of audioPaths(doc)) {
-    const here = await local.read(path);
-    if (here) {
-      if (await known.has(path)) continue;
-      if (!(await remote.has(path))) {
-        await remote.put(path, here);
-        uploaded++;
+    try {
+      const here = await local.read(path);
+      if (here) {
+        if (await known.has(path)) continue;
+        if (!(await remote.has(path))) {
+          await remote.put(path, here);
+          uploaded++;
+        }
+        await known.add(path);
+        continue;
       }
+      const there = await remote.get(path);
+      if (!there) {
+        missing++;
+        continue;
+      }
+      await local.write(path, there);
       await known.add(path);
-      continue;
+      downloaded++;
+    } catch (error) {
+      // An unreachable store stops the round; one song it refuses doesn't hold up the others.
+      if (error instanceof SyncUnavailable) throw error;
+      console.warn(`Song ${path} did not sync.`, error);
+      failed++;
     }
-    const there = await remote.get(path);
-    if (!there) {
-      missing++;
-      continue;
-    }
-    await local.write(path, there);
-    await known.add(path);
-    downloaded++;
   }
-  return { uploaded, downloaded, missing };
+  return { uploaded, downloaded, missing, failed };
 }
 
 async function call(url: string, init?: RequestInit): Promise<Response> {

@@ -1,4 +1,4 @@
-import { WORLD_SIZE, type RoomDef, type StoryProject } from '@ie/story';
+import { MAX_EXITS, WORLD_SIZE, type RoomDef, type StoryProject } from '@ie/story';
 import { PenLine, Plus, Signpost } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteButton } from '../data/DeleteButton.tsx';
@@ -10,6 +10,7 @@ import { PassagePicker } from '../write/pickers.tsx';
 import { ExitRow, RoomPicker } from './ExitRow.tsx';
 import {
   addExit,
+  exitsFull,
   appendExitsBlock,
   deleteRoom,
   endsWithExits,
@@ -56,6 +57,7 @@ function AddExit({ doc, room }: { readonly doc: StoryProject; readonly room: Roo
   const [to, setTo] = useState('');
   const [twoWay, setTwoWay] = useState(true);
   const target = others.find((r) => r.id === to);
+  const full = exitsFull(room);
   if (others.length === 0) return null;
   return (
     <div className="row row--wrap">
@@ -72,7 +74,8 @@ function AddExit({ doc, room }: { readonly doc: StoryProject; readonly room: Roo
       <button
         type="button"
         className="ie-button ie-button--quiet"
-        disabled={!target}
+        disabled={!target || full}
+        title={full ? t('world.exitsFull', { n: MAX_EXITS }) : undefined}
         data-testid="wexit-add"
         onClick={() => {
           edit((d) => addExit(d, room.id, suggestDirection(room, target), to, twoWay));

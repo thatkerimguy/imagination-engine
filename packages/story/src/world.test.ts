@@ -93,7 +93,7 @@ describe('rooms and exits', () => {
     expect(() => rt.go('cellar')).toThrow();
     rt.go('garden');
     const beats = rt.advance();
-    expect(beats[0]).toMatchObject({ kind: 'went', room: 'garden', exit: 'x1' });
+    expect(beats[0]).toMatchObject({ kind: 'went', room: 'garden', exit: 'x1', from: 'hall' });
     expect(beats[1]).toMatchObject({ kind: 'passage', passageId: 'p_garden' });
     expect(rt.room).toBe('garden');
   });

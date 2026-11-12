@@ -49,6 +49,7 @@ export function TopBar() {
           data-state={saveState}
           data-testid="save-state"
           role="status"
+          title={saveState === 'invalid' ? t('save.invalidHint') : undefined}
         >
           {t(`save.${saveState}`)}
         </span>

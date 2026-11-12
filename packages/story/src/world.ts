@@ -103,6 +103,9 @@ export const exitSchema = z.object({
 });
 
 export const WORLD_SIZE = 64;
+/** Ways out of one room, and rooms in a world: the schema's limits, which editors must keep. */
+export const MAX_EXITS = 12;
+export const MAX_ROOMS = 400;
 
 export interface RoomDef {
   readonly id: string;
@@ -122,7 +125,7 @@ export const roomSchema = z.object({
   passage: ref,
   x: z.number().int().min(-WORLD_SIZE).max(WORLD_SIZE),
   y: z.number().int().min(-WORLD_SIZE).max(WORLD_SIZE),
-  exits: z.array(exitSchema).max(12),
+  exits: z.array(exitSchema).max(MAX_EXITS),
   secret: z.boolean().optional(),
 });
 
@@ -140,7 +143,7 @@ export interface WorldDef {
   readonly reveal?: MapReveal;
 }
 export const worldSchema = z.object({
-  rooms: z.array(roomSchema).max(400),
+  rooms: z.array(roomSchema).max(MAX_ROOMS),
   fastTravel: z.boolean().optional(),
   reveal: z.enum(MAP_REVEALS).optional(),
 });

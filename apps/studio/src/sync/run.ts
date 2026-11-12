@@ -55,20 +55,26 @@ export function setSyncRemote(next: SyncRemote, files?: FileRemote): void {
   if (files) fileRemote = files;
 }
 
-/** Files the store is known to hold, kept beside the sync bases. */
+/** How long the store is trusted to keep a file before it is asked again (it may be emptied). */
+const KNOWN_FOR_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Files the store is known to hold, and since when, kept beside the sync bases. */
 const knownFiles: KnownFiles = {
   async has(path) {
-    return (await (await projectStore()).get(`syncfile:${path}`)) === true;
+    const since = await (await projectStore()).get(`syncfile:${path}`);
+    return typeof since === 'number' && Date.now() - since < KNOWN_FOR_MS;
   },
   async add(path) {
-    await (await projectStore()).set(`syncfile:${path}`, true);
+    await (await projectStore()).set(`syncfile:${path}`, Date.now());
   },
 };
 
 /** Moves the open story's songs both ways; a failure here never fails the story's own sync. */
 async function syncSongs(doc: StoryProject): Promise<number> {
   try {
-    return (await syncAudioFiles(doc, fileRemote, await audioFiles(), knownFiles)).missing;
+    const outcome = await syncAudioFiles(doc, fileRemote, await audioFiles(), knownFiles);
+    // A song that failed to upload is, for now, one no other device can get either.
+    return outcome.missing + outcome.failed;
   } catch (error) {
     if (!(error instanceof SyncUnavailable)) console.warn('Song sync failed.', error);
     return useSync.getState().missingSongs;

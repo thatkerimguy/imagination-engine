@@ -38,6 +38,10 @@ Each room lists its **Exits**. An exit has:
 To add an exit, pick the room it leads to and press **Add exit**. The direction follows the map
 when the two rooms touch. Keep **Two-way** on to add the way back as well.
 
+A room can have up to 12 exits, and a world up to 400 rooms. A room that already has 12 doesn't
+get the way back from a new exit or a new room next to it: the new one leads to it, and that's
+all.
+
 ## The Exits block
 
 The reader only gets to choose a way out when the room's passage reaches an **Exits** block. Put

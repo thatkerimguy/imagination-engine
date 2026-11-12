@@ -108,6 +108,8 @@ export type Beat =
       readonly room: string;
       /** The exit taken; absent when the map took the reader there (fast travel). */
       readonly exit?: string;
+      /** The room the reader left (the Exits block may sit in a passage every room calls). */
+      readonly from?: string;
     }
   | { readonly kind: 'end'; readonly blockId: string | null; readonly endingId?: string };
 
@@ -245,6 +247,7 @@ export const beatSchema: z.ZodType<Beat> = z.discriminatedUnion('kind', [
     blockId: z.string(),
     room: z.string(),
     exit: z.string().optional(),
+    from: z.string().optional(),
   }),
   z.object({
     kind: z.literal('end'),

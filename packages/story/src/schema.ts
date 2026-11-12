@@ -7,6 +7,7 @@ import { logicSchemas, type RoutineBlock } from './logic.ts';
 import { rpgBlockSchemas, type RpgBlock } from './rpg.ts';
 import { sequenceBlockSchema, type SequenceBlock } from './sequence.ts';
 import { exitsBlockSchema, type ExitsBlock } from './world.ts';
+import { rhythmBlockShape } from './beatmap.ts';
 
 /** Stable, opaque IDs (see ADR 0007). Usable inside formulas, so no spaces or dots. */
 export const idSchema = z
@@ -224,6 +225,17 @@ export interface MinigameBlock extends BlockBase {
   readonly win: readonly Block[];
   readonly lose: readonly Block[];
 }
+/** A beatmap played to its song (ADR 0033). The story waits until it is passed or failed. */
+export interface RhythmBlock extends BlockBase {
+  readonly type: 'rhythm';
+  readonly beatmap: string;
+  /** A number variable that receives the accuracy (0–100). */
+  readonly score?: string;
+  /** Accuracy needed to win, 0–100; without it, finishing alive is enough. */
+  readonly pass?: number;
+  readonly win: readonly Block[];
+  readonly lose: readonly Block[];
+}
 export interface ActionBlock extends BlockBase {
   readonly type: 'action';
   /** A kernel action id, such as `audio.play`. */
@@ -248,6 +260,7 @@ export type Block =
   | EndBlock
   | FightBlock
   | MinigameBlock
+  | RhythmBlock
   | SequenceBlock
   | RpgBlock
   | RoutineBlock
@@ -349,6 +362,7 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
       lose: blocks(),
     }),
     z.object({ id: idSchema, ...minigameBlockShape, win: blocks(), lose: blocks() }),
+    z.object({ id: idSchema, ...rhythmBlockShape, win: blocks(), lose: blocks() }),
     sequenceBlockSchema,
     ...rpgBlockSchemas(blocks),
     logic.routineBlock,

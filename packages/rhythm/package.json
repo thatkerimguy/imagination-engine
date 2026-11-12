@@ -6,7 +6,8 @@
   "description": "Rhythm fights: charts, the fight director, judging and the fight screen. No UI framework.",
   "exports": {
     ".": "./src/index.ts",
-    "./fight.css": "./src/view/fight.css"
+    "./fight.css": "./src/view/fight.css",
+    "./beatmap.css": "./src/beatmap/view/beatmap.css"
   },
   "dependencies": {
     "@ie/audio": "workspace:*",

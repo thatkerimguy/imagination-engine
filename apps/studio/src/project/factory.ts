@@ -47,6 +47,7 @@ export const BLOCK_MENU = [
   'check',
   'fight',
   'minigame',
+  'rhythm',
   'input',
   ...RPG_BLOCKS,
   'set',
@@ -92,6 +93,7 @@ export interface BlockDefaults extends RpgDefaults {
   readonly sound?: string;
   readonly enemy?: string;
   readonly sequence?: string;
+  readonly beatmap?: string;
 }
 
 /** A new block of a type, filled with sensible defaults so it is valid straight away. */
@@ -114,6 +116,8 @@ export function newBlock(type: MenuBlockType, defaults: BlockDefaults = {}): Blo
       return { id, type, sequence: defaults.sequence ?? '' };
     case 'minigame':
       return { id, type, game: defaultGame('lockpick'), win: [], lose: [] };
+    case 'rhythm':
+      return { id, type, beatmap: defaults.beatmap ?? '', win: [], lose: [] };
     case 'input':
       return { id, type, var: defaults.textVariable ?? '', prompt: newText() };
     case 'set':
@@ -281,6 +285,7 @@ export function cloneBlock(block: Block): Block {
       };
     case 'fight':
     case 'minigame':
+    case 'rhythm':
       return { ...block, id, win: list(block.win), lose: list(block.lose) };
     case 'battle':
       return cloneBattle(block, id, list);

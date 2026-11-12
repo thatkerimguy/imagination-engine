@@ -16,12 +16,12 @@ import {
   resolveStoryTheme,
   type PresenterOptions,
 } from '@ie/present';
-import type { Assist } from '@ie/rhythm';
+import type { Assist, Mod } from '@ie/rhythm';
 import { createSequenceModule, SequenceRunner } from '@ie/sequencer';
 import { createMediaModule, MediaLayer } from '@ie/media';
 import { createStageHost, createStageModule } from '@ie/stage';
 import { StoryLoadError, type Beat, type CompiledStory } from '@ie/story';
-import { applyTheme, watchSystemTheme } from '@ie/ui-kit';
+import { applyTheme, readPref, watchSystemTheme, writePref } from '@ie/ui-kit';
 import { Dialogs } from './dialogs.ts';
 import { Menu } from './menu.ts';
 import { hasSheet } from './panels/sheet-panel.ts';
@@ -44,14 +44,25 @@ import { novelUrl, openStory } from './story/load.ts';
 import { createStoryModule } from './story/module.ts';
 import { StorySession } from './story/session.ts';
 
+const RHYTHM_PREFS = 'ie.player.rhythm';
+
 type FightBeat = Extract<Beat, { kind: 'fight' }>;
 type MinigameBeat = Extract<Beat, { kind: 'minigame' }>;
+type RhythmBeat = Extract<Beat, { kind: 'rhythm' }>;
 
 const ASSISTS: Readonly<Record<FightAssist, Assist>> = {
   off: {},
   wide: { wide: true },
   noFail: { noFail: true },
   auto: { auto: true },
+};
+
+/** The help setting eases beatmaps with the matching change. */
+const ASSIST_MODS: Readonly<Record<FightAssist, readonly Mod[]>> = {
+  off: [],
+  wide: ['easy'],
+  noFail: ['noFail'],
+  auto: ['auto'],
 };
 
 const ADVANCE_KEYS = new Set([' ', 'Enter', 'ArrowRight', 'ArrowDown', 'PageDown']);
@@ -134,6 +145,24 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         haptics: settings.haptics,
       }),
       resolve: (result) => run('story.minigame', result),
+    });
+  });
+  // Beatmaps (ADR 0033): the same lazy load as fights.
+  const rhythms = new LazyRunner<RhythmBeat>(async () => {
+    const { BeatmapRunner, parsePrefs } = await import('@ie/rhythm');
+    return new BeatmapRunner({
+      audio,
+      host: () => document.body,
+      settings: () => ({
+        locale: settings.locale,
+        haptics: settings.haptics,
+        forceMods: ASSIST_MODS[settings.fightAssist],
+      }),
+      prefs: {
+        load: () => parsePrefs(readPref(RHYTHM_PREFS)),
+        save: (p) => writePref(RHYTHM_PREFS, JSON.stringify(p)),
+      },
+      resolve: (result) => run('story.rhythm', result),
     });
   });
   // Sequences the story plays (ADR 0019); their cues go through the action bus like blocks.
@@ -296,6 +325,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
         typed: (speaker, text) => audio.typed(speaker, text),
         fight: (beat) => fights.start(session.runtime, beat),
         minigame: (beat) => minigames.start(session.runtime, beat),
+        rhythm: (beat) => rhythms.start(session.runtime, beat),
         sequence: (beat) => sequences.start(session.runtime, beat),
       },
       presenterOptions(settings),
@@ -303,6 +333,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
     story = new StoryController(session, presenter, kernel.events, (scene) => {
       fights.sync(session.runtime);
       minigames.sync(session.runtime);
+      rhythms.sync(session.runtime);
       sequences.sync(session.runtime);
       audio.applyScene(scene);
       stage.applyScene(scene);
@@ -336,7 +367,7 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       screens,
       controller: story,
       locale: settings.locale,
-      canMove: () => !menu.isOpen && !fights.running && !minigames.running,
+      canMove: () => !menu.isOpen && !fights.running && !minigames.running && !rhythms.running,
       go: (roomId) => run('story.go', { roomId }),
       moved: holdClocks,
     });
@@ -371,7 +402,8 @@ export async function startPlayer(root: HTMLElement): Promise<Kernel> {
       return;
     }
     // A fight or a minigame reads its own keys (arrows act there, not step back).
-    if (menu.isOpen || fights.running || minigames.running || screens?.covering) return;
+    if (menu.isOpen || fights.running || minigames.running || rhythms.running || screens?.covering)
+      return;
     // Away from the story, keys don't turn its pages; Escape already went back above.
     if (spaces && !spaces.atStory) return;
     if (target?.closest('input, textarea, select')) return;

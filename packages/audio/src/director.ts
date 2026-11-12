@@ -70,6 +70,12 @@ export class AudioDirector {
     return this.options.engine;
   }
 
+  /** A library track's playable URL, for players that read the audio themselves (beatmaps). */
+  async trackUrl(trackId: string): Promise<string | null> {
+    const track = this.options.library()?.tracks.find((t) => t.id === trackId);
+    return track ? this.options.resolve(track) : null;
+  }
+
   musicSet(params: MusicSet): Promise<void> {
     const track = this.options.library()?.tracks.find((t) => t.id === params.track);
     return this.music.set(params, track);

@@ -2,10 +2,14 @@ import type { AudioDirector } from '@ie/audio';
 import type { Locale } from '@ie/i18n';
 import { ScreenHost, SpaceDeck, StoryPresenter } from '@ie/present';
 import { MinigameRunner } from '@ie/minigame';
-import { FightRunner } from '@ie/rhythm';
+import { BeatmapRunner, FightRunner, parsePrefs } from '@ie/rhythm';
+import { readPref, writePref } from '@ie/ui-kit';
 import { SequenceRunner } from '@ie/sequencer';
 import type { StageDirector } from '@ie/stage';
 import { StoryRuntime, type CompiledStory, type StoryState } from '@ie/story';
+
+/** Beatmap settings on this device, shared with the editor's test play. */
+export const RHYTHM_PREFS = 'ie.studio.rhythm';
 
 /** What a playthrough needs from the Studio's sound (see audio/studio-audio.ts). */
 export interface PlayAudio {
@@ -37,6 +41,7 @@ export class PlaySession {
   private readonly history: StoryState[] = [];
   private readonly fights: FightRunner | null;
   private readonly minigames: MinigameRunner | null;
+  private readonly rhythms: BeatmapRunner | null;
   private readonly sequences: SequenceRunner | null;
   private locale: Locale;
 
@@ -75,6 +80,19 @@ export class PlaySession {
           resolve: (result) => this.act(() => this.runtime.resolveFight(result)),
         })
       : null;
+    this.rhythms = fights
+      ? new BeatmapRunner({
+          audio: fights.audio,
+          host: fights.host,
+          contained: true,
+          settings: () => ({ locale: this.locale, haptics: false, forceMods: [] }),
+          prefs: {
+            load: () => parsePrefs(readPref(RHYTHM_PREFS)),
+            save: (p) => writePref(RHYTHM_PREFS, JSON.stringify(p)),
+          },
+          resolve: (result) => this.act(() => this.runtime.resolveRhythm(result)),
+        })
+      : null;
     this.minigames = fights
       ? new MinigameRunner({
           host: fights.host,
@@ -92,6 +110,7 @@ export class PlaySession {
         advance: () => this.advance(),
         fight: (beat) => this.fights?.start(this.runtime, beat),
         minigame: (beat) => this.minigames?.start(this.runtime, beat),
+        rhythm: (beat) => this.rhythms?.start(this.runtime, beat),
         sequence: (beat) => this.sequences?.start(this.runtime, beat),
         buy: (item) => this.act(() => this.runtime.buy(item)),
         sell: (item) => this.act(() => this.runtime.sell(item)),
@@ -142,7 +161,11 @@ export class PlaySession {
 
   /** True while a fight or a minigame has the screen (its keys are its own). */
   get fighting(): boolean {
-    return (this.fights?.running ?? false) || (this.minigames?.running ?? false);
+    return (
+      (this.fights?.running ?? false) ||
+      (this.minigames?.running ?? false) ||
+      (this.rhythms?.running ?? false)
+    );
   }
 
   get canBack(): boolean {
@@ -185,6 +208,7 @@ export class PlaySession {
     this.runtime.restore(state);
     this.fights?.sync(this.runtime);
     this.minigames?.sync(this.runtime);
+    this.rhythms?.sync(this.runtime);
     this.sequences?.sync(this.runtime);
     this.presenter.redraw();
     this.refreshAround();
@@ -196,6 +220,7 @@ export class PlaySession {
     this.history.length = 0;
     this.fights?.stop();
     this.minigames?.stop();
+    this.rhythms?.stop();
     this.sequences?.stop();
     this.runtime = this.create();
     this.presenter.attach(this.runtime);
@@ -218,6 +243,7 @@ export class PlaySession {
   dispose(): void {
     this.fights?.stop();
     this.minigames?.stop();
+    this.rhythms?.stop();
     this.sequences?.stop();
     this.presenter.dispose();
     this.screens.dispose();

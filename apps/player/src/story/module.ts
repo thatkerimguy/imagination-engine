@@ -3,9 +3,11 @@ import {
   BATTLE_ACTS,
   fightResultSchema,
   minigameResultSchema,
+  rhythmResultSchema,
   type BattleAction,
   type FightResult,
   type MinigameResult,
+  type RhythmResult,
 } from '@ie/story';
 import { z } from 'zod';
 import type { SlotId } from './saves.ts';
@@ -24,6 +26,7 @@ export interface StoryActionsHost {
   submit(answer: string): void;
   fight(result: FightResult): void;
   minigame(result: MinigameResult): void;
+  rhythm(result: RhythmResult): void;
   buy(itemId: string): void;
   sell(itemId: string): void;
   leaveShop(): void;
@@ -90,6 +93,14 @@ export function createStoryModule(host: () => StoryActionsHost | null): EngineMo
           description: 'End the minigame on screen with a result.',
           params: minigameResultSchema,
           run: (result) => call((s) => s.minigame(result)),
+        }),
+      );
+      actions.register(
+        defineAction({
+          id: 'story.rhythm',
+          description: 'End the beatmap on screen with a result.',
+          params: rhythmResultSchema,
+          run: (result) => call((s) => s.rhythm(result)),
         }),
       );
       const item = z.object({ itemId: z.string().min(1) });

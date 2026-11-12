@@ -1,5 +1,6 @@
 import { parseDice } from './dice.ts';
 import { checkAudioAction, checkAudioLibrary } from './analyze-audio.ts';
+import { checkBeatmaps, checkRhythmBlock } from './analyze-beatmap.ts';
 import { checkEnemies, checkFightBlock } from './analyze-fight.ts';
 import { checkMinigameBlock } from './analyze-minigame.ts';
 import { checkReferences, type PendingRefs } from './analyze-refs.ts';
@@ -93,6 +94,7 @@ export function leaves(list: readonly Block[]): boolean {
         return leaves(block.success) && leaves(block.fail);
       case 'fight':
       case 'minigame':
+      case 'rhythm':
         return leaves(block.win) && leaves(block.lose);
       case 'battle':
         return (
@@ -353,7 +355,9 @@ export function analyzeProject(project: StoryProject): Analysis {
           walk(block.lose, listKey.lose(block.id), passageId);
           break;
         case 'minigame':
-          checkMinigameBlock(block, project, report, needVar);
+        case 'rhythm':
+          if (block.type === 'rhythm') checkRhythmBlock(block, project, report, needVar);
+          else checkMinigameBlock(block, project, report, needVar);
           walk(block.win, listKey.win(block.id), passageId);
           walk(block.lose, listKey.lose(block.id), passageId);
           break;
@@ -401,6 +405,7 @@ export function analyzeProject(project: StoryProject): Analysis {
   checkAudioLibrary(project, report);
   checkEnemies(project, report);
   checkSequences(project, report);
+  checkBeatmaps(project, report);
   checkMaterials(project, report);
   checkScreens({ project, report, needVar, useFormula, useText });
   checkWorld({ project, report, passages, exitsBlocks, useFormula, useText, jumps: targets.jump });

@@ -171,6 +171,19 @@ export function problemMessage(
       return t('problem.minigameShort');
     case 'minigame-odds':
       return t('problem.minigameOdds');
+    case 'rhythm-beatmap':
+      return t('problem.rhythmBeatmap');
+    case 'unknown-beatmap':
+      return t('problem.unknownBeatmap');
+    case 'beatmap-track':
+    case 'beatmap-empty':
+    case 'beatmap-order': {
+      const map = doc.beatmaps?.find((b) => b.id === id);
+      const name = labelText(map?.name, t.locale, id);
+      if (problem.code === 'beatmap-track') return t('problem.beatmapTrack', { name });
+      if (problem.code === 'beatmap-empty') return t('problem.beatmapEmpty', { name });
+      return t('problem.beatmapOrder', { name });
+    }
     case 'unknown-material':
     case 'material-domain':
     case 'material-param':

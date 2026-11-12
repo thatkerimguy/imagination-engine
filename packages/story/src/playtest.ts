@@ -186,6 +186,11 @@ export class PlaytestTally {
         runtime.resolveMinigame({ won, score: Math.round(roll() * 100) });
         return true;
       }
+      case 'rhythm': {
+        const won = roll() < winRate;
+        runtime.resolveRhythm({ won, score: Math.round(roll() * 100) });
+        return true;
+      }
       case 'exits': {
         // Walk out through an open exit, or take the map somewhere already seen.
         const targets = runtime

@@ -1,5 +1,6 @@
 export { analyzeProject, leaves } from './analyze.ts';
 export * from './audio.ts';
+export * from './beatmap.ts';
 export * from './fight.ts';
 export * from './minigame.ts';
 export * from './minigame-built.ts';

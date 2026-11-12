@@ -6,7 +6,7 @@ export const BLOCK_GROUPS = {
   write: ['narration', 'dialogue', 'note', 'pause'],
   choices: ['choice', 'if', 'random', 'check', 'input', 'set'],
   flow: ['jump', 'call', 'return', 'exits', 'end'],
-  game: ['fight', 'minigame', 'item', 'quest', 'shop', 'battle', 'routine'],
+  game: ['fight', 'minigame', 'rhythm', 'item', 'quest', 'shop', 'battle', 'routine'],
   sound: ['music', 'sfx', 'ambience'],
   stage: [
     'background',

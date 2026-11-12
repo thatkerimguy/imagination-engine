@@ -4,6 +4,7 @@ import { battleAction, battleMenu, type BattleAction, type BattleMenu } from './
 import { optionView } from './choices.ts';
 import { listKey, type CompiledStory } from './compile.ts';
 import { truthy, valueText } from './formula.ts';
+import type { RhythmResult } from './beatmap.ts';
 import type { FightResult } from './fight.ts';
 import { minigameValues, type MinigameResult } from './minigame.ts';
 import type { Formula, LocalText } from './schema.ts';
@@ -146,10 +147,11 @@ export class StoryRuntime {
       kind === 'input' ||
       kind === 'fight' ||
       kind === 'minigame' ||
+      kind === 'rhythm' ||
       kind === 'exits'
     ) {
       throw new Error(
-        'The story is waiting for a choice, an answer, a fight, a minigame or a way out.',
+        'The story is waiting for a choice, an answer, a fight, a minigame, a rhythm game or a way out.',
       );
     }
     s.waiting = null;
@@ -259,6 +261,23 @@ export class StoryRuntime {
       if (names.includes(name) && typeof value === 'number' && Number.isFinite(value))
         core.write(variable, value);
     }
+    core.record({ kind: 'played', blockId: beat.blockId, won: result.won, score });
+    core.s.waiting = null;
+    core.push({
+      list: result.won ? listKey.win(beat.blockId) : listKey.lose(beat.blockId),
+      index: 0,
+    });
+  }
+
+  /** Ends the waiting beatmap: stores the accuracy, then plays its win or lose blocks. */
+  resolveRhythm(result: RhythmResult): void {
+    const core = this.core;
+    const beat = this.waiting;
+    if (beat?.kind !== 'rhythm') throw new Error('There is no beatmap waiting.');
+    const block = this.story.blocks.get(beat.blockId)?.block;
+    if (block?.type !== 'rhythm') throw new Error('The beatmap is no longer in the story.');
+    const score = Math.round(Math.max(0, Math.min(100, result.score)));
+    if (block.score) core.write(block.score, score);
     core.record({ kind: 'played', blockId: beat.blockId, won: result.won, score });
     core.s.waiting = null;
     core.push({

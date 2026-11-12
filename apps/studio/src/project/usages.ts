@@ -23,6 +23,8 @@ export interface Usages {
   /** Sequences, from Sequence blocks, fight charts and enemy moves. */
   readonly sequences: ReadonlyMap<string, number>;
   readonly materials: ReadonlyMap<string, number>;
+  /** Beatmaps, from Rhythm blocks. */
+  readonly beatmaps: ReadonlyMap<string, number>;
 }
 
 function formulasOf(block: Block): Formula[] {
@@ -59,6 +61,7 @@ export function countUsages(doc: StoryProject): Usages {
   const routines = new Map<string, number>();
   const sequences = new Map<string, number>();
   const materials = new Map<string, number>();
+  const beatmaps = new Map<string, number>();
   const bump = (map: Map<string, number>, id: string) => map.set(id, (map.get(id) ?? 0) + 1);
 
   walkBlocks(doc, ({ block }) => {
@@ -84,6 +87,10 @@ export function countUsages(doc: StoryProject): Usages {
     if (block.type === 'minigame') {
       if (block.score) bump(variables, block.score);
       for (const id of Object.values(block.store ?? {})) bump(variables, id);
+    }
+    if (block.type === 'rhythm') {
+      bump(beatmaps, block.beatmap);
+      if (block.score) bump(variables, block.score);
     }
     if (block.type === 'sequence') bump(sequences, block.sequence);
     if (block.type === 'choice')
@@ -139,5 +146,17 @@ export function countUsages(doc: StoryProject): Usages {
           if (typeof material === 'string' && material) bump(materials, material);
         }
   }
-  return { variables, characters, audio, enemies, items, quests, routines, sequences, materials };
+  for (const map of doc.beatmaps ?? []) if (map.track) bump(audio, map.track);
+  return {
+    variables,
+    characters,
+    audio,
+    enemies,
+    items,
+    quests,
+    routines,
+    sequences,
+    materials,
+    beatmaps,
+  };
 }

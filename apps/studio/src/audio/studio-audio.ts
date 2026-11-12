@@ -163,16 +163,24 @@ export function addTrack(track: Track): void {
 }
 
 /** Copies an audio file into the Studio's storage and adds it as a track the author owns. */
-export async function importAudioFile(file: File): Promise<Track> {
+/**
+ * Stores an audio file and adds it as a track. A song that came with someone else's chart isn't
+ * the author's own, so `own: false` leaves its licence unknown until they say.
+ */
+export async function importAudioFile(
+  file: File,
+  info: { readonly title?: string; readonly artist?: string; readonly own?: boolean } = {},
+): Promise<Track> {
   const id = createId('t');
   const ext = /\.([a-z0-9]{1,5})$/i.exec(file.name)?.[1]?.toLowerCase() ?? 'audio';
   const path = `audio/${id}.${ext}`;
   await (await audioFiles()).write(path, file);
   const track: Track = {
     id,
-    title: file.name.replace(/\.[^.]+$/, ''),
+    title: info.title || file.name.replace(/\.[^.]+$/, ''),
+    ...(info.artist ? { artist: info.artist } : {}),
     source: { kind: 'file', path, ...(file.type ? { mime: file.type } : {}) },
-    license: { code: 'own' },
+    ...(info.own === false ? {} : { license: { code: 'own' } }),
   };
   addTrack(track);
   return track;

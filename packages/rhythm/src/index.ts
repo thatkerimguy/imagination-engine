@@ -33,3 +33,51 @@ export {
   type FightRunnerOptions,
   type FightRunnerSettings,
 } from './view/fight-runner.ts';
+export { autoAim } from './beatmap/autoplay.ts';
+export { naturalLength, pointAt, samplePath, type SampledPath } from './beatmap/curve.ts';
+export { SAMPLE_OSU } from './beatmap/fixture.ts';
+export { OsuError, parseOsu, type OsuChart, type OsuProblem } from './beatmap/osu.ts';
+export { writeOsu } from './beatmap/osu-write.ts';
+export { ballAt, FIELD_CENTRE, prepareObjects, type PlayObject } from './beatmap/prepare.ts';
+export {
+  adjustedDifficulty,
+  EXCLUSIVE,
+  judgeOffset,
+  MODS,
+  playRules,
+  rankFor,
+  type Judgement,
+  type Mod,
+  type PlayRules,
+  type Rank,
+} from './beatmap/rules.ts';
+export { BeatmapSession, type PlayEvent, type PlayResult } from './beatmap/session.ts';
+export { beatLength, gridLines, snapTime, timingAt, type GridLine } from './beatmap/timing.ts';
+export { readZip, ZipError, type ZipEntry } from './beatmap/zip.ts';
+export {
+  DEFAULT_PREFS,
+  parsePrefs,
+  toggleMod,
+  type RhythmPrefs,
+} from './beatmap/view/beatmap-menus.ts';
+export {
+  BeatmapRunner,
+  type BeatmapRunnerOptions,
+  type BeatmapRunnerSettings,
+} from './beatmap/view/beatmap-runner.ts';
+export { BeatmapView, type BeatmapViewOptions } from './beatmap/view/beatmap-view.ts';
+export { FieldPainter, type DrawState } from './beatmap/view/field-draw.ts';
+export {
+  fieldTransform,
+  fitField,
+  readPalette,
+  screenTransform,
+  sizeCanvas,
+  toField,
+  toScreen,
+  type FieldLayout,
+  type FieldPalette,
+} from './beatmap/view/field-layout.ts';
+export { HitSounds } from './beatmap/view/hit-sounds.ts';
+export { beatmapMessages, type BeatmapKey } from './beatmap/view/messages.ts';
+export { loadSong, SongClock, type SongSource } from './beatmap/view/song-clock.ts';

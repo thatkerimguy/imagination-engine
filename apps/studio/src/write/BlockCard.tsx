@@ -12,6 +12,7 @@ import { focusBlock, useWrite } from './context.ts';
 import { ChoiceEditor } from './blocks/ChoiceEditor.tsx';
 import { FightEditor } from './blocks/FightEditor.tsx';
 import { MinigameEditor } from './blocks/MinigameEditor.tsx';
+import { RhythmEditor } from './blocks/RhythmEditor.tsx';
 import { SequenceBlockEditor } from './blocks/SequenceEditor.tsx';
 import { CheckEditor, IfEditor, RandomEditor } from './blocks/BranchEditors.tsx';
 import { FlowEditor, SetEditor } from './blocks/LogicEditors.tsx';
@@ -63,6 +64,8 @@ function Editor({ block, listKey, index }: Omit<BlockCardProps, 'count'>) {
       return <FightEditor block={block} />;
     case 'minigame':
       return <MinigameEditor block={block} />;
+    case 'rhythm':
+      return <RhythmEditor block={block} />;
     case 'sequence':
       return <SequenceBlockEditor block={block} />;
     case 'random':

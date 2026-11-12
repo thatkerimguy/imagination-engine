@@ -6,6 +6,7 @@ import {
   type CompiledStory,
   type FightResult,
   type MinigameResult,
+  type RhythmResult,
   type StoryState,
 } from '@ie/story';
 import { RewindHistory } from './history.ts';
@@ -120,6 +121,11 @@ export class StorySession {
   /** Ends the waiting minigame with its result; the story branches on it. */
   minigame(result: MinigameResult): Beat[] {
     return this.act(() => this.runtime.resolveMinigame(result));
+  }
+
+  /** Ends the waiting beatmap with its result; the story branches on it. */
+  rhythm(result: RhythmResult): Beat[] {
+    return this.act(() => this.runtime.resolveRhythm(result));
   }
 
   /** One purchase, sale or battle turn is one reader action, so one step back undoes it. */

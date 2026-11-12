@@ -1,6 +1,7 @@
 import { LOCALES, type Locale } from '@ie/i18n';
 import { z } from 'zod';
 import { audioLibrarySchema, type AudioLibrary } from './audio.ts';
+import { beatmapSchema, type BeatmapDef } from './beatmap.ts';
 import { enemySchema, type EnemyDef } from './fight.ts';
 import { logicSchemas, type RoutineDef, type RuleDef } from './logic.ts';
 import {
@@ -74,6 +75,8 @@ export interface StoryProject {
   readonly world?: WorldDef;
   /** Views beside the story, reached with a swipe or the screen's edge (ADR 0031). */
   readonly spaces?: readonly SpaceDef[];
+  /** Aim-and-tap rhythm charts played by Rhythm blocks (ADR 0033). */
+  readonly beatmaps?: readonly BeatmapDef[];
 }
 export const storyProjectSchema = z.object({
   format: z.literal(STORY_FORMAT),
@@ -103,4 +106,5 @@ export const storyProjectSchema = z.object({
   kits: z.array(z.string().max(40)).max(12).optional(),
   world: worldSchema.optional(),
   spaces: z.array(spaceSchema).max(MAX_SPACES).optional(),
+  beatmaps: z.array(beatmapSchema).max(64).optional(),
 });

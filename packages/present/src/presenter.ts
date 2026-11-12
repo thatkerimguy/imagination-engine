@@ -18,6 +18,8 @@ export interface PresenterHost extends PromptHandlers, RpgHandlers, WorldHandler
   fight?(beat: Extract<Beat, { kind: 'fight' }>): void;
   /** A minigame waits: the host plays it and resolves it on the runtime. Called again on a redraw. */
   minigame?(beat: Extract<Beat, { kind: 'minigame' }>): void;
+  /** A beatmap waits: the host plays it and resolves it on the runtime. Called again on a redraw. */
+  rhythm?(beat: Extract<Beat, { kind: 'rhythm' }>): void;
   /** A sequence waits: the host plays it and advances when it ends. Called again on a redraw. */
   sequence?(beat: Extract<Beat, { kind: 'sequence' }>): void;
 }
@@ -272,6 +274,8 @@ export class StoryPresenter {
       handlers.fight?.(beat);
     } else if (beat.kind === 'minigame') {
       handlers.minigame?.(beat);
+    } else if (beat.kind === 'rhythm') {
+      handlers.rhythm?.(beat);
     } else if (beat.kind === 'sequence') {
       handlers.sequence?.(beat);
     } else if (beat.kind === 'shop') {

@@ -173,6 +173,16 @@ export function buildLine(beat: Beat, ctx: LineContext, mode: LineMode): BuiltLi
     }
     case 'played': {
       const block = story.blocks.get(beat.blockId)?.block;
+      if (block?.type === 'rhythm') {
+        const map = story.project.beatmaps?.find((b) => b.id === block.beatmap);
+        const line = el('p', 'line line--check line--played');
+        line.dataset.result = beat.won ? 'success' : 'fail';
+        line.textContent = ctx.t(beat.won ? 'rhythm.won' : 'rhythm.lost', {
+          name: pickLabel(map?.name, ctx.locale, block.beatmap),
+          score: beat.score,
+        });
+        return { element: line, steps: [] };
+      }
       const game = block?.type === 'minigame' ? block : undefined;
       const name =
         pickLabel(game?.title, ctx.locale) ||

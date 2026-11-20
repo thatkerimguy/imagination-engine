@@ -98,7 +98,7 @@ export function FontList(p: { fontId: string; onSelect(id: string): void }): Rea
       <Button
         variant="tonal"
         icon="add"
-        label="+ Import .ttf / .otf font"
+        label="Import .ttf / .otf font"
         testID="import-font"
         onPress={() => void doImport()}
       />

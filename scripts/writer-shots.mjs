@@ -84,6 +84,7 @@ try {
   page.on('dialog', (d) => d.accept());
   const shot = (name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
   const tid = (id) => page.getByTestId(id);
+  globalThis.__page = page;
 
   await page.addInitScript((seed) => {
     const key = 'kn-writer:growth/chapter:ch01';
@@ -105,10 +106,10 @@ try {
   await tid('tool-tab').waitFor();
   ok('slim top bar, metrics ribbon and toolbar (with Tab) render');
   await tid(`prose-text-${ID.snake}`).click();
-  const snake = tid(`prose-text-${ID.snake}`).locator('textarea, input').first();
+  const snake = page.locator(`textarea[data-testid="prose-text-${ID.snake}"]`);
   await snake.waitFor();
   await snake.fill(RICH);
-  await tid(`prose-text-${ID.dialogue}`).click();
+  await tid(`dialogue-text-${ID.dialogue}`).click();
   const wysiwyg = tid(`prose-text-${ID.snake}`);
   const raw = await wysiwyg.textContent();
   if (raw.includes('**') || raw.includes('==')) fail(`unfocused prose shows raw markup: ${raw}`);
@@ -117,7 +118,7 @@ try {
   await tid('redo-button').click();
   ok('undo / redo buttons respond');
   await page.getByTestId('save-status').filter({ hasText: 'Saved' }).waitFor({ timeout: 5000 });
-  await tid(`block-01M7WD7TG0SRH8FFJAF28FHTHC`).evaluate((el) => el.scrollIntoView());
+  await tid(`block-${ID.dialogue}`).evaluate((el) => el.scrollIntoView());
   await page.waitForTimeout(400);
   await shot('01-minimal-editor-metrics-toolbar');
 
@@ -176,21 +177,13 @@ try {
   // 06 Live preview of the unsaved rich prose, sequenced chat + dice.
   await editor();
   await tid(`prose-text-${ID.snake}`).click();
-  await tid(`prose-text-${ID.snake}`)
-    .locator('textarea, input')
-    .first()
-    .fill(RICH + ' ');
+  await page.locator(`textarea[data-testid="prose-text-${ID.snake}"]`).fill(RICH + ' ');
+  // Start the preview at the dialogue line above the dice, as the Author would.
+  await tid(`dialogue-text-${ID.dialogue}`).click();
   await tid('preview-button').click();
   await tid('preview-screen').waitFor({ timeout: 10000 });
   const frame = page.frameLocator('iframe[title="Reader preview"]');
   await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
-  await frame.locator('strong', { hasText: 'Snake eyes.' }).waitFor({ timeout: 15000 });
-  const spans = await frame
-    .locator(`[data-block="${ID.snake}"]`)
-    .evaluate((el) => ['strong', 'em', 'u', 's', 'mark'].map((t) => el.querySelectorAll(t).length));
-  if (spans.every((n) => n === 1))
-    ok('preview renders bold, italic, underline, strike and highlight');
-  else fail(`inline spans in preview: ${JSON.stringify(spans)}`);
   const reader = page.frames().find((f) => f.url().includes('preview=1'));
   await reader.waitForFunction(() => window.__settled, null, { timeout: 30000 });
   const chat = await reader.evaluate(() => ({
@@ -200,6 +193,14 @@ try {
   if (chat.pending === 0 && chat.last === "Don't relax.")
     ok('all 3 KESTREL-9 lines were complete when the dice landed');
   else fail(`dice landed while KESTREL-9 was incomplete: ${JSON.stringify(chat)}`);
+  await frame.getByText('Tap to continue', { exact: false }).click();
+  await frame.locator('strong', { hasText: 'Snake eyes.' }).waitFor({ timeout: 15000 });
+  const spans = await frame
+    .locator(`[data-block="${ID.snake}"]`)
+    .evaluate((el) => ['strong', 'em', 'u', 's', 'mark'].map((t) => el.querySelectorAll(t).length));
+  if (spans.every((n) => n === 1))
+    ok('preview renders bold, italic, underline, strike and highlight');
+  else fail(`inline spans in preview: ${JSON.stringify(spans)}`);
   await frame
     .locator(`[data-block="${ID.snake}"]`)
     .evaluate((el) => el.scrollIntoView({ block: 'center' }));
@@ -211,7 +212,9 @@ try {
   else ok('zero console errors');
   await browser.close();
 } catch (err) {
-  fail(String(err).split('\n')[0]);
+  fail(String(err).split('\n').slice(0, 3).join(' | '));
+  if (shotsAt)
+    await globalThis.__page?.screenshot({ path: `${shotsAt}/_failure.png` }).catch(() => {});
 } finally {
   reader.kill();
   writer.closeAllConnections();

@@ -142,7 +142,7 @@ function ToolButton(p: FormattingToolbarProps & { id: ToolId }): ReactNode {
       accessibilityState={{ selected: on, disabled }}
       disabled={disabled}
       focusable={false}
-      onPressIn={() => p.onTool(id)}
+      onPress={() => p.onTool(id)}
       testID={`tool-${id}`}
       style={({ pressed }) => [s.btn, on && s.on, pressed && s.pressed, disabled && s.off]}
     >
@@ -181,7 +181,7 @@ export function ColorSwatchRow(p: {
           accessibilityRole="button"
           accessibilityLabel={`Colour ${hex}`}
           focusable={false}
-          onPressIn={() => p.onPick(hex)}
+          onPress={() => p.onPick(hex)}
           testID={`swatch-${hex.slice(1)}`}
           style={{ width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' }}
         >

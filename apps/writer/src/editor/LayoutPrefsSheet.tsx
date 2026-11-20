@@ -1,6 +1,7 @@
 // Editor layout preferences: focus mode, ribbon, toolbar buttons and quick typography.
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONT_SIZE_RANGE, LINE_HEIGHT_RANGE, type ToolId } from '../store/writer-prefs.ts';
 import { AppText } from '../ui/AppText.tsx';
 import { BottomSheet } from '../ui/BottomSheet.tsx';
@@ -25,8 +26,8 @@ const useStyles = makeStyles((t) => ({
   section: { gap: space.xs },
   pill: {
     position: 'absolute',
-    top: space.xl,
-    alignSelf: 'center',
+    right: space.lg,
+    opacity: 0.92,
     backgroundColor: t.colors.secondaryContainer,
     borderRadius: shape.full,
     paddingHorizontal: space.lg,
@@ -159,15 +160,16 @@ export function LayoutPrefsSheet(p: LayoutPrefsSheetProps): ReactNode {
   );
 }
 
-/** Small floating pill that leaves focus mode. */
+/** Small floating pill (bottom-right, clear of the prose) that leaves focus mode. */
 export function FocusExitPill({ onExit }: { onExit(): void }): ReactNode {
   const s = useStyles();
+  const insets = useSafeAreaInsets();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Exit focus mode"
       onPress={onExit}
-      style={s.pill}
+      style={[s.pill, { bottom: Math.max(insets.bottom, space.md) + space.md }]}
       testID="focus-exit"
     >
       <AppText variant="labelLarge" color="onSecondaryContainer">

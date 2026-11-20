@@ -189,6 +189,11 @@ button {
   padding: 3rem 0;
   text-align: center;
 }
+.kn-preview-errors {
+  font: 0.8rem/1.5 var(--font-mono);
+  color: var(--muted);
+  white-space: pre-wrap;
+}
 
 /* Reading */
 .kn-chapter {

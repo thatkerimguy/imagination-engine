@@ -85,6 +85,14 @@ export function startApp(): void {
     }
   };
 
+  // Writer live preview: a tiny lazy chunk; ordinary readers never download it.
+  if (new URLSearchParams(location.search).get('preview') === '1') {
+    void import('./preview/view.ts')
+      .then((m) => m.startPreview(ctx))
+      .catch((err: unknown) => errorView(main, err));
+    return;
+  }
+
   addEventListener('popstate', () => void show(parseRoute(location.search, location.hash)));
   void show(parseRoute(location.search, location.hash));
 }

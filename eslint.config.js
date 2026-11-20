@@ -1,10 +1,20 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/dev-dist/**', 'coverage/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/dev-dist/**',
+      'coverage/**',
+      'apps/writer/.expo/**',
+      'apps/writer/expo-env.d.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
@@ -46,6 +56,37 @@ export default tseslint.config(
         },
       ],
     },
+  },
+  {
+    // Expo writer: React hooks rules, and the Zero Heavy Imports fence (CLAUDE.md §3.3).
+    files: ['apps/writer/src/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['three', 'three/*', 'cannon-es', '@dimforge/*'],
+              message: 'The writer never loads 3D or physics; preview runs in the reader WebView.',
+            },
+            {
+              group: ['@kn/module-*/renderer', '**/renderer', '**/renderer.ts'],
+              message: 'Import only a module barrel (schema + formatCardSummary).',
+            },
+            { group: ['@kn/core/renderer'], message: 'Web-only renderer contract.' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Expo / Metro config files are CommonJS.
+    files: ['apps/writer/*.js'],
+    languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   prettier,
 );

@@ -10,14 +10,17 @@
     "dev": "pnpm --filter @kn/reader dev",
     "build": "pnpm --filter @kn/reader build && node scripts/bundle-report.mjs",
     "preview": "pnpm --filter @kn/reader preview",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/writer/tsconfig.json",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
-    "check": "pnpm typecheck && pnpm lint && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "writer": "pnpm --filter @kn/writer start",
+    "writer:web": "pnpm --filter @kn/writer web",
+    "writer:export": "pnpm --filter @kn/writer export:web"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -25,6 +28,7 @@
     "@types/three": "^0.187.0",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",

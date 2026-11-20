@@ -1,8 +1,9 @@
-import type { ChapterDocument, ModuleBlock } from '@kn/core';
+import type { QualityTier } from '@kn/core/renderer';
+import type { ChapterDocument, ModuleBlock, NovelManifest, SeasonManifest } from '@kn/core';
 import { h } from '../dom.ts';
 import { showCurtain } from '../curtain.ts';
 import { loadChapter, loadNovel, loadSeason, novelUrl } from '../data.ts';
-import { getPrefs } from '../prefs.ts';
+import { getPrefs, type TierPreference } from '../prefs.ts';
 import { renderBlock } from '../reading/blocks.ts';
 import { readBookmark, saveBookmark } from '../reading/bookmark.ts';
 import { Pacer } from '../reading/pacing.ts';
@@ -13,6 +14,22 @@ import { applyTheme, type Cleanup, type ViewContext } from './shared.ts';
 
 type ReadRoute = Extract<Route, { view: 'read' }>;
 
+export interface ChapterData {
+  novel: NovelManifest;
+  season: SeasonManifest;
+  chapter: ChapterDocument;
+}
+
+export interface MountOptions {
+  startBlockId: string | null;
+  /** Shown under the last segment (next chapter / back link). */
+  footerLink: HTMLElement;
+  /** Overrides the reader's own tier preference (writer preview). */
+  tier?: TierPreference;
+  /** Writer preview: drafts render, no bookmarks or URL updates, curtain optional. */
+  preview?: { curtain: boolean; onAudioUnlocked(): void };
+}
+
 export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cleanup> {
   const [novel, season, chapter] = await Promise.all([
     loadNovel(route.novel),
@@ -20,12 +37,29 @@ export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cle
     loadChapter(route.novel, route.season, route.chapter),
   ]);
   v.setBar(chapter.title, { view: 'chapters', novel: novel.id, season: season.id });
-  applyTheme(v.main, novel.theme, season.accentColor);
   if (chapter.status === 'draft') {
+    applyTheme(v.main, novel.theme, season.accentColor);
     v.main.replaceChildren(h('p', { class: 'kn-empty' }, 'This chapter is not published yet.'));
     return () => undefined;
   }
+  const mark = readBookmark(novel.id);
+  const resume =
+    mark?.chapterId === chapter.id && mark.seasonId === season.id ? mark.blockId : null;
+  return mountChapter(
+    v,
+    { novel, season, chapter },
+    {
+      startBlockId: route.block ?? resume,
+      footerLink: await nextLink(v, route, season.chapters),
+    },
+  );
+}
 
+/** Renders and paces one chapter from in-memory data (shared by reading and writer preview). */
+export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptions): Cleanup {
+  const { novel, season, chapter } = data;
+  const preview = opts.preview;
+  applyTheme(v.main, novel.theme, season.accentColor);
   const enabled = new Set(novel.enabledModules);
   const blocks = chapter.blocks.filter((b) => {
     if (b.kind !== 'module' || enabled.has(b.moduleId)) return true;
@@ -37,7 +71,7 @@ export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cle
     'footer',
     { class: 'kn-chapter-end', hidden: true },
     h('span', { class: 'kn-break-mark' }, '◆'),
-    await nextLink(v, route, season.chapters),
+    opts.footerLink,
   );
   const article = h(
     'article',
@@ -53,12 +87,8 @@ export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cle
   );
   v.main.replaceChildren(article);
 
-  const mark = readBookmark(novel.id);
-  const restoreId =
-    route.block ??
-    (mark?.chapterId === chapter.id && mark.seasonId === season.id ? mark.blockId : null);
-  const restoreAt = restoreId ? blocks.findIndex((b) => b.id === restoreId) : -1;
-  const tier = resolveTier(getPrefs().tier, deviceHints());
+  const restoreAt = opts.startBlockId ? blocks.findIndex((b) => b.id === opts.startBlockId) : -1;
+  const tier: QualityTier = resolveTier(opts.tier ?? getPrefs().tier, deviceHints());
   document.documentElement.dataset.tier = tier;
 
   const pacer = new Pacer({
@@ -73,6 +103,7 @@ export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cle
         resolveAsset: (path) => novelUrl(novel.id, path),
       }),
     onPosition(blockId) {
+      if (preview) return;
       saveBookmark(novel.id, { seasonId: season.id, chapterId: chapter.id, blockId });
       history.replaceState(history.state, '', `#b-${blockId}`);
     },
@@ -81,9 +112,14 @@ export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cle
   });
 
   let disposed = false;
-  void showCurtain(document.body, chapter.title, `${novel.title} · ${season.title}`, (sound) =>
-    v.audio.unlock(sound),
-  ).then(() => {
+  const curtain =
+    preview && !preview.curtain
+      ? Promise.resolve()
+      : showCurtain(document.body, chapter.title, `${novel.title} · ${season.title}`, (sound) => {
+          v.audio.unlock(sound);
+          preview?.onAudioUnlocked();
+        });
+  void curtain.then(() => {
     if (!disposed) void pacer.start();
   });
 

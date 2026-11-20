@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../ui/Button.tsx';
+import { Icon } from '../ui/Icon.tsx';
 import { Row } from '../ui/layout.tsx';
+import { space } from '../ui/m3-tokens.ts';
 import { TextField } from '../ui/TextField.tsx';
-import { colors, space } from '../ui/legacy-theme.ts';
 
 export const ACCENT_PRESETS = [
   '#4fd1c5',
@@ -40,8 +41,10 @@ export function AccentPicker({
               onChange(c);
             }}
             testID={`accent-${c.slice(1)}`}
-            style={[styles.swatch, { backgroundColor: c }, value === c && styles.selected]}
-          />
+            style={[styles.swatch, { backgroundColor: c }]}
+          >
+            {value === c ? <Icon name="check" size={24} color="onSurface" /> : null}
+          </Pressable>
         ))}
       </Row>
       <TextField
@@ -57,22 +60,29 @@ export function AccentPicker({
         }}
         testID="accent-hex"
       />
-      <Button
-        label="Use reader default"
-        variant="ghost"
-        compact
-        onPress={() => {
-          setText('');
-          onChange(undefined);
-        }}
-        testID="accent-reset"
-      />
+      <View style={styles.reset}>
+        <Button
+          label="Use reader default"
+          variant="text"
+          onPress={() => {
+            setText('');
+            onChange(undefined);
+          }}
+          testID="accent-reset"
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.sm },
-  swatch: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: colors.line },
-  selected: { borderColor: colors.fg },
+  wrap: { gap: space.md },
+  swatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reset: { alignItems: 'flex-start' },
 });

@@ -1,12 +1,20 @@
 import type { ChapterDocument } from '@kn/core';
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button } from '../ui/Button.tsx';
-import { Badge } from '../ui/layout.tsx';
-import { colors, radius, space } from '../ui/legacy-theme.ts';
+import { View } from 'react-native';
+import { AppText } from '../ui/AppText.tsx';
+import { StatusBadge, type BadgeTone } from '../ui/layout.tsx';
+import { shape, space } from '../ui/m3-tokens.ts';
+import { OverflowMenu } from '../ui/OverflowMenu.tsx';
+import { StatePressable } from '../ui/StateLayer.tsx';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 import { InlineRename } from './InlineRename.tsx';
 
-const TONE = { draft: 'muted', unlisted: 'warn', published: 'ok' } as const;
+const TONE: Record<ChapterDocument['status'], BadgeTone> = {
+  draft: 'neutral',
+  unlisted: 'tertiary',
+  published: 'primary',
+};
+const LABEL = { draft: 'Draft', unlisted: 'Unlisted', published: 'Published' } as const;
 
 export interface ChapterRowProps {
   chapter: ChapterDocument;
@@ -14,14 +22,18 @@ export interface ChapterRowProps {
   onCycleStatus(): void;
   onMove(delta: -1 | 1): void;
   onRename(title: string): void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export function ChapterRow(p: ChapterRowProps): ReactNode {
+  const s = useStyles();
+  const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
   const c = p.chapter;
   if (editing) {
     return (
-      <View style={styles.row}>
+      <View style={s.row}>
         <InlineRename
           initial={c.title}
           label="Chapter title"
@@ -36,55 +48,60 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
     );
   }
   return (
-    <View style={styles.row} testID={`outline-chapter-${c.id}`}>
-      <Pressable
+    <View style={s.row} testID={`outline-chapter-${c.id}`}>
+      <StatePressable
         onPress={p.onOpen}
         accessibilityRole="button"
         accessibilityLabel={`Open ${c.title}`}
-        style={styles.title}
+        layerColor={colors.onSurface}
+        style={s.title}
       >
-        <Text style={styles.titleText} numberOfLines={2}>
+        <AppText variant="titleMedium" numberOfLines={2}>
           {c.title}
-        </Text>
-      </Pressable>
-      <Pressable
+        </AppText>
+      </StatePressable>
+      <StatePressable
         onPress={p.onCycleStatus}
         accessibilityRole="button"
         accessibilityLabel={`Status ${c.status}, tap to change`}
-        hitSlop={8}
+        hitSlop={12}
+        layerColor={colors.onSurface}
         testID={`chapter-status-${c.id}`}
       >
-        <Badge label={c.status.toUpperCase()} tone={TONE[c.status]} />
-      </Pressable>
-      <View style={styles.tools}>
-        <Button
-          label="↑"
-          compact
-          variant="ghost"
-          onPress={() => p.onMove(-1)}
-          accessibilityLabel="Move up"
-        />
-        <Button
-          label="↓"
-          compact
-          variant="ghost"
-          onPress={() => p.onMove(1)}
-          accessibilityLabel="Move down"
-        />
-        <Button label="Rename" compact variant="ghost" onPress={() => setEditing(true)} />
-      </View>
+        <StatusBadge label={LABEL[c.status]} tone={TONE[c.status]} />
+      </StatePressable>
+      <OverflowMenu
+        accessibilityLabel={`${c.title} options`}
+        items={[
+          { label: 'Rename', icon: 'edit', onPress: () => setEditing(true) },
+          {
+            label: 'Move up',
+            icon: 'arrow-upward',
+            disabled: p.isFirst,
+            onPress: () => p.onMove(-1),
+          },
+          {
+            label: 'Move down',
+            icon: 'arrow-downward',
+            disabled: p.isLast,
+            onPress: () => p.onMove(1),
+          },
+        ]}
+      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   row: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    padding: space.md,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: space.sm,
+    backgroundColor: t.colors.surfaceContainer,
+    borderRadius: shape.medium,
+    paddingLeft: space.lg,
+    paddingRight: space.xs,
+    minHeight: 56,
   },
-  title: { minHeight: 32, justifyContent: 'center' },
-  titleText: { color: colors.fg, fontSize: 16, fontWeight: '600' },
-  tools: { flexDirection: 'row', gap: space.xs, alignSelf: 'flex-end' },
-});
+  title: { flex: 1, minHeight: 48, justifyContent: 'center' },
+}));

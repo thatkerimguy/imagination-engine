@@ -1,9 +1,14 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { enabledWriterModules } from '../modules/registry.ts';
-import { colors } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
+import { Icon } from '../ui/Icon.tsx';
+import { IconBadge } from '../ui/layout.tsx';
+import { space } from '../ui/m3-tokens.ts';
+import { StatePressable } from '../ui/StateLayer.tsx';
+import { useTheme } from '../ui/theme.tsx';
 
-/** Compact "Gimmicks: 🎲 🧠" line of enabled module icons; tapping opens novel settings. */
+/** Subtle "Gimmicks" row of enabled module badges; tapping opens novel settings. */
 export function GimmickLine({
   enabled,
   onPress,
@@ -11,17 +16,42 @@ export function GimmickLine({
   enabled: readonly string[];
   onPress(): void;
 }): ReactNode {
-  const icons = enabledWriterModules(enabled).map((m) => m.meta.icon);
+  const { colors } = useTheme();
+  const mods = enabledWriterModules(enabled);
   return (
-    <Pressable
+    <StatePressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Gimmick modules"
       testID="outline-gimmicks"
+      layerColor={colors.onSurface}
+      style={styles.row}
     >
-      <Text style={styles.text}>Gimmicks: {icons.length ? icons.join(' ') : 'none yet'}</Text>
-    </Pressable>
+      <AppText variant="labelLarge" color="onSurfaceVariant">
+        Gimmicks
+      </AppText>
+      <View style={styles.badges}>
+        {mods.length ? (
+          mods.map((m) => <IconBadge key={m.meta.id} glyph={m.meta.icon} size={32} />)
+        ) : (
+          <AppText variant="bodySmall" color="onSurfaceVariant">
+            none yet
+          </AppText>
+        )}
+      </View>
+      <Icon name="chevron-right" size={24} color="onSurfaceVariant" />
+    </StatePressable>
   );
 }
 
-const styles = StyleSheet.create({ text: { color: colors.muted, fontSize: 14 } });
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: 48,
+    paddingHorizontal: space.sm,
+    borderRadius: 12,
+  },
+  badges: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+});

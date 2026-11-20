@@ -1,9 +1,11 @@
 import type { ChapterDocument, SeasonManifest } from '@kn/core';
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { AppText } from '../ui/AppText.tsx';
 import { Button } from '../ui/Button.tsx';
 import { Card } from '../ui/layout.tsx';
-import { colors, space } from '../ui/legacy-theme.ts';
+import { space } from '../ui/m3-tokens.ts';
+import { OverflowMenu } from '../ui/OverflowMenu.tsx';
 import { ChapterRow, type ChapterRowProps } from './ChapterRow.tsx';
 import { InlineRename } from './InlineRename.tsx';
 
@@ -11,6 +13,7 @@ export interface SeasonCardProps {
   season: SeasonManifest;
   chapters: ChapterDocument[];
   index: number;
+  count: number;
   sectionLabel: string;
   onRename(title: string): void;
   onMove(delta: -1 | 1): void;
@@ -22,7 +25,7 @@ export function SeasonCard(p: SeasonCardProps): ReactNode {
   const [editing, setEditing] = useState(false);
   const heading = `${p.sectionLabel} ${p.index + 1} · ${p.season.title}`;
   return (
-    <Card style={styles.card}>
+    <Card variant="elevated" style={styles.card}>
       <View testID={`outline-season-${p.season.id}`} style={styles.head}>
         {editing ? (
           <InlineRename
@@ -37,43 +40,56 @@ export function SeasonCard(p: SeasonCardProps): ReactNode {
           />
         ) : (
           <>
-            <Text style={styles.title}>{heading}</Text>
-            <View style={styles.tools}>
-              <Button
-                label="↑"
-                compact
-                variant="ghost"
-                onPress={() => p.onMove(-1)}
-                accessibilityLabel="Move up"
-              />
-              <Button
-                label="↓"
-                compact
-                variant="ghost"
-                onPress={() => p.onMove(1)}
-                accessibilityLabel="Move down"
-              />
-              <Button label="Rename" compact variant="ghost" onPress={() => setEditing(true)} />
-            </View>
+            <AppText variant="titleMedium" style={styles.title}>
+              {heading}
+            </AppText>
+            <OverflowMenu
+              accessibilityLabel={`${p.sectionLabel} options`}
+              items={[
+                { label: 'Rename', icon: 'edit', onPress: () => setEditing(true) },
+                {
+                  label: 'Move up',
+                  icon: 'arrow-upward',
+                  disabled: p.index === 0,
+                  onPress: () => p.onMove(-1),
+                },
+                {
+                  label: 'Move down',
+                  icon: 'arrow-downward',
+                  disabled: p.index >= p.count - 1,
+                  onPress: () => p.onMove(1),
+                },
+              ]}
+            />
           </>
         )}
       </View>
-      {p.chapters.map((c) => (
-        <ChapterRow key={c.id} chapter={c} {...p.chapterProps(c)} />
+      {p.chapters.map((c, i) => (
+        <ChapterRow
+          key={c.id}
+          chapter={c}
+          isFirst={i === 0}
+          isLast={i === p.chapters.length - 1}
+          {...p.chapterProps(c)}
+        />
       ))}
-      <Button
-        label="+ Chapter"
-        compact
-        onPress={p.onAddChapter}
-        testID={`add-chapter-${p.season.id}`}
-      />
+      <View style={styles.add}>
+        <Button
+          label="Chapter"
+          accessibilityLabel="Add chapter"
+          icon="add"
+          variant="tonal"
+          onPress={p.onAddChapter}
+          testID={`add-chapter-${p.season.id}`}
+        />
+      </View>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: { gap: space.sm },
-  head: { gap: space.xs },
-  title: { color: colors.fg, fontSize: 18, fontWeight: '700' },
-  tools: { flexDirection: 'row', gap: space.xs, alignSelf: 'flex-end' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  title: { flex: 1 },
+  add: { alignItems: 'flex-start' },
 });

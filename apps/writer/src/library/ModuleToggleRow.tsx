@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { WriterModule } from '../modules/registry.ts';
-import { Badge, Card } from '../ui/layout.tsx';
-import { colors, space } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
+import { Card, IconBadge } from '../ui/layout.tsx';
+import { space } from '../ui/m3-tokens.ts';
+import { Switch } from '../ui/Switch.tsx';
 
 export function ModuleToggleRow({
   module: m,
@@ -18,25 +20,28 @@ export function ModuleToggleRow({
   return (
     <Card>
       <View style={styles.head}>
-        <Text style={styles.icon}>{m.meta.icon}</Text>
+        <IconBadge glyph={m.meta.icon} />
         <View style={styles.text}>
-          <Text style={styles.name}>{m.meta.name}</Text>
-          <Badge label={m.meta.layer.toUpperCase()} />
+          <AppText variant="titleMedium">{m.meta.name}</AppText>
+          <AppText variant="bodySmall" color="onSurfaceVariant">
+            {m.meta.description}
+          </AppText>
+          <AppText variant="labelSmall" color="onSurfaceVariant">
+            {m.meta.layer.toUpperCase()}
+          </AppText>
         </View>
         <Switch
           value={enabled}
           onValueChange={onChange}
           accessibilityLabel={`Enable ${m.meta.name}`}
-          trackColor={{ true: colors.accent, false: colors.line }}
           testID={`module-toggle-${m.meta.id}`}
         />
       </View>
-      <Text style={styles.desc}>{m.meta.description}</Text>
       {!enabled && usedBy > 0 ? (
-        <Text style={styles.warn} testID={`module-warning-${m.meta.id}`}>
+        <AppText variant="bodySmall" color="error" testID={`module-warning-${m.meta.id}`}>
           Used by {usedBy} {usedBy === 1 ? 'block' : 'blocks'} — they stay in your chapters but the
           reader skips them
-        </Text>
+        </AppText>
       ) : null}
     </Card>
   );
@@ -44,9 +49,5 @@ export function ModuleToggleRow({
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  icon: { fontSize: 28 },
-  text: { flex: 1, gap: 4, alignItems: 'flex-start' },
-  name: { color: colors.fg, fontSize: 16, fontWeight: '700' },
-  desc: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  warn: { color: colors.warn, fontSize: 13, fontWeight: '600' },
+  text: { flex: 1, gap: 2 },
 });

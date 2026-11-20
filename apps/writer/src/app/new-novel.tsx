@@ -2,15 +2,19 @@
 import type { SectionLabel } from '@kn/core';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { ScrollView, Text } from 'react-native';
 import { SECTION_LABELS } from '../library/section-labels.ts';
 import { routes } from '../routes.ts';
 import { useRepository } from '../store/context.tsx';
+import { AppText } from '../ui/AppText.tsx';
 import { Button } from '../ui/Button.tsx';
-import { Chip } from '../ui/Chip.tsx';
-import { Row, screenStyles, SectionTitle } from '../ui/layout.tsx';
+import { Screen, SectionTitle } from '../ui/layout.tsx';
+import { SegmentedButtons, type Segment } from '../ui/SegmentedButtons.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { colors } from '../ui/legacy-theme.ts';
+
+const SEGMENTS: readonly Segment<SectionLabel>[] = SECTION_LABELS.map((l) => ({
+  value: l,
+  label: l,
+}));
 
 export default function NewNovelScreen(): ReactNode {
   const repo = useRepository();
@@ -31,11 +35,7 @@ export default function NewNovelScreen(): ReactNode {
   };
 
   return (
-    <ScrollView
-      style={screenStyles.screen}
-      contentContainerStyle={screenStyles.content}
-      keyboardShouldPersistTaps="handled"
-    >
+    <Screen>
       <TextField label="Title" value={title} onChangeText={setTitle} testID="novel-title" />
       <TextField
         label="Subtitle (optional)"
@@ -45,19 +45,25 @@ export default function NewNovelScreen(): ReactNode {
       />
       <TextField label="Author" value={author} onChangeText={setAuthor} testID="novel-author" />
       <SectionTitle>Sections are called</SectionTitle>
-      <Row>
-        {SECTION_LABELS.map((l) => (
-          <Chip key={l} label={l} selected={l === label} onPress={() => setLabel(l)} />
-        ))}
-      </Row>
-      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+      <SegmentedButtons<SectionLabel>
+        segments={SEGMENTS}
+        value={label}
+        onChange={setLabel}
+        accessibilityLabel="Section name"
+        testID="section-label"
+      />
+      {error ? (
+        <AppText variant="bodyMedium" color="error">
+          {error}
+        </AppText>
+      ) : null}
       <Button
         label="Create"
-        variant="primary"
+        variant="filled"
         disabled={!valid}
         onPress={() => void create()}
         testID="create-novel"
       />
-    </ScrollView>
+    </Screen>
   );
 }

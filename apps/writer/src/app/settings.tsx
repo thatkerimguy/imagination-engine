@@ -1,7 +1,6 @@
-// Device settings: where the Live Preview finds apps/reader.
+// Device settings: appearance, where the Live Preview finds apps/reader, and the demo reset.
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ScrollView } from 'react-native';
 import {
   DEFAULT_SETTINGS,
   loadSettings,
@@ -9,12 +8,24 @@ import {
   saveSettings,
 } from '../settings/app-settings.ts';
 import { useRepository } from '../store/context.tsx';
+import { loadDemoNovel } from '../store/demo.ts';
 import { Button } from '../ui/Button.tsx';
-import { Card, Muted, Row, screenStyles, SectionTitle } from '../ui/layout.tsx';
+import { useConfirm } from '../ui/Dialog.tsx';
+import { Card, Muted, Row, Screen, SectionTitle } from '../ui/layout.tsx';
+import { SegmentedButtons } from '../ui/SegmentedButtons.tsx';
 import { TextField } from '../ui/TextField.tsx';
+import { useAppearance } from '../ui/theme.tsx';
+
+const APPEARANCE_SEGMENTS = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
+] as const;
 
 export default function AppSettingsScreen(): ReactNode {
   const repo = useRepository();
+  const confirm = useConfirm();
+  const [appearance, setAppearance] = useAppearance();
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   useEffect(() => {
     void loadSettings(repo).then((s) => setReaderUrl(s.readerUrl));
@@ -25,8 +36,25 @@ export default function AppSettingsScreen(): ReactNode {
     await saveSettings(repo, { readerUrl: readerUrl.trim() });
     router.back();
   };
+  const resetDemo = async (): Promise<void> => {
+    const ok = await confirm({
+      title: 'Reset demo novel',
+      message: 'Reset the demo novel to its original state?',
+      confirmLabel: 'Reset',
+      destructive: true,
+    });
+    if (ok) await loadDemoNovel(repo);
+  };
   return (
-    <ScrollView style={screenStyles.screen} contentContainerStyle={screenStyles.content}>
+    <Screen>
+      <SectionTitle>Appearance</SectionTitle>
+      <SegmentedButtons
+        segments={APPEARANCE_SEGMENTS}
+        value={appearance}
+        onChange={setAppearance}
+        accessibilityLabel="Appearance"
+        testID="appearance"
+      />
       <SectionTitle>Live preview</SectionTitle>
       <Card>
         <TextField
@@ -42,14 +70,23 @@ export default function AppSettingsScreen(): ReactNode {
         />
         <Muted>The writer opens this address with ?preview=1 and sends your draft to it.</Muted>
         <Row>
-          <Button variant="primary" label="Save" disabled={!valid} onPress={() => void save()} />
+          <Button variant="filled" label="Save" disabled={!valid} onPress={() => void save()} />
           <Button
-            variant="ghost"
+            variant="text"
             label="Reset"
             onPress={() => setReaderUrl(DEFAULT_SETTINGS.readerUrl)}
           />
         </Row>
       </Card>
-    </ScrollView>
+      <SectionTitle>Demo</SectionTitle>
+      <Row>
+        <Button
+          variant="outlined"
+          label="Reset demo novel"
+          onPress={() => void resetDemo()}
+          testID="reset-demo"
+        />
+      </Row>
+    </Screen>
   );
 }

@@ -1,8 +1,7 @@
 // Novel Settings: details, reading accent and which gimmick modules the book uses.
 import type { NovelManifest, SectionLabel } from '@kn/core';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ScrollView, Text } from 'react-native';
 import { AccentPicker } from '../../../library/AccentPicker.tsx';
 import { ModuleToggleRow } from '../../../library/ModuleToggleRow.tsx';
 import { SECTION_LABELS } from '../../../library/section-labels.ts';
@@ -11,10 +10,10 @@ import { useRepoQuery, useRepository } from '../../../store/context.tsx';
 import { ValidationError } from '../../../store/errors.ts';
 import type { NovelRepository } from '../../../store/repository.ts';
 import { Button } from '../../../ui/Button.tsx';
-import { Chip } from '../../../ui/Chip.tsx';
-import { Row, screenStyles, SectionTitle } from '../../../ui/layout.tsx';
+import { AppText } from '../../../ui/AppText.tsx';
+import { Screen, SectionTitle } from '../../../ui/layout.tsx';
+import { SegmentedButtons, type Segment } from '../../../ui/SegmentedButtons.tsx';
 import { TextField } from '../../../ui/TextField.tsx';
-import { colors } from '../../../ui/legacy-theme.ts';
 
 /** How many blocks in this novel's chapters use each module id. */
 async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<string, number>> {
@@ -28,6 +27,11 @@ async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<
   }
   return counts;
 }
+
+const SEGMENTS: readonly Segment<SectionLabel>[] = SECTION_LABELS.map((l) => ({
+  value: l,
+  label: l,
+}));
 
 export default function NovelSettingsScreen(): ReactNode {
   const { novelId } = useLocalSearchParams<{ novelId: string }>();
@@ -45,7 +49,10 @@ export default function NovelSettingsScreen(): ReactNode {
     if (data && !draft) setDraft(data.novel);
   }, [data, draft]);
 
-  if (!draft || !data) return <ScrollView style={screenStyles.screen} />;
+  if (!draft || !data) return <Screen />;
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(data.novel);
+  const valid = draft.title.trim().length > 0 && draft.author.trim().length > 0;
 
   const edit = (patch: Partial<NovelManifest>): void => {
     setSaved(false);
@@ -87,11 +94,21 @@ export default function NovelSettingsScreen(): ReactNode {
   };
 
   return (
-    <ScrollView
-      style={screenStyles.screen}
-      contentContainerStyle={screenStyles.content}
-      keyboardShouldPersistTaps="handled"
-    >
+    <Screen>
+      <Stack.Screen
+        options={{
+          title: 'Novel settings',
+          headerRight: () => (
+            <Button
+              label="Save"
+              variant="text"
+              disabled={!dirty || !valid}
+              onPress={() => void save()}
+              testID="novel-settings-save"
+            />
+          ),
+        }}
+      />
       <SectionTitle>Details</SectionTitle>
       <TextField label="Title" value={draft.title} onChangeText={(title) => edit({ title })} />
       <TextField
@@ -105,16 +122,13 @@ export default function NovelSettingsScreen(): ReactNode {
         }}
       />
       <TextField label="Author" value={draft.author} onChangeText={(author) => edit({ author })} />
-      <Row>
-        {SECTION_LABELS.map((l: SectionLabel) => (
-          <Chip
-            key={l}
-            label={l}
-            selected={draft.sectionLabel === l}
-            onPress={() => edit({ sectionLabel: l })}
-          />
-        ))}
-      </Row>
+      <SegmentedButtons
+        segments={SEGMENTS}
+        value={draft.sectionLabel}
+        onChange={(sectionLabel: SectionLabel) => edit({ sectionLabel })}
+        accessibilityLabel="Section name"
+        testID="section-label"
+      />
       <SectionTitle>Reading theme</SectionTitle>
       <AccentPicker value={draft.theme['--accent']} onChange={setAccent} />
       <SectionTitle>Gimmick modules</SectionTitle>
@@ -128,17 +142,15 @@ export default function NovelSettingsScreen(): ReactNode {
         />
       ))}
       {errors.map((e) => (
-        <Text key={e} style={{ color: colors.danger }}>
+        <AppText key={e} variant="bodyMedium" color="error">
           {e}
-        </Text>
+        </AppText>
       ))}
-      {saved ? <Text style={{ color: colors.ok }}>Saved</Text> : null}
-      <Button
-        label="Save"
-        variant="primary"
-        onPress={() => void save()}
-        testID="novel-settings-save"
-      />
-    </ScrollView>
+      {saved ? (
+        <AppText variant="bodyMedium" color="primary">
+          Saved
+        </AppText>
+      ) : null}
+    </Screen>
   );
 }

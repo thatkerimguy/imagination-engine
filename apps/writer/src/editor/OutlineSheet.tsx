@@ -1,13 +1,14 @@
 // Chapter outline: headings, scene breaks and gimmick blocks; one tap jumps and closes.
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
-import { Pressable } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { ChapterStyles } from '../store/chapter-styles.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { Icon, type IconName } from '../ui/Icon.tsx';
-import { space, TOUCH } from '../ui/m3-tokens.ts';
-import { makeStyles } from '../ui/theme.tsx';
+import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
+import { Press } from '../ui/Press.tsx';
+import { Sheet } from '../ui/Sheet.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space, TOUCH } from '../ui/tokens.ts';
+import { gimmickGlyph } from './gimmick-look.ts';
 import { stripInlineMarkup } from './inline-markup.ts';
 
 export interface OutlineSheetProps {
@@ -21,7 +22,7 @@ export interface OutlineSheetProps {
 interface Entry {
   id: string;
   label: string;
-  icon: IconName;
+  icon: GlyphName;
   level: number;
 }
 
@@ -31,49 +32,53 @@ export function outlineEntries(blocks: readonly Block[], styles: ChapterStyles):
     if (b.kind === 'prose') {
       const level = styles[b.id]?.heading;
       const label = stripInlineMarkup(b.text).trim();
-      if (level && label) out.push({ id: b.id, label, icon: 'title', level });
+      if (level && label) out.push({ id: b.id, label, icon: 'type', level });
     } else if (b.kind === 'scene-break') {
       const label = [b.label, b.timestamp].filter(Boolean).join(' · ') || 'Scene break';
-      out.push({ id: b.id, label, icon: 'diamond', level: 1 });
+      out.push({ id: b.id, label, icon: 'minus', level: 1 });
     } else if (b.kind === 'module') {
-      out.push({ id: b.id, label: b.moduleId, icon: 'auto-awesome', level: 1 });
+      out.push({ id: b.id, label: b.moduleId, icon: gimmickGlyph(b.moduleId), level: 1 });
     }
   }
   return out;
 }
 
-const useStyles = makeStyles(() => ({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: TOUCH },
-}));
-
 export function OutlineSheet(p: OutlineSheetProps): ReactNode {
-  const s = useStyles();
   const entries = outlineEntries(p.blocks, p.styles);
   return (
-    <BottomSheet visible={p.visible} title="Outline" onClose={p.onClose} testID="outline-sheet">
+    <Sheet visible={p.visible} title="Outline" onClose={p.onClose} testID="outline-sheet">
       {entries.length === 0 ? (
-        <AppText color="onSurfaceVariant">
-          Headings, scene breaks and gimmicks will appear here.
-        </AppText>
+        <Txt color="inkSecondary">Headings, scene breaks and gimmicks will appear here.</Txt>
       ) : null}
-      {entries.map((e) => (
-        <Pressable
-          key={e.id}
-          accessibilityRole="button"
-          accessibilityLabel={e.label}
-          testID={`outline-${e.id}`}
-          onPress={() => {
-            p.onJump(e.id);
-            p.onClose();
-          }}
-          style={[s.row, { paddingLeft: (e.level - 1) * space.lg }]}
-        >
-          <Icon name={e.icon} size={20} />
-          <AppText variant={e.level === 1 ? 'titleSmall' : 'bodyMedium'} numberOfLines={1}>
-            {e.label}
-          </AppText>
-        </Pressable>
-      ))}
-    </BottomSheet>
+      <View>
+        {entries.map((e) => (
+          <Press
+            key={e.id}
+            accessibilityRole="button"
+            accessibilityLabel={e.label}
+            testID={`outline-${e.id}`}
+            onPress={() => {
+              p.onJump(e.id);
+              p.onClose();
+            }}
+            style={[styles.row, { paddingLeft: (e.level - 1) * space.lg }]}
+          >
+            <Glyph name={e.icon} size={16} color="inkMuted" />
+            <Txt
+              variant={e.level === 1 ? 'bodyStrong' : 'body'}
+              numberOfLines={1}
+              style={styles.label}
+            >
+              {e.label}
+            </Txt>
+          </Press>
+        ))}
+      </View>
+    </Sheet>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: TOUCH },
+  label: { flex: 1 },
+});

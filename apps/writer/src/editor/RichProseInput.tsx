@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, type StyleProp, type TextStyle } from 'react-native';
 import type { BlockStyle } from '../store/chapter-styles.ts';
 import { GrowingTextInput } from '../ui/GrowingTextInput.tsx';
-import { AppText } from '../ui/AppText.tsx';
+import { Txt } from '../ui/Txt.tsx';
 import { makeStyles, useTheme } from '../ui/theme.tsx';
 import { useEditorTypography } from '../ui/typography.ts';
 import { InlineRichText, blockTextStyle } from './InlineRichText.tsx';
@@ -32,7 +32,7 @@ const useStyles = makeStyles(() => ({
 
 export function RichProseInput(p: RichProseInputProps): ReactNode {
   const typo = useEditorTypography();
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const s = useStyles();
   // Last selection pushed to the native input. Re-sending a controlled selection on every render
   // makes some Android IMEs jump the caret, so a `selection` prop is forwarded to the TextInput
@@ -74,12 +74,9 @@ export function RichProseInput(p: RichProseInputProps): ReactNode {
             baseStyle={p.baseStyle}
           />
         ) : (
-          <AppText
-            color="onSurfaceVariant"
-            style={[blockTextStyle(p.blockStyle, typo), p.baseStyle]}
-          >
+          <Txt color="inkMuted" style={[blockTextStyle(p.blockStyle, typo), p.baseStyle]}>
             {p.placeholder ?? ''}
-          </AppText>
+          </Txt>
         )}
       </Pressable>
     );
@@ -104,9 +101,10 @@ export function RichProseInput(p: RichProseInputProps): ReactNode {
         p.onSelectionChange({ start, end });
       }}
       placeholder={p.placeholder}
-      placeholderTextColor={m3.onSurfaceVariant}
+      placeholderTextColor={colors.inkMuted}
+      selectionColor={colors.accent}
       textAlignVertical="top"
-      style={[s.input, base, p.baseStyle, { color: p.blockStyle?.fgColor ?? m3.onSurface }]}
+      style={[s.input, base, p.baseStyle, { color: p.blockStyle?.fgColor ?? colors.ink }]}
     />
   );
 }

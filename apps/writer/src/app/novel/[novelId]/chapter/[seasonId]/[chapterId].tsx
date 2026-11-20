@@ -7,12 +7,12 @@ import { ChapterEditor } from '../../../../../editor/ChapterEditor.tsx';
 import { routes } from '../../../../../routes.ts';
 import { useRepoQuery } from '../../../../../store/context.tsx';
 import { useChapterDraft } from '../../../../../store/use-chapter-draft.ts';
-import { AppText } from '../../../../../ui/AppText.tsx';
+import { Txt } from '../../../../../ui/Txt.tsx';
 import { makeStyles, useTheme } from '../../../../../ui/theme.tsx';
 import { TopBar } from '../../../../../ui/TopBar.tsx';
 
 const useStyles = makeStyles((t) => ({
-  screen: { flex: 1, backgroundColor: t.m3.surface },
+  screen: { flex: 1, backgroundColor: t.colors.canvas },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 }));
 
@@ -25,7 +25,7 @@ export default function ChapterEditorScreen(): ReactNode {
   const router = useRouter();
   const navigation = useNavigation();
   const styles = useStyles();
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const draft = useChapterDraft(novelId, seasonId, chapterId);
   const novel = useRepoQuery(`novel:${novelId}`, (repo) => repo.getNovel(novelId));
   const { chapter, flush } = draft;
@@ -47,9 +47,9 @@ export default function ChapterEditorScreen(): ReactNode {
         <TopBar title="Chapter" onBack={back} />
         <View style={styles.center}>
           {failed ? (
-            <AppText color="onSurfaceVariant">Could not open this chapter.</AppText>
+            <Txt color="inkSecondary">Could not open this chapter.</Txt>
           ) : (
-            <ActivityIndicator color={m3.primary} />
+            <ActivityIndicator color={colors.accent} />
           )}
         </View>
       </View>

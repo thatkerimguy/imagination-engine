@@ -1,73 +1,70 @@
+// Insert choices (prose, dialogue, scene break, gimmick) and a quiet Folio bar that lists them.
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppText } from '../ui/AppText.tsx';
+import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { Icon, type IconName } from '../ui/Icon.tsx';
-import { shape, space, TOUCH } from '../ui/m3-tokens.ts';
-import { StatePressable } from '../ui/StateLayer.tsx';
-import { makeStyles, useTheme } from '../ui/theme.tsx';
+import { Press } from '../ui/Press.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space, TOUCH } from '../ui/tokens.ts';
+import { makeStyles } from '../ui/theme.tsx';
 
 export type InsertChoice = 'prose' | 'dialogue' | 'scene-break' | 'gimmick';
 
 export const INSERT_CHOICES: readonly {
   choice: InsertChoice;
   label: string;
-  icon: IconName;
+  icon: GlyphName;
   testID: string;
 }[] = [
-  { choice: 'prose', label: 'Prose', icon: 'notes', testID: 'insert-prose' },
-  { choice: 'dialogue', label: 'Dialogue', icon: 'format-quote', testID: 'insert-dialogue' },
-  { choice: 'scene-break', label: 'Scene', icon: 'horizontal-rule', testID: 'insert-scene-break' },
-  { choice: 'gimmick', label: 'Gimmick', icon: 'auto-awesome', testID: 'insert-gimmick' },
+  { choice: 'prose', label: 'Prose', icon: 'align-left', testID: 'insert-prose' },
+  { choice: 'dialogue', label: 'Dialogue', icon: 'message-square', testID: 'insert-dialogue' },
+  { choice: 'scene-break', label: 'Scene', icon: 'more-horizontal', testID: 'insert-scene-break' },
+  { choice: 'gimmick', label: 'Gimmick', icon: 'zap', testID: 'insert-gimmick' },
 ];
 
 const useStyles = makeStyles((t) => ({
   bar: {
     flexDirection: 'row',
-    paddingTop: space.sm,
-    paddingHorizontal: space.sm,
-    backgroundColor: t.m3.surfaceContainer,
+    paddingTop: space.xs,
+    paddingHorizontal: space.xs,
+    backgroundColor: t.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: t.m3.outlineVariant,
-  },
-  action: {
-    flex: 1,
-    minHeight: TOUCH + 8,
-    borderRadius: shape.large,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
+    borderColor: t.colors.hairline,
   },
 }));
 
-/** M3 bottom app bar: four equal insert actions (icon over label). */
 export function InsertBar({ onPick }: { onPick(choice: InsertChoice): void }): ReactNode {
   const insets = useSafeAreaInsets();
   const s = useStyles();
-  const { m3 } = useTheme();
   return (
-    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
+    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, space.xs) }]}>
       {INSERT_CHOICES.map((c) => (
-        <StatePressable
+        <Press
           key={c.choice}
           accessibilityRole="button"
           accessibilityLabel={`Insert ${c.label}`}
           testID={c.testID}
-          layerColor={m3.onSurface}
           onPress={() => {
             tapFeedback();
             onPick(c.choice);
           }}
-          style={s.action}
+          style={styles.action}
         >
-          <Icon name={c.icon} size={24} color={c.choice === 'gimmick' ? 'primary' : 'onSurface'} />
-          <AppText variant="labelMedium" color="onSurfaceVariant" numberOfLines={1}>
+          <Glyph
+            name={c.icon}
+            size={18}
+            color={c.choice === 'gimmick' ? 'accent' : 'inkSecondary'}
+          />
+          <Txt variant="caption" color="inkSecondary" numberOfLines={1}>
             {c.label}
-          </AppText>
-        </StatePressable>
+          </Txt>
+        </Press>
       ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  action: { flex: 1, minHeight: TOUCH, alignItems: 'center', justifyContent: 'center', gap: 2 },
+});

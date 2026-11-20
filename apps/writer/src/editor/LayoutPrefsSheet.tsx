@@ -1,15 +1,24 @@
-// Editor layout preferences: focus mode, ribbon, toolbar buttons and quick typography.
+// Editor layout preferences: focus mode, ribbon, margins, quick typography and toolbar buttons.
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FONT_SIZE_RANGE, LINE_HEIGHT_RANGE, type ToolId } from '../store/writer-prefs.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { Button } from '../ui/Button.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { shape, space, TOUCH } from '../ui/m3-tokens.ts';
-import { Switch } from '../ui/Switch.tsx';
-import { makeStyles, useWriterPrefs } from '../ui/theme.tsx';
+import {
+  FONT_SIZE_RANGE,
+  LINE_HEIGHT_RANGE,
+  type MarginPreset,
+  type ToolId,
+} from '../store/writer-prefs.ts';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { SectionLabel } from '../ui/Page.tsx';
+import { Press } from '../ui/Press.tsx';
+import { SegmentControl } from '../ui/SegmentControl.tsx';
+import { Sheet } from '../ui/Sheet.tsx';
+import { Stepper } from '../ui/Stepper.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { radius, space, TOUCH, withAlpha } from '../ui/tokens.ts';
+import { makeStyles, useTheme, useWriterPrefs } from '../ui/theme.tsx';
 import { toolLabel } from './FormattingToolbar.tsx';
 
 export interface LayoutPrefsSheetProps {
@@ -20,23 +29,17 @@ export interface LayoutPrefsSheetProps {
   onOpenAppearance(): void;
 }
 
-const useStyles = makeStyles((t) => ({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: TOUCH },
-  grow: { flex: 1 },
-  section: { gap: space.xs },
-  pill: {
-    position: 'absolute',
-    right: space.lg,
-    opacity: 0.92,
-    backgroundColor: t.m3.secondaryContainer,
-    borderRadius: shape.full,
-    paddingHorizontal: space.lg,
-    height: 40,
-    justifyContent: 'center',
-  },
-}));
+const MARGINS: readonly { value: MarginPreset; label: string }[] = [
+  { value: 'compact', label: 'Tight' },
+  { value: 'comfortable', label: 'Medium' },
+  { value: 'wide', label: 'Wide' },
+];
 
-const round1 = (n: number): number => Math.round(n * 10) / 10;
+const useStyles = makeStyles(() => ({
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: TOUCH },
+  grow: { flex: 1 },
+  group: { gap: space.xxs },
+}));
 
 export function LayoutPrefsSheet(p: LayoutPrefsSheetProps): ReactNode {
   const s = useStyles();
@@ -54,93 +57,85 @@ export function LayoutPrefsSheet(p: LayoutPrefsSheetProps): ReactNode {
     update({
       hiddenTools: on ? prefs.hiddenTools.filter((t) => t !== id) : [...prefs.hiddenTools, id],
     });
-  const size = prefs.fontSize;
-  const lh = prefs.lineHeight;
 
   return (
-    <BottomSheet
-      visible={p.visible}
-      title="Editor layout"
-      onClose={p.onClose}
-      testID="layout-sheet"
-    >
-      <View style={s.row}>
-        <AppText style={s.grow}>Focus mode</AppText>
-        <Switch
-          value={p.focusMode}
-          onValueChange={p.onFocusMode}
-          accessibilityLabel="Focus mode"
-          testID="focus-mode-switch"
-        />
-      </View>
-      <View style={s.row}>
-        <AppText style={s.grow}>Metrics ribbon</AppText>
-        <Switch
-          value={prefs.showMetricsRibbon}
-          onValueChange={(v) => update({ showMetricsRibbon: v })}
-          accessibilityLabel="Metrics ribbon"
-          testID="ribbon-switch"
-        />
-      </View>
-      <View style={s.section}>
-        <AppText variant="titleSmall">Text size</AppText>
+    <Sheet visible={p.visible} title="Editor layout" onClose={p.onClose} testID="layout-sheet">
+      <View style={s.group}>
         <View style={s.row}>
-          <AppText style={s.grow}>Font size {size}</AppText>
-          <IconButton
-            icon="remove"
-            accessibilityLabel="Smaller text"
-            disabled={size <= FONT_SIZE_RANGE.min}
-            onPress={() => update({ fontSize: size - 1 })}
-            testID="font-smaller"
-          />
-          <IconButton
-            icon="add"
-            accessibilityLabel="Larger text"
-            disabled={size >= FONT_SIZE_RANGE.max}
-            onPress={() => update({ fontSize: size + 1 })}
-            testID="font-larger"
+          <Txt style={s.grow}>Focus mode</Txt>
+          <Toggle
+            value={p.focusMode}
+            onValueChange={p.onFocusMode}
+            accessibilityLabel="Focus mode"
+            testID="focus-mode-switch"
           />
         </View>
         <View style={s.row}>
-          <AppText style={s.grow}>Line height {lh.toFixed(1)}</AppText>
-          <IconButton
-            icon="remove"
-            accessibilityLabel="Tighter lines"
-            disabled={lh <= LINE_HEIGHT_RANGE.min}
-            onPress={() =>
-              update({ lineHeight: round1(Math.max(LINE_HEIGHT_RANGE.min, lh - 0.1)) })
-            }
-            testID="lh-smaller"
-          />
-          <IconButton
-            icon="add"
-            accessibilityLabel="Looser lines"
-            disabled={lh >= LINE_HEIGHT_RANGE.max}
-            onPress={() =>
-              update({ lineHeight: round1(Math.min(LINE_HEIGHT_RANGE.max, lh + 0.1)) })
-            }
-            testID="lh-larger"
+          <Txt style={s.grow}>Metrics ribbon</Txt>
+          <Toggle
+            value={prefs.showMetricsRibbon}
+            onValueChange={(v) => update({ showMetricsRibbon: v })}
+            accessibilityLabel="Metrics ribbon"
+            testID="ribbon-switch"
           />
         </View>
       </View>
-      <View style={s.section}>
-        <AppText variant="titleSmall">Toolbar buttons</AppText>
+      <View style={s.group}>
+        <SectionLabel>Text</SectionLabel>
+        <View style={s.row}>
+          <Txt style={s.grow}>Font size</Txt>
+          <Stepper
+            compact
+            label="font size"
+            value={prefs.fontSize}
+            min={FONT_SIZE_RANGE.min}
+            max={FONT_SIZE_RANGE.max}
+            step={1}
+            onChange={(fontSize) => update({ fontSize })}
+            testID="font-size-input"
+          />
+        </View>
+        <View style={s.row}>
+          <Txt style={s.grow}>Line height</Txt>
+          <Stepper
+            compact
+            label="line height"
+            value={prefs.lineHeight}
+            min={LINE_HEIGHT_RANGE.min}
+            max={LINE_HEIGHT_RANGE.max}
+            step={0.1}
+            onChange={(lineHeight) => update({ lineHeight })}
+            testID="line-height-input"
+          />
+        </View>
+        <SegmentControl
+          options={MARGINS}
+          value={prefs.marginPreset}
+          onChange={(marginPreset) => update({ marginPreset })}
+          accessibilityLabel="Margins"
+          testID="margin-segments"
+        />
+      </View>
+      <View style={s.group}>
+        <SectionLabel>Toolbar buttons</SectionLabel>
         {order.map((id) => (
           <View key={id} style={s.row}>
-            <AppText style={s.grow}>{toolLabel(id)}</AppText>
-            <IconButton
-              icon="arrow-upward"
-              size={32}
+            <Txt style={s.grow}>{toolLabel(id)}</Txt>
+            <IconBtn
+              icon="arrow-up"
+              box={32}
+              size={16}
               accessibilityLabel={`Move ${toolLabel(id)} up`}
               onPress={() => move(id, -1)}
             />
-            <IconButton
-              icon="arrow-downward"
-              size={32}
+            <IconBtn
+              icon="arrow-down"
+              box={32}
+              size={16}
               accessibilityLabel={`Move ${toolLabel(id)} down`}
               onPress={() => move(id, 1)}
             />
-            <Switch
+            <Toggle
               value={!prefs.hiddenTools.includes(id)}
               onValueChange={(v) => toggleTool(id, v)}
               accessibilityLabel={toolLabel(id)}
@@ -149,32 +144,56 @@ export function LayoutPrefsSheet(p: LayoutPrefsSheetProps): ReactNode {
           </View>
         ))}
       </View>
-      <Button
-        label="Appearance & fonts"
-        icon="palette"
-        variant="tonal"
+      <ActionButton
+        label="Appearance & Fonts"
+        icon="sliders"
+        variant="secondary"
         onPress={p.onOpenAppearance}
         testID="open-appearance"
       />
-    </BottomSheet>
+    </Sheet>
   );
 }
 
-/** Small floating pill (bottom-right, clear of the prose) that leaves focus mode. */
+/** Small translucent `Exit` pill (top-right, below the status bar) that leaves focus mode. */
 export function FocusExitPill({ onExit }: { onExit(): void }): ReactNode {
-  const s = useStyles();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityLabel="Exit focus mode"
       onPress={onExit}
-      style={[s.pill, { bottom: Math.max(insets.bottom, space.md) + space.md }]}
+      hitSlop={8}
+      wash={null}
+      style={[
+        styles.pill,
+        {
+          top: insets.top + space.xs,
+          backgroundColor: withAlpha(colors.surfaceElevated, 0.82),
+          borderColor: colors.hairline,
+        },
+      ]}
       testID="focus-exit"
     >
-      <AppText variant="labelLarge" color="onSecondaryContainer">
-        Exit focus
-      </AppText>
-    </Pressable>
+      <Txt variant="label" color="inkSecondary">
+        Exit
+      </Txt>
+    </Press>
   );
 }
+
+/** Height the exit pill occupies below the safe area; the focus-mode page pads past it. */
+export const FOCUS_EXIT_CLEARANCE = 32 + space.xs * 2;
+
+const styles = StyleSheet.create({
+  pill: {
+    position: 'absolute',
+    right: space.md,
+    height: 28,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    justifyContent: 'center',
+  },
+});

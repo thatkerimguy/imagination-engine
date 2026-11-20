@@ -20,8 +20,7 @@ export function useEditorActions(update: ChapterDraft['update']) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState<string | null>(null);
-  /** Non-null while an insert-choice or gimmick picker is open; value = insert-after id. */
-  const [belowId, setBelowId] = useState<string | null>(null);
+  /** Non-null while the gimmick picker is open; value = insert-after id. */
   const [pickerAfter, setPickerAfter] = useState<{ afterId: string | null } | null>(null);
 
   const add = useCallback(
@@ -35,7 +34,6 @@ export function useEditorActions(update: ChapterDraft['update']) {
 
   const pick = useCallback(
     (choice: InsertChoice, afterId: string | null) => {
-      setBelowId(null);
       if (choice === 'gimmick') return setPickerAfter({ afterId });
       add(createBlock(choice), afterId);
     },
@@ -72,11 +70,9 @@ export function useEditorActions(update: ChapterDraft['update']) {
     selectedId,
     focusId,
     sheetId,
-    belowId,
     pickerOpen: pickerAfter !== null,
     select: setSelectedId,
     openSheet: setSheetId,
-    openBelow: setBelowId,
     closePicker: () => setPickerAfter(null),
     pick,
     pickModule,

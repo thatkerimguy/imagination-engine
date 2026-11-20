@@ -1,11 +1,12 @@
-// Scrollable M3 formatting bar. Buttons act on press-in and refuse focus so the keyboard and the
-// TextInput selection survive a tap.
+// Folio formatting bar: a 44dp `surface` strip with a 1px top hairline, monochrome 18px glyphs and
+// the add-block tools pinned right. Buttons refuse focus so the keyboard and the TextInput
+// selection survive a tap.
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import type { ToolId } from '../store/writer-prefs.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Icon, type IconName } from '../ui/Icon.tsx';
-import { shape, space, TOUCH } from '../ui/m3-tokens.ts';
+import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { radius, space, TOUCH } from '../ui/tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
 
 type Align = 'left' | 'center' | 'right';
@@ -19,30 +20,38 @@ export interface FormattingToolbarProps {
   onTool(id: ToolId): void;
 }
 
-type Face = { icon: IconName } | { text: string } | { icon: IconName; text: string };
+type Face = { icon: GlyphName } | { text: string };
 
 const FACES: Readonly<Record<ToolId, Face>> = {
-  tab: { icon: 'keyboard-tab' },
-  bold: { icon: 'format-bold' },
-  italic: { icon: 'format-italic' },
-  underline: { icon: 'format-underlined' },
-  strike: { icon: 'strikethrough-s' },
-  highlight: { icon: 'border-color' },
+  tab: { icon: 'chevrons-right' },
+  bold: { icon: 'bold' },
+  italic: { icon: 'italic' },
+  underline: { icon: 'underline' },
+  strike: { text: 'S' },
+  highlight: { icon: 'edit-2' },
   h1: { text: 'H1' },
   h2: { text: 'H2' },
   h3: { text: 'H3' },
-  align: { icon: 'format-align-left' },
-  quote: { icon: 'format-quote' },
-  bullet: { icon: 'format-list-bulleted' },
-  fgColor: { icon: 'format-color-text' },
-  bgColor: { icon: 'format-color-fill' },
-  comment: { icon: 'add-comment' },
-  separator: { icon: 'horizontal-rule' },
-  addProse: { icon: 'add', text: 'Prose' },
-  addDialogue: { icon: 'add', text: 'Dialogue' },
-  addScene: { icon: 'add', text: 'Scene' },
-  addGimmick: { icon: 'add', text: 'Gimmick' },
+  align: { icon: 'align-left' },
+  quote: { text: '\u201C' },
+  bullet: { icon: 'list' },
+  fgColor: { icon: 'type' },
+  bgColor: { icon: 'droplet' },
+  comment: { icon: 'message-circle' },
+  separator: { text: '\u2014' },
+  addProse: { icon: 'plus' },
+  addDialogue: { icon: 'message-square' },
+  addScene: { icon: 'more-horizontal' },
+  addGimmick: { icon: 'zap' },
 };
+
+/** Add-block tools sit pinned at the right edge, outside the scrolling strip. */
+const ADD_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
+  'addProse',
+  'addDialogue',
+  'addScene',
+  'addGimmick',
+]);
 
 const LABELS: Readonly<Record<ToolId, string>> = {
   tab: 'Tab',
@@ -90,21 +99,33 @@ export const toolLabel = (id: ToolId): string => LABELS[id];
 export const toolFace = (id: ToolId): Face => FACES[id];
 
 const useStyles = makeStyles((t) => ({
-  bar: { backgroundColor: t.m3.surfaceContainer },
-  content: { paddingHorizontal: space.xs, alignItems: 'center' },
+  bar: {
+    height: TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: t.colors.surface,
+    borderTopWidth: 1,
+    borderColor: t.colors.hairline,
+  },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: space.xxs, alignItems: 'center' },
+  pinned: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: space.xxs,
+    borderLeftWidth: 1,
+    borderColor: t.colors.hairline,
+  },
   btn: {
     minWidth: TOUCH,
     height: TOUCH,
-    borderRadius: shape.full,
-    paddingHorizontal: space.md,
-    flexDirection: 'row',
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space.xs,
   },
-  on: { backgroundColor: t.m3.secondaryContainer },
-  pressed: { backgroundColor: t.m3.surfaceContainerHighest },
+  on: { backgroundColor: t.colors.surfaceTint },
   off: { opacity: 0.38 },
+  text: { fontSize: 15, lineHeight: 20, fontWeight: '600' },
 }));
 
 export function FormattingToolbar(p: FormattingToolbarProps): ReactNode {
@@ -116,12 +137,22 @@ export function FormattingToolbar(p: FormattingToolbarProps): ReactNode {
         horizontal
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
+        style={s.scroll}
         contentContainerStyle={s.content}
       >
-        {tools.map((id) => (
-          <ToolButton key={id} id={id} {...p} />
-        ))}
+        {tools
+          .filter((id) => !ADD_TOOLS.has(id))
+          .map((id) => (
+            <ToolButton key={id} id={id} {...p} />
+          ))}
       </ScrollView>
+      <View style={s.pinned}>
+        {tools
+          .filter((id) => ADD_TOOLS.has(id))
+          .map((id) => (
+            <ToolButton key={id} id={id} {...p} />
+          ))}
+      </View>
     </View>
   );
 }
@@ -130,11 +161,11 @@ function ToolButton(p: FormattingToolbarProps & { id: ToolId }): ReactNode {
   const s = useStyles();
   const { id } = p;
   const face = FACES[id];
-  const icon: IconName | undefined =
-    id === 'align' ? `format-align-${p.align}` : 'icon' in face ? face.icon : undefined;
+  const glyph: GlyphName | undefined =
+    id === 'align' ? `align-${p.align}` : 'icon' in face ? face.icon : undefined;
   const on = !!p.active[id];
   const disabled = !!p.disabledText && TEXT_TOOLS.has(id);
-  const color = on ? 'onSecondaryContainer' : 'onSurfaceVariant';
+  const color = on ? 'accent' : 'inkSecondary';
   return (
     <Pressable
       accessibilityRole="button"
@@ -144,13 +175,13 @@ function ToolButton(p: FormattingToolbarProps & { id: ToolId }): ReactNode {
       focusable={false}
       onPress={() => p.onTool(id)}
       testID={`tool-${id}`}
-      style={({ pressed }) => [s.btn, on && s.on, pressed && s.pressed, disabled && s.off]}
+      style={({ pressed }) => [s.btn, (on || pressed) && s.on, disabled && s.off]}
     >
-      {icon ? <Icon name={icon} size={22} color={color} /> : null}
+      {glyph ? <Glyph name={glyph} size={18} color={color} /> : null}
       {'text' in face ? (
-        <AppText variant="labelLarge" color={color}>
+        <Txt style={s.text} color={color}>
           {face.text}
-        </AppText>
+        </Txt>
       ) : null}
     </Pressable>
   );

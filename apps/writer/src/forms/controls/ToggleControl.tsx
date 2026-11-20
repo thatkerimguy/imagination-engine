@@ -1,31 +1,27 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { AppText } from '../../ui/AppText.tsx';
-import { Switch } from '../../ui/Switch.tsx';
-import { space } from '../../ui/m3-tokens.ts';
-import { toggleFeedback } from '../../ui/haptics.ts';
+import { Toggle } from '../../ui/Toggle.tsx';
+import { Txt } from '../../ui/Txt.tsx';
+import { space } from '../../ui/tokens.ts';
 import type { ControlProps } from './types.ts';
 
-/** Label (and help) on the left, switch on the right. SchemaForm skips its own chrome for this. */
+/** Label (and help) on the left, toggle on the right. SchemaForm skips its own chrome for this. */
 export function ToggleControl({ field, value, onChange }: ControlProps<'toggle'>): ReactNode {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg, minHeight: 48 }}>
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="titleSmall">{field.label}</AppText>
+        <Txt variant="label">{field.label}</Txt>
         {field.help ? (
-          <AppText variant="bodySmall" color="onSurfaceVariant">
+          <Txt variant="caption" color="inkMuted">
             {field.help}
-          </AppText>
+          </Txt>
         ) : null}
       </View>
-      <Switch
+      <Toggle
         testID={`field-${field.key}`}
         accessibilityLabel={field.label}
         value={value === true}
-        onValueChange={(on) => {
-          toggleFeedback(on);
-          onChange(on);
-        }}
+        onValueChange={onChange}
       />
     </View>
   );

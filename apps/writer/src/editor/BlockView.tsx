@@ -1,19 +1,21 @@
+// One block in the stream. Borderless: the focused block gets a 2px accent rail in the page
+// gutter (text never shifts) and a compact action strip beneath it.
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { BlockStyle } from '../store/chapter-styles.ts';
 import { isBlockComplete } from '../store/sanitize.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { StatusBadge } from '../ui/layout.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { makeStyles } from '../ui/theme.tsx';
-import { BlockActions, type BlockActionHandlers } from './BlockActions.tsx';
+import { Glyph } from '../ui/Glyph.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { useTheme } from '../ui/theme.tsx';
+import { BlockStrip, type BlockActionHandlers } from './BlockStrip.tsx';
 import type { Selection } from './inline-edit.ts';
 import { DialogueBlockEditor } from './DialogueBlockEditor.tsx';
 import { GimmickPill } from './GimmickPill.tsx';
-import { ProseBlockEditor, ProseStyleControl } from './ProseBlockEditor.tsx';
+import { ProseBlockEditor } from './ProseBlockEditor.tsx';
 import { SceneBreakEditor } from './SceneBreakEditor.tsx';
+
+export type { BlockActionHandlers };
 
 export interface BlockViewProps extends BlockActionHandlers {
   block: Block;
@@ -82,57 +84,52 @@ function Body(p: BlockViewProps): ReactNode {
   }
 }
 
-const useStyles = makeStyles((t) => ({
-  block: {
-    borderRadius: shape.medium,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    padding: space.sm,
-    gap: space.sm,
-  },
-  selected: {
-    borderColor: t.m3.outlineVariant,
-    backgroundColor: t.m3.surfaceContainerLow,
-  },
-  hint: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  actions: { gap: space.sm, paddingTop: space.xs },
-}));
-
 export function BlockView(p: BlockViewProps): ReactNode {
   const { block } = p;
-  const s = useStyles();
+  const { colors } = useTheme();
+  const rail = block.kind === 'dialogue' ? (block.accentColor ?? colors.accent) : colors.accent;
   return (
     <Pressable
       onPress={() => p.onSelect(block.id)}
       testID={`block-${block.id}`}
-      style={[s.block, p.selected && s.selected]}
+      style={styles.block}
     >
+      {p.selected && block.kind !== 'module' ? (
+        <View style={[styles.rail, { backgroundColor: rail }]} pointerEvents="none" />
+      ) : null}
       <Body {...p} />
-      {block.beatStop && !p.selected ? (
-        <StatusBadge icon="pause" label="Beat" tone="tertiary" />
+      {block.beatStop && !p.selected && block.kind !== 'module' ? (
+        <View style={styles.hint}>
+          <Glyph name="pause" size={11} color="inkMuted" />
+          <Txt variant="caption" color="inkMuted">
+            Beat stop
+          </Txt>
+        </View>
       ) : null}
       {isBlockComplete(block) ? null : (
-        <View style={s.hint}>
-          <Icon name="edit-note" size={16} color="tertiary" />
-          <AppText variant="bodySmall" color="tertiary">
+        <View style={styles.hint}>
+          <Glyph name="edit-3" size={12} color="warm" />
+          <Txt variant="caption" color="warm">
             Not saved until filled in
-          </AppText>
+          </Txt>
         </View>
       )}
       {p.selected ? (
-        <View style={s.actions}>
-          {block.kind === 'prose' ? (
-            <ProseStyleControl block={block} onChange={p.onChange} />
-          ) : null}
-          <BlockActions
-            block={block}
-            onToggleBeat={p.onToggleBeat}
-            onMove={p.onMove}
-            onInsertBelow={p.onInsertBelow}
-            onDelete={p.onDelete}
-          />
-        </View>
+        <BlockStrip
+          block={block}
+          onChange={p.onChange}
+          onToggleBeat={p.onToggleBeat}
+          onMove={p.onMove}
+          onDelete={p.onDelete}
+        />
       ) : null}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  block: { paddingVertical: 6, gap: 4 },
+  /** Sits in the page gutter (margins are >= 12dp), so prose never shifts when focus moves. */
+  rail: { position: 'absolute', left: -9, top: 6, bottom: 6, width: 2, borderRadius: 1 },
+  hint: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+});

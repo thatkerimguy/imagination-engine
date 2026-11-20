@@ -1,4 +1,4 @@
-// Theme + writer-prefs context. The colour scheme is one of the 12 curated M3 themes, or
+// Theme + writer-prefs context. The colour scheme is one of the 12 curated Folio themes, or
 // 'system' (Editorial Teal night/day following the OS). Prefs persist under `prefs/writer-ui`;
 // the Phase 2 `appearance` setting is migrated on first load.
 import {
@@ -25,7 +25,6 @@ import {
   type ThemeChoice,
   type WriterPrefs,
 } from '../store/writer-prefs.ts';
-import type { ColorRoles } from './m3-tokens.ts';
 import type { FolioColors } from './palette.ts';
 import { DEFAULT_DARK, DEFAULT_LIGHT, getThemeDef, THEMES, type ThemeId } from './themes.ts';
 
@@ -35,8 +34,6 @@ export interface Theme {
   dark: boolean;
   /** Folio colour roles. */
   colors: FolioColors;
-  /** @deprecated Transitional M3 roles; removed once every screen is on Folio. */
-  m3: ColorRoles;
 }
 
 /** One frozen Theme object per scheme, so makeStyles can cache by identity. */

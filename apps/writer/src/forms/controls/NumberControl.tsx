@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { AppText } from '../../ui/AppText.tsx';
-import { space } from '../../ui/m3-tokens.ts';
 import { rangeHint } from '../field-hints.ts';
 import { asNumber } from '../form-state.ts';
 import { NumberStepper } from './NumberStepper.tsx';
@@ -14,7 +12,7 @@ export function NumberControl({
   errors,
 }: ControlProps<'number'>): ReactNode {
   return (
-    <View style={{ gap: space.xs }}>
+    <View style={{ alignItems: 'flex-start' }}>
       <NumberStepper
         testID={`field-${field.key}`}
         value={asNumber(value, field.min)}
@@ -22,12 +20,10 @@ export function NumberControl({
         max={field.max}
         step={field.step}
         label={field.label}
+        caption={rangeHint(field)}
         invalid={errors.length > 0}
         onChange={onChange}
       />
-      <AppText variant="bodySmall" color="onSurfaceVariant">
-        {rangeHint(field)}
-      </AppText>
     </View>
   );
 }

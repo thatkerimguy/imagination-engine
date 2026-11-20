@@ -1,8 +1,9 @@
+// Dialogue: a tracked uppercase speaker name with a 6px colour dot, the serif line beneath.
 import type { ReactNode } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
-import { tapFeedback } from '../ui/haptics.ts';
-import { space, TOUCH } from '../ui/m3-tokens.ts';
-import { makeStyles, useTheme } from '../ui/theme.tsx';
+import { StyleSheet, TextInput, View } from 'react-native';
+import { Dot } from '../ui/Page.tsx';
+import { useTheme } from '../ui/theme.tsx';
+import { type as typeScale } from '../ui/type.ts';
 import type { DialogueBlock, InlineEditorProps } from './block-types.ts';
 import type { RichEditorExtras } from './ProseBlockEditor.tsx';
 import { RichProseInput } from './RichProseInput.tsx';
@@ -17,57 +18,34 @@ const ACCENTS: readonly (string | undefined)[] = [
   '#c792ea',
 ];
 
-const useStyles = makeStyles(() => ({
-  wrap: { gap: 0 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  target: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
-  dot: { width: 16, height: 16, borderRadius: 8 },
-  speaker: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.4, padding: 0 },
-}));
+/** The dialogue block with its speaker accent advanced to the next preset. */
+export function cycleAccent(block: DialogueBlock): DialogueBlock {
+  const next = ACCENTS[(ACCENTS.indexOf(block.accentColor) + 1) % ACCENTS.length];
+  const { id, kind, speaker, text, beatStop } = block;
+  const base: DialogueBlock = { id, kind, speaker, text, ...(beatStop ? { beatStop } : {}) };
+  return next ? { ...base, accentColor: next } : base;
+}
 
 export function DialogueBlockEditor(
   p: InlineEditorProps<DialogueBlock> & RichEditorExtras,
 ): ReactNode {
-  const accent = p.block.accentColor;
-  const { m3 } = useTheme();
-  const s = useStyles();
-  const tint = accent ?? m3.onSurfaceVariant;
-  const cycle = (): void => {
-    tapFeedback();
-    const at = ACCENTS.indexOf(accent);
-    const next = ACCENTS[(at + 1) % ACCENTS.length];
-    const { id, kind, speaker, text, beatStop } = p.block;
-    const base: DialogueBlock = { id, kind, speaker, text, ...(beatStop ? { beatStop } : {}) };
-    p.onChange(next ? { ...base, accentColor: next } : base);
-  };
+  const { colors } = useTheme();
+  const tint = p.block.accentColor ?? colors.inkSecondary;
   return (
-    <View style={s.wrap}>
-      <View style={s.head}>
-        <Pressable
-          onPress={cycle}
-          accessibilityRole="button"
-          accessibilityLabel="Cycle accent colour"
-          testID={`accent-${p.block.id}`}
-          style={s.target}
-        >
-          <View
-            style={[
-              s.dot,
-              accent
-                ? { backgroundColor: accent }
-                : { borderWidth: 2, borderColor: m3.onSurfaceVariant },
-            ]}
-          />
-        </Pressable>
+    <View>
+      <View style={styles.head}>
+        <Dot color={tint} />
         <TextInput
           autoFocus={p.autoFocus}
           value={p.block.speaker}
           onFocus={p.onSelect}
           onChangeText={(speaker) => p.onChange({ ...p.block, speaker })}
           placeholder="SPEAKER"
-          placeholderTextColor={m3.onSurfaceVariant}
+          placeholderTextColor={colors.inkMuted}
+          selectionColor={colors.accent}
           autoCapitalize="characters"
-          style={[s.speaker, { color: tint }]}
+          accessibilityLabel="Speaker"
+          style={[typeScale.overline, styles.speaker, { color: tint }]}
         />
       </View>
       <RichProseInput
@@ -85,3 +63,8 @@ export function DialogueBlockEditor(
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  head: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 28 },
+  speaker: { flex: 1, padding: 0, letterSpacing: 1.4 },
+});

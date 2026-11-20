@@ -1,25 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
-import { AppText } from '../ui/AppText.tsx';
-import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { Button } from '../ui/Button.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { IconBadge } from '../ui/layout.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { makeStyles } from '../ui/theme.tsx';
+import { StyleSheet, View } from 'react-native';
+import { gimmickGlyph, layerRole } from '../editor/gimmick-look.ts';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { Glyph } from '../ui/Glyph.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { radius, space } from '../ui/tokens.ts';
+import { Sheet } from '../ui/Sheet.tsx';
+import { useTheme } from '../ui/theme.tsx';
 import { initialDraft, resetDraft, setField, validateDraft } from './form-state.ts';
 import type { GimmickSheetProps } from './gimmick-sheet-types.ts';
 import { SchemaForm } from './SchemaForm.tsx';
 
 function Banner({ text }: { text: string }): ReactNode {
-  const s = useStyles();
+  const { colors } = useTheme();
   return (
-    <View style={s.banner}>
-      <Icon name="error-outline" size={20} color="onErrorContainer" />
-      <AppText variant="bodyMedium" color="onErrorContainer" style={s.bannerText}>
+    <View style={[styles.banner, { backgroundColor: colors.dangerSoft }]}>
+      <Glyph name="alert-circle" size={18} color="danger" />
+      <Txt variant="meta" color="danger" style={styles.bannerText}>
         {text}
-      </AppText>
+      </Txt>
     </View>
   );
 }
@@ -38,23 +38,26 @@ export function GimmickSheet(p: GimmickSheetProps): ReactNode {
   const subtitle = module.summarize(draft).subtitle || module.meta.description;
 
   return (
-    <BottomSheet
+    <Sheet
       visible={visible}
-      leading={<IconBadge glyph={module.meta.icon} />}
+      leading={
+        <Glyph name={gimmickGlyph(module.meta.id)} size={20} color={layerRole(module.meta.layer)} />
+      }
       title={module.meta.name}
       subtitle={subtitle}
       onClose={p.onClose}
       testID="gimmick-sheet"
       footer={
         <>
-          <Button
+          <ActionButton
             label="Reset to defaults"
-            variant="text"
-            icon="restart-alt"
+            variant="ghost"
+            quiet
+            icon="rotate-ccw"
             testID="gimmick-reset"
             onPress={() => setDraft(resetDraft(module.schema))}
           />
-          <Button
+          <ActionButton
             label="Save"
             testID="gimmick-save"
             disabled={!check.valid}
@@ -77,18 +80,17 @@ export function GimmickSheet(p: GimmickSheetProps): ReactNode {
         errors={check.byField}
         onChange={(key, value) => setDraft((d) => setField(d, key, value))}
       />
-    </BottomSheet>
+    </Sheet>
   );
 }
 
-const useStyles = makeStyles((t) => ({
+const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    padding: space.lg,
-    borderRadius: shape.medium,
-    backgroundColor: t.m3.errorContainer,
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.sm,
   },
   bannerText: { flex: 1 },
-}));
+});

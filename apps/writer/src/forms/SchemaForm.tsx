@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import type { FieldDescriptor } from '@kn/core';
-import { AppText } from '../ui/AppText.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { space } from '../ui/m3-tokens.ts';
+import { Glyph } from '../ui/Glyph.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
 import { visibleFields } from './form-state.ts';
 import { AssetControl } from './controls/AssetControl.tsx';
 import { ColorControl } from './controls/ColorControl.tsx';
@@ -57,7 +57,7 @@ function renderControl(
 }
 
 export function SchemaForm({ fields, draft, errors, onChange }: SchemaFormProps): ReactNode {
-  // The BottomSheet body already spaces its children; fields are separated by the same 24dp here.
+  // The Sheet body already spaces its children; fields are separated by the same 24dp here.
   return (
     <View style={{ gap: space.xl }}>
       {visibleFields(fields, draft).map((field) => {
@@ -65,20 +65,20 @@ export function SchemaForm({ fields, draft, errors, onChange }: SchemaFormProps)
         // Toggles draw their own label row (label left, switch right).
         const chrome = field.type !== 'toggle';
         return (
-          <View key={field.key} style={{ gap: space.sm }} testID={`form-field-${field.key}`}>
-            {chrome ? <AppText variant="titleSmall">{field.label}</AppText> : null}
+          <View key={field.key} style={{ gap: space.xs }} testID={`form-field-${field.key}`}>
+            {chrome ? <Txt variant="label">{field.label}</Txt> : null}
             {chrome && field.help ? (
-              <AppText variant="bodySmall" color="onSurfaceVariant">
+              <Txt variant="caption" color="inkMuted">
                 {field.help}
-              </AppText>
+              </Txt>
             ) : null}
             {renderControl(field, draft[field.key], fieldErrors, (v) => onChange(field.key, v))}
             {fieldErrors.map((e) => (
               <View key={e} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
-                <Icon name="error-outline" size={16} color="error" />
-                <AppText variant="bodySmall" color="error" style={{ flex: 1 }}>
+                <Glyph name="alert-circle" size={14} color="danger" />
+                <Txt variant="caption" color="danger" style={{ flex: 1 }}>
                   {e}
-                </AppText>
+                </Txt>
               </View>
             ))}
           </View>

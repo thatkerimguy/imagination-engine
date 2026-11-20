@@ -1,86 +1,110 @@
+// Gimmick cue strip: an editorial stage direction in the prose flow. A 3px layer-coloured bar,
+// a soft wash, a Feather glyph, a one-line title with a right-aligned caps tag, and the muted
+// module summary. The "Beat stop" indicator lives here (once) for gimmick blocks.
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { getWriterModule } from '../modules/registry.ts';
-import { AppText } from '../ui/AppText.tsx';
+import { Glyph } from '../ui/Glyph.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { IconBadge, StatusBadge } from '../ui/layout.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { StatePressable } from '../ui/StateLayer.tsx';
-import { makeStyles, useTheme } from '../ui/theme.tsx';
+import { Press } from '../ui/Press.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { radius } from '../ui/tokens.ts';
+import { useTheme } from '../ui/theme.tsx';
 import type { ModuleBlockT } from './block-types.ts';
+import { gimmickGlyph, layerRole } from './gimmick-look.ts';
 
-const useStyles = makeStyles((t) => ({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: 64,
-    padding: space.md,
-    borderRadius: shape.large,
-    overflow: 'hidden',
-    backgroundColor: t.m3.surfaceContainer,
-  },
-  unknown: { opacity: 0.6 },
-  text: { flex: 1, gap: 2 },
-  side: { alignItems: 'flex-end', gap: space.xs },
-}));
-
-/** Removes a leading emoji that duplicates the module icon already shown in the badge. */
+/** Removes a leading emoji that duplicates the module glyph. */
 function stripIcon(title: string, icon: string): string {
   return title.startsWith(icon) ? title.slice(icon.length).trim() : title;
 }
 
-/** Compact summary card; everything shown comes from the module's own `summarize()`. */
 export function GimmickPill(p: {
   block: ModuleBlockT;
   enabled: boolean;
   onOpen(): void;
 }): ReactNode {
-  const s = useStyles();
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const module = getWriterModule(p.block.moduleId);
   if (!module) {
     return (
-      <View style={[s.card, s.unknown]} testID={`pill-${p.block.id}`}>
-        <AppText variant="titleMedium" color="onSurfaceVariant">
+      <View
+        style={[styles.strip, { backgroundColor: colors.surface }]}
+        testID={`pill-${p.block.id}`}
+      >
+        <Txt variant="label" color="inkMuted">
           Unknown gimmick {p.block.moduleId}
-        </AppText>
+        </Txt>
       </View>
     );
   }
   const card = module.summarize(p.block.props);
   const title = stripIcon(card.title, module.meta.icon);
+  const role = layerRole(module.meta.layer);
+  const tag = p.enabled ? card.badge : 'Not enabled';
   return (
-    <StatePressable
+    <Press
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${card.subtitle}`}
-      layerColor={m3.onSurface}
       onPress={() => {
         tapFeedback();
         p.onOpen();
       }}
       testID={`pill-${p.block.id}`}
-      style={s.card}
+      wash={colors.accentSoft}
+      style={[styles.strip, { backgroundColor: colors.surfaceTint }]}
     >
-      <IconBadge glyph={module.meta.icon} />
-      <View style={s.text}>
-        <AppText variant="titleMedium" numberOfLines={1}>
-          {title}
-        </AppText>
-        <AppText variant="bodySmall" color="onSurfaceVariant" numberOfLines={2}>
+      <View style={[styles.bar, { backgroundColor: colors[role] }]} />
+      <View style={styles.glyph}>
+        <Glyph name={gimmickGlyph(module.meta.id)} size={18} color={role} />
+      </View>
+      <View style={styles.text}>
+        <View style={styles.head}>
+          <Txt variant="bodyStrong" numberOfLines={1} style={styles.title}>
+            {title}
+          </Txt>
+          {tag ? (
+            <Txt
+              variant="caption"
+              color={p.enabled ? 'inkSecondary' : 'danger'}
+              style={styles.tag}
+              numberOfLines={1}
+            >
+              {tag.toUpperCase()}
+            </Txt>
+          ) : null}
+        </View>
+        <Txt variant="meta" color="inkSecondary" numberOfLines={2}>
           {card.subtitle}
-        </AppText>
+        </Txt>
+        {p.block.beatStop ? (
+          <View style={styles.beat}>
+            <Glyph name="pause" size={11} color="inkMuted" />
+            <Txt variant="caption" color="inkMuted">
+              Beat stop
+            </Txt>
+          </View>
+        ) : null}
       </View>
-      <View style={s.side}>
-        {p.enabled ? (
-          card.badge ? (
-            <StatusBadge label={card.badge} tone="primary" />
-          ) : null
-        ) : (
-          <StatusBadge label="Not enabled" tone="error" />
-        )}
-        {p.block.beatStop ? <StatusBadge icon="pause" label="Beat" tone="tertiary" /> : null}
-      </View>
-    </StatePressable>
+    </Press>
   );
 }
+
+const styles = StyleSheet.create({
+  strip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    minHeight: 44,
+  },
+  bar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+  glyph: { paddingTop: 1 },
+  text: { flex: 1, gap: 2 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { flex: 1 },
+  tag: { letterSpacing: 0.8 },
+  beat: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 2 },
+});

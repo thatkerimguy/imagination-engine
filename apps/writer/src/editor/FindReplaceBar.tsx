@@ -1,12 +1,12 @@
 // Collapsible find & replace bar over the chapter's prose and dialogue text.
 import { useMemo, useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { ChapterDocument } from '@kn/core';
-import { AppText } from '../ui/AppText.tsx';
-import { Button } from '../ui/Button.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { space } from '../ui/m3-tokens.ts';
-import { TextField } from '../ui/TextField.tsx';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { Field } from '../ui/Field.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
 import { findMatches, replaceAll, replaceOne } from './find-replace.ts';
 
@@ -19,13 +19,13 @@ export interface FindReplaceBarProps {
 
 const useStyles = makeStyles((t) => ({
   bar: {
-    backgroundColor: t.m3.surfaceContainer,
-    paddingHorizontal: space.sm,
-    paddingBottom: space.sm,
+    backgroundColor: t.colors.surface,
+    borderBottomWidth: 1,
+    borderColor: t.colors.hairline,
+    paddingHorizontal: space.xs,
+    paddingVertical: space.xs,
     gap: space.xs,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  grow: { flex: 1 },
 }));
 
 export function FindReplaceBar(p: FindReplaceBarProps): ReactNode {
@@ -54,9 +54,9 @@ export function FindReplaceBar(p: FindReplaceBarProps): ReactNode {
 
   return (
     <View style={s.bar} testID="find-replace-bar">
-      <View style={s.row}>
-        <View style={s.grow}>
-          <TextField
+      <View style={styles.row}>
+        <View style={styles.grow}>
+          <Field
             dense
             value={query}
             onChangeText={(v) => {
@@ -64,64 +64,72 @@ export function FindReplaceBar(p: FindReplaceBarProps): ReactNode {
               setCursor(0);
             }}
             placeholder="Find"
+            accessibilityLabel="Find"
             autoFocus
             testID="find-input"
           />
         </View>
-        <AppText variant="labelMedium" color="onSurfaceVariant" testID="find-counter">
+        <Txt variant="caption" color="inkMuted" testID="find-counter">
           {matches.length ? `${at + 1}/${matches.length}` : '0/0'}
-        </AppText>
-        <IconButton
-          icon="keyboard-arrow-up"
-          size={32}
+        </Txt>
+        <IconBtn
+          icon="chevron-up"
+          box={32}
+          size={16}
           accessibilityLabel="Previous match"
           onPress={() => go(-1)}
           testID="find-prev"
         />
-        <IconButton
-          icon="keyboard-arrow-down"
-          size={32}
+        <IconBtn
+          icon="chevron-down"
+          box={32}
+          size={16}
           accessibilityLabel="Next match"
           onPress={() => go(1)}
           testID="find-next"
         />
-        <IconButton
-          icon="find-replace"
-          size={32}
-          selected={showReplace}
+        <IconBtn
+          icon="repeat"
+          box={32}
+          size={16}
+          active={showReplace}
           accessibilityLabel="Toggle replace"
           onPress={() => setShowReplace((v) => !v)}
           testID="find-toggle-replace"
         />
-        <IconButton
-          icon="close"
-          size={32}
+        <IconBtn
+          icon="x"
+          box={32}
+          size={16}
           accessibilityLabel="Close find"
           onPress={p.onClose}
           testID="find-close"
         />
       </View>
       {showReplace ? (
-        <View style={s.row}>
-          <View style={s.grow}>
-            <TextField
+        <View style={styles.row}>
+          <View style={styles.grow}>
+            <Field
               dense
               value={repl}
               onChangeText={setRepl}
               placeholder="Replace with"
+              accessibilityLabel="Replace with"
               testID="replace-input"
             />
           </View>
-          <Button
+          <ActionButton
             label="Replace"
-            variant="text"
+            variant="ghost"
+            compact
             disabled={at < 0}
             onPress={doReplace}
             testID="replace-one"
           />
-          <Button
+          <ActionButton
             label="All"
-            variant="text"
+            variant="ghost"
+            compact
             disabled={!matches.length}
             onPress={doReplaceAll}
             accessibilityLabel="Replace all"
@@ -132,3 +140,8 @@ export function FindReplaceBar(p: FindReplaceBarProps): ReactNode {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.xxs },
+  grow: { flex: 1 },
+});

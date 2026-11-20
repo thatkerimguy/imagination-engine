@@ -1,23 +1,16 @@
-// 38dp live-metrics strip plus the picker sheet and a throttle hook.
+// Hairline typographic live-metrics strip (label over value, no boxes), the picker sheet and a
+// throttle hook.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { METRICS, type DocumentMetrics } from '../analysis/metrics.ts';
 import { METRIC_IDS, type MetricId } from '../store/writer-prefs.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { Switch } from '../ui/Switch.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { Sheet } from '../ui/Sheet.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space, TOUCH } from '../ui/tokens.ts';
 import { makeStyles, useWriterPrefs } from '../ui/theme.tsx';
-
-export interface MetricsRibbonProps {
-  metrics: DocumentMetrics;
-  visible: MetricId[];
-  collapsed: boolean;
-  onToggleCollapsed(): void;
-  onOpenAnalysis(): void;
-  onCustomize(): void;
-}
+import { tabular } from '../ui/type.ts';
 
 /** Returns `value`, updated at most once per `ms` (trailing edge always lands). */
 export function useThrottledValue<T>(value: T, ms = 250): T {
@@ -34,25 +27,30 @@ export function useThrottledValue<T>(value: T, ms = 250): T {
   return out;
 }
 
+export interface MetricsRibbonProps {
+  metrics: DocumentMetrics;
+  visible: MetricId[];
+  collapsed: boolean;
+  onToggleCollapsed(): void;
+  onOpenAnalysis(): void;
+  onCustomize(): void;
+}
+
 const useStyles = makeStyles((t) => ({
   bar: {
-    height: 38,
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.m3.surfaceContainerLow,
+    backgroundColor: t.colors.canvas,
+    borderBottomWidth: 1,
+    borderColor: t.colors.hairline,
+    paddingHorizontal: space.xxs,
   },
-  strip: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.sm },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: space.xs,
-    paddingHorizontal: space.sm,
-    height: 28,
-    borderRadius: shape.small,
-    backgroundColor: t.m3.surfaceContainerHigh,
-    justifyContent: 'center',
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48 },
+  strip: { alignItems: 'center', gap: space.lg, paddingHorizontal: space.xs },
+  col: { minHeight: 36, justifyContent: 'center' },
+  label: { fontSize: 10, lineHeight: 12, letterSpacing: 0.8 },
+  value: { fontSize: 13, lineHeight: 17, fontWeight: '500', ...tabular },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: TOUCH },
   grow: { flex: 1 },
 }));
 
@@ -60,9 +58,10 @@ export function MetricsRibbon(p: MetricsRibbonProps): ReactNode {
   const s = useStyles();
   return (
     <View style={s.bar} testID="metrics-ribbon">
-      <IconButton
-        icon={p.collapsed ? 'expand-more' : 'expand-less'}
-        size={32}
+      <IconBtn
+        icon={p.collapsed ? 'chevron-down' : 'chevron-up'}
+        box={32}
+        size={16}
         accessibilityLabel={p.collapsed ? 'Show metrics' : 'Hide metrics'}
         onPress={p.onToggleCollapsed}
         testID="metrics-collapse"
@@ -83,20 +82,23 @@ export function MetricsRibbon(p: MetricsRibbonProps): ReactNode {
               onLongPress={p.onCustomize}
               accessibilityRole="button"
               accessibilityLabel={`${METRICS[id].label} ${METRICS[id].format(p.metrics[id])}`}
-              style={s.pill}
+              style={s.col}
               testID={`metric-${id}`}
             >
-              <AppText variant="labelLarge">{METRICS[id].format(p.metrics[id])}</AppText>
-              <AppText variant="labelSmall" color="onSurfaceVariant">
+              <Txt variant="overline" color="inkMuted" style={s.label}>
                 {METRICS[id].short}
-              </AppText>
+              </Txt>
+              <Txt color="ink" style={s.value}>
+                {METRICS[id].format(p.metrics[id])}
+              </Txt>
             </Pressable>
           ))}
         </ScrollView>
       )}
-      <IconButton
-        icon="tune"
-        size={32}
+      <IconBtn
+        icon="filter"
+        box={32}
+        size={16}
         accessibilityLabel="Customize metrics"
         onPress={p.onCustomize}
         testID="metrics-customize"
@@ -126,37 +128,41 @@ export function MetricPickerSheet(p: { visible: boolean; onClose(): void }): Rea
     update({ visibleMetrics: next });
   };
   return (
-    <BottomSheet visible={p.visible} title="Metrics" onClose={p.onClose} testID="metric-picker">
-      {sheetOrder(vis).map((id) => {
-        const on = vis.includes(id);
-        return (
-          <View key={id} style={s.row}>
-            <AppText style={s.grow}>{METRICS[id].label}</AppText>
-            {on ? (
-              <>
-                <IconButton
-                  icon="arrow-upward"
-                  size={32}
-                  accessibilityLabel={`Move ${METRICS[id].label} up`}
-                  onPress={() => move(id, -1)}
-                />
-                <IconButton
-                  icon="arrow-downward"
-                  size={32}
-                  accessibilityLabel={`Move ${METRICS[id].label} down`}
-                  onPress={() => move(id, 1)}
-                />
-              </>
-            ) : null}
-            <Switch
-              value={on}
-              onValueChange={(v) => toggle(id, v)}
-              accessibilityLabel={METRICS[id].label}
-              testID={`metric-toggle-${id}`}
-            />
-          </View>
-        );
-      })}
-    </BottomSheet>
+    <Sheet visible={p.visible} title="Metrics" onClose={p.onClose} testID="metric-picker">
+      <View>
+        {sheetOrder(vis).map((id) => {
+          const on = vis.includes(id);
+          return (
+            <View key={id} style={s.row}>
+              <Txt style={s.grow}>{METRICS[id].label}</Txt>
+              {on ? (
+                <>
+                  <IconBtn
+                    icon="arrow-up"
+                    box={32}
+                    size={16}
+                    accessibilityLabel={`Move ${METRICS[id].label} up`}
+                    onPress={() => move(id, -1)}
+                  />
+                  <IconBtn
+                    icon="arrow-down"
+                    box={32}
+                    size={16}
+                    accessibilityLabel={`Move ${METRICS[id].label} down`}
+                    onPress={() => move(id, 1)}
+                  />
+                </>
+              ) : null}
+              <Toggle
+                value={on}
+                onValueChange={(v) => toggle(id, v)}
+                accessibilityLabel={METRICS[id].label}
+                testID={`metric-toggle-${id}`}
+              />
+            </View>
+          );
+        })}
+      </View>
+    </Sheet>
   );
 }

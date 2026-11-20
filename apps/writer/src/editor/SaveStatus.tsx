@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { AppText } from '../ui/AppText.tsx';
+import { Txt } from '../ui/Txt.tsx';
 
 const LABELS: Record<ChapterDraft['status'], string> = {
   saved: 'Saved',
@@ -9,15 +9,16 @@ const LABELS: Record<ChapterDraft['status'], string> = {
   error: 'Save failed',
 };
 
+/** Plain muted word; only a failed save is coloured. */
 export function SaveStatus({ status }: { status: ChapterDraft['status'] }): ReactNode {
   return (
-    <AppText
-      variant="labelSmall"
-      color={status === 'error' ? 'error' : 'onSurfaceVariant'}
+    <Txt
+      variant="meta"
+      color={status === 'error' ? 'danger' : 'inkMuted'}
       testID="save-status"
       accessibilityLiveRegion="polite"
     >
       {LABELS[status]}
-    </AppText>
+    </Txt>
   );
 }

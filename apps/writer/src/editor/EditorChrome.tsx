@@ -1,17 +1,18 @@
-// Chapter editor chrome: the slim 56dp top bar (Back, stats pill with save state, Undo, Redo,
-// tonal Preview, ⋮ menu), the colour popover above the toolbar, and the comment sheet.
+// Chapter editor chrome: the slim 52dp top bar (Back, plain `118w · Saved` text, Undo, Redo, Play,
+// ⋯ menu), the colour popover above the toolbar, and the comment sheet.
 import { useState, type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { SaveStatus as SaveState } from '../store/autosave.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { Button } from '../ui/Button.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { OverflowMenu, type MenuItem } from '../ui/OverflowMenu.tsx';
-import { TextField } from '../ui/TextField.tsx';
-import { makeStyles } from '../ui/theme.tsx';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { Field } from '../ui/Field.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { Press } from '../ui/Press.tsx';
+import { PopoverMenu, type MenuItem } from '../ui/PopoverMenu.tsx';
+import { Sheet } from '../ui/Sheet.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
+import { makeStyles } from '../ui/theme.tsx';
 import { ColorSwatchRow } from './FormattingToolbar.tsx';
 import { SaveStatus } from './SaveStatus.tsx';
 
@@ -30,88 +31,84 @@ export interface EditorTopBarProps {
 }
 
 const useStyles = makeStyles((t) => ({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    height: 32,
-    paddingHorizontal: space.md,
-    borderRadius: shape.full,
-    backgroundColor: t.m3.secondaryContainer,
-  },
-  actions: { flexDirection: 'row', alignItems: 'center' },
   popover: {
     paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    backgroundColor: t.m3.surfaceContainerHigh,
-    borderTopLeftRadius: shape.large,
-    borderTopRightRadius: shape.large,
-    gap: space.xs,
+    paddingVertical: space.xs,
+    backgroundColor: t.colors.surface,
+    borderTopWidth: 1,
+    borderColor: t.colors.hairline,
+    gap: space.xxs,
   },
 }));
 
 export function EditorTopBar(p: EditorTopBarProps): ReactNode {
-  const s = useStyles();
   return (
     <TopBar
-      title=""
       scrolled={p.scrolled}
       onBack={p.onBack}
       testID="editor-top-bar"
+      titleSlot={
+        <Press
+          onPress={p.onStats}
+          wash={null}
+          style={styles.stats}
+          accessibilityRole="button"
+          accessibilityLabel={`${p.words} words. Open text analysis`}
+          testID="stats-pill"
+        >
+          <Txt variant="meta" color="inkMuted">
+            {`${p.words.toLocaleString('en-US')}w · `}
+          </Txt>
+          <SaveStatus status={p.status} />
+        </Press>
+      }
       actions={
-        <View style={s.actions}>
-          <Pressable
-            onPress={p.onStats}
-            style={s.pill}
-            accessibilityRole="button"
-            accessibilityLabel={`${p.words} words. Open text analysis`}
-            testID="stats-pill"
-          >
-            <AppText variant="labelLarge" color="onSecondaryContainer">
-              {`${p.words.toLocaleString('en-US')} w`}
-            </AppText>
-            <SaveStatus status={p.status} />
-          </Pressable>
-          <IconButton
-            icon="undo"
+        <View style={styles.actions}>
+          <IconBtn
+            icon="rotate-ccw"
             accessibilityLabel="Undo"
             onPress={p.onUndo}
             disabled={!p.canUndo}
             testID="undo-button"
           />
-          <IconButton
-            icon="redo"
+          <IconBtn
+            icon="rotate-cw"
             accessibilityLabel="Redo"
             onPress={p.onRedo}
             disabled={!p.canRedo}
             testID="redo-button"
           />
-          <Button variant="tonal" label="Preview" onPress={p.onPreview} testID="preview-button" />
-          <OverflowMenu items={p.menu} accessibilityLabel="More" testID="editor-menu" />
+          <IconBtn
+            icon="play"
+            accessibilityLabel="Live preview"
+            onPress={p.onPreview}
+            testID="preview-button"
+          />
+          <PopoverMenu items={p.menu} accessibilityLabel="More" testID="editor-menu" />
         </View>
       }
     />
   );
 }
 
+const styles = StyleSheet.create({
+  stats: { flexDirection: 'row', alignItems: 'center', minHeight: 44, alignSelf: 'flex-start' },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+});
+
 type MenuAction = 'analysis' | 'growth' | 'find' | 'outline' | 'focus' | 'layout' | 'exportJson';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
-  { action: 'analysis', label: 'Text analysis', icon: 'insights', testID: 'menu-analysis' },
-  { action: 'growth', label: 'Growth', icon: 'show-chart', testID: 'menu-growth' },
-  { action: 'find', label: 'Find & replace', icon: 'find-replace', testID: 'menu-find' },
-  { action: 'outline', label: 'Outline', icon: 'toc', testID: 'menu-outline' },
-  { action: 'focus', label: 'Focus mode', icon: 'center-focus-strong', testID: 'menu-focus' },
-  { action: 'layout', label: 'Appearance & layout', icon: 'palette', testID: 'menu-layout' },
-  {
-    action: 'exportJson',
-    label: 'Export chapter JSON',
-    icon: 'ios-share',
-    testID: 'export-chapter',
-  },
+  { action: 'analysis', label: 'Text Analysis', icon: 'bar-chart-2', testID: 'menu-analysis' },
+  { action: 'growth', label: 'Growth', icon: 'trending-up', testID: 'menu-growth' },
+  { action: 'find', label: 'Find & Replace', icon: 'search', testID: 'menu-find' },
+  { action: 'outline', label: 'Outline', icon: 'list', testID: 'menu-outline' },
+  { action: 'focus', label: 'Focus Mode', icon: 'maximize', testID: 'menu-focus' },
+  { action: 'layout', label: 'Appearance & Layout', icon: 'sliders', testID: 'menu-layout' },
+  { action: 'exportJson', label: 'Export Chapter JSON', icon: 'share', testID: 'export-chapter' },
 ];
 
-/** The editor's ⋮ menu items, bound to handlers. */
+/** The editor's ⋯ menu items, bound to handlers. */
 export function editorMenu(on: Record<MenuAction, () => void>): MenuItem[] {
   return MENU.map(({ action, ...item }) => ({ ...item, onPress: on[action] }));
 }
@@ -124,16 +121,21 @@ export function ColorPopover(p: {
   const s = useStyles();
   return (
     <View style={s.popover} testID="color-popover">
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <AppText variant="labelMedium" color="onSurfaceVariant">
+      <View style={popoverHead.row}>
+        <Txt variant="overline" color="inkSecondary" style={popoverHead.label}>
           {p.channel === 'fg' ? 'Text colour' : 'Background colour'} · writer only
-        </AppText>
-        <IconButton icon="close" size={32} accessibilityLabel="Close colours" onPress={p.onClose} />
+        </Txt>
+        <IconBtn icon="x" size={18} accessibilityLabel="Close colours" onPress={p.onClose} />
       </View>
       <ColorSwatchRow onPick={p.onPick} />
     </View>
   );
 }
+
+const popoverHead = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  label: { flex: 1 },
+});
 
 export function CommentSheet(p: {
   visible: boolean;
@@ -146,15 +148,22 @@ export function CommentSheet(p: {
     setNote('');
   };
   return (
-    <BottomSheet
+    <Sheet
       visible={p.visible}
       title="Add comment"
-      subtitle="Private note — never published to readers."
+      subtitle="Private note, never published to readers."
       onClose={p.onClose}
-      footer={<Button variant="filled" label="Add" onPress={add} disabled={!note.trim()} />}
+      footer={
+        <ActionButton
+          label="Add"
+          onPress={add}
+          disabled={!note.trim()}
+          style={{ marginLeft: 'auto' }}
+        />
+      }
       testID="comment-sheet"
     >
-      <TextField label="Note" value={note} onChangeText={setNote} multiline autoFocus />
-    </BottomSheet>
+      <Field label="Note" value={note} onChangeText={setNote} multiline autoFocus />
+    </Sheet>
   );
 }

@@ -15,22 +15,9 @@ import { DocumentStore, keys } from './documents.ts';
 import { NotFoundError, ValidationError } from './errors.ts';
 import { newSlugId } from './ids.ts';
 import { prepareChapter } from './sanitize.ts';
-import { chapterWords } from './word-count.ts';
+import { summarizeNovel, type NovelSummary } from './novel-summary.ts';
 
-export interface NovelSummary {
-  id: string;
-  title: string;
-  subtitle?: string;
-  author: string;
-  sectionLabel: SectionLabel;
-  seasonCount: number;
-  chapterCount: number;
-  /** Prose + dialogue words across every chapter. */
-  words: number;
-  /** The novel's `--accent` theme colour, when set. */
-  accent?: string;
-  updatedAt: number;
-}
+export type { NovelSummary } from './novel-summary.ts';
 
 export interface NewNovelInput {
   title: string;
@@ -86,30 +73,7 @@ export class NovelRepository {
     const out: NovelSummary[] = [];
     for (const key of await this.docs.keys('novel/')) {
       const stored = await this.docs.read<NovelManifest>(key);
-      if (!stored) continue;
-      const n = stored.data;
-      const chapterKeys = await this.docs.keys(keys.chaptersOf(n.id));
-      let updatedAt = stored.updatedAt;
-      let words = 0;
-      for (const ck of chapterKeys) {
-        const c = await this.docs.read<ChapterDocument>(ck);
-        if (!c) continue;
-        if (c.updatedAt > updatedAt) updatedAt = c.updatedAt;
-        words += chapterWords(c.data);
-      }
-      const accent = n.theme['--accent'];
-      out.push({
-        id: n.id,
-        title: n.title,
-        ...(n.subtitle ? { subtitle: n.subtitle } : {}),
-        author: n.author,
-        sectionLabel: n.sectionLabel,
-        seasonCount: n.seasons.length,
-        chapterCount: chapterKeys.length,
-        words,
-        ...(accent ? { accent } : {}),
-        updatedAt,
-      });
+      if (stored) out.push(await summarizeNovel(this.docs, stored));
     }
     return out.sort((a, b) => b.updatedAt - a.updatedAt);
   }

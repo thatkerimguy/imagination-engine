@@ -1,27 +1,26 @@
-// The chapter editing screen: slim top bar, metrics ribbon, the block stream (WYSIWYG blocks that
-// turn into inputs on focus), the above-keyboard formatting toolbar and every editor sheet.
-// Focus Mode hides the bar, ribbon and toolbar, leaving the page and a small exit pill.
+// Chapter editing screen (bar, metrics, blocks, toolbar, sheets); Focus Mode leaves page + Exit.
 import type { ChapterDocument } from '@kn/core';
 import { useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { shareJson } from '../export/share-json';
-import { GimmickSheet } from '../forms/GimmickSheet.tsx';
 import { enabledWriterModules, getWriterModule } from '../modules/registry.ts';
-import { replaceBlock } from '../store/chapter-ops.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Button } from '../ui/Button.tsx';
-import { EmptyState } from '../ui/layout.tsx';
-import { space } from '../ui/m3-tokens.ts';
-import { makeStyles, useWriterPrefs } from '../ui/theme.tsx';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { EmptyState } from '../ui/Page.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
+import { useWriterPrefs } from '../ui/theme.tsx';
 import { useEditorTypography } from '../ui/typography.ts';
 import { TextAnalysisSheet } from '../views/TextAnalysisSheet.tsx';
+import { FOCUS_BOTTOM_PAD, useStyles } from './chapter-editor-styles.ts';
 import { BlockView } from './BlockView.tsx';
 import { ColorPopover, CommentSheet, EditorTopBar, editorMenu } from './EditorChrome.tsx';
 import { FindReplaceBar } from './FindReplaceBar.tsx';
 import { FormattingToolbar } from './FormattingToolbar.tsx';
-import { GimmickPicker, InsertChoiceSheet } from './InsertSheets.tsx';
-import { FocusExitPill, LayoutPrefsSheet } from './LayoutPrefsSheet.tsx';
+import { GimmickBlockSheet } from './GimmickBlockSheet.tsx';
+import { GimmickPicker } from './InsertSheets.tsx';
+import { FOCUS_EXIT_CLEARANCE, FocusExitPill, LayoutPrefsSheet } from './LayoutPrefsSheet.tsx';
 import { MetricPickerSheet, MetricsRibbon } from './MetricsRibbon.tsx';
 import { OutlineSheet } from './OutlineSheet.tsx';
 import { useEditorActions } from './use-editor-actions.ts';
@@ -44,6 +43,7 @@ type Sheet = 'analysis' | 'outline' | 'layout' | 'metrics' | null;
 export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const { chapter, draft } = p;
   const s = useStyles();
+  const insets = useSafeAreaInsets();
   const typo = useEditorTypography();
   const [prefs] = useWriterPrefs();
   const a = useEditorActions(draft.update);
@@ -125,21 +125,28 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         <ScrollView
           ref={scroller}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[s.content, { paddingHorizontal: typo.margin }]}
+          contentContainerStyle={[
+            s.content,
+            { paddingHorizontal: typo.margin },
+            focusMode && {
+              paddingTop: insets.top + FOCUS_EXIT_CLEARANCE,
+              paddingBottom: FOCUS_BOTTOM_PAD,
+            },
+          ]}
           scrollEventThrottle={32}
           onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
           testID="chapter-stream"
         >
-          <AppText
-            variant="headlineSmall"
+          <Txt
+            variant="title"
             style={[s.title, { fontFamily: typo.fontFamily }]}
             accessibilityRole="header"
           >
             {chapter.title}
-          </AppText>
+          </Txt>
           {chapter.blocks.length === 0 ? (
             <EmptyState
-              icon="edit-note"
+              icon="edit-3"
               title="A blank page"
               body="Use the toolbar below to add prose, dialogue, a scene break or a gimmick."
             />
@@ -163,16 +170,16 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
                 onOpenGimmick={a.openSheet}
                 onToggleBeat={a.toggleBeat}
                 onMove={a.move}
-                onInsertBelow={a.openBelow}
                 onDelete={(id) => void a.remove(id)}
               />
             </View>
           ))}
           <View style={s.footer}>
             {focusMode ? null : (
-              <Button
-                variant="text"
-                icon="toc"
+              <ActionButton
+                variant="ghost"
+                quiet
+                icon="list"
                 label="Outline"
                 onPress={() => setSheet('outline')}
               />
@@ -223,11 +230,6 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
       />
       <MetricPickerSheet visible={sheet === 'metrics'} onClose={() => setSheet(null)} />
       <CommentSheet visible={f.commentOpen} onAdd={f.addComment} onClose={f.closeComment} />
-      <InsertChoiceSheet
-        visible={a.belowId !== null}
-        onPick={(choice) => a.pick(choice, a.belowId)}
-        onClose={() => a.openBelow(null)}
-      />
       <GimmickPicker
         visible={a.pickerOpen}
         modules={enabledWriterModules(p.enabledModules)}
@@ -235,28 +237,14 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         onClose={a.closePicker}
       />
       {sheetBlock?.kind === 'module' && sheetModule ? (
-        <GimmickSheet
-          visible
+        <GimmickBlockSheet
+          block={sheetBlock}
           module={sheetModule}
-          initialProps={sheetBlock.props}
-          disabledInNovel={!p.enabledModules.includes(sheetBlock.moduleId)}
-          onSave={(props) => {
-            draft.update((c) =>
-              replaceBlock(c, { ...sheetBlock, moduleVersion: sheetModule.meta.version, props }),
-            );
-            a.openSheet(null);
-          }}
-          onClose={() => a.openSheet(null)}
+          enabledModules={p.enabledModules}
+          update={draft.update}
+          onDone={() => a.openSheet(null)}
         />
       ) : null}
     </View>
   );
 }
-
-const useStyles = makeStyles((t) => ({
-  screen: { flex: 1, backgroundColor: t.m3.surface },
-  flex: { flex: 1 },
-  content: { paddingTop: space.lg, gap: space.sm, paddingBottom: space.xl * 3 },
-  title: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
-  footer: { alignItems: 'center', paddingTop: space.xl },
-}));

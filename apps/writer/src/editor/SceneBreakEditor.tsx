@@ -1,51 +1,58 @@
+// Scene break: an airy centred ornament `— ◆ Label · Timestamp —`; tapping it expands two
+// borderless inline inputs (Label, Timestamp).
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
-import { AppText } from '../ui/AppText.tsx';
-import { space } from '../ui/m3-tokens.ts';
-import { TextField } from '../ui/TextField.tsx';
-import { makeStyles } from '../ui/theme.tsx';
+import { StyleSheet, TextInput, View } from 'react-native';
+import { Txt } from '../ui/Txt.tsx';
+import { useTheme } from '../ui/theme.tsx';
+import { type as typeScale } from '../ui/type.ts';
 import type { InlineEditorProps, SceneBreakBlock } from './block-types.ts';
-
-const useStyles = makeStyles((t) => ({
-  wrap: { gap: space.sm, paddingVertical: space.sm },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  line: { flex: 1, height: 1, backgroundColor: t.m3.outlineVariant },
-}));
 
 export function SceneBreakEditor(
   p: InlineEditorProps<SceneBreakBlock> & { expanded: boolean },
 ): ReactNode {
-  const s = useStyles();
-  const caption = [p.block.label, p.block.timestamp].filter(Boolean).join('  ·  ');
+  const { colors } = useTheme();
+  const caption = [p.block.label, p.block.timestamp].filter(Boolean).join(' · ');
+  const input = [typeScale.label, styles.input, { color: colors.ink }];
   return (
-    <View style={s.wrap}>
-      <View style={s.divider}>
-        <View style={s.line} />
-        <AppText variant="labelLarge" color="primary" testID={`scene-caption-${p.block.id}`}>
-          {caption ? `◆  ${caption}` : '◆'}
-        </AppText>
-        <View style={s.line} />
-      </View>
+    <View style={styles.wrap}>
+      <Txt
+        variant="label"
+        color="inkMuted"
+        style={styles.caption}
+        testID={`scene-caption-${p.block.id}`}
+      >
+        {caption ? `—  ◆  ${caption}  —` : '—  ◆  —'}
+      </Txt>
       {p.expanded ? (
         <>
-          <TextField
-            dense
-            label="Label"
+          <TextInput
             value={p.block.label ?? ''}
             onFocus={p.onSelect}
             onChangeText={(label) => p.onChange({ ...p.block, label })}
-            placeholder="Label (optional)"
+            placeholder="Label"
+            accessibilityLabel="Label"
+            placeholderTextColor={colors.inkMuted}
+            selectionColor={colors.accent}
+            style={input}
           />
-          <TextField
-            dense
-            label="Timestamp"
+          <TextInput
             value={p.block.timestamp ?? ''}
             onFocus={p.onSelect}
             onChangeText={(timestamp) => p.onChange({ ...p.block, timestamp })}
-            placeholder="Timestamp (optional)"
+            placeholder="Timestamp"
+            accessibilityLabel="Timestamp"
+            placeholderTextColor={colors.inkMuted}
+            selectionColor={colors.accent}
+            style={input}
           />
         </>
       ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: { paddingVertical: 20, alignItems: 'stretch', gap: 2 },
+  caption: { textAlign: 'center', letterSpacing: 0.6 },
+  input: { textAlign: 'center', minHeight: 40, padding: 0 },
+});

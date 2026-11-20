@@ -25,6 +25,7 @@ export function Field(p: FieldProps): ReactNode {
     p;
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
+  const message = error?.trim() || hint;
   const ring = error ? colors.danger : focused ? colors.accent : 'transparent';
   return (
     <View style={styles.wrap}>
@@ -62,10 +63,10 @@ export function Field(p: FieldProps): ReactNode {
           ]}
         />
       </View>
-      {error || hint || trailingHint ? (
+      {message || trailingHint ? (
         <View style={styles.hints}>
-          <Txt variant="caption" color={error ? 'danger' : 'inkMuted'} style={styles.flex}>
-            {error || hint || ''}
+          <Txt variant="caption" color={error?.trim() ? 'danger' : 'inkMuted'} style={styles.flex}>
+            {message ?? ''}
           </Txt>
           {trailingHint ? (
             <Txt variant="caption" color="inkMuted">

@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import type { AssetKind } from '@kn/core';
-import { Button } from '../../ui/Button.tsx';
-import { TextField } from '../../ui/TextField.tsx';
-import { space } from '../../ui/m3-tokens.ts';
+import { ActionButton } from '../../ui/ActionButton.tsx';
+import { Field } from '../../ui/Field.tsx';
+import { space } from '../../ui/tokens.ts';
 import { asString } from '../form-state.ts';
 import type { ControlProps } from './types.ts';
 
@@ -36,7 +36,7 @@ export function AssetControl({ field, value, onChange, errors }: ControlProps<'a
   return (
     <View style={{ gap: space.sm, alignItems: 'flex-start' }}>
       <View style={{ alignSelf: 'stretch' }}>
-        <TextField
+        <Field
           dense
           testID={`field-${field.key}`}
           accessibilityLabel={`${field.label} path`}
@@ -45,14 +45,15 @@ export function AssetControl({ field, value, onChange, errors }: ControlProps<'a
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="assets/file-name"
-          error={pickError ?? (errors.length > 0 ? '' : null)}
-          help="Files are bundled with the novel when you publish."
+          error={pickError ?? (errors.length > 0 ? ' ' : null)}
+          hint="Files are bundled with the novel when you publish."
         />
       </View>
-      <Button
+      <ActionButton
         label="Choose file"
-        variant="tonal"
-        icon="attach-file"
+        variant="secondary"
+        compact
+        icon="paperclip"
         accessibilityLabel={`Choose ${field.assetKind} file`}
         onPress={() => void pick()}
       />

@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
-import { Icon } from '../../ui/Icon.tsx';
-import { StatePressable } from '../../ui/StateLayer.tsx';
-import { TextField } from '../../ui/TextField.tsx';
-import { space } from '../../ui/m3-tokens.ts';
-import { makeStyles, useTheme } from '../../ui/theme.tsx';
+import { StyleSheet, View } from 'react-native';
+import { Field } from '../../ui/Field.tsx';
+import { Press, slop } from '../../ui/Press.tsx';
+import { space } from '../../ui/tokens.ts';
+import { useTheme } from '../../ui/theme.tsx';
 import { tapFeedback } from '../../ui/haptics.ts';
-import { isHexColor, readableOn } from '../field-hints.ts';
+import { isHexColor } from '../field-hints.ts';
 import { asString } from '../form-state.ts';
 import type { ControlProps } from './types.ts';
 
@@ -24,45 +23,49 @@ const DEFAULT_SWATCHES = [
   '#9b968d',
 ] as const;
 
+const SWATCH = 32;
+
 export function ColorControl({ field, value, onChange, errors }: ControlProps<'color'>): ReactNode {
   const hex = asString(value);
-  const s = useStyles();
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const swatches = field.swatches ?? DEFAULT_SWATCHES;
   return (
     <View style={{ gap: space.md }}>
-      <View style={s.swatches}>
+      <View style={styles.swatches}>
         {swatches.map((c) => {
           const on = hex.toLowerCase() === c.toLowerCase();
           return (
-            <StatePressable
+            <Press
               key={c}
               accessibilityRole="radio"
               accessibilityLabel={`Colour ${c}`}
               accessibilityState={{ selected: on }}
               testID={`field-${field.key}-${c}`}
-              layerColor={readableOn(c)}
+              wash={null}
+              hitSlop={slop(SWATCH + 6)}
               onPress={() => {
                 tapFeedback();
                 onChange(c);
               }}
-              style={[
-                s.swatch,
-                { backgroundColor: c },
-                on && { borderWidth: 3, borderColor: m3.primary },
-              ]}
+              style={[styles.ring, { borderColor: on ? colors.ink : 'transparent' }]}
             >
-              {on ? <Icon name="check" size={24} color={readableOn(c)} /> : null}
-            </StatePressable>
+              <View style={[styles.swatch, { backgroundColor: c, borderColor: colors.hairline }]} />
+            </Press>
           );
         })}
       </View>
-      <View style={s.hexRow}>
+      <View style={styles.hexRow}>
         <View
-          style={[s.dot, { backgroundColor: isHexColor(hex) ? hex : m3.surfaceContainerHigh }]}
+          style={[
+            styles.dot,
+            {
+              backgroundColor: isHexColor(hex) ? hex : colors.surface,
+              borderColor: colors.hairline,
+            },
+          ]}
         />
         <View style={{ width: 140 }}>
-          <TextField
+          <Field
             dense
             testID={`field-${field.key}`}
             accessibilityLabel={`${field.label} hex`}
@@ -72,7 +75,7 @@ export function ColorControl({ field, value, onChange, errors }: ControlProps<'c
             autoCorrect={false}
             maxLength={7}
             placeholder="#rrggbb"
-            error={errors.length > 0 ? '' : null}
+            error={errors.length > 0 ? ' ' : null}
           />
         </View>
       </View>
@@ -80,24 +83,17 @@ export function ColorControl({ field, value, onChange, errors }: ControlProps<'c
   );
 }
 
-const useStyles = makeStyles((t) => ({
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
-  swatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
+const styles = StyleSheet.create({
+  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  ring: {
+    width: SWATCH + 6,
+    height: SWATCH + 6,
+    borderRadius: (SWATCH + 6) / 2,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: t.m3.outlineVariant,
   },
+  swatch: { width: SWATCH, height: SWATCH, borderRadius: SWATCH / 2, borderWidth: 1 },
   hexRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: t.m3.outlineVariant,
-  },
-}));
+  dot: { width: 24, height: 24, borderRadius: 12, borderWidth: 1 },
+});

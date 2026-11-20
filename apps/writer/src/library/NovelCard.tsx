@@ -48,7 +48,7 @@ export function NovelCard({
     },
   ];
   const meta = [
-    countLabel(novel.seasonCount, novel.sectionLabel),
+    countLabel(novel.seasonCount, novel.sectionLabel.toLowerCase()),
     countLabel(novel.chapterCount, 'chapter'),
     `${novel.words.toLocaleString('en-US')} words`,
     sentence(relativeTime(novel.updatedAt)),
@@ -72,7 +72,7 @@ export function NovelCard({
               {novel.subtitle}
             </Txt>
           ) : null}
-          <Txt variant="meta" color="inkMuted" numberOfLines={1}>
+          <Txt variant="meta" color="inkMuted" numberOfLines={2}>
             {meta}
           </Txt>
         </View>

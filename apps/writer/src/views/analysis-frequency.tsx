@@ -39,7 +39,7 @@ export function AnalysisFrequency(p: { blocks: readonly Block[] }): ReactNode {
           value={filter}
           onChange={setFilter}
           accessibilityLabel="Word class"
-          style={{ flex: 1.6 }}
+          style={{ flex: 2.3 }}
         />
         <SegmentControl<MinLen>
           compact

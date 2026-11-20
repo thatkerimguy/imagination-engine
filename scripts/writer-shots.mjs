@@ -68,6 +68,7 @@ try {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
     hasTouch: true,
+    colorScheme: 'dark',
   });
   // Settled dice call navigator.vibrate() (in the preview iframe too); record when.
   await page.addInitScript(() => {

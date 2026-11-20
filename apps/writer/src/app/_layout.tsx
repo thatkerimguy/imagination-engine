@@ -7,6 +7,9 @@ import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
 import { HeaderScrollProvider } from '../ui/header-scroll.tsx';
 import { ThemeProvider, useTheme } from '../ui/theme.tsx';
 import { StackTopBar } from '../ui/TopBar.tsx';
+import { installWebFocusReset } from '../ui/web-focus.ts';
+
+installWebFocusReset();
 
 export default function RootLayout(): ReactNode {
   return (

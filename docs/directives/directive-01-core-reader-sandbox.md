@@ -13,7 +13,9 @@ Establish the clean monorepo foundation, lock the **Frozen Core** data schema (`
 ## 2. Deliverables
 
 ### Deliverable A: Clean Monorepo Skeleton
+
 Set up a `pnpm` workspace with strict TypeScript, Prettier, ESLint, and Vitest:
+
 ```text
 /
 ├── packages/
@@ -31,6 +33,7 @@ Set up a `pnpm` workspace with strict TypeScript, Prettier, ESLint, and Vitest:
 ```
 
 ### Deliverable B: `packages/core` (Frozen Schema & Plugin Contract)
+
 Implement pure, zero-DOM TypeScript definitions and runtime validators for:
 
 1. **Content Hierarchy (`schema.ts`):**
@@ -55,7 +58,9 @@ Implement pure, zero-DOM TypeScript definitions and runtime validators for:
 3. **Unit Tests:** Validate sample novel/season/chapter parsing, malformed payload rejection, and module default filling.
 
 ### Deliverable C: `apps/reader` (Mobile-First Kinetic Reader + Shared Stage)
+
 Build a fast, zero-bloat Vanilla TypeScript + Vite PWA reader:
+
 - **Core Shell:**
   - Bookshelf → Season/Volume list → Chapter list → Reading view.
   - Clean, high-legibility typography controls (font size, warm/dark/obsidian reading themes, quality tier toggle `Auto / High / Lite / Reduced Motion`).
@@ -72,7 +77,9 @@ Build a fast, zero-bloat Vanilla TypeScript + Vite PWA reader:
   - Lightweight Web Audio controller supporting looping ambient crossfades, ducking, and crisp one-shot SFX playback.
 
 ### Deliverable D: Standalone Gimmick Sandbox (`/sandbox`)
+
 Build a dedicated `/sandbox` route inside `apps/reader` designed for phone testing:
+
 - Dropdown to pick any registered module.
 - **Auto-generated control panel** rendered directly from the module's `schema.ts` fields (proving the schema-driven UI model before Phase 2).
 - Quality-tier switcher (`High` / `Lite` / `Reduced`) and a prominent **"Trigger Beat"** button over sample prose paragraphs so the Author can test spectacle readability, weight, shadows, and 60fps performance directly on their phone.
@@ -91,6 +98,7 @@ Build a dedicated `/sandbox` route inside `apps/reader` designed for phone testi
    - **Tiers:** `high` = full 3D PBR + soft shadows; `lite` = crisp 2D canvas tumbled dice; `reduced` = calm tactile die-face reveal badge with zero motion.
 
 ### Deliverable F: Vertical Slice Demo Chapter (`sample-novels/vertical-slice/`)
+
 Create a short, atmospheric 12-block demo chapter (1 Season, 1 Chapter) combining crisp prose, dialogue, `core-ambient-bed`, `gits-cyberbrain-chat`, and two `bl-dice-3d` throws (one scripted `[1, 1]` snake eyes, one interactive tap/shake `[6, 6]`) so the Author can immediately test the reader and sandbox on their phone.
 
 ---

@@ -20,7 +20,8 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "writer": "pnpm --filter @kn/writer start",
     "writer:web": "pnpm --filter @kn/writer web",
-    "writer:export": "pnpm --filter @kn/writer export:web"
+    "writer:export": "pnpm --filter @kn/writer export:web",
+    "writer:shots": "node scripts/writer-shots.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

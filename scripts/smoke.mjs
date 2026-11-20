@@ -3,6 +3,7 @@
 // Usage: node scripts/smoke.mjs [--shots <dir>]
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { previewPass } from './smoke-preview.mjs';
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -60,6 +61,7 @@ try {
   await readerPass(await newPage(), shot, settled, resetSettled);
   await sandboxPass(await newPage(1), shot, settled, resetSettled);
   await warmPass(await newPage(), shot, settled);
+  await previewPass(await newPage(), BASE, { ok, fail, shot });
   const fresh = await newPage();
   await fresh.goto(`${BASE}sandbox/?module=gits-cyberbrain-chat&tier=high`);
   await fresh.getByRole('button', { name: 'Trigger Beat' }).click();

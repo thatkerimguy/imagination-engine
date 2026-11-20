@@ -1,7 +1,9 @@
-// Placeholder (Phase 2B-2 Phase A) — replaced by the owning worker.
+// Book compiler for a Notes folder: its notes (and sub-folders' notes), in order, as chapters.
+import { useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
-import { EmptyState } from '../ui/Page.tsx';
+import { BookCompiler } from '../compile/BookCompiler.tsx';
 
 export default function CompileFolderScreen(): ReactNode {
-  return <EmptyState icon="printer" title="Book compiler" />;
+  const { folder } = useLocalSearchParams<{ folder: string }>();
+  return <BookCompiler key={folder} source={{ kind: 'folder', folderId: folder }} />;
 }

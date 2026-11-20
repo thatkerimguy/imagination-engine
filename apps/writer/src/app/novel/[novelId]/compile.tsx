@@ -1,7 +1,9 @@
-// Placeholder (Phase 2B-2 Phase A) — replaced by the owning worker.
+// Book compiler for a novel: pick chapters, order them and export.
+import { useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
-import { EmptyState } from '../../../ui/Page.tsx';
+import { BookCompiler } from '../../../compile/BookCompiler.tsx';
 
 export default function CompileNovelScreen(): ReactNode {
-  return <EmptyState icon="printer" title="Book compiler" />;
+  const { novelId } = useLocalSearchParams<{ novelId: string }>();
+  return <BookCompiler key={novelId} source={{ kind: 'novel', novelId }} />;
 }

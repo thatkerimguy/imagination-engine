@@ -1,4 +1,4 @@
-// Writer QA pack (Directive 02 · Pass 2 review): drives the Expo Web export of apps/writer at 390×844, with
+// Writer QA pack (Directive 02B-1: editor, analyzers, growth, themes & fonts): drives the Expo Web export of apps/writer at 390×844, with
 // the Live Preview pointed at the built apps/reader. Needs `pnpm build` and `pnpm writer:export`.
 // Usage: node scripts/writer-shots.mjs [--shots <dir>]
 import { spawn } from 'node:child_process';
@@ -18,8 +18,30 @@ const ID = {
   dialogue: '01M7WD7TG4T9804M170B4T81MM',
   chat: '01M7WD7TG3C1Z266E87HFD27KR',
   dice: '01M7WD7TG54FMBWYMZM8XKD1V7',
+  snake: '01M7WD7TG6R6734B03YH123PFY',
 };
-const EDITED = 'House rolls first. Tonight the house rolls loaded.';
+const RICH =
+  '**Snake eyes.** The room *exhaled*, the ++felt++ went ~~quiet~~ still, and ==nobody breathed==.';
+/** Synthetic 40-day history so the Growth charts have a curve to draw (QA fixture only). */
+const GROWTH_SEED = (() => {
+  const day = 86400000;
+  const now = Date.now();
+  const points = [];
+  for (let i = 40; i >= 1; i--) {
+    const ts = now - i * day;
+    const d = new Date(ts);
+    const words = Math.round(40 + (40 - i) * 2 + 8 * Math.sin(i / 3));
+    points.push({
+      dayKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+      ts,
+      chars: words * 5,
+      words,
+      sentences: Math.round(words / 8),
+      paragraphs: Math.round(words / 20),
+    });
+  }
+  return JSON.stringify({ data: { points }, updatedAt: now });
+})();
 const errors = [];
 const fail = (msg) => {
   console.error(`❌ ${msg}`);
@@ -63,79 +85,112 @@ try {
   const shot = (name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
   const tid = (id) => page.getByTestId(id);
 
-  // 01 Bookshelf with the first-launch demo seed.
+  await page.addInitScript((seed) => {
+    const key = 'kn-writer:growth/chapter:ch01';
+    if (!localStorage.getItem(key)) localStorage.setItem(key, seed);
+  }, GROWTH_SEED);
+  const editor = async () => {
+    await page.goto(`${WRITER}novel/vertical-slice/chapter/s01/ch01`);
+    await tid(`pill-${ID.chat}`).waitFor({ timeout: 20000 });
+  };
+  const closeSheet = () => page.getByRole('button', { name: 'Close sheet' }).last().click();
+
+  // 01 Chapter editor, default dark: slim bar, ribbon, scene divider, WYSIWYG prose, toolbar.
   await page.goto(WRITER);
   await tid('novel-card-vertical-slice').waitFor({ timeout: 20000 });
-  await tid('new-novel').waitFor();
-  ok('bookshelf shows seeded "Chrome Tide" and New novel');
-  await shot('01-m3-bookshelf-dark');
+  await editor();
+  for (const id of ['editor-top-bar', 'stats-pill', 'undo-button', 'redo-button', 'preview-button'])
+    await tid(id).waitFor();
+  await tid('metrics-ribbon').waitFor();
+  await tid('tool-tab').waitFor();
+  ok('slim top bar, metrics ribbon and toolbar (with Tab) render');
+  await tid(`prose-text-${ID.snake}`).click();
+  const snake = tid(`prose-text-${ID.snake}`).locator('textarea, input').first();
+  await snake.waitFor();
+  await snake.fill(RICH);
+  await tid(`prose-text-${ID.dialogue}`).click();
+  const wysiwyg = tid(`prose-text-${ID.snake}`);
+  const raw = await wysiwyg.textContent();
+  if (raw.includes('**') || raw.includes('==')) fail(`unfocused prose shows raw markup: ${raw}`);
+  else ok('unfocused prose renders WYSIWYG with zero raw syntax');
+  await tid('undo-button').click();
+  await tid('redo-button').click();
+  ok('undo / redo buttons respond');
+  await page.getByTestId('save-status').filter({ hasText: 'Saved' }).waitFor({ timeout: 5000 });
+  await tid(`block-01M7WD7TG0SRH8FFJAF28FHTHC`).evaluate((el) => el.scrollIntoView());
+  await page.waitForTimeout(400);
+  await shot('01-minimal-editor-metrics-toolbar');
 
-  // 02 Outline + Novel Settings module toggles, side by side in one image.
-  await tid('novel-card-vertical-slice').click();
-  await tid('outline-season-s01').waitFor();
-  const outline = await page.screenshot();
-  await page.goto(`${WRITER}novel/vertical-slice/settings`);
-  await tid('module-toggle-bl-dice-3d').waitFor();
-  await tid('module-toggle-bl-dice-3d').scrollIntoViewIfNeeded();
-  const settings = await page.screenshot();
-  ok('outline and enabledModules toggles render');
-  await sideBySide(browser, [outline, settings], '02-m3-outline-and-settings');
+  // 03 Text analysis sheet, Frequency tab, Content (non-grammar) filter.
+  await tid('stats-pill').click();
+  await tid('text-analysis-sheet').waitFor();
+  await tid('analysis-tab-frequency').click();
+  await tid('freq-filter-content').click();
+  await page.waitForTimeout(500);
+  await shot('03-text-analysis-frequency');
+  await closeSheet();
+  ok('text analysis sheet opens with frequency chart');
 
-  // 03 Chapter editor.
-  await page.goto(`${WRITER}novel/vertical-slice/chapter/s01/ch01`);
-  await tid(`pill-${ID.chat}`).waitFor();
-  await tid('insert-gimmick').waitFor();
-  if (await tid('top-bar-back').isVisible()) ok('chapter editor top bar has a Back button');
-  else fail('chapter editor has no Back button');
-  const pills = await page.locator('[data-testid^="pill-"]').allTextContents();
-  if (pills.some((t) => t.includes('KESTREL-9')) && pills.some((t) => t.includes('D6')))
-    ok(`editor pills come from formatCardSummary (${pills.length} pills)`);
-  else fail(`unexpected pills: ${JSON.stringify(pills)}`);
-  await tid('block-01M7WD7TG0SRH8FFJAF28FHTHC').evaluate((el) => el.scrollIntoView());
+  // 04 Growth (Lifetime).
+  await tid('editor-menu').click();
+  await tid('menu-growth').click();
+  await tid('growth-range-lifetime').click();
+  await tid('growth-card-words').waitFor();
+  const paths = await page.locator('svg path').count();
+  if (paths >= 4) ok(`growth charts render (${paths} svg paths)`);
+  else fail(`growth charts missing (${paths} svg paths)`);
   await page.waitForTimeout(300);
-  await shot('03-m3-chapter-editor');
+  await shot('04-growth-dashboard-charts');
 
-  // 04 Dice sheet: scripted → scriptedNumbers visible; random → hidden (showWhen).
-  await tid(`pill-${ID.dice}`).click();
-  await tid('gimmick-sheet').waitFor();
-  const scripted = page.getByText('Faces that land up');
-  await scripted.waitFor();
-  await page.getByText('True random', { exact: true }).click();
-  if (await scripted.isVisible()) fail('scriptedNumbers still visible in random mode');
-  else ok('showWhen hides scriptedNumbers for outcomeMode=random');
-  await page.getByText('Scripted', { exact: true }).click();
-  await scripted.waitFor();
-  // Reopen fresh (scroll y = 0, slide-in finished) to check and capture the first field label.
-  await page.getByRole('button', { name: 'Close sheet' }).click();
-  await tid(`pill-${ID.dice}`).click();
-  await tid('gimmick-sheet').waitFor();
-  await page.waitForTimeout(700);
-  const header = await page.getByText('3D Dice Throw', { exact: true }).boundingBox();
-  const label = await page.getByText('Dice', { exact: true }).boundingBox();
-  if (header && label && label.y >= header.y + header.height + 24 && label.y < 844)
-    ok(`first field label "Dice" is unclipped at scroll 0 (${Math.round(label.y)}px from top)`);
-  else fail(`"Dice" label overlaps the sheet header: ${JSON.stringify({ header, label })}`);
-  await shot('04-m3-schema-sheet-dice');
-  await page.getByRole('button', { name: 'Close sheet' }).click();
-
-  // 05 Cyberbrain sheet: string-list messages + encryption chips.
-  await tid(`pill-${ID.chat}`).click();
-  await tid('gimmick-sheet').waitFor();
-  await page.getByText('SPOOFED', { exact: false }).first().waitFor();
+  // 05 Appearance & fonts (top + scrolled to the font list / import button).
+  await page.goto(`${WRITER}appearance`);
+  await tid('theme-warm-sepia').waitFor();
+  const themes = await page.locator('[data-testid^="theme-"]').count();
+  if (themes >= 13) ok(`appearance lists ${themes - 1} themes + System`);
+  else fail(`expected 12 theme swatches + System, found ${themes}`);
+  const top = await page.screenshot();
+  await tid('import-font').scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
-  await shot('05-m3-schema-sheet-chat');
-  await page.getByRole('button', { name: 'Close sheet' }).click();
+  const fonts = await page.screenshot();
+  await sideBySide(browser, [top, fonts], '05-themes-and-fonts-picker');
 
-  // 06 Edit a dialogue line (not in the static JSON) and open the Live Preview at that block.
-  const line = tid(`block-${ID.dialogue}`).locator('textarea, input').last();
-  await line.click();
-  await line.fill(EDITED);
+  // 02 Focus mode with Warm Sepia and a literary serif.
+  await tid('theme-warm-sepia').scrollIntoViewIfNeeded();
+  await tid('theme-warm-sepia').click();
+  await tid('font-lora').scrollIntoViewIfNeeded();
+  await tid('font-lora').click();
+  await editor();
+  await tid('editor-menu').click();
+  await tid('menu-focus').click();
+  await tid('focus-exit').waitFor();
+  if (await tid('editor-top-bar').count()) fail('focus mode still shows the top bar');
+  else ok('focus mode hides top bar, ribbon and toolbar');
+  await page.waitForTimeout(800);
+  await shot('02-focus-mode-warm-sepia');
+  await tid('focus-exit').click();
+  await page.goto(`${WRITER}appearance`);
+  await tid('theme-system').click();
+  await tid('font-classic-serif').scrollIntoViewIfNeeded();
+  await tid('font-classic-serif').click();
+
+  // 06 Live preview of the unsaved rich prose, sequenced chat + dice.
+  await editor();
+  await tid(`prose-text-${ID.snake}`).click();
+  await tid(`prose-text-${ID.snake}`)
+    .locator('textarea, input')
+    .first()
+    .fill(RICH + ' ');
   await tid('preview-button').click();
   await tid('preview-screen').waitFor({ timeout: 10000 });
   const frame = page.frameLocator('iframe[title="Reader preview"]');
   await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
-  await frame.getByText(EDITED).waitFor({ timeout: 15000 });
-  ok('live preview renders the edited dialogue line through the reader bridge');
+  await frame.locator('strong', { hasText: 'Snake eyes.' }).waitFor({ timeout: 15000 });
+  const spans = await frame
+    .locator(`[data-block="${ID.snake}"]`)
+    .evaluate((el) => ['strong', 'em', 'u', 's', 'mark'].map((t) => el.querySelectorAll(t).length));
+  if (spans.every((n) => n === 1))
+    ok('preview renders bold, italic, underline, strike and highlight');
+  else fail(`inline spans in preview: ${JSON.stringify(spans)}`);
   const reader = page.frames().find((f) => f.url().includes('preview=1'));
   await reader.waitForFunction(() => window.__settled, null, { timeout: 30000 });
   const chat = await reader.evaluate(() => ({
@@ -145,22 +200,11 @@ try {
   if (chat.pending === 0 && chat.last === "Don't relax.")
     ok('all 3 KESTREL-9 lines were complete when the dice landed');
   else fail(`dice landed while KESTREL-9 was incomplete: ${JSON.stringify(chat)}`);
-  await page.waitForTimeout(250);
-  await shot('06-m3-live-preview-sequenced');
-
-  // 07 Light theme: switch Appearance in App Settings, then the chapter editor + dice sheet.
-  await page.goto(`${WRITER}settings`);
-  await tid('appearance-light').click();
-  await page.goto(`${WRITER}novel/vertical-slice/chapter/s01/ch01`);
-  await tid(`pill-${ID.dice}`).click();
-  await tid('gimmick-sheet').waitFor();
-  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.waitForTimeout(300);
-  await shot('07-m3-light-theme-check');
-  await page.getByRole('button', { name: 'Close sheet' }).click();
-  ok(`light theme applied (body ${bg})`);
-  await page.goto(`${WRITER}settings`);
-  await tid('appearance-dark').click();
+  await frame
+    .locator(`[data-block="${ID.snake}"]`)
+    .evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(400);
+  await shot('06-live-preview-rich-formatting');
 
   await flowPass(page, tid);
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
@@ -185,15 +229,18 @@ async function flowPass(page, tid) {
   await page.getByRole('button', { name: 'Create' }).click();
   await page.getByText('Arc 1', { exact: false }).first().waitFor();
   await page.locator('[data-testid^="outline-chapter-"]').first().getByText('Chapter 1').click();
-  await tid('insert-prose').click();
+  await tid('tool-addProse').click();
   const prose = page.getByPlaceholder('Write…').last();
   await prose.fill('A paragraph typed on the train.');
   await page.getByTestId('save-status').filter({ hasText: 'Saved' }).waitFor({ timeout: 5000 });
   await page.reload();
-  const kept = await page.getByPlaceholder('Write…').last().inputValue({ timeout: 10000 });
-  if (kept === 'A paragraph typed on the train.') ok('auto-save persisted a new paragraph');
-  else fail(`auto-save lost text: "${kept}"`);
-  await tid('insert-gimmick').click();
+  try {
+    await page.getByText('A paragraph typed on the train.').waitFor({ timeout: 10000 });
+    ok('auto-save persisted a new paragraph');
+  } catch {
+    fail('auto-save lost the new paragraph');
+  }
+  await tid('tool-addGimmick').click();
   await page.getByText(/No gimmicks are enabled/).waitFor({ timeout: 5000 });
   ok('gimmick picker is filtered to enabledModules (none for a new novel)');
 }

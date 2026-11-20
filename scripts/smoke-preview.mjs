@@ -1,7 +1,9 @@
 // Writer live-preview bridge (DIRECTIVE 02 §5): `?preview=1` must render an unsaved draft
 // delivered over postMessage, and refuse an invalid one with a readable message.
 const HEADLINE = 'Snake Eyes — unsaved draft headline';
-const LINE = 'Unsaved line: the Dealer smiles a little too wide.';
+const LINE =
+  'Unsaved line: the Dealer smiles **a little** too *wide* ==tonight== <script>window.__xss=1</script>';
+const LINE_TEXT = 'Unsaved line: the Dealer smiles a little too wide tonight <script>';
 
 export async function previewPass(page, base, { ok, fail, shot }) {
   await page.goto(`${base}?preview=1`);
@@ -31,11 +33,20 @@ export async function previewPass(page, base, { ok, fail, shot }) {
   await page.locator('.kn-hero h1', { hasText: HEADLINE }).waitFor({ timeout: 10000 });
   const rendered = await page.evaluate((line) => {
     const text = document.querySelector('.kn-chapter')?.textContent ?? '';
-    return { line: text.includes(line), tier: document.documentElement.dataset.tier };
-  }, LINE);
+    const el = document.querySelector('.kn-dialogue .kn-line');
+    return {
+      line: text.includes(line),
+      tier: document.documentElement.dataset.tier,
+      spans: ['strong', 'em', 'mark'].map((t) => el?.querySelectorAll(t).length ?? 0),
+      inert: !el?.querySelector('script') && !('__xss' in window),
+    };
+  }, LINE_TEXT);
   if (rendered.line && rendered.tier === 'lite')
     ok('preview bridge rendered an unsaved draft (edited headline + dialogue, tier lite)');
   else fail(`preview bridge did not render the draft: ${JSON.stringify(rendered)}`);
+  if (rendered.spans.every((n) => n === 1) && rendered.inert)
+    ok('preview renders inline bold / italic / highlight; raw <script> stays inert text');
+  else fail(`inline formatting in preview: ${JSON.stringify(rendered)}`);
   if (await page.evaluate(() => localStorage.getItem('kn:bookmark:vertical-slice')))
     fail('preview wrote a reader bookmark');
   await page.waitForTimeout(400);

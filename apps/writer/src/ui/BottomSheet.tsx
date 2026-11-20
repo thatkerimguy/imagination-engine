@@ -40,7 +40,7 @@ export function BottomSheet(p: BottomSheetProps): ReactNode {
         <Pressable
           style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.scrim, 0.32) }]}
           onPress={p.onClose}
-          accessibilityLabel="Close sheet"
+          accessibilityLabel="Dismiss sheet"
         />
         <View
           style={[s.sheet, { paddingBottom: Math.max(insets.bottom, space.md) }]}

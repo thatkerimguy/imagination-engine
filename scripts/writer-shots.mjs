@@ -1,4 +1,4 @@
-// Writer QA pack (DIRECTIVE 02 §6): drives the Expo Web export of apps/writer at 390×844, with
+// Writer QA pack (Directive 02 · Pass 2 review): drives the Expo Web export of apps/writer at 390×844, with
 // the Live Preview pointed at the built apps/reader. Needs `pnpm build` and `pnpm writer:export`.
 // Usage: node scripts/writer-shots.mjs [--shots <dir>]
 import { spawn } from 'node:child_process';
@@ -46,6 +46,12 @@ try {
     deviceScaleFactor: 2,
     hasTouch: true,
   });
+  // Settled dice call navigator.vibrate() (in the preview iframe too); record when.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'vibrate', {
+      value: () => ((window.__settled = performance.now()), true),
+    });
+  });
   await page.addInitScript((url) => {
     const key = 'kn-writer:setting/app';
     if (!localStorage.getItem(key))
@@ -62,7 +68,7 @@ try {
   await tid('novel-card-vertical-slice').waitFor({ timeout: 20000 });
   await tid('new-novel').waitFor();
   ok('bookshelf shows seeded "Chrome Tide" and New novel');
-  await shot('01-writer-bookshelf');
+  await shot('01-m3-bookshelf-dark');
 
   // 02 Outline + Novel Settings module toggles, side by side in one image.
   await tid('novel-card-vertical-slice').click();
@@ -73,23 +79,33 @@ try {
   await tid('module-toggle-bl-dice-3d').scrollIntoViewIfNeeded();
   const settings = await page.screenshot();
   ok('outline and enabledModules toggles render');
-  await sideBySide(browser, [outline, settings], '02-writer-outline-and-modules');
+  await sideBySide(browser, [outline, settings], '02-m3-outline-and-settings');
 
   // 03 Chapter editor.
   await page.goto(`${WRITER}novel/vertical-slice/chapter/s01/ch01`);
   await tid(`pill-${ID.chat}`).waitFor();
   await tid('insert-gimmick').waitFor();
+  if (await tid('top-bar-back').isVisible()) ok('chapter editor top bar has a Back button');
+  else fail('chapter editor has no Back button');
   const pills = await page.locator('[data-testid^="pill-"]').allTextContents();
   if (pills.some((t) => t.includes('KESTREL-9')) && pills.some((t) => t.includes('D6')))
     ok(`editor pills come from formatCardSummary (${pills.length} pills)`);
   else fail(`unexpected pills: ${JSON.stringify(pills)}`);
   await tid('block-01M7WD7TG0SRH8FFJAF28FHTHC').evaluate((el) => el.scrollIntoView());
   await page.waitForTimeout(300);
-  await shot('03-writer-chapter-editor');
+  await shot('03-m3-chapter-editor');
 
   // 04 Dice sheet: scripted → scriptedNumbers visible; random → hidden (showWhen).
   await tid(`pill-${ID.dice}`).click();
   await tid('gimmick-sheet').waitFor();
+  // The first label must sit fully below the fixed sheet header (title, then subtitle and divider).
+  const header = await page.getByText('3D Dice Throw', { exact: true }).boundingBox();
+  const label = await page.getByText('Dice', { exact: true }).boundingBox();
+  if (header && label && label.y >= header.y + header.height + 24)
+    ok(
+      `first field label "Dice" is unclipped (${Math.round(label.y - header.y - header.height)}px below the header)`,
+    );
+  else fail(`"Dice" label overlaps the sheet header: ${JSON.stringify({ header, label })}`);
   const scripted = page.getByText('Faces that land up');
   await scripted.waitFor();
   await page.getByText('True random', { exact: true }).click();
@@ -99,7 +115,7 @@ try {
   await scripted.waitFor();
   await page.getByText('Material').scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
-  await shot('04-writer-schema-sheet-dice');
+  await shot('04-m3-schema-sheet-dice');
   await page.getByRole('button', { name: 'Close sheet' }).click();
 
   // 05 Cyberbrain sheet: string-list messages + encryption chips.
@@ -107,7 +123,7 @@ try {
   await tid('gimmick-sheet').waitFor();
   await page.getByText('SPOOFED', { exact: false }).first().waitFor();
   await page.waitForTimeout(300);
-  await shot('05-writer-schema-sheet-chat');
+  await shot('05-m3-schema-sheet-chat');
   await page.getByRole('button', { name: 'Close sheet' }).click();
 
   // 06 Edit a dialogue line (not in the static JSON) and open the Live Preview at that block.
@@ -119,11 +135,32 @@ try {
   const frame = page.frameLocator('iframe[title="Reader preview"]');
   await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
   await frame.getByText(EDITED).waitFor({ timeout: 15000 });
-  await page.getByText('● Live').waitFor({ timeout: 5000 });
   ok('live preview renders the edited dialogue line through the reader bridge');
-  await frame.getByText(EDITED).evaluate((el) => el.scrollIntoView({ block: 'center' }));
-  await page.waitForTimeout(1200);
-  await shot('06-writer-live-preview-bridge');
+  const reader = page.frames().find((f) => f.url().includes('preview=1'));
+  await reader.waitForFunction(() => window.__settled, null, { timeout: 30000 });
+  const chat = await reader.evaluate(() => ({
+    pending: document.querySelectorAll('.kn-cbc li.pending').length,
+    last: document.querySelector('.kn-cbc li:last-child')?.textContent,
+  }));
+  if (chat.pending === 0 && chat.last === "Don't relax.")
+    ok('all 3 KESTREL-9 lines were complete when the dice landed');
+  else fail(`dice landed while KESTREL-9 was incomplete: ${JSON.stringify(chat)}`);
+  await page.waitForTimeout(250);
+  await shot('06-m3-live-preview-sequenced');
+
+  // 07 Light theme: switch Appearance in App Settings, then the chapter editor + dice sheet.
+  await page.goto(`${WRITER}settings`);
+  await tid('appearance-light').click();
+  await page.goto(`${WRITER}novel/vertical-slice/chapter/s01/ch01`);
+  await tid(`pill-${ID.dice}`).click();
+  await tid('gimmick-sheet').waitFor();
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.waitForTimeout(300);
+  await shot('07-m3-light-theme-check');
+  await page.getByRole('button', { name: 'Close sheet' }).click();
+  ok(`light theme applied (body ${bg})`);
+  await page.goto(`${WRITER}settings`);
+  await tid('appearance-dark').click();
 
   await flowPass(page, tid);
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FolioTabBar } from '../components/FolioTabBar.tsx';
+import { LockGate } from '../security/LockGate.tsx';
 import { RepositoryProvider } from '../store/context.tsx';
 import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
 import { HeaderScrollProvider } from '../ui/header-scroll.tsx';
@@ -20,7 +21,9 @@ export default function RootLayout(): ReactNode {
         <ThemeProvider>
           <ConfirmProvider>
             <HeaderScrollProvider>
-              <ThemedStack />
+              <LockGate>
+                <ThemedStack />
+              </LockGate>
             </HeaderScrollProvider>
           </ConfirmProvider>
         </ThemeProvider>

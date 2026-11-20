@@ -1,11 +1,12 @@
 // The chapter editor's bottom sheets in one place (analysis, outline, layout, metrics, comment,
 // gimmick picker / gimmick settings, version history), so ChapterEditor stays a thin layout.
-import type { ChapterDocument } from '@kn/core';
+import type { Block, ChapterDocument } from '@kn/core';
 import type { ReactNode } from 'react';
 import type { DocumentMetrics } from '../analysis/metrics.ts';
 import { enabledWriterModules, getWriterModule } from '../modules/registry.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { TextAnalysisSheet } from '../views/TextAnalysisSheet.tsx';
+import { VersionHistorySheet } from '../views/VersionHistorySheet.tsx';
 import { CommentSheet } from './EditorChrome.tsx';
 import { GimmickBlockSheet } from './GimmickBlockSheet.tsx';
 import { GimmickPicker } from './InsertSheets.tsx';
@@ -67,6 +68,13 @@ export function EditorSheets(p: EditorSheetsProps): ReactNode {
         }}
       />
       <MetricPickerSheet visible={p.sheet === 'metrics'} onClose={close} />
+      <VersionHistorySheet
+        visible={p.sheet === 'versions'}
+        target={`chapter:${chapter.id}`}
+        currentBlocks={chapter.blocks}
+        onRestore={(blocks) => draft.update((c) => ({ ...c, blocks: blocks as Block[] }))}
+        onClose={close}
+      />
       <CommentSheet visible={f.commentOpen} onAdd={f.addComment} onClose={f.closeComment} />
       <GimmickPicker
         visible={a.pickerOpen}

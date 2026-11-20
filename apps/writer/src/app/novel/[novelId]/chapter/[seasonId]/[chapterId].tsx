@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { ChapterEditor } from '../../../../../editor/ChapterEditor.tsx';
 import { routes } from '../../../../../routes.ts';
+import { ItemLockGate } from '../../../../../security/LockGate.tsx';
 import { useRepoQuery } from '../../../../../store/context.tsx';
 import { useChapterDraft } from '../../../../../store/use-chapter-draft.ts';
 import { Txt } from '../../../../../ui/Txt.tsx';
@@ -57,18 +58,20 @@ export default function ChapterEditorScreen(): ReactNode {
     );
   }
   return (
-    <>
+    <View style={styles.screen}>
       {header}
-      <ChapterEditor
-        chapter={chapter}
-        draft={draft}
-        enabledModules={novel.data.enabledModules}
-        onBack={back}
-        onPreview={(id) => void preview(id)}
-        onGrowth={() => router.push(routes.growth(`chapter:${chapterId}`, from))}
-        onAppearance={() => router.push(routes.appearance)}
-        {...(block ? { initialBlockId: block } : {})}
-      />
-    </>
+      <ItemLockGate itemId={chapterId} title={chapter.title}>
+        <ChapterEditor
+          chapter={chapter}
+          draft={draft}
+          enabledModules={novel.data.enabledModules}
+          onBack={back}
+          onPreview={(id) => void preview(id)}
+          onGrowth={() => router.push(routes.growth(`chapter:${chapterId}`, from))}
+          onAppearance={() => router.push(routes.appearance)}
+          {...(block ? { initialBlockId: block } : {})}
+        />
+      </ItemLockGate>
+    </View>
   );
 }

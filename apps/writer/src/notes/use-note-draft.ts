@@ -21,6 +21,7 @@ import { useRepository } from '../store/context.tsx';
 import { fallbackTitle, getDoc, saveDoc, type NoteBlock } from '../store/folders.ts';
 import { countsOf } from '../store/growth-logger.ts';
 import { recordGrowth } from '../store/growth-store.ts';
+import { recordAutoCheckpoint } from '../store/versions.ts';
 import { touchOpened } from '../store/item-meta.ts';
 import { docAsChapter } from '../store/note-promote.ts';
 import type { ChapterDraft, DraftState, EditKind } from '../store/use-chapter-draft.ts';
@@ -65,6 +66,7 @@ export function useNoteDraft(docId: string): NoteDraft {
         last = draft;
         const blocks = draft.chapter.blocks.filter(isNoteBlock);
         await saveDoc(repo, docId, { blocks, title: named });
+        void recordAutoCheckpoint(repo, `doc:${docId}`, blocks);
         await saveChapterStyles(
           repo,
           docId,

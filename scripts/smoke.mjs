@@ -1,6 +1,5 @@
-// Browser smoke test for DIRECTIVE 01 acceptance: reads the demo chapter end to end on a phone
-// viewport, then runs 20 consecutive bl-dice-3d triggers per tier in the sandbox and checks for
-// leaks. Needs `pnpm build` first and Playwright with Chromium installed (`npx playwright install chromium`).
+// Browser smoke test + QA screenshot pack (DIRECTIVE 01 acceptance and the review handoff).
+// Needs `pnpm build` first and Playwright with Chromium (`npx playwright install chromium`).
 // Usage: node scripts/smoke.mjs [--shots <dir>]
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -20,10 +19,12 @@ const shotsAt = process.argv.includes('--shots')
   : null;
 const BASE = 'http://127.0.0.1:4173/';
 const server = spawn('pnpm', ['--filter', '@kn/reader', 'preview'], { stdio: 'ignore' });
+const errors = [];
 const fail = (msg) => {
   console.error(`❌ ${msg}`);
   process.exitCode = 1;
 };
+const ok = (msg) => console.log(`✅ ${msg}`);
 
 try {
   await waitFor(BASE);
@@ -34,77 +35,178 @@ try {
       '--autoplay-policy=no-user-gesture-required',
     ],
   });
-  const page = await browser.newPage({
-    viewport: { width: 393, height: 851 },
-    deviceScaleFactor: 1,
-    hasTouch: true,
-  });
-  const errors = [];
-  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  page.on('pageerror', (e) => errors.push(String(e)));
-  const shot = async (name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
+  // Shots for people use 2× density; the long sandbox runs use 1× because a software GPU at 2×
+  // renders slowly enough to stretch every throw's timeline.
+  const newPage = async (scale = 2) => {
+    const page = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: scale,
+      hasTouch: true,
+    });
+    // Settled dice call navigator.vibrate(); record it so shots can be timed to the hold window.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'vibrate', {
+        value: () => ((window.__settled = performance.now()), true),
+      });
+    });
+    page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    page.on('pageerror', (e) => errors.push(String(e)));
+    return page;
+  };
+  const shot = (page, name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
+  const settled = (page) => page.waitForFunction(() => window.__settled, null, { timeout: 15000 });
+  const resetSettled = (page) => page.evaluate(() => (window.__settled = 0));
 
-  // Reader: shelf → seasons → chapters → chapter.
+  await readerPass(await newPage(), shot, settled, resetSettled);
+  await sandboxPass(await newPage(1), shot, settled, resetSettled);
+  const fresh = await newPage();
+  await fresh.goto(`${BASE}sandbox/?module=gits-cyberbrain-chat&tier=high`);
+  await fresh.getByRole('button', { name: 'Trigger Beat' }).click();
+  await fresh.waitForTimeout(4500);
+  const lazy = await fresh.locator('.sb-stats').textContent();
+  if (/GL contexts made 0 · live no/.test(lazy ?? ''))
+    ok(`cyberbrain keeps WebGL unloaded: ${lazy}`);
+  else fail(`cyberbrain created WebGL: ${lazy}`);
+  await shot(fresh, '08-sandbox-cyberbrain-lazy-gl');
+
+  if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
+  else ok('zero console errors');
+  await browser.close();
+} finally {
+  server.kill();
+}
+
+async function readerPass(page, shot, settled, resetSettled) {
   await page.goto(BASE);
   await page.getByText('Chrome Tide').click();
   await page.getByText('Low Tide').click();
   await page.getByText('Snake Eyes').click();
-  await shot('1-curtain');
   await page.getByText('Start chapter · Sound on').click();
-  const continues = page.locator('.kn-continue');
-  for (let gate = 1; gate <= 2; gate++) {
-    await page.mouse.wheel(0, 900);
-    await continues.waitFor({ timeout: 20000 });
-    await shot(`2-gate-${gate}`);
-    const chip = page.locator('.kn-dice-result').nth(gate - 1);
-    if (gate === 2) {
-      await page
-        .getByRole('button', { name: /throw/ })
-        .scrollIntoViewIfNeeded()
-        .catch(() => undefined);
-    }
-    if (gate === 1) {
-      await chip.waitFor({ timeout: 15000 });
-      const text = await chip.textContent();
-      if (!/Snake eyes/.test(text ?? '')) fail(`scripted [1,1] landed as "${text}"`);
-    }
-    await continues.click();
-  }
+  // Beat 1: ivory snake eyes, thrown automatically.
+  await page.mouse.wheel(0, 900);
+  await page.locator('.kn-stage-gl:not([hidden])').waitFor({ timeout: 20000 });
+  await page.waitForTimeout(120);
+  await shot(page, '01-ivory-dice-midroll');
+  if (await page.locator('.kn-dice-result').count()) fail('result chip visible while dice roll');
+  await settled(page);
+  await page.waitForTimeout(250);
+  await shot(page, '02-ivory-dice-settled');
+  if (await page.locator('.kn-dice-result').count()) fail('result chip visible during hold');
+  const chip1 = page.locator('.kn-dice-result').first();
+  await chip1.waitFor({ timeout: 6000 });
+  await page.locator('.kn-stage-gl[hidden]').waitFor({ state: 'attached', timeout: 3000 });
+  await page.waitForTimeout(200);
+  await shot(page, '03-ivory-post-handoff');
+  if (!/Snake eyes/.test((await chip1.textContent()) ?? '')) fail('scripted [1,1] did not land');
+  else ok('beat 1: [1,1] landed, chip shown after the dice cleared');
+  // Beat 2 gate, then the header fade around the emphasis line.
+  await page.locator('.kn-continue').click({ timeout: 6000 });
+  await page.waitForTimeout(900);
+  // Park "Snake eyes. The room exhaled." half under the bar so the fade scrim is on show.
+  const line = page.getByText('Snake eyes. The room exhaled.');
+  await page.evaluate(() =>
+    document.querySelector('.kn-chapter').style.setProperty('padding-bottom', '100dvh'),
+  );
+  await line.evaluate((el) => scrollBy(0, el.getBoundingClientRect().top - 62));
+  await page.waitForTimeout(300);
+  await shot(page, '04-header-scroll-fade');
+  // Beat 3: obsidian boxcars on tap.
+  await resetSettled(page);
+  await page.mouse.wheel(0, 900);
+  await page.locator('.kn-continue').click({ timeout: 20000 });
   await page.getByRole('button', { name: /throw/ }).click({ timeout: 15000 });
-  await page.waitForTimeout(400);
-  await shot('3-boxcars-rolling');
-  const boxcars = await page.locator('.kn-dice-result').nth(1).textContent({ timeout: 15000 });
-  if (!/Boxcars/.test(boxcars ?? '')) fail(`scripted [6,6] landed as "${boxcars}"`);
-  const mark = await page.evaluate(() => localStorage.getItem('kn:bookmark:vertical-slice'));
-  if (!mark) fail('no bookmark saved');
-  console.log(`✅ reader: gates, scripted dice, bookmark ${mark ? 'saved' : 'missing'}`);
+  await settled(page);
+  const chip2 = page.locator('.kn-dice-result').nth(1);
+  await chip2.waitFor({ timeout: 6000 });
+  await page.locator('.kn-stage-gl[hidden]').waitFor({ state: 'attached', timeout: 3000 });
+  await page
+    .getByText(/^Boxcars\. The Dealer/)
+    .evaluate((el) => scrollBy(0, el.getBoundingClientRect().top - 330));
+  await page.waitForTimeout(300);
+  await shot(page, '05-obsidian-post-handoff');
+  if (!/Boxcars/.test((await chip2.textContent()) ?? '')) fail('scripted [6,6] did not land');
+  else ok('beat 3: [6,6] landed on tap, overlay cleared');
+  if (!(await page.evaluate(() => localStorage.getItem('kn:bookmark:vertical-slice'))))
+    fail('no bookmark saved');
+}
 
-  // Sandbox: 20 triggers per tier with leak check.
+async function sandboxPass(page, shot, settled, resetSettled) {
+  const stats = page.locator('.sb-stats');
+  const trigger = page.getByRole('button', { name: 'Trigger Beat' });
+  await page.goto(`${BASE}sandbox/?module=bl-dice-3d&tier=high`);
+
+  // Determinism: 10 scripted throws must all read [1,1].
+  for (let i = 0; i < 10; i++) {
+    await trigger.click();
+    const text = await page.locator('.kn-dice-result').textContent({ timeout: 10000 });
+    if (!/Snake eyes/.test(text ?? '')) return fail(`sandbox throw ${i + 1} landed "${text}"`);
+  }
+  ok('10/10 scripted sandbox throws landed [1,1]');
+
+  // Tap-to-dismiss: with a 6 s hold, a tap right after settling hands off almost at once.
+  await page
+    .getByText('Hold result')
+    .locator('..')
+    .locator('input[type=range]')
+    .evaluate((el) => {
+      el.value = '6';
+      el.dispatchEvent(new Event('change'));
+    });
+  await resetSettled(page);
+  await trigger.click();
+  await settled(page);
+  const tappedAt = Date.now();
+  await page.mouse.click(30, 400);
+  await page.locator('.kn-dice-result').waitFor({ timeout: 6000 });
+  const waited = Date.now() - tappedAt;
+  if (waited < 1500) ok(`tap during hold skipped to handoff in ${waited} ms (hold was 6 s)`);
+  else fail(`tap did not skip the hold (${waited} ms)`);
+  await page.waitForTimeout(800);
+
+  // Context loss mid-throw: the beat must still finish, hand off and release its lease.
+  await page.reload();
+  await trigger.click();
+  await page.locator('.kn-stage-gl:not([hidden])').waitFor({ timeout: 10000 });
+  await page.evaluate(() =>
+    document
+      .querySelector('.kn-stage-gl')
+      .getContext('webgl2')
+      .getExtension('WEBGL_lose_context')
+      .loseContext(),
+  );
+  await page.locator('.kn-dice-result').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(800);
+  const afterLoss = await page.evaluate(() => document.querySelector('.sb-stats').textContent);
+  await trigger.click();
+  await page.locator('.kn-dice-result').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(1000);
+  const recovered = await stats.textContent();
+  if (/GL contexts made 2/.test(recovered ?? '') && /leases 0/.test(recovered ?? ''))
+    ok(`context loss: beat finished, fresh context next time (${recovered})`);
+  else fail(`context loss not recovered: after loss "${afterLoss}", next "${recovered}"`);
+
+  // ×20 per tier, with telemetry before / during / after.
   for (const tier of ['high', 'lite', 'reduced']) {
     await page.goto(`${BASE}sandbox/?module=bl-dice-3d&tier=${tier}`);
+    await page.waitForTimeout(1200);
+    const before = await stats.textContent();
     await page.getByRole('button', { name: '×20' }).click();
-    const stats = page.locator('.sb-stats');
-    await stats.filter({ hasText: /leak/i }).waitFor({ timeout: 240000 });
-    const line = await stats.textContent();
-    console.log(`${tier}: ${line}`);
-    if (!line?.includes('No leaks')) fail(`sandbox leak check failed on ${tier}`);
-    if (tier === 'high') {
-      await page.getByRole('button', { name: 'Trigger Beat' }).click();
-      await page.waitForTimeout(700);
-      await shot('4-sandbox-high');
+    await page.waitForTimeout(tier === 'reduced' ? 300 : 2500);
+    const during = await page.evaluate(() => document.querySelector('.sb-stats').textContent);
+    await stats.filter({ hasText: /leak/i }).waitFor({ timeout: 300000 });
+    await page.waitForTimeout(2000);
+    const after = await stats.textContent();
+    console.log(
+      `  ${tier} before: ${before}\n  ${tier} during: ${during}\n  ${tier} after:  ${after}`,
+    );
+    if (!after?.includes('No leaks')) fail(`leak check failed on ${tier}`);
+    if (tier === 'high') await shot(page, '07-sandbox-post-x20-telemetry');
+    if (tier === 'reduced') {
+      await trigger.click();
+      await page.locator('.kn-dice-result').waitFor();
+      await shot(page, '06-sandbox-reduced-mode');
     }
   }
-  for (const id of ['gits-cyberbrain-chat', 'core-ambient-bed']) {
-    await page.goto(`${BASE}sandbox/?module=${id}&tier=high`);
-    await page.getByRole('button', { name: 'Trigger Beat' }).click();
-    await page.waitForTimeout(2500);
-    await shot(`5-${id}`);
-  }
-  if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
-  else console.log('✅ zero console errors');
-  await browser.close();
-} finally {
-  server.kill();
 }
 
 async function waitFor(url) {

@@ -10,6 +10,7 @@ export interface StageStats {
   contextsCreated: number;
   liveContext: boolean;
   leases: number;
+  contextLost: boolean;
   geometries: number;
   textures: number;
   programs: number;
@@ -41,6 +42,9 @@ export function createStage(parent: HTMLElement = document.body): Stage {
   };
 
   const ensureGL = async (): Promise<GLStage> => {
+    if (gl?.lost) throw new Error('WebGL context is lost');
+    // A context that was lost once is replaced as soon as nothing holds it.
+    if (gl?.stale && leases === 0) disposeGL();
     if (gl) return gl;
     pending ??= import('./stage-gl.ts')
       .then(({ createGLStage }) => {
@@ -77,7 +81,9 @@ export function createStage(parent: HTMLElement = document.body): Stage {
           if (released) return;
           released = true;
           unsubs.forEach((off) => off());
-          if (--leases === 0) idleTimer = window.setTimeout(disposeGL, IDLE_DISPOSE_MS);
+          if (--leases > 0) return;
+          if (gl?.stale) disposeGL();
+          else idleTimer = window.setTimeout(disposeGL, IDLE_DISPOSE_MS);
         },
       };
     },
@@ -87,6 +93,7 @@ export function createStage(parent: HTMLElement = document.body): Stage {
         contextsCreated,
         liveContext: gl !== null,
         leases,
+        contextLost: gl?.lost ?? false,
         geometries: info?.memory.geometries ?? 0,
         textures: info?.memory.textures ?? 0,
         programs: info?.programs?.length ?? 0,

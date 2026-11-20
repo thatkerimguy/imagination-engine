@@ -10,12 +10,13 @@ export interface Finish {
 }
 
 export const FINISHES: Record<DiceMaterial, Finish> = {
+  // Warm, slightly dark albedo so ACES tone mapping keeps bevels and face planes readable.
   ivory: {
-    body: '#efe5d0',
+    body: '#e6dfd1',
     pip: '#1d1a17',
-    roughness: 0.5,
+    roughness: 0.55,
     metalness: 0,
-    clearcoat: 0.35,
+    clearcoat: 0.2,
     grain: 0.05,
   },
   'casino-red': {

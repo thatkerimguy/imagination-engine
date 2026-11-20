@@ -58,7 +58,7 @@
         "outcomeMode": "scripted",
         "scriptedNumbers": [1, 1],
         "trigger": "auto",
-        "holdSeconds": 2.5,
+        "holdSeconds": 1.5,
         "sound": true
       },
       "beatStop": true
@@ -100,7 +100,7 @@
         "outcomeMode": "scripted",
         "scriptedNumbers": [6, 6],
         "trigger": "tap-or-shake",
-        "holdSeconds": 3,
+        "holdSeconds": 1.5,
         "sound": true
       },
       "beatStop": true

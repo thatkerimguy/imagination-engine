@@ -6,6 +6,9 @@
   --measure: 36rem;
   --accent: #c98a3d;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Sticky bar: 2.75rem tap target + 0.8rem padding, plus the notch. */
+  --bar-h: calc(env(safe-area-inset-top) + 3.6rem);
+  --scrim-h: 1.75rem;
   color-scheme: dark;
 }
 :root,
@@ -73,9 +76,18 @@ button {
   gap: 0.5rem;
   padding: calc(env(safe-area-inset-top) + 0.4rem) max(0.75rem, env(safe-area-inset-right)) 0.4rem
     max(0.75rem, env(safe-area-inset-left));
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+/* Text scrolling under the bar dissolves through a short fade instead of being sliced. */
+.kn-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: var(--scrim-h);
+  background: linear-gradient(var(--bg), transparent);
+  pointer-events: none;
 }
 .kn-back-slot {
   min-width: 2.75rem;
@@ -195,6 +207,11 @@ button {
 }
 .kn-block {
   margin: 0 0 1.25em;
+}
+/* Programmatic scrolls (bookmarks, beat reveals) never park a line under the bar or its fade. */
+.kn-block,
+.kn-continue {
+  scroll-margin-top: calc(var(--bar-h) + 24px);
 }
 .kn-block:not(.is-in) {
   opacity: 0;

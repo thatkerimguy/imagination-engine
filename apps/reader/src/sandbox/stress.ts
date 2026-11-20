@@ -2,7 +2,7 @@ import type { ModuleHost } from '../runtime/module-host.ts';
 import type { Stage, StageStats } from '../runtime/stage.ts';
 
 export function statsLine(s: StageStats): string {
-  return `GL contexts made ${s.contextsCreated} · live ${s.liveContext ? 'yes' : 'no'} · leases ${s.leases} · geo ${s.geometries} · tex ${s.textures} · overlay nodes ${s.overlayChildren}`;
+  return `GL contexts made ${s.contextsCreated} · live ${s.liveContext ? 'yes' : 'no'} · leases ${s.leases} · geo ${s.geometries} · tex ${s.textures} · overlay nodes ${s.overlayChildren}${s.contextLost ? ' · CONTEXT LOST' : ''}`;
 }
 
 /**

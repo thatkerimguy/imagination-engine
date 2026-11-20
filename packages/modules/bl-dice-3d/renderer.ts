@@ -50,9 +50,10 @@ export default function createRenderer(): ModuleRenderer<DiceProps> {
         const values = pickOutcome(c.props.outcomeMode, c.props.scriptedNumbers, c.props.count);
         return showResult(values, false);
       }
-      if (high && !fellBack) return high.play((v) => showResult(v, true));
+      // The chip is revealed only at handoff, so it never sits under rolling 3D dice.
+      if (high && !fellBack) return high.play(c.signal, (v) => showResult(v, true));
       lite = new LiteDice(c.stage.overlay, c.props, c.audio);
-      return lite.play((v) => showResult(v, true));
+      return lite.play(c.signal, (v) => showResult(v, true));
     },
     dispose() {
       high?.dispose();

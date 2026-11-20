@@ -97,7 +97,7 @@ export const schema = defineModuleSchema<DiceProps>({
     scriptedNumbers: [1, 1],
     trigger: 'auto',
     throwFrom: 'left',
-    holdSeconds: 2.5,
+    holdSeconds: 1.5,
     sound: true,
   },
   refine: (p) =>

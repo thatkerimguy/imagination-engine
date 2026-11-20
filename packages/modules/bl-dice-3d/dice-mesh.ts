@@ -114,7 +114,7 @@ export function createDieMaterial(
     clearcoat: finish.clearcoat,
     clearcoatRoughness: 0.08,
     envMap,
-    envMapIntensity: kind === 'brass' ? 1.1 : 0.7,
+    envMapIntensity: kind === 'brass' ? 1.1 : kind === 'ivory' ? 0.55 : 0.7,
     transparent: true,
   });
 }

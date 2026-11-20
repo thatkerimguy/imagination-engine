@@ -1,5 +1,5 @@
 // Lazy chunk: the only place the reader itself touches three.js.
-import { PCFShadowMap, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import type { WorldBounds } from '@kn/core/renderer';
 
 const FOV = 35;
@@ -11,6 +11,10 @@ export interface GLStage {
   camera: PerspectiveCamera;
   bounds(): WorldBounds;
   onFrame(cb: (dt: number, t: number) => void): () => void;
+  /** True between `webglcontextlost` and `webglcontextrestored`. */
+  readonly lost: boolean;
+  /** True once the context was lost at least once; the stage replaces it when idle. */
+  readonly stale: boolean;
   dispose(): void;
 }
 
@@ -24,8 +28,9 @@ export function createGLStage(overlay: HTMLElement): GLStage {
     powerPreference: 'high-performance',
   });
   renderer.setClearColor(0x000000, 0);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFShadowMap;
+  // Filmic tone mapping keeps bright materials (ivory) from clipping to flat white.
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
   const scene = new Scene();
   const camera = new PerspectiveCamera(FOV, 1, 0.1, 100);
   overlay.prepend(canvas);
@@ -55,6 +60,25 @@ export function createGLStage(overlay: HTMLElement): GLStage {
   resize();
   window.addEventListener('resize', resize);
 
+  // Context loss (GPU reset, too many contexts, backgrounded tab on low-memory phones):
+  // keep the frame clock running without drawing, so every spectacle still finishes its
+  // timeline, hands off to its inline fallback and releases its lease. Once lost, the stage
+  // is marked stale and replaced with a fresh context when nothing holds it.
+  let lost = false;
+  let stale = false;
+  let disposing = false;
+  const onLost = (e: Event): void => {
+    e.preventDefault();
+    if (disposing) return;
+    lost = stale = true;
+    console.warn('[stage] WebGL context lost; spectacles continue without drawing');
+  };
+  const onRestored = (): void => {
+    lost = false;
+  };
+  canvas.addEventListener('webglcontextlost', onLost);
+  canvas.addEventListener('webglcontextrestored', onRestored);
+
   const subscribers = new Set<(dt: number, t: number) => void>();
   let raf = 0;
   let last = 0;
@@ -63,12 +87,12 @@ export function createGLStage(overlay: HTMLElement): GLStage {
     const dt = last ? (now - last) / 1000 : 1 / 60;
     last = now;
     for (const cb of [...subscribers]) cb(dt, (now - start) / 1000);
-    renderer.render(scene, camera);
+    if (!lost) renderer.render(scene, camera);
     if (subscribers.size > 0) raf = requestAnimationFrame(frame);
     else {
       raf = 0;
       // Nothing animating: clear and hide so the compositor skips the layer.
-      renderer.clear();
+      if (!lost) renderer.clear();
       canvas.hidden = true;
     }
   };
@@ -81,6 +105,12 @@ export function createGLStage(overlay: HTMLElement): GLStage {
       halfWidth: (window.innerWidth / 2 - insets.x) * unitsPerPx,
       halfHeight: (window.innerHeight / 2 - insets.y) * unitsPerPx,
     }),
+    get lost() {
+      return lost;
+    },
+    get stale() {
+      return stale;
+    },
     onFrame(cb) {
       subscribers.add(cb);
       if (!raf) {
@@ -92,12 +122,15 @@ export function createGLStage(overlay: HTMLElement): GLStage {
       return () => subscribers.delete(cb);
     },
     dispose() {
+      disposing = true;
       cancelAnimationFrame(raf);
       subscribers.clear();
       window.removeEventListener('resize', resize);
       scene.clear();
       renderer.dispose();
-      renderer.forceContextLoss();
+      if (!lost) renderer.forceContextLoss();
+      canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
       canvas.remove();
     },
   };

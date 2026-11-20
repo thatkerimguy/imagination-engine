@@ -1,8 +1,10 @@
 // Lite tier: a crisp 2D canvas throw for older phones. No three.js, no physics engine: a tiny
 // kinematic tumble with wall bounces that snaps to the target faces once the dice slow down.
+// Scripted values are fixed before the throw, so the landed faces are always the Author's.
 import type { AudioBusAccess } from '@kn/core/renderer';
 import { PIPS, mulberry32, pickOutcome } from './faces.ts';
 import { FINISHES } from './palette.ts';
+import { FADE_SECONDS, fadeProgress, holdOrTap } from './handoff.ts';
 import { scheduleClatter } from './sfx.ts';
 import type { DiceProps } from './schema.ts';
 
@@ -26,6 +28,7 @@ export class LiteDice {
   private readonly g: CanvasRenderingContext2D;
   private raf = 0;
   private disposed = false;
+  private finish: (() => void) | null = null;
 
   constructor(
     private readonly overlay: HTMLElement,
@@ -37,7 +40,8 @@ export class LiteDice {
     overlay.append(this.canvas);
   }
 
-  play(onSettled: (values: number[]) => void): Promise<void> {
+  /** Same lifecycle as the high tier: roll → hold (tap skips) → cross-fade → resolve. */
+  play(signal: AbortSignal, onHandoff: (values: number[]) => void): Promise<void> {
     const { props } = this;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = this.overlay.clientWidth || window.innerWidth;
@@ -56,11 +60,13 @@ export class LiteDice {
     let t = 0;
     let acc = 0;
     let last = performance.now();
-    let settledAt = -1;
+    let phase: 'roll' | 'hold' | 'fade' = 'roll';
+    let fadeStart = 0;
 
     return new Promise<void>((resolve) => {
+      this.finish = resolve;
       const frame = (now: number): void => {
-        if (this.disposed) return resolve();
+        if (this.disposed) return;
         acc += Math.min(0.05, (now - last) / 1000);
         last = now;
         while (acc >= STEP) {
@@ -68,17 +74,18 @@ export class LiteDice {
           t += STEP;
           for (const [i, d] of dice.entries()) this.stepDie(d, values[i]!, w, h, margin, rand);
         }
-        if (settledAt < 0 && dice.every((d) => d.settled)) {
-          settledAt = t;
-          onSettled(values);
-          resolve();
+        if (phase === 'roll' && dice.every((d) => d.settled)) {
+          phase = 'hold';
+          void holdOrTap(props.holdSeconds, signal).then(() => {
+            if (this.disposed) return;
+            phase = 'fade';
+            fadeStart = t;
+            onHandoff(values);
+          });
         }
-        const fade =
-          settledAt < 0
-            ? 1
-            : 1 - Math.max(0, Math.min(1, (t - settledAt - props.holdSeconds) / 0.6));
-        this.draw(dice, size, w, h, fade);
-        if (fade <= 0) this.dispose();
+        const k = phase === 'fade' ? fadeProgress(t, fadeStart) : 0;
+        this.draw(dice, size, w, h, 1 - k);
+        if (phase === 'fade' && t - fadeStart >= FADE_SECONDS) this.dispose();
         else this.raf = requestAnimationFrame(frame);
       };
       this.raf = requestAnimationFrame(frame);
@@ -204,6 +211,8 @@ export class LiteDice {
     cancelAnimationFrame(this.raf);
     this.canvas.width = this.canvas.height = 0;
     this.canvas.remove();
+    this.finish?.();
+    this.finish = null;
   }
 }
 

@@ -168,15 +168,23 @@ stress.addEventListener('click', () => {
   host?.dispose();
   host = null;
   stress.disabled = trigger.disabled = true;
-  void runStress(20, newHost, stage, (line) => (stats.textContent = line)).finally(() => {
+  verdict = '';
+  void runStress(20, newHost, stage, (line) => (stats.textContent = verdict = line)).finally(() => {
     stress.disabled = false;
     trigger.disabled = !validProps();
   });
 });
 
-select.addEventListener('change', () => void selectModule(select.value));
+select.addEventListener('change', () => {
+  verdict = '';
+  void selectModule(select.value);
+});
+// The last ×20 verdict stays pinned above the live telemetry until the next run.
+let verdict = '';
 setInterval(() => {
-  if (!stress.disabled) stats.textContent = statsLine(stage.stats());
+  if (stress.disabled) return;
+  const live = `now: ${statsLine(stage.stats())}`;
+  stats.textContent = verdict ? `${verdict}\n${live}` : live;
 }, 1000);
 renderTiers();
 void selectModule(moduleId);

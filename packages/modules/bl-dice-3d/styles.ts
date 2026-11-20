@@ -5,7 +5,7 @@ const CSS = `
 .kn-dice-throw:active{transform:scale(0.97)}
 .kn-dice-result{display:flex;align-items:center;justify-content:center;gap:0.7rem;margin:0.8rem 0;
   font:500 0.85rem/1.2 var(--font-ui,system-ui,sans-serif);color:var(--muted,#999);letter-spacing:0.02em}
-.kn-dice-result--in{animation:kn-dice-in 0.5s ease-out both}
+.kn-dice-result--in{animation:kn-dice-in 0.45s ease-out both}
 .kn-dice-faces{display:inline-flex;gap:0.35rem}
 .kn-dice-face{width:1.6rem;height:1.6rem}
 .kn-dice-lite{position:absolute;inset:0;width:100%;height:100%}

@@ -31,6 +31,7 @@ packages/modules/<id>/        one folder per gimmick: schema.ts · card.ts · re
 apps/reader                   vanilla TS + Vite PWA reader, shared stage, audio bus, /sandbox
 sample-novels/vertical-slice  the 12-block demo chapter
 scripts/                      bundle report, smoke test
+docs/qa/                      one report per review pass (pass-<n>-report.md)
 ```
 
 ## Adding a module

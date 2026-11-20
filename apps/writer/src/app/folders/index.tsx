@@ -1,7 +1,7 @@
-// Placeholder (Phase 2B-2 Phase A) — replaced by the owning worker.
+// Notes tab root: nested folders and standalone notes.
 import type { ReactNode } from 'react';
-import { EmptyState } from '../../ui/Page.tsx';
+import { NotesWorkspace } from '../../notes/NotesWorkspace.tsx';
 
 export default function NotesScreen(): ReactNode {
-  return <EmptyState icon="folder" title="Notes" />;
+  return <NotesWorkspace folderId={null} />;
 }

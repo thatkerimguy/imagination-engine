@@ -1,7 +1,9 @@
-// Placeholder (Phase 2B-2 Phase A) — replaced by the owning worker.
+// A Notes sub-folder.
+import { useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
-import { EmptyState } from '../../ui/Page.tsx';
+import { NotesWorkspace } from '../../notes/NotesWorkspace.tsx';
 
 export default function FolderScreen(): ReactNode {
-  return <EmptyState icon="folder" title="Folder" />;
+  const { folderId } = useLocalSearchParams<{ folderId: string }>();
+  return <NotesWorkspace folderId={folderId} />;
 }

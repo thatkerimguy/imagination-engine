@@ -1,4 +1,5 @@
-// Writer QA pack (Directive 02B-1: editor, analyzers, growth, themes & fonts): drives the Expo Web export of apps/writer at 390×844, with
+// Writer QA pack (Directive 02C Folio: library, editor, focus, gimmick sheet, analysis, growth,
+// appearance, live preview): drives the Expo Web export of apps/writer at 390×844, with
 // the Live Preview pointed at the built apps/reader. Needs `pnpm build` and `pnpm writer:export`.
 // Usage: node scripts/writer-shots.mjs [--shots <dir>]
 import { spawn } from 'node:child_process';
@@ -96,15 +97,21 @@ try {
   };
   const closeSheet = () => page.getByRole('button', { name: 'Close sheet' }).last().click();
 
-  // 01 Chapter editor, default dark: slim bar, ribbon, scene divider, WYSIWYG prose, toolbar.
+  // 01 Folio Library (dark): book rows with spine thumbs, quiet bar, no FAB.
   await page.goto(WRITER);
   await tid('novel-card-vertical-slice').waitFor({ timeout: 20000 });
+  if (await page.getByRole('button', { name: /^New novel$/ }).count())
+    ok('library has a quiet New novel action');
+  await page.waitForTimeout(300);
+  await shot('01-folio-library-dark');
+
+  // 02 Folio chapter editor (dark): slim bar, metrics strip, active rail, cue strip, rail toolbar.
   await editor();
   for (const id of ['editor-top-bar', 'stats-pill', 'undo-button', 'redo-button', 'preview-button'])
     await tid(id).waitFor();
   await tid('metrics-ribbon').waitFor();
   await tid('tool-tab').waitFor();
-  ok('slim top bar, metrics ribbon and toolbar (with Tab) render');
+  ok('slim top bar, metrics strip and formatting rail (with Tab) render');
   await tid(`prose-text-${ID.snake}`).click();
   const snake = page.locator(`textarea[data-testid="prose-text-${ID.snake}"]`);
   await snake.waitFor();
@@ -118,21 +125,34 @@ try {
   await tid('redo-button').click();
   ok('undo / redo buttons respond');
   await page.getByTestId('save-status').filter({ hasText: 'Saved' }).waitFor({ timeout: 5000 });
-  await tid(`block-${ID.dialogue}`).evaluate((el) => el.scrollIntoView());
+  const beats = await tid(`block-${ID.dice}`).getByText(/beat/i).count();
+  if (beats <= 1) ok(`dice cue strip shows the Beat marker at most once (${beats})`);
+  else fail(`dice cue strip repeats the Beat marker ${beats}×`);
+  await tid(`dialogue-text-${ID.dialogue}`).click();
+  await tid(`block-${ID.dialogue}`).evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(400);
-  await shot('01-minimal-editor-metrics-toolbar');
+  await shot('02-folio-editor-dark');
 
-  // 03 Text analysis sheet, Frequency tab, Content (non-grammar) filter.
+  // 04 Folio schema sheet on bl-dice-3d.
+  await tid(`pill-${ID.dice}`).scrollIntoViewIfNeeded();
+  await tid(`pill-${ID.dice}`).click();
+  await tid('gimmick-sheet').waitFor({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  await shot('04-folio-gimmick-sheet-dice');
+  await closeSheet();
+  ok('dice gimmick sheet opens');
+
+  // 05 Text analysis sheet, Frequency tab, Content filter.
   await tid('stats-pill').click();
   await tid('text-analysis-sheet').waitFor();
   await tid('analysis-tab-frequency').click();
   await tid('freq-filter-content').click();
   await page.waitForTimeout(500);
-  await shot('03-text-analysis-frequency');
+  await shot('05-folio-text-analysis');
   await closeSheet();
   ok('text analysis sheet opens with frequency chart');
 
-  // 04 Growth (Lifetime).
+  // 06 Growth (All).
   await tid('editor-menu').click();
   await tid('menu-growth').click();
   await tid('growth-range-lifetime').click();
@@ -141,21 +161,23 @@ try {
   if (paths >= 4) ok(`growth charts render (${paths} svg paths)`);
   else fail(`growth charts missing (${paths} svg paths)`);
   await page.waitForTimeout(300);
-  await shot('04-growth-dashboard-charts');
+  await shot('06-folio-growth-dashboard');
 
-  // 05 Appearance & fonts (top + scrolled to the font list / import button).
+  // 07 Appearance & fonts in a Day theme (Paper Daylight).
   await page.goto(`${WRITER}appearance`);
   await tid('theme-warm-sepia').waitFor();
   const themes = await page.locator('[data-testid^="theme-"]').count();
   if (themes >= 13) ok(`appearance lists ${themes - 1} themes + System`);
   else fail(`expected 12 theme swatches + System, found ${themes}`);
-  const top = await page.screenshot();
-  await tid('import-font').scrollIntoViewIfNeeded();
+  await tid('theme-paper-daylight').scrollIntoViewIfNeeded();
+  await tid('theme-paper-daylight').click();
   await page.waitForTimeout(300);
-  const fonts = await page.screenshot();
-  await sideBySide(browser, [top, fonts], '05-themes-and-fonts-picker');
+  await page.goto(`${WRITER}appearance`);
+  await tid('import-font').waitFor();
+  await page.waitForTimeout(400);
+  await shot('07-folio-appearance-light');
 
-  // 02 Focus mode with Warm Sepia and a literary serif.
+  // 03 Focus mode with Warm Sepia and a literary serif.
   await tid('theme-warm-sepia').scrollIntoViewIfNeeded();
   await tid('theme-warm-sepia').click();
   await tid('font-lora').scrollIntoViewIfNeeded();
@@ -165,9 +187,9 @@ try {
   await tid('menu-focus').click();
   await tid('focus-exit').waitFor();
   if (await tid('editor-top-bar').count()) fail('focus mode still shows the top bar');
-  else ok('focus mode hides top bar, ribbon and toolbar');
+  else ok('focus mode hides top bar, metrics strip and formatting rail');
   await page.waitForTimeout(800);
-  await shot('02-focus-mode-warm-sepia');
+  await shot('03-folio-focus-sepia');
   await tid('focus-exit').click();
   await page.goto(`${WRITER}appearance`);
   await tid('theme-system').click();
@@ -205,7 +227,7 @@ try {
     .locator(`[data-block="${ID.snake}"]`)
     .evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(400);
-  await shot('06-live-preview-rich-formatting');
+  await shot('08-live-preview-rich-formatting');
 
   await flowPass(page, tid);
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
@@ -246,20 +268,6 @@ async function flowPass(page, tid) {
   await tid('tool-addGimmick').click();
   await page.getByText(/No gimmicks are enabled/).waitFor({ timeout: 5000 });
   ok('gimmick picker is filtered to enabledModules (none for a new novel)');
-}
-
-async function sideBySide(browser, images, name) {
-  if (!shotsAt) return;
-  const page = await browser.newPage({
-    viewport: { width: 780, height: 844 },
-    deviceScaleFactor: 2,
-  });
-  const imgs = images.map((b) => `<img src="data:image/png;base64,${b.toString('base64')}">`);
-  await page.setContent(
-    `<style>body{margin:0;display:flex;background:#000}img{width:390px;height:844px}</style>${imgs.join('')}`,
-  );
-  await page.screenshot({ path: `${shotsAt}/${name}.png` });
-  await page.close();
 }
 
 async function waitFor(url) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { darkColors, lightColors, withAlpha, type ColorRoles } from './m3-tokens.ts';
+import { darkColors, withAlpha, type ColorRoles } from './m3-tokens.ts';
+import { getThemeDef, isThemeId, THEME_IDS, THEMES } from './themes.ts';
 
 function luminance(hex: string): number {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -28,13 +29,27 @@ const PAIRS: [keyof ColorRoles, keyof ColorRoles][] = [
   ['primary', 'surface'],
   ['primary', 'surfaceContainerHigh'],
   ['tertiary', 'surfaceContainer'],
+  ['onSurface', 'surfaceContainerLowest'],
+  ['onSurfaceVariant', 'surface'],
+  ['secondary', 'surface'],
 ];
 
 describe('M3 colour schemes', () => {
-  for (const [name, scheme] of [
-    ['dark', darkColors],
-    ['light', lightColors],
-  ] as const) {
+  it('has 12 themes (6 night, 6 day) and 18 asserted pairs each', () => {
+    expect(THEMES).toHaveLength(12);
+    expect(THEMES.filter((t) => t.dark)).toHaveLength(6);
+    expect(PAIRS).toHaveLength(18);
+    expect(THEMES.map((t) => t.id)).toEqual([...THEME_IDS]);
+  });
+
+  it('keeps Editorial Teal as the system default', () => {
+    expect(darkColors.surface).toBe('#101414');
+    expect(isThemeId('warm-sepia')).toBe(true);
+    expect(isThemeId('dark')).toBe(false);
+    expect(getThemeDef('editorial-teal-light').dark).toBe(false);
+  });
+
+  for (const { id: name, colors: scheme } of THEMES) {
     it(`${name}: every role is #rrggbb`, () => {
       for (const v of Object.values(scheme)) expect(v).toMatch(/^#[0-9A-F]{6}$/i);
     });

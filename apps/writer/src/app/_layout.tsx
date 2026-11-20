@@ -42,6 +42,8 @@ function ThemedStack(): ReactNode {
           options={{ title: 'Chapter' }}
         />
         <Stack.Screen name="preview" options={{ title: 'Live preview' }} />
+        <Stack.Screen name="appearance" options={{ title: 'Appearance & fonts' }} />
+        <Stack.Screen name="growth" options={{ title: 'Growth' }} />
       </Stack>
     </>
   );

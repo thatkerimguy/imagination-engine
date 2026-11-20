@@ -28,14 +28,27 @@ export interface TopBarProps {
   title: string;
   onBack?: () => void;
   actions?: ReactNode;
+  /** M3 on-scroll state: tints the bar surface → surfaceContainer while content is scrolled. */
+  scrolled?: boolean;
+  /** Bar height without the safe area (default 64; the chapter editor uses a slim 56). */
+  height?: number;
+  testID?: string;
 }
 
-export function TopBar({ title, onBack, actions }: TopBarProps): ReactNode {
+export function TopBar({
+  title,
+  onBack,
+  actions,
+  scrolled = false,
+  height = 64,
+  testID,
+}: TopBarProps): ReactNode {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const bg = scrolled ? colors.surfaceContainer : colors.surface;
   return (
-    <View style={[styles.bar, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
-      <View style={styles.row}>
+    <View style={{ paddingTop: insets.top, backgroundColor: bg }} testID={testID}>
+      <View style={[styles.row, { height }]}>
         {onBack ? (
           <IconButton
             icon="arrow-back"
@@ -48,7 +61,7 @@ export function TopBar({ title, onBack, actions }: TopBarProps): ReactNode {
           <View style={styles.inset} />
         )}
         <AppText
-          variant="titleLarge"
+          variant={height < 64 ? 'titleMedium' : 'titleLarge'}
           numberOfLines={1}
           style={styles.title}
           accessibilityRole="header"
@@ -62,9 +75,7 @@ export function TopBar({ title, onBack, actions }: TopBarProps): ReactNode {
 }
 
 const styles = StyleSheet.create({
-  bar: {},
   row: {
-    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space.xs,

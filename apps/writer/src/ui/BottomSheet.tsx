@@ -50,7 +50,12 @@ export function BottomSheet(p: BottomSheetProps): ReactNode {
           <View style={s.header}>
             {p.leading}
             <View style={s.headerText}>
-              <AppText variant="titleLarge" numberOfLines={2}>
+              <AppText
+                variant={p.title.length > 22 ? 'titleMedium' : 'titleLarge'}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
                 {p.title}
               </AppText>
               {p.subtitle ? (

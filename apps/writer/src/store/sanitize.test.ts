@@ -75,3 +75,21 @@ describe('prepareChapter', () => {
     if (!res.ok) expect(res.errors.length).toBeGreaterThan(0);
   });
 });
+
+describe('writer-only inline markup', () => {
+  it('stores reader-safe text and skips blocks that are only markup', () => {
+    const draft: ChapterDocument = {
+      id: 'ch',
+      seasonId: 's',
+      title: 'T',
+      status: 'draft',
+      blocks: [
+        { id: A, kind: 'prose', text: '**Hi** {fg:#FF0000}red{/fg}{{comment:x}}' },
+        { id: B, kind: 'prose', text: '** **' },
+      ],
+    };
+    const r = prepareChapter(draft);
+    expect(r.ok && r.chapter.blocks).toEqual([{ id: A, kind: 'prose', text: '**Hi** red' }]);
+    expect(r.ok && r.skipped).toEqual([B]);
+  });
+});

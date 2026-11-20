@@ -12,20 +12,14 @@ import { loadDemoNovel } from '../store/demo.ts';
 import { Button } from '../ui/Button.tsx';
 import { useConfirm } from '../ui/Dialog.tsx';
 import { Card, Muted, Row, Screen, SectionTitle } from '../ui/layout.tsx';
-import { SegmentedButtons } from '../ui/SegmentedButtons.tsx';
+import { routes } from '../routes.ts';
 import { TextField } from '../ui/TextField.tsx';
-import { useAppearance } from '../ui/theme.tsx';
-
-const APPEARANCE_SEGMENTS = [
-  { value: 'dark', label: 'Dark' },
-  { value: 'light', label: 'Light' },
-  { value: 'system', label: 'System' },
-] as const;
+import { useTheme } from '../ui/theme.tsx';
 
 export default function AppSettingsScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
-  const [appearance, setAppearance] = useAppearance();
+  const theme = useTheme();
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   useEffect(() => {
     void loadSettings(repo).then((s) => setReaderUrl(s.readerUrl));
@@ -48,13 +42,18 @@ export default function AppSettingsScreen(): ReactNode {
   return (
     <Screen>
       <SectionTitle>Appearance</SectionTitle>
-      <SegmentedButtons
-        segments={APPEARANCE_SEGMENTS}
-        value={appearance}
-        onChange={setAppearance}
-        accessibilityLabel="Appearance"
-        testID="appearance"
-      />
+      <Card>
+        <Muted>{`Theme: ${theme.label} · fonts, size, margins and editor layout`}</Muted>
+        <Row>
+          <Button
+            variant="tonal"
+            icon="palette"
+            label="Appearance & fonts"
+            testID="open-appearance"
+            onPress={() => router.push(routes.appearance)}
+          />
+        </Row>
+      </Card>
       <SectionTitle>Live preview</SectionTitle>
       <Card>
         <TextField

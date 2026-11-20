@@ -9,6 +9,10 @@ export const routes = {
   shelf: '/',
   newNovel: '/new-novel',
   appSettings: '/settings',
+  appearance: '/appearance',
+  /** Growth charts for a target (`chapter:<id>`, `novel:<id>`…); chapter ids give Back a parent. */
+  growth: (target: string, from?: { novel: string; season: string; chapter: string }) =>
+    `/growth?${q({ target, novel: from?.novel, season: from?.season, chapter: from?.chapter })}`,
   outline: (novelId: string) => `/novel/${novelId}`,
   novelSettings: (novelId: string) => `/novel/${novelId}/settings`,
   chapter: (novelId: string, seasonId: string, chapterId: string) =>
@@ -34,9 +38,10 @@ export function parentHref(
   if (parts[0] === 'novel' && parts[1]) {
     return parts.length > 2 ? routes.outline(parts[1]) : routes.shelf;
   }
-  if (parts[0] === 'preview') {
+  if (parts[0] === 'preview' || parts[0] === 'growth') {
     const [n, s, c] = [one('novel'), one('season'), one('chapter')];
     return n && s && c ? routes.chapter(n, s, c) : routes.shelf;
   }
+  if (parts[0] === 'appearance') return routes.appSettings;
   return routes.shelf;
 }

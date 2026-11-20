@@ -5,12 +5,12 @@
     "scheme": "kinetic-writer",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#16171a",
     "ios": { "supportsTablet": false, "bundleIdentifier": "dev.kinetic.writer" },
-    "android": { "package": "dev.kinetic.writer" },
+    "android": { "package": "dev.kinetic.writer", "softwareKeyboardLayoutMode": "resize" },
     "web": { "bundler": "metro", "output": "single" },
-    "plugins": ["expo-router", "expo-sqlite"],
+    "plugins": ["expo-router", "expo-sqlite", "expo-font"],
     "experiments": { "typedRoutes": false }
   }
 }

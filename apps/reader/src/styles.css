@@ -472,3 +472,11 @@ button {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Inline formatting from the writer (**bold**, ==highlight== …). */
+.kn-block mark {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 2px;
+}

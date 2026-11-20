@@ -1,6 +1,7 @@
-// Material Design 3 tokens (m3.material.io): colour roles for a teal-seed (#4FD1C5) scheme with a
-// warm amber tertiary (#E0A458), the type scale, shape scale and state layers. Pure data.
+// Material Design 3 tokens (m3.material.io): colour roles, the type scale, shape scale and state
+// layers. The 12 colour schemes are in themes.ts. Pure data.
 import type { TextStyle } from 'react-native';
+import { DEFAULT_DARK, DEFAULT_LIGHT, getThemeDef } from './themes.ts';
 
 export interface ColorRoles {
   primary: string;
@@ -34,69 +35,9 @@ export interface ColorRoles {
   inverseOnSurface: string;
 }
 
-export const darkColors: ColorRoles = {
-  primary: '#5FD8CB',
-  onPrimary: '#003733',
-  primaryContainer: '#00504A',
-  onPrimaryContainer: '#9EF2E6',
-  secondary: '#B1CCC7',
-  onSecondary: '#1C3532',
-  secondaryContainer: '#334B48',
-  onSecondaryContainer: '#CCE8E3',
-  tertiary: '#F4BD72',
-  onTertiary: '#452B00',
-  tertiaryContainer: '#633F00',
-  onTertiaryContainer: '#FFDDB6',
-  error: '#FFB4AB',
-  onError: '#690005',
-  errorContainer: '#93000A',
-  onErrorContainer: '#FFDAD6',
-  surface: '#101414',
-  surfaceContainerLowest: '#0B0F0F',
-  surfaceContainerLow: '#181C1C',
-  surfaceContainer: '#1C2020',
-  surfaceContainerHigh: '#272B2B',
-  surfaceContainerHighest: '#313635',
-  onSurface: '#DEE4E2',
-  onSurfaceVariant: '#BEC9C6',
-  outline: '#889391',
-  outlineVariant: '#3F4947',
-  scrim: '#000000',
-  inverseSurface: '#DEE4E2',
-  inverseOnSurface: '#2B3130',
-};
-
-export const lightColors: ColorRoles = {
-  primary: '#006A63',
-  onPrimary: '#FFFFFF',
-  primaryContainer: '#9EF2E6',
-  onPrimaryContainer: '#00201D',
-  secondary: '#4A6360',
-  onSecondary: '#FFFFFF',
-  secondaryContainer: '#CCE8E3',
-  onSecondaryContainer: '#051F1D',
-  tertiary: '#825500',
-  onTertiary: '#FFFFFF',
-  tertiaryContainer: '#FFDDB6',
-  onTertiaryContainer: '#2A1800',
-  error: '#BA1A1A',
-  onError: '#FFFFFF',
-  errorContainer: '#FFDAD6',
-  onErrorContainer: '#410002',
-  surface: '#F5FAF9',
-  surfaceContainerLowest: '#FFFFFF',
-  surfaceContainerLow: '#EFF5F4',
-  surfaceContainer: '#E9EFEE',
-  surfaceContainerHigh: '#E4EAE8',
-  surfaceContainerHighest: '#DEE4E2',
-  onSurface: '#171D1C',
-  onSurfaceVariant: '#3F4947',
-  outline: '#6F7977',
-  outlineVariant: '#BEC9C6',
-  scrim: '#000000',
-  inverseSurface: '#2B3130',
-  inverseOnSurface: '#ECF2F0',
-};
+/** System-default schemes (Editorial Teal night / day); the full set lives in themes.ts. */
+export const darkColors: ColorRoles = getThemeDef(DEFAULT_DARK).colors;
+export const lightColors: ColorRoles = getThemeDef(DEFAULT_LIGHT).colors;
 
 export type TypeRole =
   | 'headlineSmall'

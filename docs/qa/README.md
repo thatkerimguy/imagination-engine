@@ -11,6 +11,7 @@ new file. Earlier reports are never rewritten, so the history of decisions stays
 | P2·2  | [phase-2-pass-2-report.md](phase-2-pass-2-report.md)       | Pass 1 bug fixes (sheet label, editor Back, stepper, preview pacing) + Material Design 3 UI | `a8ce46e` |
 | P2B·1 | [phase-2b-1-report.md](phase-2b-1-report.md)               | Directive 02B-1: rich editor, 27 analyzers, growth charts, 12 themes, fonts                 | `a8f6bf3` |
 | P2C   | [phase-2c-folio-ui-report.md](phase-2c-folio-ui-report.md) | Directive 02C: Folio editorial design system, all writer screens, 02B-1 visual fixes        | `04572a7` |
+| P2B·2 | [phase-2b-2-report.md](phase-2b-2-report.md)               | Directive 02B-2: Notes folders, search, version history, book exports, Master Lock, Doctor  | `1e383ab` |
 
 Screenshots are attached to each handoff, not committed. To regenerate a pack, run
 `node scripts/writer-shots.mjs --shots qa-shots-<name>` (writer, after `pnpm writer:export`) or

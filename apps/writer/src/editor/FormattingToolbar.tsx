@@ -8,6 +8,7 @@ import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { radius, space, TOUCH } from '../ui/tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
+import { ToolbarChevron, type ToolbarHalf } from './ToolbarCollapse.tsx';
 
 type Align = 'left' | 'center' | 'right';
 
@@ -18,6 +19,10 @@ export interface FormattingToolbarProps {
   align: Align;
   disabledText?: boolean;
   onTool(id: ToolId): void;
+  formatCollapsed?: boolean;
+  addCollapsed?: boolean;
+  /** Collapse (true) or expand (false) one toolbar half; the owner persists it. */
+  onCollapse?(half: ToolbarHalf, collapsed: boolean): void;
 }
 
 type Face = { icon: GlyphName } | { text: string };
@@ -131,28 +136,52 @@ const useStyles = makeStyles((t) => ({
 export function FormattingToolbar(p: FormattingToolbarProps): ReactNode {
   const s = useStyles();
   const tools = p.order.filter((id) => !p.hidden.includes(id));
+  const { formatCollapsed: fc, addCollapsed: ac, onCollapse } = p;
   return (
     <View style={s.bar} testID="formatting-toolbar">
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        style={s.scroll}
-        contentContainerStyle={s.content}
-      >
-        {tools
-          .filter((id) => !ADD_TOOLS.has(id))
-          .map((id) => (
-            <ToolButton key={id} id={id} {...p} />
-          ))}
-      </ScrollView>
-      <View style={s.pinned}>
-        {tools
-          .filter((id) => ADD_TOOLS.has(id))
-          .map((id) => (
-            <ToolButton key={id} id={id} {...p} />
-          ))}
-      </View>
+      {fc ? (
+        <>
+          <ToolbarChevron
+            half="format"
+            mode="expand"
+            onPress={() => onCollapse?.('format', false)}
+          />
+          <View style={s.scroll} />
+        </>
+      ) : (
+        <>
+          <ToolbarChevron
+            half="format"
+            mode="collapse"
+            onPress={() => onCollapse?.('format', true)}
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            style={s.scroll}
+            contentContainerStyle={s.content}
+          >
+            {tools
+              .filter((id) => !ADD_TOOLS.has(id))
+              .map((id) => (
+                <ToolButton key={id} id={id} {...p} />
+              ))}
+          </ScrollView>
+        </>
+      )}
+      {ac ? (
+        <ToolbarChevron half="add" mode="expand" onPress={() => onCollapse?.('add', false)} />
+      ) : (
+        <View style={s.pinned}>
+          {tools
+            .filter((id) => ADD_TOOLS.has(id))
+            .map((id) => (
+              <ToolButton key={id} id={id} {...p} />
+            ))}
+          <ToolbarChevron half="add" mode="collapse" onPress={() => onCollapse?.('add', true)} />
+        </View>
+      )}
     </View>
   );
 }
@@ -187,47 +216,4 @@ function ToolButton(p: FormattingToolbarProps & { id: ToolId }): ReactNode {
   );
 }
 
-export const COLOR_PRESETS: readonly string[] = [
-  '#e53935',
-  '#fb8c00',
-  '#fdd835',
-  '#43a047',
-  '#1e88e5',
-  '#8e24aa',
-  '#6d4c41',
-  '#212121',
-];
-
-/** Eight preset swatches for fg/bg colouring; touch-safe (keeps the input focused). */
-export function ColorSwatchRow(p: {
-  onPick(hex: string): void;
-  colors?: readonly string[];
-}): ReactNode {
-  const list = p.colors ?? COLOR_PRESETS;
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }} testID="color-swatches">
-      {list.map((hex) => (
-        <Pressable
-          key={hex}
-          accessibilityRole="button"
-          accessibilityLabel={`Colour ${hex}`}
-          focusable={false}
-          onPress={() => p.onPick(hex)}
-          testID={`swatch-${hex.slice(1)}`}
-          style={{ width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <View
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              backgroundColor: hex,
-              borderWidth: 1,
-              borderColor: 'rgba(128,128,128,0.5)',
-            }}
-          />
-        </Pressable>
-      ))}
-    </View>
-  );
-}
+export { COLOR_PRESETS, ColorSwatchRow } from './ColorSwatchRow.tsx';

@@ -134,3 +134,47 @@ describe('search', () => {
     expect(hits).toBeGreaterThan(0);
   });
 });
+
+describe('search regressions', () => {
+  it('highlights stay aligned when the excerpt window starts on whitespace', () => {
+    const text = `${'a'.repeat(5)} ${'b'.repeat(35)}needle ${'tail '.repeat(30)}`;
+    const idx = buildSearchIndex(
+      sources({ docs: [{ id: 'dw', title: 'W', folderId: null, blocks: [prose('w1', text)] }] }),
+    );
+    const hit = search(idx, 'needle').find((r) => r.id === 'dw');
+    expect(hit?.excerpt.startsWith('…')).toBe(true);
+    expect(hit?.highlights).toHaveLength(1);
+    const [a, b] = hit?.highlights[0] ?? [0, 0];
+    expect(hit?.excerpt.slice(a, b)).toBe('needle');
+  });
+
+  it('redacts notes inside a locked parent or grand-parent folder', () => {
+    const idx = buildSearchIndex(
+      sources({
+        folders: [
+          { id: 'gp', title: 'Vault', parentFolderId: null },
+          { id: 'p', title: 'Middle', parentFolderId: 'gp' },
+          { id: 'k', title: 'Leaf', parentFolderId: 'p' },
+        ],
+        docs: [{ id: 'dd', title: 'Deep', folderId: 'k', blocks: [prose('q1', 'hidden zephyr')] }],
+        meta: new Map([['gp', { tags: [], locked: true }]]),
+      }),
+    );
+    const hits = search(idx, 'zephyr');
+    expect(hits).toHaveLength(0);
+    expect(search(idx, 'Deep')[0]).toMatchObject({ id: 'dd', locked: true, excerpt: '' });
+  });
+
+  it('survives folder cycles while walking ancestors', () => {
+    const idx = buildSearchIndex(
+      sources({
+        folders: [
+          { id: 'a', title: 'A', parentFolderId: 'b' },
+          { id: 'b', title: 'B', parentFolderId: 'a' },
+        ],
+        docs: [{ id: 'dc', title: 'Cyc', folderId: 'a', blocks: [prose('c1', 'open text')] }],
+      }),
+    );
+    expect(search(idx, 'open text')[0]).toMatchObject({ id: 'dc', locked: false });
+  });
+});

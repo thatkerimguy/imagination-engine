@@ -1,13 +1,19 @@
 // Builds the exact message the reader preview renders: the novel and season from storage and
 // the chapter from the editor's live (unsaved) draft when one is open.
 import type { NovelManifest, SeasonManifest } from '@kn/core';
-import { loadSettings, previewUrl } from '../settings/app-settings.ts';
+import { loadSettings, previewUrl, type PreviewMode } from '../settings/app-settings.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { draftKey, getLiveDraft } from '../store/live-drafts.ts';
 import { prepareChapter } from '../store/sanitize.ts';
+import { loadOfflineReaderHtml } from './offline-reader';
 import type { PreviewLoadMessage, PreviewTier } from './protocol.ts';
 
 export interface PreviewPayload {
+  mode: PreviewMode;
+  /** Bundled reader HTML (offline mode); null when custom-url or when loading it failed. */
+  html: string | null;
+  /** Why the bundled reader could not be loaded (offline mode only). */
+  htmlError: string | null;
   url: string | null;
   readerUrl: string;
   build(tier: PreviewTier): PreviewLoadMessage;
@@ -41,12 +47,24 @@ export function usePreviewPayload(
       const chapter = prepared.chapter;
       const startBlockId =
         blockId && chapter.blocks.some((b) => b.id === blockId) ? blockId : undefined;
+      let html: string | null = null;
+      let htmlError: string | null = null;
+      if (settings.previewMode === 'offline') {
+        try {
+          html = await loadOfflineReaderHtml();
+        } catch (e) {
+          htmlError = e instanceof Error ? e.message : 'The built-in reader could not be loaded.';
+        }
+      }
       const n: NovelManifest = novel;
       const s: SeasonManifest = season;
       return {
         ok: true,
         payload: {
-          url: previewUrl(settings.readerUrl),
+          mode: settings.previewMode,
+          html,
+          htmlError,
+          url: settings.previewMode === 'custom-url' ? previewUrl(settings.readerUrl) : null,
           readerUrl: settings.readerUrl,
           fromLiveDraft: !!live,
           build: (tier) => ({

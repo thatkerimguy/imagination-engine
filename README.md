@@ -27,14 +27,37 @@ pnpm writer           # Expo dev server: scan the QR code with Expo Go / a dev b
 pnpm writer:web       # the writer in a browser (localStorage instead of SQLite)
 pnpm writer:export    # static Expo Web export into apps/writer/dist
 pnpm writer:shots     # Playwright QA pack for the writer (needs pnpm build + writer:export)
+pnpm build:preview-bundle   # rebuild the built-in offline reader (apps/writer/assets/reader-preview.html)
+pnpm android:apk            # local Gradle release APK -> apps/writer/dist/kinetic-writer.apk (Windows)
 ```
 
-Live Preview loads the reader at the URL set in the writer's Settings (default
-`http://127.0.0.1:5173/`) with `?preview=1`, and posts the unsaved chapter into it. On a phone,
-point it at your computer's LAN address and start the reader with `pnpm dev --host`.
+**Live Preview** defaults to the **built-in offline reader**: `pnpm build:preview-bundle` compiles
+`apps/reader` in `?preview=1` mode into one self-contained HTML file (all JS, CSS, starter modules,
+three.js and cannon-es inlined) at `apps/writer/assets/reader-preview.html`. Metro ships it as a
+static asset (`html` is in `metro.config.js` `assetExts`), so it never enters the Hermes bundle.
+The file is generated, not committed (git-ignored): `pnpm writer`, `pnpm writer:web`,
+`pnpm writer:export`, `pnpm android:prebuild` and `pnpm android:apk` all rebuild it first when any
+reader / core / module source is newer (`--if-stale`). The public reader build (`pnpm build`) is
+untouched and keeps its lazy-chunk budget.
 
-To try it on a phone, forward the port (`adb reverse tcp:5173 tcp:5173` on Android) or run
-`pnpm preview` behind any HTTPS tunnel. Audio and motion sensors need a secure context.
+Settings → Live preview → **Custom URL** switches back to a reader server (default
+`http://127.0.0.1:5173/`, e.g. `pnpm dev --host` on your LAN, `adb reverse tcp:5173 tcp:5173`, or
+`pnpm preview` behind an HTTPS tunnel; audio and motion sensors need a secure context).
+
+### Android APK (local Gradle, no EAS)
+
+On Windows, one command checks / installs everything and builds a release APK signed with a
+local, git-ignored keystore (`apps/writer/.keystore/`; keep it, updates must use the same key):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -InstallTools -Install
+```
+
+`-InstallTools` installs Temurin JDK 17 (winget) and the Android command-line tools + SDK
+packages (`platform-tools`, `platforms;android-35`, `build-tools;35.0.0`); `-Install` runs
+`adb install -r` (automatic when exactly one device is attached); `-Variant debug` builds a debug
+APK; `-SkipPrebuild` reuses `apps/writer/android/`; `-ToolsOnly` stops after the toolchain check.
+`apps/writer/android/` and `apps/writer/dist/` are generated and git-ignored.
 
 ## Layout
 

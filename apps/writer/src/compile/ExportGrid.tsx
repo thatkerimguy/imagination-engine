@@ -37,7 +37,7 @@ export const TILES: readonly Tile[] = [
   {
     format: 'knbook',
     label: '.knbook',
-    hint: 'Full backup of this book',
+    hint: 'Portable book archive',
     icon: 'archive',
     testID: 'export-knbook',
   },

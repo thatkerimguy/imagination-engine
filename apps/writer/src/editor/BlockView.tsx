@@ -1,7 +1,7 @@
 // One block in the stream. Borderless: the focused block gets a 2px accent rail in the page
 // gutter (text never shifts) and a compact action strip beneath it.
 import type { Block } from '@kn/core';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { BlockStyle } from '../store/chapter-styles.ts';
 import { isBlockComplete } from '../store/sanitize.ts';
@@ -84,7 +84,7 @@ function Body(p: BlockViewProps): ReactNode {
   }
 }
 
-export function BlockView(p: BlockViewProps): ReactNode {
+function BlockViewImpl(p: BlockViewProps): ReactNode {
   const { block } = p;
   const { colors } = useTheme();
   const rail = block.kind === 'dialogue' ? (block.accentColor ?? colors.accent) : colors.accent;
@@ -126,6 +126,9 @@ export function BlockView(p: BlockViewProps): ReactNode {
     </Pressable>
   );
 }
+
+/** Memoized: typing in one block must not re-render the others (handlers are stable by id). */
+export const BlockView = memo(BlockViewImpl);
 
 const styles = StyleSheet.create({
   block: { paddingVertical: 6, gap: 4 },

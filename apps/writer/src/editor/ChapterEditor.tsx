@@ -1,6 +1,6 @@
 // Chapter editing screen (bar, metrics, blocks, toolbar, sheets); Focus Mode leaves page + Exit.
-import type { ChapterDocument } from '@kn/core';
-import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import type { Block, ChapterDocument } from '@kn/core';
+import { useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { shareJson } from '../export/share-json';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
@@ -41,7 +41,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const s = useStyles();
   const insets = useSafeAreaInsets();
   const typo = useEditorTypography();
-  const [prefs] = useWriterPrefs();
+  const [prefs, setPrefs] = useWriterPrefs();
   const a = useEditorActions(draft.update);
   const f = useFormatActions({
     blocks: chapter.blocks,
@@ -61,6 +61,17 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const offsets = useRef(new Map<string, number>());
 
   const metrics = useLiveMetrics(chapter.blocks);
+
+  // Stable, id-taking handlers (via a ref to the latest actions) so memoized BlockViews skip renders.
+  const actions = useRef(a);
+  actions.current = a;
+  const onChange = useCallback((b: Block) => actions.current.change(b), []);
+  const onToggleBeat = useCallback((id: string) => actions.current.toggleBeat(id), []);
+  const onMove = useCallback((id: string, d: -1 | 1) => actions.current.move(id, d), []);
+  const onDelete = useCallback((id: string) => void actions.current.remove(id), []);
+  const onOpenGimmick = useCallback((id: string) => actions.current.openSheet(id), []);
+  const onSelect = useCallback((id: string) => actions.current.select(id), []);
+  const onLayout = useCallback((id: string, y: number) => void offsets.current.set(id, y), []);
 
   const jump = (id: string): void => {
     a.select(id);
@@ -152,10 +163,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             />
           ) : null}
           {chapter.blocks.map((block) => (
-            <View
-              key={block.id}
-              onLayout={(e) => offsets.current.set(block.id, e.nativeEvent.layout.y)}
-            >
+            <View key={block.id} onLayout={(e) => onLayout(block.id, e.nativeEvent.layout.y)}>
               <BlockView
                 block={block}
                 selected={a.selectedId === block.id}
@@ -165,12 +173,12 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
                 samsungSafeIme={prefs.samsungSafeIme}
                 selection={f.forcedSelection(block.id)}
                 onSelectionChange={f.onSelectionChange}
-                onSelect={a.select}
-                onChange={a.change}
-                onOpenGimmick={a.openSheet}
-                onToggleBeat={a.toggleBeat}
-                onMove={a.move}
-                onDelete={(id) => void a.remove(id)}
+                onSelect={onSelect}
+                onChange={onChange}
+                onOpenGimmick={onOpenGimmick}
+                onToggleBeat={onToggleBeat}
+                onMove={onMove}
+                onDelete={onDelete}
               />
             </View>
           ))}
@@ -197,6 +205,15 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             align={f.align}
             disabledText={!f.textSelected}
             onTool={f.onTool}
+            formatCollapsed={prefs.toolbarFormatCollapsed}
+            addCollapsed={prefs.toolbarAddCollapsed}
+            onCollapse={(half, collapsed) =>
+              setPrefs(
+                half === 'format'
+                  ? { toolbarFormatCollapsed: collapsed }
+                  : { toolbarAddCollapsed: collapsed },
+              )
+            }
           />
         ) : null}
       </KeyboardAvoidingView>

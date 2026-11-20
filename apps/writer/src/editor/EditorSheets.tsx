@@ -13,10 +13,11 @@ import { GimmickPicker } from './InsertSheets.tsx';
 import { LayoutPrefsSheet } from './LayoutPrefsSheet.tsx';
 import { MetricPickerSheet } from './MetricsRibbon.tsx';
 import { OutlineSheet } from './OutlineSheet.tsx';
+import { sheetsToMount, type EditorSheet } from './sheet-mount.ts';
 import type { useEditorActions } from './use-editor-actions.ts';
 import type { useFormatActions } from './use-format-actions.ts';
 
-export type EditorSheet = 'analysis' | 'outline' | 'layout' | 'metrics' | 'versions' | null;
+export type { EditorSheet };
 
 export interface EditorSheetsProps {
   sheet: EditorSheet;
@@ -39,52 +40,73 @@ export function EditorSheets(p: EditorSheetsProps): ReactNode {
   const sheetBlock = chapter.blocks.find((b) => b.id === a.sheetId);
   const sheetModule =
     sheetBlock?.kind === 'module' ? getWriterModule(sheetBlock.moduleId) : undefined;
+  const gimmickSheet = sheetBlock?.kind === 'module' && sheetModule ? sheetBlock : null;
+  const open = new Set(
+    sheetsToMount({
+      sheet: p.sheet,
+      commentOpen: f.commentOpen,
+      pickerOpen: a.pickerOpen,
+      gimmickSheetOpen: !!gimmickSheet,
+    }),
+  );
   return (
     <>
-      <TextAnalysisSheet
-        visible={p.sheet === 'analysis'}
-        blocks={chapter.blocks}
-        typing={{ cpm: p.metrics.typingCpm, wpm: p.metrics.typingWpm }}
-        onClose={close}
-      />
-      <OutlineSheet
-        visible={p.sheet === 'outline'}
-        blocks={chapter.blocks}
-        styles={draft.styles}
-        onJump={p.jump}
-        onClose={close}
-      />
-      <LayoutPrefsSheet
-        visible={p.sheet === 'layout'}
-        focusMode={p.focusMode}
-        onFocusMode={(on) => {
-          p.setFocusMode(on);
-          if (on) close();
-        }}
-        onClose={close}
-        onOpenAppearance={() => {
-          close();
-          p.onAppearance();
-        }}
-      />
-      <MetricPickerSheet visible={p.sheet === 'metrics'} onClose={close} />
-      <VersionHistorySheet
-        visible={p.sheet === 'versions'}
-        target={`chapter:${chapter.id}`}
-        currentBlocks={chapter.blocks}
-        onRestore={(blocks) => draft.update((c) => ({ ...c, blocks: blocks as Block[] }))}
-        onClose={close}
-      />
-      <CommentSheet visible={f.commentOpen} onAdd={f.addComment} onClose={f.closeComment} />
-      <GimmickPicker
-        visible={a.pickerOpen}
-        modules={enabledWriterModules(p.enabledModules)}
-        onPick={a.pickModule}
-        onClose={a.closePicker}
-      />
-      {sheetBlock?.kind === 'module' && sheetModule ? (
+      {open.has('analysis') ? (
+        <TextAnalysisSheet
+          visible
+          blocks={chapter.blocks}
+          typing={{ cpm: p.metrics.typingCpm, wpm: p.metrics.typingWpm }}
+          onClose={close}
+        />
+      ) : null}
+      {open.has('outline') ? (
+        <OutlineSheet
+          visible
+          blocks={chapter.blocks}
+          styles={draft.styles}
+          onJump={p.jump}
+          onClose={close}
+        />
+      ) : null}
+      {open.has('layout') ? (
+        <LayoutPrefsSheet
+          visible
+          focusMode={p.focusMode}
+          onFocusMode={(on) => {
+            p.setFocusMode(on);
+            if (on) close();
+          }}
+          onClose={close}
+          onOpenAppearance={() => {
+            close();
+            p.onAppearance();
+          }}
+        />
+      ) : null}
+      {open.has('metrics') ? <MetricPickerSheet visible onClose={close} /> : null}
+      {open.has('versions') ? (
+        <VersionHistorySheet
+          visible
+          target={`chapter:${chapter.id}`}
+          currentBlocks={chapter.blocks}
+          onRestore={(blocks) => draft.update((c) => ({ ...c, blocks: blocks as Block[] }))}
+          onClose={close}
+        />
+      ) : null}
+      {open.has('comment') ? (
+        <CommentSheet visible onAdd={f.addComment} onClose={f.closeComment} />
+      ) : null}
+      {open.has('picker') ? (
+        <GimmickPicker
+          visible
+          modules={enabledWriterModules(p.enabledModules)}
+          onPick={a.pickModule}
+          onClose={a.closePicker}
+        />
+      ) : null}
+      {gimmickSheet && sheetModule ? (
         <GimmickBlockSheet
-          block={sheetBlock}
+          block={gimmickSheet}
           module={sheetModule}
           enabledModules={p.enabledModules}
           update={draft.update}

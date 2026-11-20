@@ -22,7 +22,9 @@ param(
   # adb install -r the APK (also happens automatically when exactly one device is attached).
   [switch] $Install,
   # Reuse an existing apps/writer/android project instead of `expo prebuild --clean`.
-  [switch] $SkipPrebuild
+  [switch] $SkipPrebuild,
+  # Only check / install JDK 17 and the Android SDK, then stop.
+  [switch] $ToolsOnly
 )
 $ErrorActionPreference = 'Stop'
 $Root = Resolve-Path (Join-Path $PSScriptRoot '..')
@@ -112,6 +114,7 @@ if ($missing) {
   Invoke-Checked 'sdkmanager install' { & $SdkManager --sdk_root="$Sdk" @missing }
 }
 Write-Host "Android SDK: $Sdk"
+if ($ToolsOnly) { Write-Step 'Toolchain ready (-ToolsOnly).'; exit 0 }
 
 # ── Offline preview bundle + prebuild ───────────────────────────────────────────────────────
 Push-Location $Root

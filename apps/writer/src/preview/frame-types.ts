@@ -5,7 +5,10 @@ export interface PreviewFrameHandle {
 }
 
 export interface PreviewFrameProps {
-  url: string;
+  /** Self-contained reader HTML (the built-in offline reader). Wins over `url`. */
+  html?: string;
+  /** Remote reader address, used when no `html` is given. */
+  url?: string;
   onMessage(message: ReaderMessage): void;
   /** The page could not be loaded at all (native only; iframes cannot report this). */
   onLoadError(description: string): void;

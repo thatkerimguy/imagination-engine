@@ -7,7 +7,12 @@ import {
   loadSettings,
   previewUrl,
   saveSettings,
+  type PreviewMode,
 } from '../settings/app-settings.ts';
+import { loadWriterPrefs, saveWriterPrefs } from '../store/writer-prefs.ts';
+import { hapticTestSequence, setHapticsEnabled } from '../ui/haptics.ts';
+import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
 import { useRepository } from '../store/context.tsx';
 import { loadDemoNovel } from '../store/demo.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
@@ -20,16 +25,39 @@ import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 
+const MODE_SEGMENTS: readonly SegmentOption<PreviewMode>[] = [
+  { value: 'offline', label: 'Built-in (Offline)', testID: 'settings-preview-offline' },
+  { value: 'custom-url', label: 'Custom URL', testID: 'settings-preview-custom' },
+];
+
 export default function AppSettingsScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
   const theme = useTheme();
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
+  const [mode, setMode] = useState<PreviewMode>('offline');
+  const [haptics, setHaptics] = useState(true);
   useEffect(() => {
-    void loadSettings(repo).then((s) => setReaderUrl(s.readerUrl));
+    void loadSettings(repo).then((s) => {
+      setMode(s.previewMode);
+      setReaderUrl(s.readerUrl);
+    });
+    void loadWriterPrefs(repo).then((p) => {
+      setHaptics(p.hapticsEnabled);
+      setHapticsEnabled(p.hapticsEnabled);
+    });
   }, [repo]);
+  const pickMode = (next: PreviewMode): void => {
+    setMode(next);
+    void saveSettings(repo, { previewMode: next });
+  };
+  const toggleHaptics = (on: boolean): void => {
+    setHaptics(on);
+    setHapticsEnabled(on);
+    void saveWriterPrefs(repo, { hapticsEnabled: on });
+  };
   if (readerUrl === null) return null;
-  const valid = previewUrl(readerUrl) !== null;
+  const valid = mode === 'offline' || previewUrl(readerUrl) !== null;
   const save = async (): Promise<void> => {
     await saveSettings(repo, { readerUrl: readerUrl.trim() });
     router.back();
@@ -56,29 +84,67 @@ export default function AppSettingsScreen(): ReactNode {
         onPress={() => router.push(routes.appearance)}
       />
       <SectionLabel>Live preview</SectionLabel>
-      <Field
-        label="Reader preview URL"
-        value={readerUrl}
-        onChangeText={setReaderUrl}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="url"
-        placeholder={DEFAULT_SETTINGS.readerUrl}
-        error={valid ? null : 'Enter an http:// or https:// address'}
-        hint="Your apps/reader server. On a phone, use your computer's LAN address (e.g. http://192.168.1.20:5173/) or a deployed reader."
+      <SegmentControl<PreviewMode>
+        options={MODE_SEGMENTS}
+        value={mode}
+        onChange={pickMode}
+        accessibilityLabel="Live preview source"
+        testID="settings-preview-mode"
       />
-      <Txt variant="meta" color="inkSecondary">
-        The writer opens this address with ?preview=1 and sends your draft to it.
-      </Txt>
-      <View style={{ flexDirection: 'row', gap: space.xs }}>
-        <ActionButton label="Save" disabled={!valid} onPress={() => void save()} />
-        <ActionButton
-          variant="ghost"
-          quiet
-          label="Reset"
-          onPress={() => setReaderUrl(DEFAULT_SETTINGS.readerUrl)}
-        />
-      </View>
+      {mode === 'offline' ? (
+        <Txt variant="meta" color="inkSecondary">
+          The preview runs a reader bundled inside the writer, so it works with no server or
+          network.
+        </Txt>
+      ) : (
+        <>
+          <Field
+            label="Reader preview URL"
+            value={readerUrl}
+            onChangeText={setReaderUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            placeholder={DEFAULT_SETTINGS.readerUrl}
+            error={valid ? null : 'Enter an http:// or https:// address'}
+            hint="Your apps/reader server. On a phone, use your computer's LAN address (e.g. http://192.168.1.20:5173/) or a deployed reader."
+          />
+          <Txt variant="meta" color="inkSecondary">
+            The writer opens this address with ?preview=1 and sends your draft to it.
+          </Txt>
+          <View style={{ flexDirection: 'row', gap: space.xs }}>
+            <ActionButton label="Save" disabled={!valid} onPress={() => void save()} />
+            <ActionButton
+              variant="ghost"
+              quiet
+              label="Reset"
+              onPress={() => setReaderUrl(DEFAULT_SETTINGS.readerUrl)}
+            />
+          </View>
+        </>
+      )}
+      <SectionLabel>Haptics</SectionLabel>
+      <ListRow
+        icon="smartphone"
+        title="Haptics"
+        subtitle="Subtle taps on buttons and toggles"
+        testID="settings-haptics-row"
+        trailing={
+          <Toggle
+            value={haptics}
+            onValueChange={toggleHaptics}
+            accessibilityLabel="Haptics"
+            testID="settings-haptics"
+          />
+        }
+      />
+      <ListRow
+        icon="zap"
+        title="Test vibration"
+        last
+        testID="settings-haptics-test"
+        onPress={() => void hapticTestSequence()}
+      />
       <BackupSection />
       <SectionLabel>Privacy & integrity</SectionLabel>
       <ListRow

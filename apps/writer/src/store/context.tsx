@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { maybeAutoBackup } from '../backup/auto-backup.ts';
 import { createDefaultAdapter } from '../storage/adapter';
+import { syncHapticsPref } from '../ui/haptics.ts';
 import { seedOnFirstLaunch } from './demo.ts';
 import { NovelRepository } from './repository.ts';
 
@@ -15,6 +16,7 @@ export function RepositoryProvider({ children }: { children: ReactNode }): React
       .catch((err: unknown) => console.warn('[writer] demo seed failed', err))
       .finally(() => {
         setReady(true);
+        void syncHapticsPref(repo);
         // Rotating emergency snapshot when the configured interval has passed (native only).
         void maybeAutoBackup(repo);
       });

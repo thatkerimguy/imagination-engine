@@ -2,13 +2,14 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
 import { PREVIEW_TIERS, type PreviewTier, type ReaderMessage } from '../preview/protocol.ts';
 import { usePreviewPayload } from '../preview/use-preview-payload.ts';
+import { useRepository } from '../store/context.tsx';
+import { saveSettings } from '../settings/app-settings.ts';
 import { routes } from '../routes.ts';
-import { ActionButton } from '../ui/ActionButton.tsx';
-import { Glyph } from '../ui/Glyph.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { EmptyState } from '../ui/Page.tsx';
 import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
@@ -55,7 +56,8 @@ export default function PreviewScreen(): ReactNode {
     chapter: string;
     block?: string;
   }>();
-  const { data, loading } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
+  const repo = useRepository();
+  const { data, loading, reload } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
   const styles = useStyles();
   const { colors } = useTheme();
   const frame = useRef<PreviewFrameHandle>(null);
@@ -91,6 +93,7 @@ export default function PreviewScreen(): ReactNode {
   const restart = (): void => {
     setDetail('');
     setSession((n) => n + 1);
+    reload();
   };
 
   const pickTier = (t: PreviewTier): void => {
@@ -121,7 +124,31 @@ export default function PreviewScreen(): ReactNode {
       </View>
     );
   }
-  const { url, readerUrl, fromLiveDraft } = data.payload;
+  const { url, html, htmlError, readerUrl, fromLiveDraft } = data.payload;
+  const offline = data.payload.mode === 'offline';
+  const switchOffline = async (): Promise<void> => {
+    await saveSettings(repo, { previewMode: 'offline' });
+    setDetail('');
+    setSession((n) => n + 1);
+    reload();
+  };
+  const openSettings = (): void => router.push(routes.appSettings);
+  const problem = offline
+    ? htmlError !== null || status === 'rejected' || status === 'unreachable'
+    : !url || status === 'rejected' || status === 'unreachable';
+  const banner = !problem
+    ? null
+    : status === 'rejected'
+      ? { title: 'The reader rejected this draft', body: detail }
+      : offline
+        ? {
+            title: 'The built-in reader could not start',
+            body: `${htmlError ?? detail} Try again, or restart the app.`,
+          }
+        : {
+            title: !url ? 'The reader URL is not valid' : 'Reader preview unreachable',
+            body: `Tried ${readerUrl}. Start the reader (pnpm dev) or point the writer at a reachable reader URL. ${detail}`,
+          };
 
   return (
     <View style={styles.screen} testID="preview-screen">
@@ -141,49 +168,32 @@ export default function PreviewScreen(): ReactNode {
               { backgroundColor: status === 'live' ? colors.success : colors.inkMuted },
             ]}
           />
-          <Txt variant="caption" color="inkMuted">
+          <Txt variant="caption" color="inkMuted" testID="preview-mode-note">
             {status === 'live'
-              ? fromLiveDraft
-                ? 'Live draft'
-                : 'Saved chapter'
+              ? `Live � ${offline ? 'Built-in offline reader' : 'Custom reader'} � ${
+                  fromLiveDraft ? 'draft' : 'saved chapter'
+                }`
               : status === 'connecting'
                 ? 'Connecting…'
                 : 'Not connected'}
           </Txt>
         </View>
       </View>
-      {status === 'unreachable' || status === 'rejected' || !url ? (
-        <View style={styles.banner} accessibilityRole="alert">
-          <View style={styles.bannerHead}>
-            <Glyph name="cloud-off" color="danger" />
-            <Txt variant="bodyStrong" color="danger" style={styles.bannerTitle}>
-              {!url
-                ? 'The reader URL is not valid'
-                : status === 'rejected'
-                  ? 'The reader rejected this draft'
-                  : 'Reader preview unreachable'}
-            </Txt>
-          </View>
-          <Txt variant="meta" color="ink">
-            {status === 'rejected'
-              ? detail
-              : `Tried ${readerUrl}. Start the reader (pnpm dev) or point the writer at a reachable reader URL. ${detail}`}
-          </Txt>
-          <View style={styles.actions}>
-            <ActionButton variant="secondary" label="Retry" onPress={restart} />
-            <ActionButton
-              variant="ghost"
-              label="Change reader URL"
-              onPress={() => router.push(routes.appSettings)}
-            />
-          </View>
-        </View>
+      {banner ? (
+        <PreviewBanner
+          title={banner.title}
+          body={banner.body}
+          onRetry={restart}
+          {...(offline
+            ? {}
+            : { onSwitchOffline: () => void switchOffline(), onChangeUrl: openSettings })}
+        />
       ) : null}
-      {url ? (
+      {html || url ? (
         <PreviewFrame
-          key={`${session}:${url}`}
+          key={`${session}:${html ? 'offline' : url}`}
           ref={frame}
-          url={url}
+          {...(html ? { html } : url ? { url } : {})}
           onMessage={onMessage}
           onLoadError={(d) => {
             setDetail(d);

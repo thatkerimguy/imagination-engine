@@ -4,6 +4,7 @@
 import type { Block } from '@kn/core';
 import { stripInlineMarkup } from '../editor/inline-markup.ts';
 import type { ItemMeta } from '../store/item-meta.ts';
+import { excerptOf, occurrences } from './search-excerpt.ts';
 
 export interface SearchSources {
   novels: { id: string; title: string; subtitle?: string }[];
@@ -131,6 +132,14 @@ export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): S
         add({ ...head, text: blockText(b), isTitle: false, target: { ...target, blockId: b.id } });
   }
   const byId = new Map(src.folders.map((f) => [f.id, f]));
+  const inLockedFolder = (folderId: string | null): boolean => {
+    const seen = new Set<string>();
+    for (let cur = folderId; cur && !seen.has(cur); cur = byId.get(cur)?.parentFolderId ?? null) {
+      seen.add(cur);
+      if (locked(cur)) return true;
+    }
+    return false;
+  };
   for (const f of src.folders)
     add({
       kind: 'folder',
@@ -144,7 +153,7 @@ export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): S
       target: { folderId: f.id },
     });
   for (const d of src.docs) {
-    const lock = locked(d.id);
+    const lock = locked(d.id) || inLockedFolder(d.folderId);
     const base = {
       kind: 'doc',
       scope: 'notes',
@@ -158,37 +167,6 @@ export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): S
     if (!lock) for (const b of d.blocks) add({ ...base, text: blockText(b), isTitle: false });
   }
   return { entries };
-}
-
-const WINDOW = 100;
-const LEAD = 36;
-
-function occurrences(norm: string, terms: readonly string[]): Array<[number, number]> {
-  const spans: Array<[number, number]> = [];
-  for (const t of terms)
-    for (let i = norm.indexOf(t); i >= 0; i = norm.indexOf(t, i + 1)) spans.push([i, i + t.length]);
-  spans.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
-  const merged: Array<[number, number]> = [];
-  for (const s of spans) {
-    const last = merged[merged.length - 1];
-    if (last && s[0] <= last[1]) last[1] = Math.max(last[1], s[1]);
-    else merged.push([s[0], s[1]]);
-  }
-  return merged;
-}
-
-function excerptOf(e: Entry, spans: Array<[number, number]>) {
-  const first = spans[0]?.[0] ?? 0;
-  const end = Math.min(e.text.length, Math.max(0, first - LEAD) + WINDOW);
-  const start = Math.max(0, Math.min(first - LEAD, end - WINDOW));
-  const pre = start > 0 ? '…' : '';
-  const post = end < e.text.length ? '…' : '';
-  const shift = pre.length - start;
-  const highlights: Array<[number, number]> = [];
-  for (const [a, b] of spans)
-    if (b > start && a < end)
-      highlights.push([Math.max(a, start) + shift, Math.min(b, end) + shift]);
-  return { excerpt: pre + e.text.slice(start, end).trim() + post, highlights };
 }
 
 function score(e: Entry, terms: readonly string[], spans: Array<[number, number]>): number {
@@ -234,7 +212,7 @@ export function search(
     const n = perItem.get(key) ?? 0;
     if (n >= PER_ITEM) continue;
     perItem.set(key, n + 1);
-    const x = e.isTitle ? { excerpt: '', highlights: [] } : excerptOf(e, h.spans);
+    const x = e.isTitle ? { excerpt: '', highlights: [] } : excerptOf(e.text, h.spans);
     out.push({
       kind: e.kind,
       id: e.id,

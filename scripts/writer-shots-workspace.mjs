@@ -227,7 +227,7 @@ export async function waitFor(url) {
 }
 
 /** Two 390×844 phone frames side by side in one PNG (top/bottom of a screen, or two screens). */
-async function composite(page, shotsAt, name, frames) {
+export async function composite(page, shotsAt, name, frames) {
   if (!shotsAt) return;
   const imgs = frames
     .map(

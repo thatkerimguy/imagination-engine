@@ -1,19 +1,19 @@
 // Writer QA pack (Directive 02C Folio + 02B-2 workspace: library, editor, focus, gimmick sheet, analysis, growth,
-// appearance, live preview): drives the Expo Web export of apps/writer at 390×844, with
-// the Live Preview pointed at the built apps/reader. Needs `pnpm build` and `pnpm writer:export`.
-// Usage: node scripts/writer-shots.mjs [--shots <dir>]
-import { spawn } from 'node:child_process';
-import { readFileSync, statSync } from 'node:fs';
+// appearance, live preview): drives the Expo Web export of apps/writer at 390×844. The Live
+// Preview runs the built-in OFFLINE reader (iframe srcDoc) with every non-local request aborted,
+// so no reader server is needed. Needs `pnpm writer:export` (which builds the preview bundle).
+// Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase2d
+import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { extname, join, resolve } from 'node:path';
-import { waitFor, workspacePass } from './writer-shots-workspace.mjs';
+import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
+import { workspacePass } from './writer-shots-workspace.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const shotsAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
-const READER = 'http://127.0.0.1:4173/';
 const WRITER = 'http://127.0.0.1:8099/';
 const DIST = resolve(import.meta.dirname, '../apps/writer/dist');
 const ID = {
@@ -44,7 +44,9 @@ const GROWTH_SEED = (() => {
   }
   return JSON.stringify({ data: { points }, updatedAt: now });
 })();
+if (shotsAt) mkdirSync(shotsAt, { recursive: true });
 const errors = [];
+const blocked = [];
 const fail = (msg) => {
   console.error(`❌ ${msg}`);
   process.exitCode = 1;
@@ -60,10 +62,8 @@ const writer = createServer((req, res) => {
   res.setHeader('Content-Type', TYPES[extname(file)] ?? 'application/octet-stream');
   res.end(readFileSync(file));
 }).listen(8099, '127.0.0.1');
-const reader = spawn('pnpm', ['--filter', '@kn/reader', 'preview'], { stdio: 'ignore' });
 
 try {
-  await waitFor(READER);
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader'] });
   const page = await browser.newPage({
     viewport: { width: 390, height: 844 },
@@ -77,11 +77,13 @@ try {
       value: () => ((window.__settled = performance.now()), true),
     });
   });
-  await page.addInitScript((url) => {
-    const key = 'kn-writer:setting/app';
-    if (!localStorage.getItem(key))
-      localStorage.setItem(key, JSON.stringify({ data: { readerUrl: url }, updatedAt: 0 }));
-  }, READER);
+  // True offline: only the local writer server may answer. previewMode stays at its default.
+  await page.route('**/*', (route) => {
+    const { hostname } = new URL(route.request().url());
+    if (hostname === '127.0.0.1' || hostname === 'localhost') return route.continue();
+    blocked.push(route.request().url());
+    return route.abort();
+  });
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('dialog', (d) => d.accept());
@@ -208,7 +210,8 @@ try {
   await tid('preview-screen').waitFor({ timeout: 10000 });
   const frame = page.frameLocator('iframe[title="Reader preview"]');
   await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
-  const reader = page.frames().find((f) => f.url().includes('preview=1'));
+  const reader = page.frames().find((f) => f.url() === 'about:srcdoc');
+  if (!reader) throw new Error('offline reader srcdoc frame not found');
   await reader.waitForFunction(() => window.__settled, null, { timeout: 30000 });
   const chat = await reader.evaluate(() => ({
     pending: document.querySelectorAll('.kn-cbc li.pending').length,
@@ -230,8 +233,11 @@ try {
     .evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(400);
   await shot('08-live-preview-rich-formatting');
+  await offlinePreviewShot(page, { frame, reader, tid, shot, ok, fail, blocked, RICH });
 
   await workspacePass(page, { WRITER, shotsAt, tid, ok, fail, editor });
+  await toolbarPass(page, { tid, editor, shotsAt, ok, fail });
+  await settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail });
   await flowPass(page, tid);
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
@@ -241,11 +247,10 @@ try {
   if (shotsAt)
     await globalThis.__page?.screenshot({ path: `${shotsAt}/_failure.png` }).catch(() => {});
 } finally {
-  reader.kill();
   writer.closeAllConnections();
   writer.close();
 }
-// pnpm's preview child can outlive kill(); exit explicitly with the recorded status.
+// Exit explicitly with the recorded status.
 process.exit(process.exitCode ?? 0);
 
 // New novel → write a paragraph → auto-save survives a reload; gimmick picker honours modules.

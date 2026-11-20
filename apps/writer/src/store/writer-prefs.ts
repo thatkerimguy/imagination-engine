@@ -83,6 +83,12 @@ export interface WriterPrefs {
   visibleMetrics: MetricId[];
   toolbarOrder: ToolId[];
   hiddenTools: ToolId[];
+  /** Formatting (left) half of the editor toolbar minimised to one expand arrow. */
+  toolbarFormatCollapsed: boolean;
+  /** Add-block (right) half of the editor toolbar minimised to one expand arrow. */
+  toolbarAddCollapsed: boolean;
+  /** Tactile feedback on taps and toggles (native only). */
+  hapticsEnabled: boolean;
 }
 
 export interface CustomFont {
@@ -110,6 +116,9 @@ export const DEFAULT_WRITER_PREFS: WriterPrefs = {
   visibleMetrics: ['chars', 'words', 'sentences', 'paragraphs', 'typingCpm', 'lexicalDensity'],
   toolbarOrder: [...TOOL_IDS],
   hiddenTools: [],
+  toolbarFormatCollapsed: false,
+  toolbarAddCollapsed: false,
+  hapticsEnabled: true,
 };
 
 const clamp = (v: unknown, lo: number, hi: number, d: number): number =>
@@ -147,6 +156,9 @@ export function normalizeWriterPrefs(
     // New tools added in later versions are appended so they never silently disappear.
     toolbarOrder: [...order, ...TOOL_IDS.filter((t) => !order.includes(t))],
     hiddenTools: listOf(raw.hiddenTools, TOOL_IDS, d.hiddenTools),
+    toolbarFormatCollapsed: bool(raw.toolbarFormatCollapsed, d.toolbarFormatCollapsed),
+    toolbarAddCollapsed: bool(raw.toolbarAddCollapsed, d.toolbarAddCollapsed),
+    hapticsEnabled: bool(raw.hapticsEnabled, d.hapticsEnabled),
   };
 }
 

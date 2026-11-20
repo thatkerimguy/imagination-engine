@@ -40,3 +40,7 @@ export function buildImported(
 /** `* * *`, `---`, `***`, `___`, `# # #` and similar lines. */
 export const isSceneBreakLine = (line: string): boolean =>
   /^\s*([*\-_#~=])(\s*\1){2,}\s*$/.test(line);
+
+/** Normalises file text: no BOM, `\n` line endings, trimmed. */
+export const cleanText = (raw: string): string =>
+  (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).replace(/\r\n?/g, '\n').trim();

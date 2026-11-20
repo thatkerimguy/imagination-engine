@@ -1,6 +1,7 @@
 // Minimal ECMA-376 WordprocessingML helpers: escaping, runs, paragraphs and the static parts.
 import type { InlineRun } from '../editor/inline-markup.ts';
 
+// eslint-disable-next-line no-control-regex
 const ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
 

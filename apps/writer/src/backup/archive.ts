@@ -3,16 +3,10 @@
 // stored key (the raw stored JSON). Restores validate EVERYTHING first — manifests, chapters,
 // JSON — and only then write, so a bad archive never leaves half-restored data.
 // Pure: works on a StorageAdapter, no platform imports.
-import {
-  parseNovelManifest,
-  parseSeasonManifest,
-  SCHEMA_VERSION,
-  type ChapterDocument,
-  type ParseResult,
-} from '@kn/core';
+import { SCHEMA_VERSION } from '@kn/core';
 import { bytesOf, textOf, unzipFiles, zipFiles, type ZipFiles } from '../export/zip.ts';
 import type { StorageAdapter } from '../storage/types.ts';
-import { prepareChapter } from '../store/sanitize.ts';
+import { fail, readManifest, validateEntry } from './archive-validate.ts';
 
 export const ARCHIVE_VERSION = 1;
 export const ARCHIVE_APP = 'kinetic-novel-writer';
@@ -43,7 +37,7 @@ export const WORKSPACE_PREFIXES = [
 /** Lock secrets never leave the device and are never overwritten by a restore. */
 export const isSecretKey = (key: string): boolean => key.startsWith('setting/lock');
 
-const allowedKey = (key: string): boolean =>
+export const allowedKey = (key: string): boolean =>
   WORKSPACE_PREFIXES.some((p) => key.startsWith(p)) && !isSecretKey(key);
 
 const entryName = (key: string): string => `kv/${key.split('/').map(encodeURIComponent).join('/')}`;
@@ -140,51 +134,6 @@ export async function packChapter(
 export interface ParsedArchive {
   manifest: ArchiveManifest;
   entries: KvEntry[];
-}
-
-function fail(message: string): never {
-  throw new Error(message);
-}
-
-const isObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-
-function must<T>(what: string, result: ParseResult<T>): T {
-  return result.ok ? result.value : fail(`${what}: ${result.errors.join('; ')}`);
-}
-
-function validateEntry(key: string, value: string): void {
-  let stored: unknown;
-  try {
-    stored = JSON.parse(value);
-  } catch {
-    return fail(`"${key}" is corrupted (not valid JSON).`);
-  }
-  if (!allowedKey(key)) return fail(`"${key}" is not a key this app can restore.`);
-  const data = isObject(stored) ? stored.data : undefined;
-  if (key.startsWith('novel/')) must(`Novel "${key}"`, parseNovelManifest(data));
-  else if (key.startsWith('season/')) must(`Season "${key}"`, parseSeasonManifest(data));
-  else if (key.startsWith('chapter/')) {
-    if (!isObject(data)) return fail(`Chapter "${key}" is empty or malformed.`);
-    const p = prepareChapter(data as unknown as ChapterDocument);
-    if (!p.ok) fail(`Chapter "${key}": ${p.errors.join('; ')}`);
-  }
-}
-
-function readManifest(raw: Uint8Array | undefined): ArchiveManifest {
-  if (!raw) return fail('This is not a Kinetic Novel backup (manifest.json is missing).');
-  let m: unknown;
-  try {
-    m = JSON.parse(textOf(raw));
-  } catch {
-    return fail('The backup manifest is corrupted.');
-  }
-  if (!isObject(m) || m.app !== ARCHIVE_APP) return fail('This is not a Kinetic Novel backup.');
-  if (m.kind !== 'knbook' && m.kind !== 'knchap' && m.kind !== 'workspace')
-    return fail('Unknown backup type.');
-  if (typeof m.version !== 'number' || m.version > ARCHIVE_VERSION)
-    return fail('This backup was made by a newer version of the app.');
-  return m as unknown as ArchiveManifest;
 }
 
 /** Unzips and fully validates an archive. Throws a readable error; touches no storage. */

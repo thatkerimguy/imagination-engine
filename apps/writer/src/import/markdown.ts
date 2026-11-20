@@ -1,6 +1,12 @@
 // Markdown → blocks. Writer markup already speaks `**bold**`, `*italic*`, `~~strike~~`, so most
 // inline syntax passes through; `_x_` / `__x__`, links and images are normalised.
-import { buildImported, isSceneBreakLine, type ImportedDoc, type ImportedItem } from './build.ts';
+import {
+  buildImported,
+  cleanText,
+  isSceneBreakLine,
+  type ImportedDoc,
+  type ImportedItem,
+} from './build.ts';
 
 export function inlineFromMarkdown(s: string): string {
   return s
@@ -15,7 +21,7 @@ export function inlineFromMarkdown(s: string): string {
 }
 
 export function parseMarkdown(raw: string, title?: string): ImportedDoc {
-  const text = raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n').trim();
+  const text = cleanText(raw);
   const items: ImportedItem[] = [];
   let found = title;
   let para: string[] = [];

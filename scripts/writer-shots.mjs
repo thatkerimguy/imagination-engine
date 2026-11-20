@@ -1,4 +1,4 @@
-// Writer QA pack (Directive 02C Folio: library, editor, focus, gimmick sheet, analysis, growth,
+// Writer QA pack (Directive 02C Folio + 02B-2 workspace: library, editor, focus, gimmick sheet, analysis, growth,
 // appearance, live preview): drives the Expo Web export of apps/writer at 390×844, with
 // the Live Preview pointed at the built apps/reader. Needs `pnpm build` and `pnpm writer:export`.
 // Usage: node scripts/writer-shots.mjs [--shots <dir>]
@@ -7,6 +7,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { extname, join, resolve } from 'node:path';
+import { waitFor, workspacePass } from './writer-shots-workspace.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const shotsAt = process.argv.includes('--shots')
@@ -230,6 +231,7 @@ try {
   await page.waitForTimeout(400);
   await shot('08-live-preview-rich-formatting');
 
+  await workspacePass(page, { WRITER, shotsAt, tid, ok, fail, editor });
   await flowPass(page, tid);
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
@@ -269,16 +271,4 @@ async function flowPass(page, tid) {
   await tid('tool-addGimmick').click();
   await page.getByText(/No gimmicks are enabled/).waitFor({ timeout: 5000 });
   ok('gimmick picker is filtered to enabledModules (none for a new novel)');
-}
-
-async function waitFor(url) {
-  for (let i = 0; i < 50; i++) {
-    try {
-      if ((await fetch(url)).ok) return;
-    } catch {
-      // not up yet
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  throw new Error('reader preview server did not start');
 }

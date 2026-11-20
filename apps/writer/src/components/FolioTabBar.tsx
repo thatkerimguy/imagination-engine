@@ -14,11 +14,11 @@ import { useTheme } from '../ui/theme.tsx';
 
 export const TAB_BAR_HEIGHT = 56;
 
-function go(from: TabKey, href: string): void {
+function go(from: TabKey, to: TabKey, href: string): void {
   tapFeedback();
-  // Library is the stack root: pop back to it. The other tabs swap in place, so tab hopping
-  // never piles screens onto the stack.
-  if (href === '/') router.navigate('/');
+  // Library is the stack root, and re-tapping your own tab returns to its root: both pop back to
+  // the screen already on the stack. Other tabs swap in place, so hopping never piles screens up.
+  if (href === '/' || from === to) router.dismissTo(href);
   else if (from === 'library') router.push(href);
   else router.replace(href);
 }
@@ -49,7 +49,7 @@ export function FolioTabBar(): ReactNode {
           <Press
             key={tab.key}
             style={styles.tab}
-            onPress={() => (on && tab.key !== 'notes' ? undefined : go(active, tab.href))}
+            onPress={() => (on && tab.key !== 'notes' ? undefined : go(active, tab.key, tab.href))}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             accessibilityLabel={tab.label}

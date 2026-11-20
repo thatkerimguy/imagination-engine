@@ -52,7 +52,7 @@ export function NewPinFlow(p: NewPinFlowProps): ReactNode {
           value={len}
           onChange={setLen}
           accessibilityLabel="PIN length"
-          hug
+          style={{ alignSelf: 'stretch' }}
         />
       ) : null}
       <PinPad

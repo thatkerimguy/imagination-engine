@@ -1,66 +1,46 @@
-// Horizontal word-frequency bars: label left, count right, primary bar on a surfaceContainer track.
+// Word-frequency bars: left-aligned word, right-aligned tabular count, and a thin 8px rounded
+// accent bar on a hairline track underneath.
 import type { ReactNode } from 'react';
-import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
+import { View } from 'react-native';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 
 export interface FrequencyBarChartProps {
   data: readonly { word: string; count: number }[];
-  width: number;
-  barHeight?: number;
 }
 
-const LABEL_W = 96;
-const COUNT_W = 36;
-const GAP = 8;
+const BAR_H = 8;
 
-export function FrequencyBarChart({
-  data,
-  width,
-  barHeight = 20,
-}: FrequencyBarChartProps): ReactNode {
-  const { m3 } = useTheme();
-  const rowH = barHeight + 8;
-  const trackX = LABEL_W + GAP;
-  const trackW = Math.max(0, width - trackX - COUNT_W - GAP);
+export function FrequencyBarChart({ data }: FrequencyBarChartProps): ReactNode {
+  const { colors } = useTheme();
   const max = Math.max(1, ...data.map((d) => d.count));
   return (
-    <Svg
-      width={width}
-      height={Math.max(1, data.length * rowH)}
-      accessibilityLabel="Word frequency chart"
-    >
-      {data.map((d, i) => (
-        <G key={d.word} y={i * rowH}>
-          <SvgText x={0} y={barHeight * 0.72} fontSize={13} fill={m3.onSurface}>
-            {d.word.length > 13 ? `${d.word.slice(0, 12)}…` : d.word}
-          </SvgText>
-          <Rect
-            x={trackX}
-            y={0}
-            width={trackW}
-            height={barHeight}
-            rx={barHeight / 2}
-            fill={m3.surfaceContainerHighest}
-          />
-          <Rect
-            x={trackX}
-            y={0}
-            width={Math.max(barHeight / 2, (d.count / max) * trackW)}
-            height={barHeight}
-            rx={barHeight / 2}
-            fill={m3.primary}
-          />
-          <SvgText
-            x={width}
-            y={barHeight * 0.72}
-            fontSize={13}
-            fill={m3.onSurfaceVariant}
-            textAnchor="end"
+    <View accessibilityLabel="Word frequency chart" style={{ gap: space.sm }}>
+      {data.map((d) => (
+        <View key={d.word} style={{ gap: 5 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
+            <Txt variant="body" numberOfLines={1} style={{ flex: 1 }}>
+              {d.word}
+            </Txt>
+            <Txt variant="meta" color="inkSecondary">
+              {String(d.count)}
+            </Txt>
+          </View>
+          <View
+            style={{ height: BAR_H, borderRadius: BAR_H / 2, backgroundColor: colors.hairline }}
           >
-            {String(d.count)}
-          </SvgText>
-        </G>
+            <View
+              style={{
+                width: `${Math.max(3, (d.count / max) * 100)}%`,
+                height: BAR_H,
+                borderRadius: BAR_H / 2,
+                backgroundColor: colors.accent,
+              }}
+            />
+          </View>
+        </View>
       ))}
-    </Svg>
+    </View>
   );
 }

@@ -1,7 +1,8 @@
 // Novel Settings: details, reading accent and which gimmick modules the book uses.
 import type { NovelManifest, SectionLabel } from '@kn/core';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
+import { View } from 'react-native';
 import { AccentPicker } from '../../../library/AccentPicker.tsx';
 import { ModuleToggleRow } from '../../../library/ModuleToggleRow.tsx';
 import { SECTION_LABELS } from '../../../library/section-labels.ts';
@@ -9,11 +10,12 @@ import { writerModules } from '../../../modules/registry.ts';
 import { useRepoQuery, useRepository } from '../../../store/context.tsx';
 import { ValidationError } from '../../../store/errors.ts';
 import type { NovelRepository } from '../../../store/repository.ts';
-import { Button } from '../../../ui/Button.tsx';
-import { AppText } from '../../../ui/AppText.tsx';
-import { Screen, SectionTitle } from '../../../ui/layout.tsx';
-import { SegmentedButtons, type Segment } from '../../../ui/SegmentedButtons.tsx';
-import { TextField } from '../../../ui/TextField.tsx';
+import { routes } from '../../../routes.ts';
+import { ActionButton } from '../../../ui/ActionButton.tsx';
+import { Field } from '../../../ui/Field.tsx';
+import { ListRow, Page, SectionLabel as Label } from '../../../ui/Page.tsx';
+import { SegmentControl, type SegmentOption } from '../../../ui/SegmentControl.tsx';
+import { Txt } from '../../../ui/Txt.tsx';
 
 /** How many blocks in this novel's chapters use each module id. */
 async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<string, number>> {
@@ -28,7 +30,7 @@ async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<
   return counts;
 }
 
-const SEGMENTS: readonly Segment<SectionLabel>[] = SECTION_LABELS.map((l) => ({
+const OPTIONS: readonly SegmentOption<SectionLabel>[] = SECTION_LABELS.map((l) => ({
   value: l,
   label: l,
 }));
@@ -49,7 +51,7 @@ export default function NovelSettingsScreen(): ReactNode {
     if (data && !draft) setDraft(data.novel);
   }, [data, draft]);
 
-  if (!draft || !data) return <Screen />;
+  if (!draft || !data) return <Page />;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(data.novel);
   const valid = draft.title.trim().length > 0 && draft.author.trim().length > 0;
@@ -94,14 +96,14 @@ export default function NovelSettingsScreen(): ReactNode {
   };
 
   return (
-    <Screen>
+    <Page>
       <Stack.Screen
         options={{
           title: 'Novel settings',
           headerRight: () => (
-            <Button
+            <ActionButton
               label="Save"
-              variant="text"
+              variant="ghost"
               disabled={!dirty || !valid}
               onPress={() => void save()}
               testID="novel-settings-save"
@@ -109,9 +111,9 @@ export default function NovelSettingsScreen(): ReactNode {
           ),
         }}
       />
-      <SectionTitle>Details</SectionTitle>
-      <TextField label="Title" value={draft.title} onChangeText={(title) => edit({ title })} />
-      <TextField
+      <Label>Details</Label>
+      <Field label="Title" value={draft.title} onChangeText={(title) => edit({ title })} serif />
+      <Field
         label="Subtitle"
         value={draft.subtitle ?? ''}
         onChangeText={(t) => {
@@ -121,36 +123,46 @@ export default function NovelSettingsScreen(): ReactNode {
           setDraft(t ? { ...rest, subtitle: t } : rest);
         }}
       />
-      <TextField label="Author" value={draft.author} onChangeText={(author) => edit({ author })} />
-      <SegmentedButtons
-        segments={SEGMENTS}
+      <Field label="Author" value={draft.author} onChangeText={(author) => edit({ author })} />
+      <SegmentControl
+        options={OPTIONS}
         value={draft.sectionLabel}
         onChange={(sectionLabel: SectionLabel) => edit({ sectionLabel })}
         accessibilityLabel="Section name"
         testID="section-label"
       />
-      <SectionTitle>Reading theme</SectionTitle>
+      <Label>Reading theme</Label>
       <AccentPicker value={draft.theme['--accent']} onChange={setAccent} />
-      <SectionTitle>Gimmick modules</SectionTitle>
-      {writerModules.map((m) => (
-        <ModuleToggleRow
-          key={m.meta.id}
-          module={m}
-          enabled={draft.enabledModules.includes(m.meta.id)}
-          usedBy={data.usage.get(m.meta.id) ?? 0}
-          onChange={(on) => toggle(m.meta.id, on)}
-        />
-      ))}
+      <Label>Gimmick modules</Label>
+      <View>
+        {writerModules.map((m) => (
+          <ModuleToggleRow
+            key={m.meta.id}
+            module={m}
+            enabled={draft.enabledModules.includes(m.meta.id)}
+            usedBy={data.usage.get(m.meta.id) ?? 0}
+            onChange={(on) => toggle(m.meta.id, on)}
+          />
+        ))}
+      </View>
+      <Label>Insights</Label>
+      <ListRow
+        icon="trending-up"
+        title="Growth"
+        last
+        testID="novel-growth"
+        onPress={() => router.push(routes.growth(`novel:${novelId}`))}
+      />
       {errors.map((e) => (
-        <AppText key={e} variant="bodyMedium" color="error">
+        <Txt key={e} variant="body" color="danger">
           {e}
-        </AppText>
+        </Txt>
       ))}
       {saved ? (
-        <AppText variant="bodyMedium" color="primary">
+        <Txt variant="body" color="accent">
           Saved
-        </AppText>
+        </Txt>
       ) : null}
-    </Screen>
+    </Page>
   );
 }

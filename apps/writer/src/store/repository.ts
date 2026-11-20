@@ -15,6 +15,7 @@ import { DocumentStore, keys } from './documents.ts';
 import { NotFoundError, ValidationError } from './errors.ts';
 import { newSlugId } from './ids.ts';
 import { prepareChapter } from './sanitize.ts';
+import { chapterWords } from './word-count.ts';
 
 export interface NovelSummary {
   id: string;
@@ -24,6 +25,10 @@ export interface NovelSummary {
   sectionLabel: SectionLabel;
   seasonCount: number;
   chapterCount: number;
+  /** Prose + dialogue words across every chapter. */
+  words: number;
+  /** The novel's `--accent` theme colour, when set. */
+  accent?: string;
   updatedAt: number;
 }
 
@@ -85,10 +90,14 @@ export class NovelRepository {
       const n = stored.data;
       const chapterKeys = await this.docs.keys(keys.chaptersOf(n.id));
       let updatedAt = stored.updatedAt;
+      let words = 0;
       for (const ck of chapterKeys) {
         const c = await this.docs.read<ChapterDocument>(ck);
-        if (c && c.updatedAt > updatedAt) updatedAt = c.updatedAt;
+        if (!c) continue;
+        if (c.updatedAt > updatedAt) updatedAt = c.updatedAt;
+        words += chapterWords(c.data);
       }
+      const accent = n.theme['--accent'];
       out.push({
         id: n.id,
         title: n.title,
@@ -97,6 +106,8 @@ export class NovelRepository {
         sectionLabel: n.sectionLabel,
         seasonCount: n.seasons.length,
         chapterCount: chapterKeys.length,
+        words,
+        ...(accent ? { accent } : {}),
         updatedAt,
       });
     }

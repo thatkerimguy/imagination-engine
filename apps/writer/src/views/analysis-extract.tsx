@@ -1,12 +1,13 @@
 // Extract tab: emails, links, hashtags, phones, quotes and long sentences found in the text.
 // Tap copies via navigator.clipboard where it exists; elsewhere the text is selectable.
 import { useMemo, useState, type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import type { Block } from '@kn/core';
 import { extractInfo, type ExtractedInfo } from '../analysis/static.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Card, Muted, SectionTitle } from '../ui/layout.tsx';
-import { space } from '../ui/m3-tokens.ts';
+import { Press } from '../ui/Press.tsx';
+import { Divider, SectionLabel } from '../ui/Page.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
 
 const SECTIONS: readonly { key: keyof ExtractedInfo; title: string }[] = [
   { key: 'emails', title: 'Emails' },
@@ -34,30 +35,36 @@ export function AnalysisExtract({ blocks }: { blocks: readonly Block[] }): React
   const info = useMemo(() => extractInfo(blocks), [blocks]);
   const [copied, setCopied] = useState<string | null>(null);
   const shown = SECTIONS.filter((s) => info[s.key].length > 0);
-  if (shown.length === 0) return <Muted>Nothing to extract yet.</Muted>;
+  if (shown.length === 0)
+    return (
+      <Txt variant="body" color="inkMuted">
+        Nothing to extract yet.
+      </Txt>
+    );
   return (
-    <View style={{ gap: space.sm }} testID="analysis-extract">
+    <View testID="analysis-extract">
       {shown.map((s) => (
         <View key={s.key}>
-          <SectionTitle>{`${s.title} (${info[s.key].length})`}</SectionTitle>
-          <Card>
-            {info[s.key].map((item) => (
-              <Pressable
-                key={item}
+          <SectionLabel>{`${s.title} · ${info[s.key].length}`}</SectionLabel>
+          {info[s.key].map((item, i) => (
+            <View key={item}>
+              {i > 0 ? <Divider /> : null}
+              <Press
                 accessibilityLabel={`Copy ${item}`}
                 onPress={() => void copy(item).then((ok) => setCopied(ok ? item : null))}
+                style={{ minHeight: 44, justifyContent: 'center', paddingVertical: space.xs }}
               >
-                <AppText variant="bodyMedium" selectable>
+                <Txt variant="body" selectable>
                   {item}
-                </AppText>
+                </Txt>
                 {copied === item ? (
-                  <AppText variant="labelSmall" color="primary">
+                  <Txt variant="caption" color="accent">
                     Copied
-                  </AppText>
+                  </Txt>
                 ) : null}
-              </Pressable>
-            ))}
-          </Card>
+              </Press>
+            </View>
+          ))}
         </View>
       ))}
     </View>

@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { WriterModule } from '../modules/registry.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Card, IconBadge } from '../ui/layout.tsx';
-import { space } from '../ui/m3-tokens.ts';
-import { Switch } from '../ui/Switch.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
+import { useTheme } from '../ui/theme.tsx';
 
+/** One hairline settings row per gimmick module: name, description, Folio toggle. */
 export function ModuleToggleRow({
   module: m,
   enabled,
@@ -17,20 +18,17 @@ export function ModuleToggleRow({
   usedBy: number;
   onChange(on: boolean): void;
 }): ReactNode {
+  const { colors } = useTheme();
   return (
-    <Card>
+    <View style={[styles.row, { borderColor: colors.hairline }]}>
       <View style={styles.head}>
-        <IconBadge glyph={m.meta.icon} />
         <View style={styles.text}>
-          <AppText variant="titleMedium">{m.meta.name}</AppText>
-          <AppText variant="bodySmall" color="onSurfaceVariant">
+          <Txt variant="body">{m.meta.name}</Txt>
+          <Txt variant="meta" color="inkSecondary">
             {m.meta.description}
-          </AppText>
-          <AppText variant="labelSmall" color="onSurfaceVariant">
-            {m.meta.layer.toUpperCase()}
-          </AppText>
+          </Txt>
         </View>
-        <Switch
+        <Toggle
           value={enabled}
           onValueChange={onChange}
           accessibilityLabel={`Enable ${m.meta.name}`}
@@ -38,16 +36,17 @@ export function ModuleToggleRow({
         />
       </View>
       {!enabled && usedBy > 0 ? (
-        <AppText variant="bodySmall" color="error" testID={`module-warning-${m.meta.id}`}>
+        <Txt variant="caption" color="danger" testID={`module-warning-${m.meta.id}`}>
           Used by {usedBy} {usedBy === 1 ? 'block' : 'blocks'} — they stay in your chapters but the
           reader skips them
-        </AppText>
+        </Txt>
       ) : null}
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  row: { borderBottomWidth: 1, paddingVertical: space.sm, gap: space.xxs, minHeight: 56 },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   text: { flex: 1, gap: 2 },
 });

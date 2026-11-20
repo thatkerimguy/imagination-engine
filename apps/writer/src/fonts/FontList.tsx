@@ -1,17 +1,30 @@
-// Font family picker rows (each rendered in its own typeface) plus custom-font import/delete.
+// Grouped font picker: one row per typeface family, each rendered in its own face (`Aa  Lora`),
+// plus custom-font import/delete. The active row gets an accent rail and an accent name.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useRepository } from '../store/context.tsx';
 import { loadCustomFonts, type CustomFont } from '../store/writer-prefs.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Button } from '../ui/Button.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { Muted } from '../ui/layout.tsx';
-import { FONT_PRESETS, DEFAULT_FONT_ID } from './catalog.ts';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { Divider } from '../ui/Page.tsx';
+import { Press } from '../ui/Press.tsx';
+import { space } from '../ui/tokens.ts';
+import { Txt } from '../ui/Txt.tsx';
+import { useTheme } from '../ui/theme.tsx';
+import {
+  DEFAULT_FONT_ID,
+  familyIdOf,
+  familyLabel,
+  FONT_FAMILIES,
+  type FontCategory,
+} from './catalog.ts';
 import { deleteCustomFont, importCustomFont, useFontFamily } from './loader';
 
-const SAMPLE = 'The quick brown fox jumps over the lazy dog';
+const GROUPS: readonly { category: FontCategory; title: string }[] = [
+  { category: 'serif', title: 'Serif' },
+  { category: 'sans', title: 'Sans' },
+  { category: 'mono', title: 'Mono' },
+];
 
 function FontRow(p: {
   id: string;
@@ -20,28 +33,53 @@ function FontRow(p: {
   onSelect(): void;
   onDelete?(): void;
 }): ReactNode {
+  const { colors } = useTheme();
   const family = useFontFamily(p.id);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Pressable
+      <Press
         testID={`font-${p.id}`}
         accessibilityRole="radio"
-        accessibilityState={{ selected: p.selected }}
+        accessibilityState={{ selected: p.selected, checked: p.selected }}
         accessibilityLabel={p.label}
         onPress={p.onSelect}
-        style={{ flex: 1, minHeight: 56, paddingVertical: 8, flexDirection: 'row', gap: 12 }}
+        style={{
+          flex: 1,
+          minHeight: 48,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space.md,
+          paddingLeft: space.sm,
+        }}
       >
-        <View style={{ flex: 1 }}>
-          <AppText variant="labelLarge">{p.label}</AppText>
-          <AppText variant="bodyLarge" numberOfLines={1} style={{ fontFamily: family }}>
-            {SAMPLE}
-          </AppText>
-        </View>
-        {p.selected ? <Icon name="check" color="primary" /> : null}
-      </Pressable>
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 10,
+            bottom: 10,
+            width: 3,
+            borderRadius: 2,
+            backgroundColor: p.selected ? colors.accent : 'transparent',
+          }}
+        />
+        <Txt
+          color={p.selected ? 'accent' : 'inkSecondary'}
+          style={{ fontFamily: family, fontSize: 20, lineHeight: 26, width: 34 }}
+        >
+          Aa
+        </Txt>
+        <Txt
+          numberOfLines={1}
+          color={p.selected ? 'accent' : 'ink'}
+          style={{ flex: 1, fontFamily: family, fontSize: 17, lineHeight: 24 }}
+        >
+          {p.label}
+        </Txt>
+      </Press>
       {p.onDelete ? (
-        <IconButton
-          icon="delete-outline"
+        <IconBtn
+          icon="trash-2"
           accessibilityLabel={`Delete ${p.label}`}
           testID={`delete-${p.id}`}
           onPress={p.onDelete}
@@ -74,41 +112,70 @@ export function FontList(p: { fontId: string; onSelect(id: string): void }): Rea
     if (p.fontId === id) p.onSelect(DEFAULT_FONT_ID);
     refresh();
   };
+  const active = familyIdOf(p.fontId);
+  // A legacy stack (e.g. Rounded) that is no longer a picker row stays visible while selected.
+  const legacy =
+    FONT_FAMILIES.some((f) => f.id === active) || custom.some((f) => f.id === p.fontId)
+      ? null
+      : active;
+  const row = (id: string, label: string): ReactNode => (
+    <FontRow
+      key={id}
+      id={id}
+      label={label}
+      selected={active === id}
+      onSelect={() => p.onSelect(id)}
+    />
+  );
   return (
     <View>
-      {FONT_PRESETS.map((f) => (
-        <FontRow
-          key={f.id}
-          id={f.id}
-          label={f.label}
-          selected={p.fontId === f.id}
-          onSelect={() => p.onSelect(f.id)}
-        />
+      {GROUPS.map((g, gi) => (
+        <View key={g.category}>
+          {gi > 0 ? <Divider /> : null}
+          <Txt variant="overline" color="inkMuted" style={{ paddingTop: space.sm }}>
+            {g.title}
+          </Txt>
+          {FONT_FAMILIES.filter((f) => f.category === g.category).map((f) => row(f.id, f.label))}
+          {g.category === 'sans' && legacy ? row(legacy, familyLabel(legacy)) : null}
+        </View>
       ))}
-      {custom.map((f) => (
-        <FontRow
-          key={f.id}
-          id={f.id}
-          label={f.displayName}
-          selected={p.fontId === f.id}
-          onSelect={() => p.onSelect(f.id)}
-          onDelete={() => void remove(f.id)}
+      {custom.length > 0 ? (
+        <View>
+          <Divider />
+          <Txt variant="overline" color="inkMuted" style={{ paddingTop: space.sm }}>
+            Imported
+          </Txt>
+          {custom.map((f) => (
+            <FontRow
+              key={f.id}
+              id={f.id}
+              label={f.displayName}
+              selected={p.fontId === f.id}
+              onSelect={() => p.onSelect(f.id)}
+              onDelete={() => void remove(f.id)}
+            />
+          ))}
+        </View>
+      ) : null}
+      <View style={{ paddingTop: space.md, gap: space.xs }}>
+        <ActionButton
+          variant="secondary"
+          icon="plus"
+          label="Import font"
+          accessibilityLabel="Import .ttf / .otf font"
+          testID="import-font"
+          onPress={() => void doImport()}
         />
-      ))}
-      <Button
-        variant="tonal"
-        icon="add"
-        label="Import .ttf / .otf font"
-        testID="import-font"
-        onPress={() => void doImport()}
-      />
-      {error ? (
-        <AppText variant="bodyMedium" color="error" testID="import-font-error">
-          {error}
-        </AppText>
-      ) : (
-        <Muted>Imported fonts stay on this device.</Muted>
-      )}
+        {error ? (
+          <Txt variant="meta" color="danger" testID="import-font-error">
+            {error}
+          </Txt>
+        ) : (
+          <Txt variant="caption" color="inkMuted">
+            .ttf or .otf. Imported fonts stay on this device.
+          </Txt>
+        )}
+      </View>
     </View>
   );
 }

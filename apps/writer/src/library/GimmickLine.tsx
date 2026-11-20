@@ -1,14 +1,9 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
 import { enabledWriterModules } from '../modules/registry.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { IconBadge } from '../ui/layout.tsx';
-import { space } from '../ui/m3-tokens.ts';
-import { StatePressable } from '../ui/StateLayer.tsx';
-import { useTheme } from '../ui/theme.tsx';
+import { Press } from '../ui/Press.tsx';
+import { Txt } from '../ui/Txt.tsx';
 
-/** Subtle "Gimmicks" row of enabled module badges; tapping opens novel settings. */
+/** Inline muted summary of enabled modules (`Ambience · 3D Dice`); tapping opens novel settings. */
 export function GimmickLine({
   enabled,
   onPress,
@@ -16,42 +11,18 @@ export function GimmickLine({
   enabled: readonly string[];
   onPress(): void;
 }): ReactNode {
-  const { m3 } = useTheme();
-  const mods = enabledWriterModules(enabled);
+  const names = enabledWriterModules(enabled).map((m) => m.meta.name);
   return (
-    <StatePressable
+    <Press
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Gimmick modules"
       testID="outline-gimmicks"
-      layerColor={m3.onSurface}
-      style={styles.row}
+      style={{ minHeight: 44, justifyContent: 'center' }}
     >
-      <AppText variant="labelLarge" color="onSurfaceVariant">
-        Gimmicks
-      </AppText>
-      <View style={styles.badges}>
-        {mods.length ? (
-          mods.map((m) => <IconBadge key={m.meta.id} glyph={m.meta.icon} size={32} />)
-        ) : (
-          <AppText variant="bodySmall" color="onSurfaceVariant">
-            none yet
-          </AppText>
-        )}
-      </View>
-      <Icon name="chevron-right" size={24} color="onSurfaceVariant" />
-    </StatePressable>
+      <Txt variant="meta" color="inkMuted" numberOfLines={2}>
+        {names.length ? names.join(' · ') : 'No gimmicks yet'}
+      </Txt>
+    </Press>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: 48,
-    paddingHorizontal: space.sm,
-    borderRadius: 12,
-  },
-  badges: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-});

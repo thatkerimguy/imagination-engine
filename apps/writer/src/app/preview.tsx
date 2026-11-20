@@ -7,13 +7,13 @@ import type { PreviewFrameHandle } from '../preview/frame-types.ts';
 import { PREVIEW_TIERS, type PreviewTier, type ReaderMessage } from '../preview/protocol.ts';
 import { usePreviewPayload } from '../preview/use-preview-payload.ts';
 import { routes } from '../routes.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Button } from '../ui/Button.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { EmptyState, Row } from '../ui/layout.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { SegmentedButtons, type Segment } from '../ui/SegmentedButtons.tsx';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { Glyph } from '../ui/Glyph.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { EmptyState } from '../ui/Page.tsx';
+import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
+import { radius, space } from '../ui/tokens.ts';
+import { Txt } from '../ui/Txt.tsx';
 import { makeStyles, useTheme } from '../ui/theme.tsx';
 
 type Status = 'connecting' | 'live' | 'unreachable' | 'rejected';
@@ -24,32 +24,28 @@ const TIER_LABEL: Record<PreviewTier, string> = {
   lite: 'Lite',
   reduced: 'Reduced',
 };
-const TIER_SEGMENTS: readonly Segment<PreviewTier>[] = PREVIEW_TIERS.map((t) => ({
+const TIER_SEGMENTS: readonly SegmentOption<PreviewTier>[] = PREVIEW_TIERS.map((t) => ({
   value: t,
   label: TIER_LABEL[t],
+  testID: `preview-tier-${t}`,
 }));
 
 const useStyles = makeStyles((t) => ({
-  screen: { flex: 1, backgroundColor: t.m3.surface },
-  toolbar: {
-    paddingHorizontal: space.lg,
-    paddingBottom: space.sm,
-    gap: space.sm,
-    borderBottomWidth: 1,
-    borderColor: t.m3.outlineVariant,
-  },
-  note: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  headerRight: { paddingRight: space.xs },
+  screen: { flex: 1, backgroundColor: t.colors.canvas },
+  toolbar: { paddingHorizontal: space.gutter, paddingBottom: space.sm, gap: space.xs },
+  note: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   banner: {
-    margin: space.lg,
-    padding: space.lg,
+    marginHorizontal: space.gutter,
+    marginBottom: space.sm,
+    padding: space.md,
     gap: space.sm,
-    borderRadius: shape.large,
-    backgroundColor: t.m3.errorContainer,
+    borderRadius: radius.md,
+    backgroundColor: t.colors.dangerSoft,
   },
   bannerHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   bannerTitle: { flex: 1 },
+  actions: { flexDirection: 'row', gap: space.xs },
 }));
 
 export default function PreviewScreen(): ReactNode {
@@ -61,7 +57,7 @@ export default function PreviewScreen(): ReactNode {
   }>();
   const { data, loading } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
   const styles = useStyles();
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const frame = useRef<PreviewFrameHandle>(null);
   const [tier, setTier] = useState<PreviewTier>('auto');
   const [session, setSession] = useState(0);
@@ -106,14 +102,12 @@ export default function PreviewScreen(): ReactNode {
     <Stack.Screen
       options={{
         headerRight: () => (
-          <View style={styles.headerRight}>
-            <IconButton
-              icon="refresh"
-              accessibilityLabel="Restart preview"
-              testID="preview-restart"
-              onPress={restart}
-            />
-          </View>
+          <IconBtn
+            icon="refresh-cw"
+            accessibilityLabel="Restart preview"
+            testID="preview-restart"
+            onPress={restart}
+          />
         ),
       }}
     />
@@ -133,8 +127,8 @@ export default function PreviewScreen(): ReactNode {
     <View style={styles.screen} testID="preview-screen">
       {header}
       <View style={styles.toolbar}>
-        <SegmentedButtons
-          segments={TIER_SEGMENTS}
+        <SegmentControl<PreviewTier>
+          options={TIER_SEGMENTS}
           value={tier}
           onChange={pickTier}
           accessibilityLabel="Quality tier"
@@ -144,40 +138,45 @@ export default function PreviewScreen(): ReactNode {
           <View
             style={[
               styles.dot,
-              { backgroundColor: status === 'live' ? m3.primary : m3.outline },
+              { backgroundColor: status === 'live' ? colors.success : colors.inkMuted },
             ]}
           />
-          <AppText variant="labelSmall" color="onSurfaceVariant">
-            {status === 'live' ? 'Live' : status === 'connecting' ? 'Connecting…' : 'Not connected'}
-            {fromLiveDraft ? ' · showing your unsaved draft' : ' · showing the saved chapter'}
-          </AppText>
+          <Txt variant="caption" color="inkMuted">
+            {status === 'live'
+              ? fromLiveDraft
+                ? 'Live draft'
+                : 'Saved chapter'
+              : status === 'connecting'
+                ? 'Connecting…'
+                : 'Not connected'}
+          </Txt>
         </View>
       </View>
       {status === 'unreachable' || status === 'rejected' || !url ? (
         <View style={styles.banner} accessibilityRole="alert">
           <View style={styles.bannerHead}>
-            <Icon name="cloud-off" color="onErrorContainer" />
-            <AppText variant="titleMedium" color="onErrorContainer" style={styles.bannerTitle}>
+            <Glyph name="cloud-off" color="danger" />
+            <Txt variant="bodyStrong" color="danger" style={styles.bannerTitle}>
               {!url
                 ? 'The reader URL is not valid'
                 : status === 'rejected'
                   ? 'The reader rejected this draft'
                   : 'Reader preview unreachable'}
-            </AppText>
+            </Txt>
           </View>
-          <AppText variant="bodyMedium" color="onErrorContainer">
+          <Txt variant="meta" color="ink">
             {status === 'rejected'
               ? detail
               : `Tried ${readerUrl}. Start the reader (pnpm dev) or point the writer at a reachable reader URL. ${detail}`}
-          </AppText>
-          <Row>
-            <Button variant="tonal" label="Retry" onPress={restart} />
-            <Button
-              variant="text"
+          </Txt>
+          <View style={styles.actions}>
+            <ActionButton variant="secondary" label="Retry" onPress={restart} />
+            <ActionButton
+              variant="ghost"
               label="Change reader URL"
               onPress={() => router.push(routes.appSettings)}
             />
-          </Row>
+          </View>
         </View>
       ) : null}
       {url ? (

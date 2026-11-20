@@ -1,4 +1,4 @@
-// Bookshelf: every novel on this phone, plus new / demo / settings entry points.
+// Library: every novel on this phone as a literary shelf, plus new / settings entry points.
 import { router, Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -7,19 +7,16 @@ import { NovelCard } from '../library/NovelCard.tsx';
 import { routes } from '../routes.ts';
 import { DEMO_NOVEL_ID, loadDemoNovel } from '../store/demo.ts';
 import { useRepoQuery, useRepository } from '../store/context.tsx';
-import { AppText } from '../ui/AppText.tsx';
-import { Button } from '../ui/Button.tsx';
+import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
-import { Fab } from '../ui/Fab.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { EmptyState, Screen } from '../ui/layout.tsx';
-import { OverflowMenu } from '../ui/OverflowMenu.tsx';
-import { useTheme } from '../ui/theme.tsx';
+import { IconBtn } from '../ui/IconBtn.tsx';
+import { EmptyState, Page } from '../ui/Page.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
 
-export default function BookshelfScreen(): ReactNode {
+export default function LibraryScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
-  const { m3 } = useTheme();
   const { data: novels, error } = useRepoQuery('shelf', (r) => r.listNovels());
 
   const remove = async (id: string, title: string): Promise<void> => {
@@ -55,72 +52,66 @@ export default function BookshelfScreen(): ReactNode {
 
   const empty = novels?.length === 0;
   return (
-    <View style={{ flex: 1, backgroundColor: m3.surface }}>
+    <Page>
       <Stack.Screen
         options={{
-          title: 'Bookshelf',
+          title: '',
           headerRight: () => (
-            <>
-              <IconButton
+            <View style={{ flexDirection: 'row' }}>
+              <IconBtn
+                icon="plus"
+                accessibilityLabel="New novel"
+                onPress={() => router.push(routes.newNovel)}
+                testID="new-novel"
+              />
+              <IconBtn
                 icon="settings"
                 accessibilityLabel="Settings"
                 onPress={() => router.push(routes.appSettings)}
-                testID="app-settings"
+                testID="open-settings"
               />
-              {empty ? null : (
-                <OverflowMenu
-                  accessibilityLabel="More options"
-                  items={[
-                    {
-                      label: 'Load demo novel',
-                      icon: 'auto-stories',
-                      onPress: () => void loadDemo(),
-                      testID: 'load-demo',
-                    },
-                  ]}
-                />
-              )}
-            </>
+            </View>
           ),
         }}
       />
-      <Screen>
-        {error ? (
-          <AppText variant="bodyMedium" color="error">
-            Could not load your books.
-          </AppText>
-        ) : null}
-        {empty ? (
-          <EmptyState
-            icon="menu-book"
-            title="No novels yet"
-            body="Start a new one, or load the demo to look around."
-            action={
-              <Button
-                label="Load demo novel (Chrome Tide)"
-                variant="tonal"
+      <Txt variant="display" accessibilityRole="header" style={{ paddingTop: space.xs }}>
+        Library
+      </Txt>
+      {error ? (
+        <Txt variant="body" color="danger">
+          Could not load your books.
+        </Txt>
+      ) : null}
+      {empty ? (
+        <EmptyState
+          icon="book-open"
+          title="No novels yet"
+          body="Start a new one, or load the demo to look around."
+          action={
+            <View style={{ gap: space.xs, alignItems: 'center', paddingTop: space.sm }}>
+              <ActionButton label="Create a novel" onPress={() => router.push(routes.newNovel)} />
+              <ActionButton
+                variant="secondary"
+                label="Load Chrome Tide demo"
                 onPress={() => void loadDemo()}
                 testID="load-demo"
               />
-            }
-          />
-        ) : null}
+            </View>
+          }
+        />
+      ) : null}
+      <View>
         {novels?.map((n) => (
           <NovelCard
             key={n.id}
             novel={n}
             onOpen={() => router.push(routes.outline(n.id))}
             onExport={() => void exportNovel(n.id)}
+            onSettings={() => router.push(routes.novelSettings(n.id))}
             onDelete={() => void remove(n.id, n.title)}
           />
         ))}
-      </Screen>
-      <Fab
-        label="New novel"
-        icon="add"
-        onPress={() => router.push(routes.newNovel)}
-        testID="new-novel"
-      />
-    </View>
+      </View>
+    </Page>
   );
 }

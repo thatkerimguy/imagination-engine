@@ -1,50 +1,67 @@
-// Presentational pieces of the Appearance screen: prose preview, theme swatch, value stepper.
+// Presentational pieces of the Appearance screen: the live paper preview and theme swatches.
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { AppText } from '../ui/AppText.tsx';
-import { Icon } from '../ui/Icon.tsx';
-import { IconButton } from '../ui/IconButton.tsx';
-import { Card } from '../ui/layout.tsx';
+import { lift, radius, space } from '../ui/tokens.ts';
+import { Txt } from '../ui/Txt.tsx';
 import { useTheme, useWriterPrefs } from '../ui/theme.tsx';
 import type { ThemeDef } from '../ui/themes.ts';
+import { serif } from '../ui/type.ts';
 import { MARGIN_DP } from '../ui/typography.ts';
 import { useFontFamily } from './loader';
 
-const SAMPLE_PROSE = [
-  'The lantern guttered as Mara stepped onto the pier, and the whole harbour seemed to hold its breath.',
-  '"You came," said the voice from the fog. "I did not think you would."',
-];
+const TITLE = 'Chapter One';
+const PROSE =
+  'The lantern guttered as Mara stepped onto the pier, and the whole harbour seemed to hold its breath.';
+const DIALOGUE = '“You came,” said the voice from the fog. “I did not think you would.”';
 
-export function Preview(): ReactNode {
+/** A miniature manuscript page in the active theme, font, size, spacing, margins and indent. */
+export function PaperPreview(): ReactNode {
   const [p] = useWriterPrefs();
   const family = useFontFamily(p.fontId);
-  const { m3 } = useTheme();
+  const { colors, dark } = useTheme();
+  const lineHeight = Math.round(p.fontSize * p.lineHeight);
+  const indent = p.firstLineIndent ? '  ' : '';
+  const body = {
+    fontFamily: family,
+    fontSize: p.fontSize,
+    lineHeight,
+    textAlign: p.defaultAlign,
+    color: colors.ink,
+  } as const;
   return (
-    <Card variant="outlined">
-      <View
-        testID="appearance-preview"
-        style={{ paddingHorizontal: MARGIN_DP[p.marginPreset], paddingVertical: 8 }}
+    <View
+      testID="appearance-preview"
+      style={[
+        {
+          backgroundColor: colors.canvas,
+          borderColor: colors.hairline,
+          borderWidth: 1,
+          borderRadius: radius.md,
+          paddingHorizontal: MARGIN_DP[p.marginPreset] + space.xs,
+          paddingVertical: space.lg,
+          gap: Math.round(p.fontSize * 0.5),
+        },
+        lift(dark),
+      ]}
+    >
+      <Txt
+        style={{
+          ...body,
+          fontSize: Math.round(p.fontSize * 1.3),
+          lineHeight: Math.round(p.fontSize * 1.3 * 1.25),
+          fontWeight: '600',
+          textAlign: p.defaultAlign,
+        }}
       >
-        {SAMPLE_PROSE.map((t, i) => (
-          <AppText
-            key={t}
-            style={{
-              fontFamily: family,
-              fontSize: p.fontSize,
-              lineHeight: Math.round(p.fontSize * p.lineHeight),
-              textAlign: p.defaultAlign,
-              color: m3.onSurface,
-              marginTop: i ? 8 : 0,
-            }}
-          >
-            {p.firstLineIndent ? `\u2003\u2003${t}` : t}
-          </AppText>
-        ))}
-      </View>
-    </Card>
+        {TITLE}
+      </Txt>
+      <Txt style={body}>{`${indent}${PROSE}`}</Txt>
+      <Txt style={body}>{`${indent}${DIALOGUE}`}</Txt>
+    </View>
   );
 }
 
+/** A tiny book page in the swatch theme's colours: canvas, serif "Aa" in its ink, accent bar. */
 export function Swatch({
   t,
   selected,
@@ -54,75 +71,51 @@ export function Swatch({
   selected: boolean;
   onPress(): void;
 }): ReactNode {
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   return (
     <Pressable
       testID={`theme-${t.id}`}
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, checked: selected }}
       accessibilityLabel={t.label}
       onPress={onPress}
-      style={{
-        width: '47%',
-        padding: 10,
-        borderRadius: 12,
-        backgroundColor: t.m3.surface,
-        borderWidth: selected ? 2 : 1,
-        borderColor: selected ? m3.primary : m3.outlineVariant,
-      }}
+      style={{ width: '31%', gap: 6 }}
     >
-      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+      <View
+        style={{
+          padding: 2,
+          borderRadius: radius.sm + 2,
+          borderWidth: 2,
+          borderColor: selected ? colors.accent : 'transparent',
+        }}
+      >
         <View
-          style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: t.m3.primary }}
-        />
-        <View
-          style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: t.m3.tertiary }}
-        />
-        <View style={{ flex: 1 }} />
-        {selected ? <Icon name="check" size={18} color="primary" /> : null}
+          style={{
+            height: 72,
+            borderRadius: radius.sm,
+            backgroundColor: t.colors.canvas,
+            borderWidth: 1,
+            borderColor: t.colors.borderStrong,
+            justifyContent: 'space-between',
+            padding: space.sm,
+          }}
+        >
+          <Txt style={{ fontFamily: serif, fontSize: 24, lineHeight: 28, color: t.colors.ink }}>
+            Aa
+          </Txt>
+          <View
+            style={{ width: 22, height: 3, borderRadius: 2, backgroundColor: t.colors.accent }}
+          />
+        </View>
       </View>
-      <AppText
-        variant="labelMedium"
+      <Txt
+        variant="caption"
         numberOfLines={1}
-        style={{ color: t.m3.onSurface, marginTop: 6 }}
+        color={selected ? 'ink' : 'inkSecondary'}
+        style={{ textAlign: 'center', fontWeight: selected ? '600' : '400' }}
       >
         {t.label}
-      </AppText>
+      </Txt>
     </Pressable>
-  );
-}
-
-export function Stepper(p: {
-  label: string;
-  value: string;
-  onDec(): void;
-  onInc(): void;
-  testID: string;
-}): ReactNode {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <AppText variant="bodyLarge">{p.label}</AppText>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <IconButton
-          icon="remove"
-          accessibilityLabel={`Decrease ${p.label}`}
-          testID={`${p.testID}-dec`}
-          onPress={p.onDec}
-        />
-        <AppText
-          variant="titleMedium"
-          testID={`${p.testID}-value`}
-          style={{ minWidth: 44, textAlign: 'center' }}
-        >
-          {p.value}
-        </AppText>
-        <IconButton
-          icon="add"
-          accessibilityLabel={`Increase ${p.label}`}
-          testID={`${p.testID}-inc`}
-          onPress={p.onInc}
-        />
-      </View>
-    </View>
   );
 }

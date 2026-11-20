@@ -3,7 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, View, type GestureResponderEvent } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import type { GrowthPoint } from '../store/growth-store.ts';
-import { AppText } from '../ui/AppText.tsx';
+import { Txt } from '../ui/Txt.tsx';
 import { useTheme } from '../ui/theme.tsx';
 import { monotonePath, type Pt } from './chart-path.ts';
 
@@ -21,10 +21,10 @@ export interface GrowthAreaChartProps {
 const PAD = 12;
 
 export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const { points, metric, width, onInspect } = p;
   const height = p.height ?? 120;
-  const color = p.color ?? m3.primary;
+  const color = p.color ?? colors.accent;
   const [active, setActive] = useState<number | null>(null);
   const gid = `grad-${metric}`;
 
@@ -66,14 +66,14 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
             x2={width - PAD}
             y1={height / 2}
             y2={height / 2}
-            stroke={m3.outlineVariant}
+            stroke={colors.hairline}
             strokeWidth={2}
           />
           {pts[0] ? <Circle cx={pts[0].x} cy={pts[0].y} r={5} fill={color} /> : null}
         </Svg>
-        <AppText variant="labelSmall" color="onSurfaceVariant" style={{ textAlign: 'center' }}>
+        <Txt variant="caption" color="inkMuted" style={{ textAlign: 'center' }}>
           Not enough history yet
-        </AppText>
+        </Txt>
       </View>
     );
   }
@@ -94,20 +94,27 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
       <Svg width={width} height={height}>
         <Defs>
           <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity={0.35} />
-            <Stop offset="1" stopColor={color} stopOpacity={0.02} />
+            <Stop offset="0" stopColor={color} stopOpacity={0.28} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
           </LinearGradient>
         </Defs>
+        {[0, 1, 2].map((i) => {
+          const y = PAD + ((height - PAD * 2) * i) / 2;
+          return (
+            <Line
+              key={i}
+              x1={0}
+              x2={width}
+              y1={y}
+              y2={y}
+              stroke={colors.hairline}
+              strokeWidth={1}
+              opacity={0.6}
+            />
+          );
+        })}
         <Path d={area} fill={`url(#${gid})`} />
-        <Path d={line} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" />
-        <Line
-          x1={PAD}
-          x2={width - PAD}
-          y1={height - PAD}
-          y2={height - PAD}
-          stroke={m3.outlineVariant}
-          strokeWidth={1}
-        />
+        <Path d={line} stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" />
         {sel ? (
           <>
             <Line
@@ -115,7 +122,7 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
               x2={sel.x}
               y1={PAD}
               y2={height - PAD}
-              stroke={m3.outline}
+              stroke={colors.borderStrong}
               strokeWidth={1}
               strokeDasharray="3 3"
             />
@@ -124,7 +131,7 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
               cy={sel.y}
               r={6}
               fill={color}
-              stroke={m3.surfaceContainer}
+              stroke={colors.canvas}
               strokeWidth={2}
             />
           </>

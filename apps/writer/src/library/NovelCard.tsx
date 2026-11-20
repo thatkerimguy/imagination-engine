@@ -1,80 +1,95 @@
+// A novel as a literary book row on the shelf: cover, serif title, italic subtitle, quiet meta.
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { BookCoverThumb } from '../components/BookCoverThumb.tsx';
 import type { NovelSummary } from '../store/repository.ts';
-import { AppText } from '../ui/AppText.tsx';
-import { Card, IconBadge } from '../ui/layout.tsx';
-import { space } from '../ui/m3-tokens.ts';
-import { OverflowMenu, type MenuItem } from '../ui/OverflowMenu.tsx';
-import { StatePressable } from '../ui/StateLayer.tsx';
+import { Press } from '../ui/Press.tsx';
+import { PopoverMenu, type MenuItem } from '../ui/PopoverMenu.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 import { countLabel, relativeTime } from './relative-time.ts';
+
+const sentence = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function NovelCard({
   novel,
   onOpen,
   onExport,
+  onSettings,
   onDelete,
 }: {
   novel: NovelSummary;
   onOpen(): void;
   onExport(): void;
+  onSettings(): void;
   onDelete(): void;
 }): ReactNode {
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const items: MenuItem[] = [
     {
       label: 'Export JSON',
-      icon: 'ios-share',
+      icon: 'share',
       onPress: onExport,
       testID: `novel-export-${novel.id}`,
     },
     {
+      label: 'Novel settings',
+      icon: 'settings',
+      onPress: onSettings,
+      testID: `novel-settings-${novel.id}`,
+    },
+    {
       label: 'Delete',
-      icon: 'delete',
+      icon: 'trash-2',
       destructive: true,
       onPress: onDelete,
       testID: `novel-delete-${novel.id}`,
     },
   ];
+  const meta = [
+    countLabel(novel.seasonCount, novel.sectionLabel),
+    countLabel(novel.chapterCount, 'chapter'),
+    `${novel.words.toLocaleString('en-US')} words`,
+    sentence(relativeTime(novel.updatedAt)),
+  ].join(' · ');
   return (
-    <Card style={styles.card}>
-      <StatePressable
+    <View style={[styles.row, { borderColor: colors.hairline }]}>
+      <Press
         onPress={onOpen}
         accessibilityRole="button"
         accessibilityLabel={`Open ${novel.title}`}
         testID={`novel-card-${novel.id}`}
-        layerColor={m3.onSurface}
         style={styles.body}
       >
-        <IconBadge glyph={(novel.title.trim()[0] ?? '?').toUpperCase()} tone="primary" />
+        <BookCoverThumb title={novel.title} {...(novel.accent ? { accent: novel.accent } : {})} />
         <View style={styles.text}>
-          <AppText variant="titleLarge">{novel.title}</AppText>
+          <Txt variant="heading" style={styles.title} numberOfLines={2}>
+            {novel.title}
+          </Txt>
           {novel.subtitle ? (
-            <AppText variant="bodyMedium" style={styles.italic}>
+            <Txt variant="body" color="inkSecondary" style={styles.italic} numberOfLines={1}>
               {novel.subtitle}
-            </AppText>
+            </Txt>
           ) : null}
-          <AppText variant="labelMedium" color="onSurfaceVariant">
-            {novel.author} · {countLabel(novel.seasonCount, novel.sectionLabel)} ·{' '}
-            {countLabel(novel.chapterCount, 'chapter')} · edited {relativeTime(novel.updatedAt)}
-          </AppText>
+          <Txt variant="meta" color="inkMuted" numberOfLines={1}>
+            {meta}
+          </Txt>
         </View>
-      </StatePressable>
-      <View style={styles.menu}>
-        <OverflowMenu
-          items={items}
-          accessibilityLabel={`${novel.title} options`}
-          testID={`novel-menu-${novel.id}`}
-        />
-      </View>
-    </Card>
+      </Press>
+      <PopoverMenu
+        items={items}
+        accessibilityLabel={`${novel.title} options`}
+        testID={`novel-menu-${novel.id}`}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 0, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden' },
-  body: { flex: 1, flexDirection: 'row', gap: space.md, padding: space.lg },
-  text: { flex: 1, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1 },
+  body: { flex: 1, flexDirection: 'row', gap: space.md, paddingVertical: space.md },
+  text: { flex: 1, gap: 3, justifyContent: 'center' },
+  title: { fontSize: 19, lineHeight: 24 },
   italic: { fontStyle: 'italic' },
-  menu: { paddingTop: space.sm, paddingRight: space.xs },
 });

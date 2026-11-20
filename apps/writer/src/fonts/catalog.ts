@@ -139,3 +139,33 @@ export const getFontPreset = (id: string): FontPreset | undefined =>
   FONT_PRESETS.find((f) => f.id === id);
 
 export const DEFAULT_FONT_ID = 'classic-serif';
+
+/** One picker row per typeface family: the regular face (italics stay registered for rendering). */
+export interface FontFamilyEntry {
+  /** Id of the regular face; selecting the family stores this id. */
+  id: string;
+  label: string;
+  category: FontCategory;
+}
+
+const FAMILY_LABEL: Readonly<Record<string, string>> = {
+  'classic-serif': 'System Serif',
+  'editorial-sans': 'Editorial Sans',
+};
+/** Legacy system stacks that stay valid ids but are not offered as picker rows. */
+const UNLISTED = new Set(['system-default', 'rounded-ui', 'typewriter']);
+
+export const isItalicFace = (id: string): boolean => id.endsWith('-italic');
+
+/** Picker families in catalog order (no italic faces, no legacy stacks). */
+export const FONT_FAMILIES: readonly FontFamilyEntry[] = FONT_PRESETS.filter(
+  (f) => !isItalicFace(f.id) && !UNLISTED.has(f.id),
+).map((f) => ({ id: f.id, label: FAMILY_LABEL[f.id] ?? f.label, category: f.category }));
+
+/** The picker family id a stored font id belongs to (an italic face maps to its regular face). */
+export const familyIdOf = (id: string): string =>
+  isItalicFace(id) ? id.slice(0, -'-italic'.length) : id;
+
+/** Label for a catalog font id (including legacy stacks), for rows not in FONT_FAMILIES. */
+export const familyLabel = (id: string): string =>
+  FAMILY_LABEL[id] ?? getFontPreset(id)?.label ?? id;

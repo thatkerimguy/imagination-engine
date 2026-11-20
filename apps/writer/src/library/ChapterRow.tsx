@@ -1,19 +1,14 @@
 import type { ChapterDocument } from '@kn/core';
 import { useState, type ReactNode } from 'react';
-import { View } from 'react-native';
-import { AppText } from '../ui/AppText.tsx';
-import { StatusBadge, type BadgeTone } from '../ui/layout.tsx';
-import { shape, space } from '../ui/m3-tokens.ts';
-import { OverflowMenu } from '../ui/OverflowMenu.tsx';
-import { StatePressable } from '../ui/StateLayer.tsx';
-import { makeStyles, useTheme } from '../ui/theme.tsx';
+import { StyleSheet, View } from 'react-native';
+import { Press } from '../ui/Press.tsx';
+import { PopoverMenu } from '../ui/PopoverMenu.tsx';
+import { Txt } from '../ui/Txt.tsx';
+import { space } from '../ui/tokens.ts';
+import { useTheme } from '../ui/theme.tsx';
 import { InlineRename } from './InlineRename.tsx';
+import { chapterWords } from '../store/word-count.ts';
 
-const TONE: Record<ChapterDocument['status'], BadgeTone> = {
-  draft: 'neutral',
-  unlisted: 'tertiary',
-  published: 'primary',
-};
 const LABEL = { draft: 'Draft', unlisted: 'Unlisted', published: 'Published' } as const;
 
 export interface ChapterRowProps {
@@ -26,14 +21,29 @@ export interface ChapterRowProps {
   isLast?: boolean;
 }
 
+/** Published = filled accent dot, Unlisted = accent ring, Draft = muted ring. */
+function StatusDot({ status }: { status: ChapterDocument['status'] }): ReactNode {
+  const { colors } = useTheme();
+  const tone = status === 'draft' ? colors.inkMuted : colors.accent;
+  return (
+    <View
+      style={[
+        styles.dot,
+        { borderColor: tone, backgroundColor: status === 'published' ? tone : 'transparent' },
+      ]}
+    />
+  );
+}
+
 export function ChapterRow(p: ChapterRowProps): ReactNode {
-  const s = useStyles();
-  const { m3 } = useTheme();
+  const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
   const c = p.chapter;
+  const words = chapterWords(c);
+  const line = { borderColor: colors.hairline };
   if (editing) {
     return (
-      <View style={s.row}>
+      <View style={[styles.row, line]}>
         <InlineRename
           initial={c.title}
           label="Chapter title"
@@ -48,41 +58,50 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
     );
   }
   return (
-    <View style={s.row} testID={`outline-chapter-${c.id}`}>
-      <StatePressable
-        onPress={p.onOpen}
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${c.title}`}
-        layerColor={m3.onSurface}
-        style={s.title}
-      >
-        <AppText variant="titleMedium" numberOfLines={2}>
-          {c.title}
-        </AppText>
-      </StatePressable>
-      <StatePressable
-        onPress={p.onCycleStatus}
-        accessibilityRole="button"
-        accessibilityLabel={`Status ${c.status}, tap to change`}
-        hitSlop={12}
-        layerColor={m3.onSurface}
-        testID={`chapter-status-${c.id}`}
-      >
-        <StatusBadge label={LABEL[c.status]} tone={TONE[c.status]} />
-      </StatePressable>
-      <OverflowMenu
+    <View style={[styles.row, line]} testID={`outline-chapter-${c.id}`}>
+      <View style={styles.main}>
+        <Press
+          onPress={p.onOpen}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${c.title}`}
+          style={styles.title}
+        >
+          <Txt variant="heading" style={styles.titleText} numberOfLines={2}>
+            {c.title}
+          </Txt>
+        </Press>
+        <View style={styles.metaRow}>
+          <Press
+            onPress={p.onCycleStatus}
+            accessibilityRole="button"
+            accessibilityLabel={`Status ${c.status}, tap to change`}
+            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            testID={`chapter-status-${c.id}`}
+            style={styles.status}
+          >
+            <StatusDot status={c.status} />
+            <Txt variant="meta" color="inkSecondary">
+              {LABEL[c.status]}
+            </Txt>
+          </Press>
+          <Txt variant="meta" color="inkMuted">
+            {`${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`}
+          </Txt>
+        </View>
+      </View>
+      <PopoverMenu
         accessibilityLabel={`${c.title} options`}
         items={[
-          { label: 'Rename', icon: 'edit', onPress: () => setEditing(true) },
+          { label: 'Rename', icon: 'edit-2', onPress: () => setEditing(true) },
           {
             label: 'Move up',
-            icon: 'arrow-upward',
+            icon: 'arrow-up',
             disabled: p.isFirst,
             onPress: () => p.onMove(-1),
           },
           {
             label: 'Move down',
-            icon: 'arrow-downward',
+            icon: 'arrow-down',
             disabled: p.isLast,
             onPress: () => p.onMove(1),
           },
@@ -92,16 +111,12 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
   );
 }
 
-const useStyles = makeStyles((t) => ({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: t.m3.surfaceContainer,
-    borderRadius: shape.medium,
-    paddingLeft: space.lg,
-    paddingRight: space.xs,
-    minHeight: 56,
-  },
-  title: { flex: 1, minHeight: 48, justifyContent: 'center' },
-}));
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, minHeight: 64 },
+  main: { flex: 1, paddingVertical: space.xs },
+  title: { minHeight: 28, justifyContent: 'center' },
+  titleText: { fontSize: 16, lineHeight: 22, fontWeight: '500' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5 },
+});

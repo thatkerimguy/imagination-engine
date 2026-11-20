@@ -5,13 +5,13 @@ import { useState, type ReactNode } from 'react';
 import { SECTION_LABELS } from '../library/section-labels.ts';
 import { routes } from '../routes.ts';
 import { useRepository } from '../store/context.tsx';
-import { AppText } from '../ui/AppText.tsx';
-import { Button } from '../ui/Button.tsx';
-import { Screen, SectionTitle } from '../ui/layout.tsx';
-import { SegmentedButtons, type Segment } from '../ui/SegmentedButtons.tsx';
-import { TextField } from '../ui/TextField.tsx';
+import { ActionButton } from '../ui/ActionButton.tsx';
+import { Field } from '../ui/Field.tsx';
+import { Page, SectionLabel as Label } from '../ui/Page.tsx';
+import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
+import { Txt } from '../ui/Txt.tsx';
 
-const SEGMENTS: readonly Segment<SectionLabel>[] = SECTION_LABELS.map((l) => ({
+const OPTIONS: readonly SegmentOption<SectionLabel>[] = SECTION_LABELS.map((l) => ({
   value: l,
   label: l,
 }));
@@ -35,35 +35,34 @@ export default function NewNovelScreen(): ReactNode {
   };
 
   return (
-    <Screen>
-      <TextField label="Title" value={title} onChangeText={setTitle} testID="novel-title" />
-      <TextField
+    <Page>
+      <Field label="Title" value={title} onChangeText={setTitle} serif testID="novel-title" />
+      <Field
         label="Subtitle (optional)"
         value={subtitle}
         onChangeText={setSubtitle}
         testID="novel-subtitle"
       />
-      <TextField label="Author" value={author} onChangeText={setAuthor} testID="novel-author" />
-      <SectionTitle>Sections are called</SectionTitle>
-      <SegmentedButtons<SectionLabel>
-        segments={SEGMENTS}
+      <Field label="Author" value={author} onChangeText={setAuthor} testID="novel-author" />
+      <Label>Sections are called</Label>
+      <SegmentControl<SectionLabel>
+        options={OPTIONS}
         value={label}
         onChange={setLabel}
         accessibilityLabel="Section name"
         testID="section-label"
       />
       {error ? (
-        <AppText variant="bodyMedium" color="error">
+        <Txt variant="body" color="danger">
           {error}
-        </AppText>
+        </Txt>
       ) : null}
-      <Button
+      <ActionButton
         label="Create"
-        variant="filled"
         disabled={!valid}
         onPress={() => void create()}
         testID="create-novel"
       />
-    </Screen>
+    </Page>
   );
 }

@@ -108,10 +108,15 @@ $missing = $SdkPackages | Where-Object { -not (Test-Path (Join-Path $Sdk ($_ -re
 if ($missing) {
   if (-not $InstallTools) { Fail "Missing SDK packages: $($missing -join ', '). Re-run with -InstallTools." }
   Write-Host "Accepting SDK licenses and installing: $($missing -join ', ')"
-  # sdkmanager asks y/N once per license; feed enough answers.
-  $yes = (1..40 | ForEach-Object { 'y' }) -join "`n"
-  $yes | & $SdkManager --sdk_root="$Sdk" --licenses | Out-Null
+  # sdkmanager asks y/N once per license. Neither a PowerShell pipe nor a cmd pipe reaches the
+  # .bat's java reliably; a stdin redirect from a file of answers does.
+  $yes = Join-Path $env:TEMP 'kn-sdk-yes.txt'
+  Set-Content $yes -Encoding ASCII -Value (1..60 | ForEach-Object { 'y' })
+  & cmd /c "`"$SdkManager`" --sdk_root=`"$Sdk`" --licenses < `"$yes`"" | Out-Null
+  Remove-Item $yes -ErrorAction SilentlyContinue
   Invoke-Checked 'sdkmanager install' { & $SdkManager --sdk_root="$Sdk" @missing }
+  $missing = $SdkPackages | Where-Object { -not (Test-Path (Join-Path $Sdk ($_ -replace ';', '\'))) }
+  if ($missing) { Fail "SDK packages still missing after install: $($missing -join ', ')" }
 }
 Write-Host "Android SDK: $Sdk"
 if ($ToolsOnly) { Write-Step 'Toolchain ready (-ToolsOnly).'; exit 0 }
@@ -130,6 +135,46 @@ try {
   }
   Set-Content -Path (Join-Path $AndroidDir 'local.properties') -Encoding ASCII `
     -Value ('sdk.dir=' + ($Sdk -replace '\\', '\\' -replace ':', '\:'))
+
+  # ── Short native build dirs (Windows MAX_PATH) ───────────────────────────────────────────
+  # pnpm keeps packages under node_modules\.pnpm\<name>@<hash>\..., so each native module's
+  # default CMake dir (android\.cxx) passes 260 chars and ninja loops on "build.ninja still
+  # dirty". Stage every module's CMake build under %SystemDrive%\knx\<module> instead: React
+  # Native codegen nests very long folder names, so even hashed object paths need a short root.
+  $cxxRoot = "$env:SystemDrive/knx"
+  $rootGradle = Join-Path $AndroidDir 'build.gradle'
+  $gradleText = Get-Content $rootGradle -Raw
+  if ($gradleText -notmatch 'knShortCxx v4') {
+    # Drop an older version of the block before inserting the current one.
+    $gradleText = [regex]::Replace($gradleText, '(?s)// Added by scripts/build-android-apk\.ps1 \(knShortCxx.*?(?=apply plugin: "expo-root-project")', '')
+    # Must run before `expo-root-project`, which evaluates some modules as soon as it is applied.
+    $block = @"
+// Added by scripts/build-android-apk.ps1 (knShortCxx v4): keep CMake paths under Windows MAX_PATH.
+// Short staging dirs, and CMAKE_OBJECT_PATH_MAX makes CMake hash object paths that would grow
+// past it (sources live deep under node_modules\.pnpm and are mirrored into CMakeFiles).
+subprojects { sub ->
+    ['com.android.library', 'com.android.application'].each { id ->
+        sub.plugins.withId(id) {
+            try {
+                sub.android.externalNativeBuild.cmake.buildStagingDirectory = new File('$cxxRoot/' + sub.name)
+                sub.android.defaultConfig.externalNativeBuild.cmake.arguments('-DCMAKE_OBJECT_PATH_MAX=250')
+            } catch (Exception e) {
+                logger.warn("knShortCxx: kept default CMake dir for `${sub.name}: `${e.message}")
+            }
+        }
+    }
+}
+
+"@
+    $anchor = 'apply plugin: "expo-root-project"'
+    if ($gradleText -notmatch [regex]::Escape($anchor)) { Fail "Unexpected $rootGradle layout (no $anchor)." }
+    $gradleText = $gradleText.Replace($anchor, $block + $anchor)
+    [System.IO.File]::WriteAllText($rootGradle, $gradleText)
+  }
+  Get-ChildItem (Join-Path $Root 'node_modules\.pnpm') -Directory -ErrorAction SilentlyContinue |
+    ForEach-Object { Get-ChildItem $_.FullName -Filter '.cxx' -Recurse -Directory -Depth 4 -ErrorAction SilentlyContinue } |
+    Where-Object { $_.Parent.Name -eq 'android' } |
+    ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
 
   # ── Local release signing (git-ignored keystore) ─────────────────────────────────────────
   if ($Variant -eq 'release') {

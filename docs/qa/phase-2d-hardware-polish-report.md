@@ -91,14 +91,39 @@ before calibration and all materials clear them comfortably.
   `-Install`, `-Variant debug|release`, `-SkipPrebuild`, `-ToolsOnly`, `-WithAndroidStudio`.
   The command-line tools are installed instead of Android Studio by default, because Studio
   only yields an SDK after its interactive first-run wizard.
-- **Status on the Author's machine:** JDK 25/27 and adb were present, JDK 17 and the SDK were
-  not. `-InstallTools -ToolsOnly` started the Temurin 17 winget install, which was waiting for
-  a Windows elevation (UAC) prompt when this report was written, so the APK build itself had
-  not run yet. Once JDK 17 is in place:
+- **Built on the Author's Windows machine: ✅** `apps/writer/dist/kinetic-writer.apk`,
+  **104.6 MB** release (arm64-v8a, armeabi-v7a, x86, x86_64), `BUILD SUCCESSFUL in 16m 50s`
+  after the toolchain was installed (Temurin 17 via winget, SDK via command-line tools).
+  - Signed with the local keystore (`CN=Kinetic Writer (local)`, verified with `apksigner`).
+  - `assets/index.android.bundle` is Hermes bytecode (3.6 MB), with zero
+    `WebGLRenderer` / `ContactMaterial` matches.
+  - The offline reader ships as a raw resource (`res/Xr.html` after resource shrinking), 727,114
+    bytes, byte-identical to `reader-preview.html`.
+  - Not installed yet: no adb device was attached. Plug the phone in with USB debugging on and run
+    `adb install -r apps/writer/dist/kinetic-writer.apk` (or the script with `-SkipPrebuild -Install`).
 
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -InstallTools -Install
-  ```
+### Windows build fixes found on the first real run
+
+1. **SDK licenses:** piping answers from PowerShell into `sdkmanager.bat` never reaches its stdin;
+   the script now redirects a file of answers through `cmd`, and re-checks every package after
+   installing (the first run silently skipped them and still reported success).
+2. **MAX_PATH in native builds:** pnpm keeps packages under
+   `node_modules/.pnpm/<name>@<version>_<hash>/node_modules/<name>/`. React Native codegen nests
+   deep folders below that, and the NDK's CMake 3.22 / ninja are not long-path aware even with
+   `LongPathsEnabled=1` (`build.ninja still dirty after 100 tries`, then `Filename longer than
+260 characters`). Fixed in three layers:
+   - `pnpm-workspace.yaml`: `virtualStoreDirMaxLength: 30` (store folders become
+     `.pnpm/_<hash>`, about 27 characters shorter; lockfile unchanged, `pnpm check` still 548/548).
+   - The APK script injects a `knShortCxx` block into the generated root `build.gradle`, before
+     `expo-root-project`. It stages each module's CMake build under `C:\knx\<module>` and passes
+     `-DCMAKE_OBJECT_PATH_MAX=250` so CMake hashes over-long object paths.
+   - Stale in-tree `android/.cxx` folders under `node_modules/.pnpm` are removed before Gradle runs.
+
+Rebuild later with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -Install
+```
 
 ## Phase B highlights
 

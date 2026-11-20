@@ -1,25 +1,19 @@
-// Thin route: loads the draft + novel, owns the header, and hands the rest to <ChapterEditor>.
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+// Thin route: loads the draft + novel and hands everything to <ChapterEditor>, which draws its
+// own slim top bar (so Focus Mode can hide it) — the Stack header is turned off here.
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { ChapterEditor } from '../../../../../editor/ChapterEditor.tsx';
-import { SaveStatus } from '../../../../../editor/SaveStatus.tsx';
 import { routes } from '../../../../../routes.ts';
 import { useRepoQuery } from '../../../../../store/context.tsx';
 import { useChapterDraft } from '../../../../../store/use-chapter-draft.ts';
 import { AppText } from '../../../../../ui/AppText.tsx';
-import { Button } from '../../../../../ui/Button.tsx';
-import { space } from '../../../../../ui/m3-tokens.ts';
 import { makeStyles, useTheme } from '../../../../../ui/theme.tsx';
+import { TopBar } from '../../../../../ui/TopBar.tsx';
 
 const useStyles = makeStyles((t) => ({
-  right: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.sm },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: t.colors.surface,
-  },
+  screen: { flex: 1, backgroundColor: t.colors.surface },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 }));
 
 export default function ChapterEditorScreen(): ReactNode {
@@ -29,55 +23,35 @@ export default function ChapterEditorScreen(): ReactNode {
     chapterId: string;
   }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const styles = useStyles();
   const { colors } = useTheme();
   const draft = useChapterDraft(novelId, seasonId, chapterId);
   const novel = useRepoQuery(`novel:${novelId}`, (repo) => repo.getNovel(novelId));
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const { chapter, flush } = draft;
+  const from = { novel: novelId, season: seasonId, chapter: chapterId };
 
-  const preview = async (): Promise<void> => {
+  const back = (): void =>
+    navigation.canGoBack() ? navigation.goBack() : router.replace(routes.outline(novelId));
+  const preview = async (blockId: string | null): Promise<void> => {
     await flush();
-    router.push(routes.preview(novelId, seasonId, chapterId, selectedId ?? undefined));
+    router.push(routes.preview(novelId, seasonId, chapterId, blockId ?? undefined));
   };
 
-  const header = (
-    <Stack.Screen
-      options={{
-        title: chapter?.title ?? 'Chapter',
-        headerRight: () => (
-          <View style={styles.right}>
-            <SaveStatus status={draft.status} />
-            <Button
-              variant="tonal"
-              icon="play-arrow"
-              label="Preview"
-              testID="preview-button"
-              onPress={() => void preview()}
-            />
-          </View>
-        ),
-      }}
-    />
-  );
-
-  if (draft.error) {
+  const header = <Stack.Screen options={{ headerShown: false }} />;
+  if (draft.error || novel.error || !chapter || !novel.data) {
+    const failed = draft.error || novel.error;
     return (
-      <View style={styles.center}>
+      <View style={styles.screen}>
         {header}
-        <AppText color="onSurfaceVariant">Could not open this chapter.</AppText>
-      </View>
-    );
-  }
-  if (!chapter || !novel.data) {
-    return (
-      <View style={styles.center}>
-        {header}
-        {novel.error ? (
-          <AppText color="onSurfaceVariant">Could not open this novel.</AppText>
-        ) : (
-          <ActivityIndicator color={colors.primary} />
-        )}
+        <TopBar title="Chapter" onBack={back} />
+        <View style={styles.center}>
+          {failed ? (
+            <AppText color="onSurfaceVariant">Could not open this chapter.</AppText>
+          ) : (
+            <ActivityIndicator color={colors.primary} />
+          )}
+        </View>
       </View>
     );
   }
@@ -86,9 +60,12 @@ export default function ChapterEditorScreen(): ReactNode {
       {header}
       <ChapterEditor
         chapter={chapter}
-        update={draft.update}
+        draft={draft}
         enabledModules={novel.data.enabledModules}
-        onSelectionChange={setSelectedId}
+        onBack={back}
+        onPreview={(id) => void preview(id)}
+        onGrowth={() => router.push(routes.growth(`chapter:${chapterId}`, from))}
+        onAppearance={() => router.push(routes.appearance)}
       />
     </>
   );

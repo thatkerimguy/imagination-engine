@@ -1,0 +1,197 @@
+<#
+.SYNOPSIS
+  Builds the Kinetic Writer Android APK locally with Gradle (no EAS) and optionally installs it.
+
+.DESCRIPTION
+  Idempotent. Checks JDK 17, the Android SDK (platform-tools, platforms;android-35,
+  build-tools;35.0.0), builds the offline reader preview bundle, runs `expo prebuild`, signs
+  release builds with a git-ignored local keystore, runs Gradle, copies the APK to
+  apps/writer/dist/kinetic-writer.apk and (optionally) installs it with adb.
+  Environment changes (JAVA_HOME, ANDROID_HOME, PATH) apply to this process only.
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -InstallTools -Install
+#>
+[CmdletBinding()]
+param(
+  [ValidateSet('release', 'debug')] [string] $Variant = 'release',
+  # Install missing JDK 17 (winget) and Android command-line tools + SDK packages.
+  [switch] $InstallTools,
+  # Also install Android Studio through winget (not needed to build).
+  [switch] $WithAndroidStudio,
+  # adb install -r the APK (also happens automatically when exactly one device is attached).
+  [switch] $Install,
+  # Reuse an existing apps/writer/android project instead of `expo prebuild --clean`.
+  [switch] $SkipPrebuild
+)
+$ErrorActionPreference = 'Stop'
+$Root = Resolve-Path (Join-Path $PSScriptRoot '..')
+$Writer = Join-Path $Root 'apps\writer'
+$AndroidDir = Join-Path $Writer 'android'
+$KeyDir = Join-Path $Writer '.keystore'
+$Dist = Join-Path $Writer 'dist'
+$CmdlineToolsUrl = 'https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip'
+$SdkPackages = @('platform-tools', 'platforms;android-35', 'build-tools;35.0.0')
+
+function Write-Step([string] $Text) { Write-Host "`n==> $Text" -ForegroundColor Cyan }
+function Fail([string] $Text) { Write-Host "ERROR: $Text" -ForegroundColor Red; exit 1 }
+function Invoke-Checked([string] $What, [scriptblock] $Block) {
+  & $Block
+  if ($LASTEXITCODE -ne 0) { Fail "$What failed (exit $LASTEXITCODE)." }
+}
+
+# ── JDK 17 ──────────────────────────────────────────────────────────────────────────────────
+function Get-JdkMajor([string] $JavaHome) {
+  $java = Join-Path $JavaHome 'bin\java.exe'
+  if (-not (Test-Path $java) -or -not (Test-Path (Join-Path $JavaHome 'bin\javac.exe'))) { return 0 }
+  $line = (& cmd /c "`"$java`" -version 2>&1") | Select-Object -First 1
+  if ("$line" -match 'version "(\d+)') { return [int] $Matches[1] }
+  return 0
+}
+
+function Find-Jdk17 {
+  $candidates = @()
+  if ($env:JAVA_HOME) { $candidates += $env:JAVA_HOME }
+  foreach ($base in @("$env:ProgramFiles\Eclipse Adoptium", "$env:ProgramFiles\Java",
+      "$env:ProgramFiles\Microsoft", "$env:ProgramFiles\Zulu", "$env:ProgramFiles\Android\Android Studio")) {
+    if (Test-Path $base) {
+      $candidates += Get-ChildItem $base -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match 'jdk-?17|jbr|zulu-?17' } | ForEach-Object FullName
+    }
+  }
+  foreach ($c in $candidates) { if ((Get-JdkMajor $c) -eq 17) { return $c } }
+  return $null
+}
+
+Write-Step 'Checking JDK 17'
+$Jdk = Find-Jdk17
+if (-not $Jdk -and $InstallTools) {
+  Write-Host 'Installing Eclipse Temurin JDK 17 via winget...'
+  & winget install --id EclipseAdoptium.Temurin.17.JDK -e --silent --accept-source-agreements --accept-package-agreements
+  $Jdk = Find-Jdk17
+}
+if (-not $Jdk) { Fail 'JDK 17 not found. Re-run with -InstallTools, or install Temurin 17 and set JAVA_HOME.' }
+$env:JAVA_HOME = $Jdk
+$env:PATH = "$Jdk\bin;$env:PATH"
+Write-Host "JDK 17: $Jdk"
+
+# ── Android SDK ─────────────────────────────────────────────────────────────────────────────
+Write-Step 'Checking Android SDK'
+$Sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } elseif ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
+$SdkManager = Join-Path $Sdk 'cmdline-tools\latest\bin\sdkmanager.bat'
+
+if ($WithAndroidStudio -and -not (Test-Path "$env:ProgramFiles\Android\Android Studio")) {
+  Write-Host 'Installing Android Studio via winget...'
+  & winget install --id Google.AndroidStudio -e --silent --accept-source-agreements --accept-package-agreements
+}
+if (-not (Test-Path $SdkManager)) {
+  if (-not $InstallTools) { Fail "Android SDK command-line tools not found under $Sdk. Re-run with -InstallTools." }
+  Write-Host "Installing Android command-line tools into $Sdk ..."
+  $zip = Join-Path $env:TEMP 'android-cmdline-tools.zip'
+  $tmp = Join-Path $env:TEMP 'android-cmdline-tools'
+  Invoke-WebRequest -Uri $CmdlineToolsUrl -OutFile $zip -UseBasicParsing
+  if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+  Expand-Archive $zip -DestinationPath $tmp -Force
+  New-Item -ItemType Directory -Force (Join-Path $Sdk 'cmdline-tools') | Out-Null
+  $latest = Join-Path $Sdk 'cmdline-tools\latest'
+  if (Test-Path $latest) { Remove-Item $latest -Recurse -Force }
+  Move-Item (Join-Path $tmp 'cmdline-tools') $latest
+  Remove-Item $zip, $tmp -Recurse -Force -ErrorAction SilentlyContinue
+}
+$env:ANDROID_HOME = $Sdk
+$env:ANDROID_SDK_ROOT = $Sdk
+$env:PATH = "$Sdk\platform-tools;$Sdk\cmdline-tools\latest\bin;$env:PATH"
+
+$missing = $SdkPackages | Where-Object { -not (Test-Path (Join-Path $Sdk ($_ -replace ';', '\'))) }
+if ($missing) {
+  if (-not $InstallTools) { Fail "Missing SDK packages: $($missing -join ', '). Re-run with -InstallTools." }
+  Write-Host "Accepting SDK licenses and installing: $($missing -join ', ')"
+  # sdkmanager asks y/N once per license; feed enough answers.
+  $yes = (1..40 | ForEach-Object { 'y' }) -join "`n"
+  $yes | & $SdkManager --sdk_root="$Sdk" --licenses | Out-Null
+  Invoke-Checked 'sdkmanager install' { & $SdkManager --sdk_root="$Sdk" @missing }
+}
+Write-Host "Android SDK: $Sdk"
+
+# ── Offline preview bundle + prebuild ───────────────────────────────────────────────────────
+Push-Location $Root
+try {
+  Write-Step 'Building the built-in offline reader (pnpm build:preview-bundle)'
+  Invoke-Checked 'build:preview-bundle' { & pnpm build:preview-bundle }
+
+  if (-not $SkipPrebuild -or -not (Test-Path $AndroidDir)) {
+    Write-Step 'Generating the Android Gradle project (expo prebuild --clean)'
+    $env:CI = '1'
+    $env:EXPO_NO_GIT_STATUS = '1'
+    Invoke-Checked 'expo prebuild' { & pnpm --filter '@kn/writer' exec expo prebuild --platform android --clean }
+  }
+  Set-Content -Path (Join-Path $AndroidDir 'local.properties') -Encoding ASCII `
+    -Value ('sdk.dir=' + ($Sdk -replace '\\', '\\' -replace ':', '\:'))
+
+  # ── Local release signing (git-ignored keystore) ─────────────────────────────────────────
+  if ($Variant -eq 'release') {
+    Write-Step 'Wiring local release signing'
+    $jks = Join-Path $KeyDir 'local-release.jks'
+    $props = Join-Path $KeyDir 'local-release.properties'
+    if (-not (Test-Path $jks) -or -not (Test-Path $props)) {
+      New-Item -ItemType Directory -Force $KeyDir | Out-Null
+      $pass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char] $_ })
+      Invoke-Checked 'keytool' {
+        & (Join-Path $Jdk 'bin\keytool.exe') -genkeypair -storetype PKCS12 -keystore $jks `
+          -alias kinetic-local -keyalg RSA -keysize 2048 -validity 10000 `
+          -storepass $pass -keypass $pass -dname 'CN=Kinetic Writer (local), O=Local build'
+      }
+      Set-Content -Path $props -Encoding ASCII -Value @("storePassword=$pass", 'keyAlias=kinetic-local')
+      Write-Host "Created local keystore $jks (keep it: updates must be signed with the same key)."
+    }
+    $gradleFile = Join-Path $AndroidDir 'app\build.gradle'
+    $gradle = Get-Content $gradleFile -Raw
+    if ($gradle -notmatch 'knLocalRelease') {
+      $jksPath = $jks -replace '\\', '/'
+      $propsPath = $props -replace '\\', '/'
+      Add-Content -Path $gradleFile -Encoding ASCII -Value @"
+
+// Added by scripts/build-android-apk.ps1: sign release builds with the local, git-ignored keystore.
+def knKeyProps = new Properties()
+file('$propsPath').withInputStream { knKeyProps.load(it) }
+android.signingConfigs {
+    knLocalRelease {
+        storeFile file('$jksPath')
+        storePassword knKeyProps['storePassword']
+        keyAlias knKeyProps['keyAlias']
+        keyPassword knKeyProps['storePassword']
+    }
+}
+android.buildTypes.release.signingConfig = android.signingConfigs.knLocalRelease
+"@
+    }
+  }
+
+  # ── Gradle ───────────────────────────────────────────────────────────────────────────────
+  $task = if ($Variant -eq 'release') { 'assembleRelease' } else { 'assembleDebug' }
+  Write-Step "Running gradlew $task (first run downloads Gradle, the NDK and dependencies)"
+  Push-Location $AndroidDir
+  try { Invoke-Checked "gradlew $task" { & .\gradlew.bat $task --no-daemon } }
+  finally { Pop-Location }
+
+  $built = Join-Path $AndroidDir "app\build\outputs\apk\$Variant\app-$Variant.apk"
+  if (-not (Test-Path $built)) { Fail "Gradle finished but $built is missing." }
+  New-Item -ItemType Directory -Force $Dist | Out-Null
+  $apk = Join-Path $Dist 'kinetic-writer.apk'
+  Copy-Item $built $apk -Force
+  $size = '{0:N1} MB' -f ((Get-Item $apk).Length / 1MB)
+  Write-Step "APK ready: $apk ($size, $Variant)"
+
+  # ── Install ──────────────────────────────────────────────────────────────────────────────
+  $adb = (Get-Command adb -ErrorAction SilentlyContinue).Source
+  if (-not $adb) { Write-Host 'adb not found; copy the APK to the phone to install it.'; exit 0 }
+  $devices = @(& $adb devices | Select-Object -Skip 1 | Where-Object { $_ -match '\tdevice$' })
+  if ($Install -or $devices.Count -eq 1) {
+    if ($devices.Count -eq 0) { Write-Host 'No adb device attached (enable USB debugging and retry with -Install).'; exit 0 }
+    if ($devices.Count -gt 1) { Fail 'More than one adb device attached; set ANDROID_SERIAL to choose one.' }
+    Write-Step "Installing on $(($devices[0] -split "`t")[0])"
+    Invoke-Checked 'adb install' { & $adb install -r $apk }
+    Write-Host 'Installed. Open "Kinetic Writer" on the phone.'
+  }
+}
+finally { Pop-Location }

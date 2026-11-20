@@ -5,15 +5,22 @@ import { keys } from '../store/documents.ts';
 export type Appearance = 'dark' | 'light' | 'system';
 export const APPEARANCES: readonly Appearance[] = ['dark', 'light', 'system'];
 
+/** 'offline' = the reader bundled inside the app; 'custom-url' = a reader server at `readerUrl`. */
+export type PreviewMode = 'offline' | 'custom-url';
+export const PREVIEW_MODES: readonly PreviewMode[] = ['offline', 'custom-url'];
+
 export interface AppSettings {
   /** Writer colour scheme; 'system' follows the OS. */
   appearance: Appearance;
+  /** Where Live Preview gets its reader from. Defaults to the built-in offline copy. */
+  previewMode: PreviewMode;
   /** Base URL of an apps/reader server (dev Vite, LAN, or deployed). `?preview=1` is added. */
   readerUrl: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   appearance: 'dark',
+  previewMode: 'offline',
   readerUrl: 'http://127.0.0.1:5173/',
 };
 
@@ -21,6 +28,8 @@ export async function loadSettings(repo: NovelRepository): Promise<AppSettings> 
   const stored = await repo.docs.read<Partial<AppSettings>>(keys.setting('app'));
   const merged = { ...DEFAULT_SETTINGS, ...stored?.data };
   if (!APPEARANCES.includes(merged.appearance)) merged.appearance = DEFAULT_SETTINGS.appearance;
+  if (!PREVIEW_MODES.includes(merged.previewMode))
+    merged.previewMode = DEFAULT_SETTINGS.previewMode;
   return merged;
 }
 

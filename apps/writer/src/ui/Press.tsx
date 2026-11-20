@@ -24,9 +24,12 @@ export function Press({ style, wash, children, ...rest }: PressProps): ReactNode
   return (
     <Pressable
       {...rest}
-      style={({ pressed, hovered }) => [
+      // `hovered` comes from react-native-web; native typings may not declare it.
+      style={(state) => [
         style,
-        tint && (pressed || hovered) ? { backgroundColor: tint } : null,
+        tint && (state.pressed || (state as { hovered?: boolean }).hovered === true)
+          ? { backgroundColor: tint }
+          : null,
         rest.disabled ? { opacity: 0.38 } : null,
       ]}
     >

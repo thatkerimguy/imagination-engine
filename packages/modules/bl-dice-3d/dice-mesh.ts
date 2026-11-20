@@ -112,9 +112,9 @@ export function createDieMaterial(
     roughness: finish.roughness,
     metalness: finish.metalness,
     clearcoat: finish.clearcoat,
-    clearcoatRoughness: 0.08,
+    clearcoatRoughness: finish.clearcoatRoughness,
     envMap,
-    envMapIntensity: kind === 'brass' ? 1.1 : kind === 'ivory' ? 0.55 : 0.7,
+    envMapIntensity: finish.envMapIntensity,
     transparent: true,
   });
 }

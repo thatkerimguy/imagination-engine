@@ -1,3 +1,4 @@
+import type { NativeStackHeaderProps } from 'expo-router/native-stack';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
@@ -13,6 +14,9 @@ import { StackTopBar } from '../ui/TopBar.tsx';
 import { installWebFocusReset } from '../ui/web-focus.ts';
 
 installWebFocusReset();
+
+// Hoisted so React Navigation sees a stable header renderer and never remounts the chrome.
+const renderHeader = (props: NativeStackHeaderProps): ReactNode => <StackTopBar {...props} />;
 
 export default function RootLayout(): ReactNode {
   return (
@@ -39,7 +43,7 @@ function ThemedStack(): ReactNode {
       <StatusBar style={dark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          header: (props) => <StackTopBar {...props} />,
+          header: renderHeader,
           contentStyle: { backgroundColor: colors.canvas },
         }}
       >

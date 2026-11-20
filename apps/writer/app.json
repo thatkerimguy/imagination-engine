@@ -16,13 +16,33 @@
     },
     "android": {
       "package": "dev.kinetic.writer",
-      "softwareKeyboardLayoutMode": "resize"
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.VIBRATE"]
     },
     "web": {
       "bundler": "metro",
       "output": "single"
     },
-    "plugins": ["expo-router", "expo-sqlite", "expo-font"],
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Kinetic Writer uses Face ID to unlock your private manuscripts."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kinetic Writer opens your photos so you can add images to a chapter.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": false
     }

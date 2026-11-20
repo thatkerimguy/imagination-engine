@@ -46,6 +46,7 @@ export default function DoctorScreen(): ReactNode {
 
   const repairOne = async (issue: Issue): Promise<void> => {
     await repairIssue(kv, issue, opts);
+    repo.clearCache();
     repo.notifyChanged();
     await scan();
   };
@@ -58,6 +59,7 @@ export default function DoctorScreen(): ReactNode {
     });
     if (!ok) return;
     await repairAll(kv, opts);
+    repo.clearCache();
     repo.notifyChanged();
     await scan();
   };

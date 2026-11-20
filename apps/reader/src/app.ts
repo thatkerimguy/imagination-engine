@@ -86,7 +86,10 @@ export function startApp(): void {
   };
 
   // Writer live preview: a tiny lazy chunk; ordinary readers never download it.
-  if (new URLSearchParams(location.search).get('preview') === '1') {
+  if (
+    new URLSearchParams(location.search).get('preview') === '1' ||
+    '__KN_OFFLINE_PREVIEW__' in window
+  ) {
     void import('./preview/view.ts')
       .then((m) => m.startPreview(ctx))
       .catch((err: unknown) => errorView(main, err));

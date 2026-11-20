@@ -24,10 +24,10 @@ import { scheduleClatter } from './sfx.ts';
 import { DIE_SIZE, FLOATS_PER_DIE, STEP, recordThrow, type ThrowRecording } from './simulate.ts';
 import type { DiceProps } from './schema.ts';
 
-export const KEY_LIGHT = 1.7;
+export const KEY_LIGHT = 1.55;
 /** World units the dice rise while fading out (about two thirds of a die). */
 export const LIFT_HEIGHT = 0.65;
-export const AMBIENT_LIGHT = 0.32;
+export const AMBIENT_LIGHT = 0.36;
 
 type Phase = 'idle' | 'roll' | 'hold' | 'fade' | 'done';
 
@@ -54,12 +54,12 @@ export class HighDice {
   ) {
     const pmrem = new PMREMGenerator(lease.renderer);
     const room = new RoomEnvironment();
-    this.env = pmrem.fromScene(room, 0.04);
+    this.env = pmrem.fromScene(room, 0.1);
     room.dispose();
     pmrem.dispose();
     this.material = createDieMaterial(props.material, this.env.texture);
     const key = new DirectionalLight(0xffffff, KEY_LIGHT);
-    key.position.set(-3.5, 5, 13);
+    key.position.set(-7.5, 8.5, 10);
     this.group.add(key, key.target, new AmbientLight(0xffffff, AMBIENT_LIGHT));
     for (let i = 0; i < props.count; i++) {
       const die = new Mesh(this.geometry, this.material);

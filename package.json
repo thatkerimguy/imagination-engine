@@ -21,7 +21,10 @@
     "writer": "pnpm --filter @kn/writer start",
     "writer:web": "pnpm --filter @kn/writer web",
     "writer:export": "pnpm --filter @kn/writer export:web",
-    "writer:shots": "node scripts/writer-shots.mjs"
+    "writer:shots": "node scripts/writer-shots.mjs",
+    "build:preview-bundle": "node scripts/build-preview-bundle.mjs",
+    "android:prebuild": "node scripts/build-preview-bundle.mjs --if-stale && pnpm --filter @kn/writer exec expo prebuild --platform android --clean",
+    "android:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -24,6 +24,7 @@
     "packages/modules/*/**/*.ts",
     "apps/*/src/**/*",
     "apps/*/vite.config.ts",
+    "apps/*/vite.preview.config.ts",
     "vitest.config.ts"
   ],
   "exclude": ["**/node_modules/**", "**/dist/**", "apps/writer/**"]

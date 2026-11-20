@@ -15,5 +15,8 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enableSymlinks = true;
 config.resolver.unstable_enablePackageExports = true;
+// The built-in offline reader (assets/reader-preview.html) ships as a static asset file, so the
+// three.js / cannon-es inside it never reach the Hermes bytecode bundle.
+config.resolver.assetExts = [...config.resolver.assetExts, 'html'];
 
 module.exports = config;

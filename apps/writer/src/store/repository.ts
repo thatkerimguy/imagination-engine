@@ -11,6 +11,7 @@ import {
   type SectionLabel,
 } from '@kn/core';
 import type { StorageAdapter } from '../storage/types.ts';
+import { CachedAdapter } from './cached-adapter.ts';
 import { DocumentStore, keys } from './documents.ts';
 import { NotFoundError, ValidationError } from './errors.ts';
 import { newSlugId } from './ids.ts';
@@ -52,10 +53,18 @@ function check<T>(what: string, result: ParseResult<T>): T {
 
 export class NovelRepository {
   readonly docs: DocumentStore;
+  private readonly cache: CachedAdapter;
   private readonly listeners = new Set<Listener>();
 
   constructor(adapter: StorageAdapter, now: () => number = Date.now) {
-    this.docs = new DocumentStore(adapter, now);
+    // Read-through cache: every save/delete/import goes through it and updates it atomically.
+    this.cache = new CachedAdapter(adapter);
+    this.docs = new DocumentStore(this.cache, now);
+  }
+
+  /** Forget cached reads after storage changed behind the repository (Doctor repair, restore). */
+  clearCache(): void {
+    this.cache.clear();
   }
 
   subscribe(listener: Listener): () => void {

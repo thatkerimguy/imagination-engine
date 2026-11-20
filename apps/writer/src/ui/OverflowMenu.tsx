@@ -27,7 +27,7 @@ export interface OverflowMenuProps {
 const MENU_WIDTH = 200;
 
 export function OverflowMenu(p: OverflowMenuProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const win = useWindowDimensions();
   const anchor = useRef<ComponentRef<typeof View>>(null);
   const [at, setAt] = useState<{ top: number; left: number } | null>(null);
@@ -70,7 +70,7 @@ export function OverflowMenu(p: OverflowMenuProps): ReactNode {
             style={[
               styles.menu,
               shadow,
-              { top: at.top, left: at.left, backgroundColor: colors.surfaceContainer },
+              { top: at.top, left: at.left, backgroundColor: m3.surfaceContainer },
             ]}
           >
             {p.items.map((item) => {
@@ -83,7 +83,7 @@ export function OverflowMenu(p: OverflowMenuProps): ReactNode {
                   disabled={item.disabled}
                   testID={item.testID}
                   onPress={() => pick(item)}
-                  layerColor={colors.onSurface}
+                  layerColor={m3.onSurface}
                   style={[styles.item, item.disabled && styles.disabled]}
                 >
                   <View style={styles.row}>

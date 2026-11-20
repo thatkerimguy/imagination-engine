@@ -22,13 +22,13 @@ export interface SegmentedButtonsProps<T extends string> {
 }
 
 export function SegmentedButtons<T extends string>(p: SegmentedButtonsProps<T>): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   return (
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={p.accessibilityLabel}
       testID={p.testID}
-      style={[styles.group, { borderColor: colors.outline }]}
+      style={[styles.group, { borderColor: m3.outline }]}
     >
       {p.segments.map((s, i) => {
         const on = s.value === p.value;
@@ -41,11 +41,11 @@ export function SegmentedButtons<T extends string>(p: SegmentedButtonsProps<T>):
             accessibilityState={{ checked: on }}
             testID={p.testID ? `${p.testID}-${s.value}` : undefined}
             onPress={() => p.onChange(s.value)}
-            layerColor={colors[fg]}
+            layerColor={m3[fg]}
             style={[
               styles.segment,
-              i > 0 && { borderLeftWidth: 1, borderColor: colors.outline },
-              on && { backgroundColor: colors.secondaryContainer },
+              i > 0 && { borderLeftWidth: 1, borderColor: m3.outline },
+              on && { backgroundColor: m3.secondaryContainer },
             ]}
           >
             <View style={styles.row}>

@@ -88,7 +88,7 @@ const useStyles = makeStyles((t) => ({
     gap: space.md,
     padding: space.lg,
     borderRadius: shape.medium,
-    backgroundColor: t.colors.errorContainer,
+    backgroundColor: t.m3.errorContainer,
   },
   bannerText: { flex: 1 },
 }));

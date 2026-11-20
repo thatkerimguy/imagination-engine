@@ -26,13 +26,17 @@ import {
   type WriterPrefs,
 } from '../store/writer-prefs.ts';
 import type { ColorRoles } from './m3-tokens.ts';
+import type { FolioColors } from './palette.ts';
 import { DEFAULT_DARK, DEFAULT_LIGHT, getThemeDef, THEMES, type ThemeId } from './themes.ts';
 
 export interface Theme {
   id: ThemeId;
   label: string;
   dark: boolean;
-  colors: ColorRoles;
+  /** Folio colour roles. */
+  colors: FolioColors;
+  /** @deprecated Transitional M3 roles; removed once every screen is on Folio. */
+  m3: ColorRoles;
 }
 
 /** One frozen Theme object per scheme, so makeStyles can cache by identity. */

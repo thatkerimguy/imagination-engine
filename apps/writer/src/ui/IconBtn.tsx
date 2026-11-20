@@ -1,0 +1,54 @@
+// Folio icon button: 44×44 touch target, 20px Feather glyph, quiet tint on press, optional
+// active accent state. No fills, no pills.
+import type { ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
+import { Glyph, type GlyphName } from './Glyph.tsx';
+import { Press, slop } from './Press.tsx';
+import type { InkRole } from './Txt.tsx';
+import { radius, TOUCH } from './tokens.ts';
+import { useTheme } from './theme.tsx';
+
+export interface IconBtnProps {
+  icon: GlyphName;
+  /** Required: icon-only controls must be labelled for screen readers. */
+  accessibilityLabel: string;
+  onPress(): void;
+  /** Glyph colour role (default `inkSecondary`; `accent` when active). */
+  color?: InkRole;
+  /** Active / toggled-on state: accent glyph on a soft tint. */
+  active?: boolean;
+  /** Glyph size (default 20). The touch target stays 44dp. */
+  size?: number;
+  /** Visual box (default 44). Smaller boxes keep a 44dp target via hitSlop. */
+  box?: number;
+  disabled?: boolean;
+  testID?: string;
+}
+
+export function IconBtn(p: IconBtnProps): ReactNode {
+  const { colors } = useTheme();
+  const box = p.box ?? TOUCH;
+  const color: InkRole = p.active ? 'accent' : (p.color ?? 'inkSecondary');
+  return (
+    <Press
+      accessibilityRole="button"
+      accessibilityLabel={p.accessibilityLabel}
+      accessibilityState={{ disabled: !!p.disabled, selected: p.active }}
+      disabled={p.disabled}
+      onPress={p.onPress}
+      testID={p.testID}
+      hitSlop={slop(box)}
+      style={[
+        styles.base,
+        { width: box, height: box },
+        p.active ? { backgroundColor: colors.surfaceTint } : null,
+      ]}
+    >
+      <Glyph name={p.icon} size={p.size ?? 20} color={color} />
+    </Press>
+  );
+}
+
+const styles = StyleSheet.create({
+  base: { borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+});

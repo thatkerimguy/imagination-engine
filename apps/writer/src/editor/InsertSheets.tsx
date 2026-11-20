@@ -57,7 +57,7 @@ export function GimmickPicker(p: {
   onClose(): void;
 }): ReactNode {
   const s = useStyles();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   return (
     <BottomSheet
       visible={p.visible}
@@ -75,7 +75,7 @@ export function GimmickPicker(p: {
             key={m.meta.id}
             accessibilityRole="button"
             accessibilityLabel={`${m.meta.name}. ${m.meta.description}`}
-            layerColor={colors.onSurface}
+            layerColor={m3.onSurface}
             onPress={() => p.onPick(m)}
             testID={`pick-${m.meta.id}`}
             style={s.item}

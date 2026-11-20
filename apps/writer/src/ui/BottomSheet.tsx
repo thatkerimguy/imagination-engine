@@ -32,13 +32,13 @@ export interface BottomSheetProps {
 
 export function BottomSheet(p: BottomSheetProps): ReactNode {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const s = useStyles();
   return (
     <Modal visible={p.visible} transparent animationType="slide" onRequestClose={p.onClose}>
       <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable
-          style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.scrim, 0.32) }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(m3.scrim, 0.32) }]}
           onPress={p.onClose}
           accessibilityLabel="Dismiss sheet"
         />
@@ -85,7 +85,7 @@ const useStyles = makeStyles((t) => ({
   root: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     maxHeight: '90%',
-    backgroundColor: t.colors.surfaceContainerLow,
+    backgroundColor: t.m3.surfaceContainerLow,
     borderTopLeftRadius: shape.extraLarge,
     borderTopRightRadius: shape.extraLarge,
     overflow: 'hidden',
@@ -97,7 +97,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 2,
     marginTop: 16,
     marginBottom: 8,
-    backgroundColor: withAlpha(t.colors.onSurfaceVariant, 0.4),
+    backgroundColor: withAlpha(t.m3.onSurfaceVariant, 0.4),
   },
   header: {
     flexDirection: 'row',
@@ -108,7 +108,7 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: space.md,
   },
   headerText: { flex: 1, gap: 2 },
-  divider: { height: 1, backgroundColor: t.colors.outlineVariant },
+  divider: { height: 1, backgroundColor: t.m3.outlineVariant },
   body: { flexGrow: 0, flexShrink: 1 },
   bodyContent: {
     paddingHorizontal: space.xl,
@@ -124,6 +124,6 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space.xl,
     paddingTop: space.md,
     borderTopWidth: 1,
-    borderColor: t.colors.outlineVariant,
+    borderColor: t.m3.outlineVariant,
   },
 }));

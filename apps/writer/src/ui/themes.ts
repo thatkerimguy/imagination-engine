@@ -2,6 +2,7 @@
 // m3-tokens.test.ts meets WCAG AA (>= 4.5:1). Pure data: each scheme is one row of hex values in
 // ROLE_ORDER; scrim / inverse roles are derived.
 import type { ColorRoles } from './m3-tokens.ts';
+import { folioColors, PALETTE_ROWS, type FolioColors } from './palette.ts';
 
 export const THEME_IDS = [
   'editorial-teal-dark',
@@ -23,7 +24,10 @@ export interface ThemeDef {
   id: ThemeId;
   label: string;
   dark: boolean;
-  colors: ColorRoles;
+  /** Folio colour roles. */
+  colors: FolioColors;
+  /** @deprecated Transitional M3 roles; removed once every screen is on Folio. */
+  m3: ColorRoles;
 }
 
 type BaseRole = Exclude<keyof ColorRoles, 'scrim' | 'inverseSurface' | 'inverseOnSurface'>;
@@ -140,7 +144,8 @@ function scheme([id, label, mode, hex]: (typeof ROWS)[number]): ThemeDef {
     id,
     label,
     dark: mode === 'dark',
-    colors: {
+    colors: folioColors(PALETTE_ROWS[id] ?? '', mode === 'dark'),
+    m3: {
       ...roles,
       scrim: '#000000',
       inverseSurface: roles.onSurface,

@@ -13,7 +13,7 @@ const WebView = WebViewClass as unknown as ComponentType<
 >;
 
 export function PreviewFrame({ url, onMessage, onLoadError, ref }: PreviewFrameProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const web = useRef<WebViewHandle>(null);
   useImperativeHandle(ref, () => ({
     send(message) {
@@ -28,7 +28,7 @@ export function PreviewFrame({ url, onMessage, onLoadError, ref }: PreviewFrameP
     <WebView
       ref={web}
       source={{ uri: url }}
-      style={[styles.web, { backgroundColor: colors.surface }]}
+      style={[styles.web, { backgroundColor: m3.surface }]}
       originWhitelist={['*']}
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}

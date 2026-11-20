@@ -18,7 +18,7 @@ const SAMPLE_PROSE = [
 export function Preview(): ReactNode {
   const [p] = useWriterPrefs();
   const family = useFontFamily(p.fontId);
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   return (
     <Card variant="outlined">
       <View
@@ -33,7 +33,7 @@ export function Preview(): ReactNode {
               fontSize: p.fontSize,
               lineHeight: Math.round(p.fontSize * p.lineHeight),
               textAlign: p.defaultAlign,
-              color: colors.onSurface,
+              color: m3.onSurface,
               marginTop: i ? 8 : 0,
             }}
           >
@@ -54,7 +54,7 @@ export function Swatch({
   selected: boolean;
   onPress(): void;
 }): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   return (
     <Pressable
       testID={`theme-${t.id}`}
@@ -66,17 +66,17 @@ export function Swatch({
         width: '47%',
         padding: 10,
         borderRadius: 12,
-        backgroundColor: t.colors.surface,
+        backgroundColor: t.m3.surface,
         borderWidth: selected ? 2 : 1,
-        borderColor: selected ? colors.primary : colors.outlineVariant,
+        borderColor: selected ? m3.primary : m3.outlineVariant,
       }}
     >
       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
         <View
-          style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: t.colors.primary }}
+          style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: t.m3.primary }}
         />
         <View
-          style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: t.colors.tertiary }}
+          style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: t.m3.tertiary }}
         />
         <View style={{ flex: 1 }} />
         {selected ? <Icon name="check" size={18} color="primary" /> : null}
@@ -84,7 +84,7 @@ export function Swatch({
       <AppText
         variant="labelMedium"
         numberOfLines={1}
-        style={{ color: t.colors.onSurface, marginTop: 6 }}
+        style={{ color: t.m3.onSurface, marginTop: 6 }}
       >
         {t.label}
       </AppText>

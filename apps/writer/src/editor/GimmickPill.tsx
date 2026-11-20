@@ -18,7 +18,7 @@ const useStyles = makeStyles((t) => ({
     padding: space.md,
     borderRadius: shape.large,
     overflow: 'hidden',
-    backgroundColor: t.colors.surfaceContainer,
+    backgroundColor: t.m3.surfaceContainer,
   },
   unknown: { opacity: 0.6 },
   text: { flex: 1, gap: 2 },
@@ -37,7 +37,7 @@ export function GimmickPill(p: {
   onOpen(): void;
 }): ReactNode {
   const s = useStyles();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const module = getWriterModule(p.block.moduleId);
   if (!module) {
     return (
@@ -54,7 +54,7 @@ export function GimmickPill(p: {
     <StatePressable
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${card.subtitle}`}
-      layerColor={colors.onSurface}
+      layerColor={m3.onSurface}
       onPress={() => {
         tapFeedback();
         p.onOpen();

@@ -91,8 +91,8 @@ const useStyles = makeStyles((t) => ({
     gap: space.sm,
   },
   selected: {
-    borderColor: t.colors.outlineVariant,
-    backgroundColor: t.colors.surfaceContainerLow,
+    borderColor: t.m3.outlineVariant,
+    backgroundColor: t.m3.surfaceContainerLow,
   },
   hint: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   actions: { gap: space.sm, paddingTop: space.xs },

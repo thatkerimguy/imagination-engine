@@ -29,9 +29,9 @@ export function DialogueBlockEditor(
   p: InlineEditorProps<DialogueBlock> & RichEditorExtras,
 ): ReactNode {
   const accent = p.block.accentColor;
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const s = useStyles();
-  const tint = accent ?? colors.onSurfaceVariant;
+  const tint = accent ?? m3.onSurfaceVariant;
   const cycle = (): void => {
     tapFeedback();
     const at = ACCENTS.indexOf(accent);
@@ -55,7 +55,7 @@ export function DialogueBlockEditor(
               s.dot,
               accent
                 ? { backgroundColor: accent }
-                : { borderWidth: 2, borderColor: colors.onSurfaceVariant },
+                : { borderWidth: 2, borderColor: m3.onSurfaceVariant },
             ]}
           />
         </Pressable>
@@ -65,7 +65,7 @@ export function DialogueBlockEditor(
           onFocus={p.onSelect}
           onChangeText={(speaker) => p.onChange({ ...p.block, speaker })}
           placeholder="SPEAKER"
-          placeholderTextColor={colors.onSurfaceVariant}
+          placeholderTextColor={m3.onSurfaceVariant}
           autoCapitalize="characters"
           style={[s.speaker, { color: tint }]}
         />

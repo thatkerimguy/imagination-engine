@@ -9,7 +9,7 @@ import type { InlineEditorProps, SceneBreakBlock } from './block-types.ts';
 const useStyles = makeStyles((t) => ({
   wrap: { gap: space.sm, paddingVertical: space.sm },
   divider: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  line: { flex: 1, height: 1, backgroundColor: t.colors.outlineVariant },
+  line: { flex: 1, height: 1, backgroundColor: t.m3.outlineVariant },
 }));
 
 export function SceneBreakEditor(

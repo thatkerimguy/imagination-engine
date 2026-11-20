@@ -49,7 +49,7 @@ describe('M3 colour schemes', () => {
     expect(getThemeDef('editorial-teal-light').dark).toBe(false);
   });
 
-  for (const { id: name, colors: scheme } of THEMES) {
+  for (const { id: name, m3: scheme } of THEMES) {
     it(`${name}: every role is #rrggbb`, () => {
       for (const v of Object.values(scheme)) expect(v).toMatch(/^#[0-9A-F]{6}$/i);
     });

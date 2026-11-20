@@ -25,7 +25,7 @@ import { useTheme } from '../../../ui/theme.tsx';
 export default function OutlineScreen(): ReactNode {
   const { novelId } = useLocalSearchParams<{ novelId: string }>();
   const repo = useRepository();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const { data, error } = useRepoQuery(`outline:${novelId}`, (r) => r.exportNovel(novelId));
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ export default function OutlineScreen(): ReactNode {
 
   const novel = data?.novel;
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+    <View style={{ flex: 1, backgroundColor: m3.surface }}>
       <Stack.Screen
         options={{
           title: novel?.title ?? 'Outline',

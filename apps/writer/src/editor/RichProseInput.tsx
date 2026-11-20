@@ -32,7 +32,7 @@ const useStyles = makeStyles(() => ({
 
 export function RichProseInput(p: RichProseInputProps): ReactNode {
   const typo = useEditorTypography();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const s = useStyles();
   // Last selection pushed to the native input. Re-sending a controlled selection on every render
   // makes some Android IMEs jump the caret, so a `selection` prop is forwarded to the TextInput
@@ -104,9 +104,9 @@ export function RichProseInput(p: RichProseInputProps): ReactNode {
         p.onSelectionChange({ start, end });
       }}
       placeholder={p.placeholder}
-      placeholderTextColor={colors.onSurfaceVariant}
+      placeholderTextColor={m3.onSurfaceVariant}
       textAlignVertical="top"
-      style={[s.input, base, p.baseStyle, { color: p.blockStyle?.fgColor ?? colors.onSurface }]}
+      style={[s.input, base, p.baseStyle, { color: p.blockStyle?.fgColor ?? m3.onSurface }]}
     />
   );
 }

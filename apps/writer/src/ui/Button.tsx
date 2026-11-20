@@ -30,7 +30,7 @@ const ROLES: Record<ButtonVariant, { bg?: keyof ColorRoles; fg: keyof ColorRoles
 };
 
 export function Button(p: ButtonProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const variant = p.variant ?? 'filled';
   const role = ROLES[variant];
   const fg: keyof ColorRoles = p.destructive && !role.bg ? 'error' : role.fg;
@@ -43,14 +43,14 @@ export function Button(p: ButtonProps): ReactNode {
       onPress={p.onPress}
       testID={p.testID}
       hitSlop={slopFor(0, 40)}
-      layerColor={colors[fg]}
+      layerColor={m3[fg]}
       style={[
         styles.base,
         variant === 'text' ? styles.textPad : p.icon ? styles.iconPad : styles.pad,
-        role.bg ? { backgroundColor: colors[role.bg] } : null,
+        role.bg ? { backgroundColor: m3[role.bg] } : null,
         variant === 'outlined' && {
           borderWidth: 1,
-          borderColor: p.destructive ? colors.error : colors.outline,
+          borderColor: p.destructive ? m3.error : m3.outline,
         },
         p.disabled && styles.disabled,
         p.style,

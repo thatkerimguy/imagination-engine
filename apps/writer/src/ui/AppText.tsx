@@ -17,6 +17,6 @@ export function AppText({
   style,
   ...rest
 }: AppTextProps): ReactNode {
-  const { colors } = useTheme();
-  return <Text {...rest} style={[typescale[variant], { color: colors[color] }, style]} />;
+  const { m3 } = useTheme();
+  return <Text {...rest} style={[typescale[variant], { color: m3[color] }, style]} />;
 }

@@ -27,9 +27,9 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     paddingTop: space.sm,
     paddingHorizontal: space.sm,
-    backgroundColor: t.colors.surfaceContainer,
+    backgroundColor: t.m3.surfaceContainer,
     borderTopWidth: 1,
-    borderTopColor: t.colors.outlineVariant,
+    borderTopColor: t.m3.outlineVariant,
   },
   action: {
     flex: 1,
@@ -46,7 +46,7 @@ const useStyles = makeStyles((t) => ({
 export function InsertBar({ onPick }: { onPick(choice: InsertChoice): void }): ReactNode {
   const insets = useSafeAreaInsets();
   const s = useStyles();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   return (
     <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
       {INSERT_CHOICES.map((c) => (
@@ -55,7 +55,7 @@ export function InsertBar({ onPick }: { onPick(choice: InsertChoice): void }): R
           accessibilityRole="button"
           accessibilityLabel={`Insert ${c.label}`}
           testID={c.testID}
-          layerColor={colors.onSurface}
+          layerColor={m3.onSurface}
           onPress={() => {
             tapFeedback();
             onPick(c.choice);

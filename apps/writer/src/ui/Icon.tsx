@@ -14,7 +14,7 @@ export interface IconProps {
 }
 
 export function Icon({ name, size = 24, color = 'onSurfaceVariant' }: IconProps): ReactNode {
-  const { colors } = useTheme();
-  const c = color.startsWith('#') ? color : colors[color as keyof ColorRoles];
+  const { m3 } = useTheme();
+  const c = color.startsWith('#') ? color : m3[color as keyof ColorRoles];
   return <MaterialIcons name={name} size={size} color={c} accessible={false} />;
 }

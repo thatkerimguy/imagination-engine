@@ -28,7 +28,7 @@ const useStyles = makeStyles((t) => ({
     position: 'absolute',
     right: space.lg,
     opacity: 0.92,
-    backgroundColor: t.colors.secondaryContainer,
+    backgroundColor: t.m3.secondaryContainer,
     borderRadius: shape.full,
     paddingHorizontal: space.lg,
     height: 40,

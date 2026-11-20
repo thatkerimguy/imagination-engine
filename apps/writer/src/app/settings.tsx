@@ -10,7 +10,7 @@ import {
 import { useRepository } from '../store/context.tsx';
 import { loadDemoNovel } from '../store/demo.ts';
 import { Button } from '../ui/Button.tsx';
-import { useConfirm } from '../ui/Dialog.tsx';
+import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { Card, Muted, Row, Screen, SectionTitle } from '../ui/layout.tsx';
 import { routes } from '../routes.ts';
 import { TextField } from '../ui/TextField.tsx';

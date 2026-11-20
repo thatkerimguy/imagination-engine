@@ -90,7 +90,7 @@ export const toolLabel = (id: ToolId): string => LABELS[id];
 export const toolFace = (id: ToolId): Face => FACES[id];
 
 const useStyles = makeStyles((t) => ({
-  bar: { backgroundColor: t.colors.surfaceContainer },
+  bar: { backgroundColor: t.m3.surfaceContainer },
   content: { paddingHorizontal: space.xs, alignItems: 'center' },
   btn: {
     minWidth: TOUCH,
@@ -102,8 +102,8 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
     gap: space.xs,
   },
-  on: { backgroundColor: t.colors.secondaryContainer },
-  pressed: { backgroundColor: t.colors.surfaceContainerHighest },
+  on: { backgroundColor: t.m3.secondaryContainer },
+  pressed: { backgroundColor: t.m3.surfaceContainerHighest },
   off: { opacity: 0.38 },
 }));
 

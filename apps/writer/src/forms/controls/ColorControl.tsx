@@ -27,7 +27,7 @@ const DEFAULT_SWATCHES = [
 export function ColorControl({ field, value, onChange, errors }: ControlProps<'color'>): ReactNode {
   const hex = asString(value);
   const s = useStyles();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const swatches = field.swatches ?? DEFAULT_SWATCHES;
   return (
     <View style={{ gap: space.md }}>
@@ -49,7 +49,7 @@ export function ColorControl({ field, value, onChange, errors }: ControlProps<'c
               style={[
                 s.swatch,
                 { backgroundColor: c },
-                on && { borderWidth: 3, borderColor: colors.primary },
+                on && { borderWidth: 3, borderColor: m3.primary },
               ]}
             >
               {on ? <Icon name="check" size={24} color={readableOn(c)} /> : null}
@@ -59,7 +59,7 @@ export function ColorControl({ field, value, onChange, errors }: ControlProps<'c
       </View>
       <View style={s.hexRow}>
         <View
-          style={[s.dot, { backgroundColor: isHexColor(hex) ? hex : colors.surfaceContainerHigh }]}
+          style={[s.dot, { backgroundColor: isHexColor(hex) ? hex : m3.surfaceContainerHigh }]}
         />
         <View style={{ width: 140 }}>
           <TextField
@@ -90,7 +90,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: t.colors.outlineVariant,
+    borderColor: t.m3.outlineVariant,
   },
   hexRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   dot: {
@@ -98,6 +98,6 @@ const useStyles = makeStyles((t) => ({
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: t.colors.outlineVariant,
+    borderColor: t.m3.outlineVariant,
   },
 }));

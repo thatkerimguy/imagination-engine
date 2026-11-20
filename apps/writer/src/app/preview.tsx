@@ -30,13 +30,13 @@ const TIER_SEGMENTS: readonly Segment<PreviewTier>[] = PREVIEW_TIERS.map((t) => 
 }));
 
 const useStyles = makeStyles((t) => ({
-  screen: { flex: 1, backgroundColor: t.colors.surface },
+  screen: { flex: 1, backgroundColor: t.m3.surface },
   toolbar: {
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
     gap: space.sm,
     borderBottomWidth: 1,
-    borderColor: t.colors.outlineVariant,
+    borderColor: t.m3.outlineVariant,
   },
   note: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dot: { width: 8, height: 8, borderRadius: 4 },
@@ -46,7 +46,7 @@ const useStyles = makeStyles((t) => ({
     padding: space.lg,
     gap: space.sm,
     borderRadius: shape.large,
-    backgroundColor: t.colors.errorContainer,
+    backgroundColor: t.m3.errorContainer,
   },
   bannerHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   bannerTitle: { flex: 1 },
@@ -61,7 +61,7 @@ export default function PreviewScreen(): ReactNode {
   }>();
   const { data, loading } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const frame = useRef<PreviewFrameHandle>(null);
   const [tier, setTier] = useState<PreviewTier>('auto');
   const [session, setSession] = useState(0);
@@ -144,7 +144,7 @@ export default function PreviewScreen(): ReactNode {
           <View
             style={[
               styles.dot,
-              { backgroundColor: status === 'live' ? colors.primary : colors.outline },
+              { backgroundColor: status === 'live' ? m3.primary : m3.outline },
             ]}
           />
           <AppText variant="labelSmall" color="onSurfaceVariant">

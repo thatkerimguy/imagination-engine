@@ -21,10 +21,10 @@ export interface GrowthAreaChartProps {
 const PAD = 12;
 
 export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const { points, metric, width, onInspect } = p;
   const height = p.height ?? 120;
-  const color = p.color ?? colors.primary;
+  const color = p.color ?? m3.primary;
   const [active, setActive] = useState<number | null>(null);
   const gid = `grad-${metric}`;
 
@@ -66,7 +66,7 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
             x2={width - PAD}
             y1={height / 2}
             y2={height / 2}
-            stroke={colors.outlineVariant}
+            stroke={m3.outlineVariant}
             strokeWidth={2}
           />
           {pts[0] ? <Circle cx={pts[0].x} cy={pts[0].y} r={5} fill={color} /> : null}
@@ -105,7 +105,7 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
           x2={width - PAD}
           y1={height - PAD}
           y2={height - PAD}
-          stroke={colors.outlineVariant}
+          stroke={m3.outlineVariant}
           strokeWidth={1}
         />
         {sel ? (
@@ -115,7 +115,7 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
               x2={sel.x}
               y1={PAD}
               y2={height - PAD}
-              stroke={colors.outline}
+              stroke={m3.outline}
               strokeWidth={1}
               strokeDasharray="3 3"
             />
@@ -124,7 +124,7 @@ export function GrowthAreaChart(p: GrowthAreaChartProps): ReactNode {
               cy={sel.y}
               r={6}
               fill={color}
-              stroke={colors.surfaceContainer}
+              stroke={m3.surfaceContainer}
               strokeWidth={2}
             />
           </>

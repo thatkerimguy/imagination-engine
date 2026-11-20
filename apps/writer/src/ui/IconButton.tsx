@@ -21,7 +21,7 @@ export interface IconButtonProps {
 }
 
 export function IconButton(p: IconButtonProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const size = p.size ?? 40;
   const tonal = p.variant === 'tonal' || p.selected;
   const fg: keyof ColorRoles = p.color ?? (tonal ? 'onSecondaryContainer' : 'onSurfaceVariant');
@@ -34,11 +34,11 @@ export function IconButton(p: IconButtonProps): ReactNode {
       onPress={p.onPress}
       testID={p.testID}
       hitSlop={slopFor(size)}
-      layerColor={colors[fg]}
+      layerColor={m3[fg]}
       style={[
         styles.base,
         { width: size, height: size },
-        tonal && { backgroundColor: colors.secondaryContainer },
+        tonal && { backgroundColor: m3.secondaryContainer },
         p.disabled && styles.disabled,
       ]}
     >

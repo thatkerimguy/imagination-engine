@@ -28,7 +28,7 @@ export interface ChapterRowProps {
 
 export function ChapterRow(p: ChapterRowProps): ReactNode {
   const s = useStyles();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const [editing, setEditing] = useState(false);
   const c = p.chapter;
   if (editing) {
@@ -53,7 +53,7 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
         onPress={p.onOpen}
         accessibilityRole="button"
         accessibilityLabel={`Open ${c.title}`}
-        layerColor={colors.onSurface}
+        layerColor={m3.onSurface}
         style={s.title}
       >
         <AppText variant="titleMedium" numberOfLines={2}>
@@ -65,7 +65,7 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
         accessibilityRole="button"
         accessibilityLabel={`Status ${c.status}, tap to change`}
         hitSlop={12}
-        layerColor={colors.onSurface}
+        layerColor={m3.onSurface}
         testID={`chapter-status-${c.id}`}
       >
         <StatusBadge label={LABEL[c.status]} tone={TONE[c.status]} />
@@ -97,7 +97,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: t.colors.surfaceContainer,
+    backgroundColor: t.m3.surfaceContainer,
     borderRadius: shape.medium,
     paddingLeft: space.lg,
     paddingRight: space.xs,

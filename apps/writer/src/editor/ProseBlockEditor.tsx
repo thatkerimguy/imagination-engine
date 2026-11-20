@@ -26,7 +26,7 @@ export interface RichEditorExtras {
 
 const useStyles = makeStyles((t) => ({
   wrap: { gap: space.sm },
-  whisper: { fontStyle: 'italic', color: t.colors.onSurfaceVariant },
+  whisper: { fontStyle: 'italic', color: t.m3.onSurfaceVariant },
   emphasis: { fontWeight: '700' },
 }));
 

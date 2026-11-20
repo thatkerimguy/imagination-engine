@@ -16,7 +16,7 @@ export interface SwitchProps {
 }
 
 export function Switch(p: SwitchProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const on = p.value;
   return (
     <Pressable
@@ -30,15 +30,15 @@ export function Switch(p: SwitchProps): ReactNode {
       style={[
         styles.track,
         on
-          ? { backgroundColor: colors.primary, borderColor: colors.primary }
-          : { backgroundColor: colors.surfaceContainerHighest, borderColor: colors.outline },
+          ? { backgroundColor: m3.primary, borderColor: m3.primary }
+          : { backgroundColor: m3.surfaceContainerHighest, borderColor: m3.outline },
         p.disabled && styles.disabled,
       ]}
     >
       <View
         style={[
           on ? styles.thumbOn : styles.thumbOff,
-          { backgroundColor: on ? colors.onPrimary : colors.outline },
+          { backgroundColor: on ? m3.onPrimary : m3.outline },
         ]}
       >
         {on ? <Icon name="check" size={16} color="primary" /> : null}

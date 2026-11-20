@@ -37,13 +37,13 @@ const useStyles = makeStyles((t) => ({
     height: 32,
     paddingHorizontal: space.md,
     borderRadius: shape.full,
-    backgroundColor: t.colors.secondaryContainer,
+    backgroundColor: t.m3.secondaryContainer,
   },
   actions: { flexDirection: 'row', alignItems: 'center' },
   popover: {
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    backgroundColor: t.colors.surfaceContainerHigh,
+    backgroundColor: t.m3.surfaceContainerHigh,
     borderTopLeftRadius: shape.large,
     borderTopRightRadius: shape.large,
     gap: space.xs,
@@ -55,7 +55,6 @@ export function EditorTopBar(p: EditorTopBarProps): ReactNode {
   return (
     <TopBar
       title=""
-      height={56}
       scrolled={p.scrolled}
       onBack={p.onBack}
       testID="editor-top-bar"

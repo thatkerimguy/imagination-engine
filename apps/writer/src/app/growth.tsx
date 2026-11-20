@@ -45,17 +45,17 @@ function MetricCard(p: {
   points: GrowthPoint[];
   width: number;
 }): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const [inspected, setInspected] = useState<GrowthPoint | null>(null);
   const last = p.points.at(-1);
   const delta = periodDelta(p.points)[p.metric];
   const deltaColor =
-    delta > 0 ? colors.primary : delta < 0 ? colors.error : colors.onSurfaceVariant;
+    delta > 0 ? m3.primary : delta < 0 ? m3.error : m3.onSurfaceVariant;
   return (
     <View
       testID={`growth-card-${p.metric}`}
       style={{
-        backgroundColor: colors.surfaceContainer,
+        backgroundColor: m3.surfaceContainer,
         borderRadius: shape.large,
         padding: space.lg,
         gap: space.sm,

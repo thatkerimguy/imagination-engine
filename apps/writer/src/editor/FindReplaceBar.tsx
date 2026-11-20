@@ -19,7 +19,7 @@ export interface FindReplaceBarProps {
 
 const useStyles = makeStyles((t) => ({
   bar: {
-    backgroundColor: t.colors.surfaceContainer,
+    backgroundColor: t.m3.surfaceContainer,
     paddingHorizontal: space.sm,
     paddingBottom: space.sm,
     gap: space.xs,

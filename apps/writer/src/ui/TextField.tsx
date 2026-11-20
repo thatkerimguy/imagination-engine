@@ -17,9 +17,9 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
 
 export function TextField(p: TextFieldProps): ReactNode {
   const { label, help, error, trailingHelp, dense, multiline, onFocus, onBlur, ...input } = p;
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const [focused, setFocused] = useState(false);
-  const border = error ? colors.error : focused ? colors.primary : colors.outline;
+  const border = error ? m3.error : focused ? m3.primary : m3.outline;
   // A 2dp border eats 1dp of padding so text never shifts when the field gains focus.
   const thick = focused || !!error;
   const pad = {
@@ -37,7 +37,7 @@ export function TextField(p: TextFieldProps): ReactNode {
         </AppText>
       ) : null}
       <TextInput
-        placeholderTextColor={colors.onSurfaceVariant}
+        placeholderTextColor={m3.onSurfaceVariant}
         multiline={multiline}
         accessibilityLabel={label}
         {...input}
@@ -55,7 +55,7 @@ export function TextField(p: TextFieldProps): ReactNode {
           dense && styles.dense,
           multiline && (dense ? styles.multilineDense : styles.multiline),
           pad,
-          { color: colors.onSurface, borderColor: border, borderWidth: thick ? 2 : 1 },
+          { color: m3.onSurface, borderColor: border, borderWidth: thick ? 2 : 1 },
         ]}
       />
       {error || help || trailingHelp ? (

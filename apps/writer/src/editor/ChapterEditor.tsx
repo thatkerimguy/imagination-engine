@@ -254,7 +254,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
 }
 
 const useStyles = makeStyles((t) => ({
-  screen: { flex: 1, backgroundColor: t.colors.surface },
+  screen: { flex: 1, backgroundColor: t.m3.surface },
   flex: { flex: 1 },
   content: { paddingTop: space.lg, gap: space.sm, paddingBottom: space.xl * 3 },
   title: { fontSize: 26, lineHeight: 34, fontWeight: '700' },

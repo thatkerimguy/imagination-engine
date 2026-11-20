@@ -16,7 +16,7 @@ export interface FabProps {
 }
 
 export function Fab(p: FabProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -28,8 +28,8 @@ export function Fab(p: FabProps): ReactNode {
         accessibilityLabel={p.label}
         onPress={p.onPress}
         testID={p.testID}
-        layerColor={colors.onPrimaryContainer}
-        style={[styles.fab, { backgroundColor: colors.primaryContainer }, elevation]}
+        layerColor={m3.onPrimaryContainer}
+        style={[styles.fab, { backgroundColor: m3.primaryContainer }, elevation]}
       >
         <View style={styles.row}>
           <Icon name={p.icon} color="onPrimaryContainer" />

@@ -11,7 +11,7 @@ import {
   toggleBeatStop,
 } from '../store/chapter-ops.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { useConfirm } from '../ui/Dialog.tsx';
+import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import type { InsertChoice } from './InsertBar.tsx';
 
 /** Selection, sheet state and every block mutation for the editor screen. */

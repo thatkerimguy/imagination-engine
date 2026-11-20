@@ -20,7 +20,7 @@ export interface ChipProps {
 }
 
 export function Chip(p: ChipProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const fg = p.selected ? 'onSecondaryContainer' : 'onSurfaceVariant';
   return (
     <StatePressable
@@ -31,12 +31,12 @@ export function Chip(p: ChipProps): ReactNode {
       disabled={!p.onPress || p.disabled}
       testID={p.testID}
       hitSlop={slopFor(0, 32)}
-      layerColor={colors[fg]}
+      layerColor={m3[fg]}
       style={[
         styles.chip,
         p.selected
-          ? { backgroundColor: colors.secondaryContainer, borderColor: colors.secondaryContainer }
-          : { borderColor: colors.outline },
+          ? { backgroundColor: m3.secondaryContainer, borderColor: m3.secondaryContainer }
+          : { borderColor: m3.outline },
         (p.selected || p.icon || p.dot) && styles.withLeading,
         p.disabled && styles.disabled,
       ]}

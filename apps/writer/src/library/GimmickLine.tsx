@@ -16,7 +16,7 @@ export function GimmickLine({
   enabled: readonly string[];
   onPress(): void;
 }): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const mods = enabledWriterModules(enabled);
   return (
     <StatePressable
@@ -24,7 +24,7 @@ export function GimmickLine({
       accessibilityRole="button"
       accessibilityLabel="Gimmick modules"
       testID="outline-gimmicks"
-      layerColor={colors.onSurface}
+      layerColor={m3.onSurface}
       style={styles.row}
     >
       <AppText variant="labelLarge" color="onSurfaceVariant">

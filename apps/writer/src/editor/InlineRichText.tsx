@@ -19,7 +19,7 @@ export interface InlineRichTextProps {
 const useStyles = makeStyles((t) => ({
   quote: {
     borderLeftWidth: 3,
-    borderLeftColor: t.colors.primary,
+    borderLeftColor: t.m3.primary,
     paddingLeft: space.md,
   },
   listRow: { flexDirection: 'row' },
@@ -40,7 +40,7 @@ export function blockTextStyle(style: BlockStyle | undefined, typo: EditorTypogr
 }
 
 export function InlineRichText(p: InlineRichTextProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const s = useStyles();
   const st = p.style;
   const indent = !!(st?.indent || p.typography.firstLineIndent) && !st?.heading && !st?.list;
@@ -54,7 +54,7 @@ export function InlineRichText(p: InlineRichTextProps): ReactNode {
       ...(deco.length
         ? { textDecorationLine: deco.join(' ') as TextStyle['textDecorationLine'] }
         : null),
-      ...(r.highlight ? { backgroundColor: withAlpha(colors.tertiary, 0.3) } : null),
+      ...(r.highlight ? { backgroundColor: withAlpha(m3.tertiary, 0.3) } : null),
       ...(r.fg ? { color: r.fg } : null),
       ...(r.bg ? { backgroundColor: r.bg } : null),
     };
@@ -65,9 +65,9 @@ export function InlineRichText(p: InlineRichTextProps): ReactNode {
       testID={p.testID}
       style={[
         blockTextStyle(st, p.typography),
-        { color: st?.fgColor ?? colors.onSurface },
+        { color: st?.fgColor ?? m3.onSurface },
         st?.bgColor ? { backgroundColor: st.bgColor } : null,
-        st?.quote ? { fontStyle: 'italic', color: st.fgColor ?? colors.onSurfaceVariant } : null,
+        st?.quote ? { fontStyle: 'italic', color: st.fgColor ?? m3.onSurfaceVariant } : null,
         p.baseStyle,
       ]}
     >
@@ -77,7 +77,7 @@ export function InlineRichText(p: InlineRichTextProps): ReactNode {
           <Text
             key={i}
             accessibilityLabel={`Comment: ${r.comment}`}
-            style={{ color: colors.tertiary, fontSize: p.typography.fontSize * 0.6 }}
+            style={{ color: m3.tertiary, fontSize: p.typography.fontSize * 0.6 }}
           >
             {'\u{1F4AC}'}
           </Text>
@@ -94,7 +94,7 @@ export function InlineRichText(p: InlineRichTextProps): ReactNode {
   if (st?.list === 'bullet') {
     out = (
       <View style={s.listRow}>
-        <Text style={[blockTextStyle(st, p.typography), { color: colors.onSurface }]}>{'•  '}</Text>
+        <Text style={[blockTextStyle(st, p.typography), { color: m3.onSurface }]}>{'•  '}</Text>
         <View style={s.listBody}>{body}</View>
       </View>
     );

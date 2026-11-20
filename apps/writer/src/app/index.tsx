@@ -9,7 +9,7 @@ import { DEMO_NOVEL_ID, loadDemoNovel } from '../store/demo.ts';
 import { useRepoQuery, useRepository } from '../store/context.tsx';
 import { AppText } from '../ui/AppText.tsx';
 import { Button } from '../ui/Button.tsx';
-import { useConfirm } from '../ui/Dialog.tsx';
+import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { Fab } from '../ui/Fab.tsx';
 import { IconButton } from '../ui/IconButton.tsx';
 import { EmptyState, Screen } from '../ui/layout.tsx';
@@ -19,7 +19,7 @@ import { useTheme } from '../ui/theme.tsx';
 export default function BookshelfScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const { data: novels, error } = useRepoQuery('shelf', (r) => r.listNovels());
 
   const remove = async (id: string, title: string): Promise<void> => {
@@ -55,7 +55,7 @@ export default function BookshelfScreen(): ReactNode {
 
   const empty = novels?.length === 0;
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+    <View style={{ flex: 1, backgroundColor: m3.surface }}>
       <Stack.Screen
         options={{
           title: 'Bookshelf',

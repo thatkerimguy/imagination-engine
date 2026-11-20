@@ -39,7 +39,7 @@ const useStyles = makeStyles((t) => ({
     height: 38,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.surfaceContainerLow,
+    backgroundColor: t.m3.surfaceContainerLow,
   },
   strip: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.sm },
   pill: {
@@ -49,7 +49,7 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space.sm,
     height: 28,
     borderRadius: shape.small,
-    backgroundColor: t.colors.surfaceContainerHigh,
+    backgroundColor: t.m3.surfaceContainerHigh,
     justifyContent: 'center',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48 },

@@ -20,7 +20,7 @@ export function NovelCard({
   onExport(): void;
   onDelete(): void;
 }): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const items: MenuItem[] = [
     {
       label: 'Export JSON',
@@ -43,7 +43,7 @@ export function NovelCard({
         accessibilityRole="button"
         accessibilityLabel={`Open ${novel.title}`}
         testID={`novel-card-${novel.id}`}
-        layerColor={colors.onSurface}
+        layerColor={m3.onSurface}
         style={styles.body}
       >
         <IconBadge glyph={(novel.title.trim()[0] ?? '?').toUpperCase()} tone="primary" />

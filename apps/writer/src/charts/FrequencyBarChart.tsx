@@ -18,7 +18,7 @@ export function FrequencyBarChart({
   width,
   barHeight = 20,
 }: FrequencyBarChartProps): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const rowH = barHeight + 8;
   const trackX = LABEL_W + GAP;
   const trackW = Math.max(0, width - trackX - COUNT_W - GAP);
@@ -31,7 +31,7 @@ export function FrequencyBarChart({
     >
       {data.map((d, i) => (
         <G key={d.word} y={i * rowH}>
-          <SvgText x={0} y={barHeight * 0.72} fontSize={13} fill={colors.onSurface}>
+          <SvgText x={0} y={barHeight * 0.72} fontSize={13} fill={m3.onSurface}>
             {d.word.length > 13 ? `${d.word.slice(0, 12)}…` : d.word}
           </SvgText>
           <Rect
@@ -40,7 +40,7 @@ export function FrequencyBarChart({
             width={trackW}
             height={barHeight}
             rx={barHeight / 2}
-            fill={colors.surfaceContainerHighest}
+            fill={m3.surfaceContainerHighest}
           />
           <Rect
             x={trackX}
@@ -48,13 +48,13 @@ export function FrequencyBarChart({
             width={Math.max(barHeight / 2, (d.count / max) * trackW)}
             height={barHeight}
             rx={barHeight / 2}
-            fill={colors.primary}
+            fill={m3.primary}
           />
           <SvgText
             x={width}
             y={barHeight * 0.72}
             fontSize={13}
-            fill={colors.onSurfaceVariant}
+            fill={m3.onSurfaceVariant}
             textAnchor="end"
           >
             {String(d.count)}

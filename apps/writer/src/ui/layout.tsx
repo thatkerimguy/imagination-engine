@@ -96,10 +96,10 @@ export function StatusBadge({
   tone?: BadgeTone;
   icon?: IconName;
 }): ReactNode {
-  const { colors } = useTheme();
+  const { m3 } = useTheme();
   const [bg, fg] = TONES[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: colors[bg] }]}>
+    <View style={[styles.badge, { backgroundColor: m3[bg] }]}>
       {icon ? <Icon name={icon} size={14} color={fg} /> : null}
       <AppText variant="labelSmall" color={fg}>
         {label}
@@ -118,9 +118,9 @@ export function IconBadge({
   size?: number;
   tone?: 'secondary' | 'primary' | 'tertiary';
 }): ReactNode {
-  const { colors } = useTheme();
-  const bg = colors[`${tone}Container`];
-  const fg = colors[`on${tone[0]!.toUpperCase()}${tone.slice(1)}Container` as keyof ColorRoles];
+  const { m3 } = useTheme();
+  const bg = m3[`${tone}Container`];
+  const fg = m3[`on${tone[0]!.toUpperCase()}${tone.slice(1)}Container` as keyof ColorRoles];
   return (
     <View
       style={[styles.iconBadge, { width: size, height: size, backgroundColor: bg }]}
@@ -159,12 +159,12 @@ export function EmptyState({
 }
 
 const useStyles = makeStyles((t) => ({
-  screen: { flex: 1, backgroundColor: t.colors.surface },
+  screen: { flex: 1, backgroundColor: t.m3.surface },
   content: { padding: space.lg, gap: space.md, paddingBottom: 120 },
   card: { borderRadius: shape.medium, padding: space.lg, gap: space.sm },
-  filled: { backgroundColor: t.colors.surfaceContainer },
+  filled: { backgroundColor: t.m3.surfaceContainer },
   elevated: {
-    backgroundColor: t.colors.surfaceContainerLow,
+    backgroundColor: t.m3.surfaceContainerLow,
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 3,
@@ -172,9 +172,9 @@ const useStyles = makeStyles((t) => ({
     elevation: 1,
   },
   outlined: {
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.m3.surface,
     borderWidth: 1,
-    borderColor: t.colors.outlineVariant,
+    borderColor: t.m3.outlineVariant,
   },
   section: { marginTop: space.md },
 }));

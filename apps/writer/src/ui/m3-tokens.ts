@@ -36,8 +36,8 @@ export interface ColorRoles {
 }
 
 /** System-default schemes (Editorial Teal night / day); the full set lives in themes.ts. */
-export const darkColors: ColorRoles = getThemeDef(DEFAULT_DARK).colors;
-export const lightColors: ColorRoles = getThemeDef(DEFAULT_LIGHT).colors;
+export const darkColors: ColorRoles = getThemeDef(DEFAULT_DARK).m3;
+export const lightColors: ColorRoles = getThemeDef(DEFAULT_LIGHT).m3;
 
 export type TypeRole =
   | 'headlineSmall'

@@ -169,6 +169,9 @@ From `sample-novels/vertical-slice/seasons/s01/ch01.json`. The Author never type
 
 ### Screenshot Pack Notes
 
+- The PNGs were attached to the Pass 1 handoff and removed from the tree in Pass 2. Regenerate them with
+  `node scripts/smoke.mjs --shots qa-shots` (that folder is git-ignored).
+
 - Shots 01–05 and 08 are at 390×844 @2×. Shots 06–07 are at @1×, because the 20-throw runs are too slow on a software GPU at 2×.
 - For shot 04, the smoke script adds temporary bottom padding to the page. This lets the end of a revealed segment scroll far enough to sit under the bar.
 - The dark theme hides most of the contact shadows by design (black on near-black). They read clearly on the Warm theme.

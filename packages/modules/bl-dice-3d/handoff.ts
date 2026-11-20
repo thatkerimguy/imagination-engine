@@ -36,5 +36,7 @@ export function fadeProgress(t: number, start: number): number {
 /** Contact-shadow strength by height above the page: soft and faint in the air, firm on landing. */
 export function shadowFor(height: number): { opacity: number; scale: number; offset: number } {
   const h = Math.max(0, height);
-  return { opacity: 0.5 / (1 + h * 1.4), scale: 1.25 + h * 0.55, offset: h * 0.45 };
+  // At rest the blob spreads past the die and sits slightly down-right of it, so a contact
+  // shadow still reads around the die's footprint on light themes.
+  return { opacity: 0.55 / (1 + h * 1.4), scale: 1.75 + h * 0.55, offset: 0.16 + h * 0.45 };
 }

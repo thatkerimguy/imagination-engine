@@ -59,6 +59,7 @@ try {
 
   await readerPass(await newPage(), shot, settled, resetSettled);
   await sandboxPass(await newPage(1), shot, settled, resetSettled);
+  await warmPass(await newPage(), shot, settled);
   const fresh = await newPage();
   await fresh.goto(`${BASE}sandbox/?module=gits-cyberbrain-chat&tier=high`);
   await fresh.getByRole('button', { name: 'Trigger Beat' }).click();
@@ -91,6 +92,15 @@ async function readerPass(page, shot, settled, resetSettled) {
   await settled(page);
   await page.waitForTimeout(250);
   await shot(page, '02-ivory-dice-settled');
+  // Beats are queued in document order: the thought-link must be complete before dice land.
+  const kestrel = await page.evaluate(() => ({
+    pending: document.querySelectorAll('.kn-cbc li.pending').length,
+    last: document.querySelector('.kn-cbc li:last-child')?.textContent,
+  }));
+  if (kestrel.pending === 0 && kestrel.last === "Don't relax.")
+    ok('KESTREL-9 finished all 3 lines before the dice settled');
+  else fail(`dice settled while KESTREL-9 was incomplete: ${JSON.stringify(kestrel)}`);
+  await shot(page, '01-kestrel-complete-before-dice');
   if (await page.locator('.kn-dice-result').count()) fail('result chip visible during hold');
   const chip1 = page.locator('.kn-dice-result').first();
   await chip1.waitFor({ timeout: 6000 });
@@ -134,6 +144,8 @@ async function sandboxPass(page, shot, settled, resetSettled) {
   const stats = page.locator('.sb-stats');
   const trigger = page.getByRole('button', { name: 'Trigger Beat' });
   await page.goto(`${BASE}sandbox/?module=bl-dice-3d&tier=high`);
+  await page.waitForTimeout(600);
+  await shot(page, '03-sandbox-top-line-crisp');
 
   // Determinism: 10 scripted throws must all read [1,1].
   for (let i = 0; i < 10; i++) {
@@ -200,13 +212,33 @@ async function sandboxPass(page, shot, settled, resetSettled) {
       `  ${tier} before: ${before}\n  ${tier} during: ${during}\n  ${tier} after:  ${after}`,
     );
     if (!after?.includes('No leaks')) fail(`leak check failed on ${tier}`);
-    if (tier === 'high') await shot(page, '07-sandbox-post-x20-telemetry');
+    if (tier === 'high') {
+      await shot(page, '07-sandbox-post-x20-telemetry');
+      await shot(page, '04-post-x20-high-regression');
+    }
     if (tier === 'reduced') {
       await trigger.click();
       await page.locator('.kn-dice-result').waitFor();
       await shot(page, '06-sandbox-reduced-mode');
     }
   }
+}
+
+async function warmPass(page, shot, settled) {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'kn:prefs',
+      JSON.stringify({ fontScale: 1, theme: 'warm', tier: 'auto', sound: true }),
+    ),
+  );
+  await page.goto(`${BASE}sandbox/?module=bl-dice-3d&tier=high`);
+  await page.getByRole('button', { name: 'Trigger Beat' }).click();
+  await page.locator('.kn-stage-gl:not([hidden])').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(150);
+  await shot(page, '02a-warm-theme-dice-midroll');
+  await settled(page);
+  await page.waitForTimeout(200);
+  await shot(page, '02-warm-theme-dice-shadows');
 }
 
 async function waitFor(url) {

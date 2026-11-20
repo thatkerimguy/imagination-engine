@@ -17,7 +17,7 @@ pnpm check        # typecheck + lint + unit tests
 pnpm build        # production build + bundle budget gate (initial JS < 40 KB gz, 3D only lazy)
 pnpm preview      # serve the build on http://127.0.0.1:4173
 pnpm smoke        # browser smoke test against the build (needs Playwright + Chromium);
-                  # `node scripts/smoke.mjs --shots docs/qa/phase-1` regenerates the QA pack
+                  # `node scripts/smoke.mjs --shots qa-shots` writes a QA pack (git-ignored)
 ```
 
 To try it on a phone, forward the port (`adb reverse tcp:5173 tcp:5173` on Android) or run

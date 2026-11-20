@@ -25,6 +25,8 @@ import { DIE_SIZE, FLOATS_PER_DIE, STEP, recordThrow, type ThrowRecording } from
 import type { DiceProps } from './schema.ts';
 
 export const KEY_LIGHT = 1.7;
+/** World units the dice rise while fading out (about two thirds of a die). */
+export const LIFT_HEIGHT = 0.65;
 export const AMBIENT_LIGHT = 0.32;
 
 type Phase = 'idle' | 'roll' | 'hold' | 'fade' | 'done';
@@ -99,6 +101,7 @@ export class HighDice {
       this.finish = resolve;
       let t = 0;
       let fadeStart = 0;
+      const settledZ: number[] = [];
       const q = new Quaternion();
       const q2 = new Quaternion();
       this.meshes.forEach((m, i) => (m.visible = this.shadows[i]!.visible = true));
@@ -111,6 +114,7 @@ export class HighDice {
           this.applyFrame(rec, Math.min(t, settleAt), q, q2, 1);
           if (t < settleAt) return;
           this.phase = 'hold';
+          this.meshes.forEach((m, i) => (settledZ[i] = m.position.z));
           navigator.vibrate?.(12);
           void holdOrTap(props.holdSeconds, signal).then(() => {
             if (this.phase !== 'hold') return;
@@ -122,7 +126,8 @@ export class HighDice {
           const k = fadeProgress(t, fadeStart);
           this.material.opacity = 1 - k;
           this.meshes.forEach((m, i) => {
-            m.position.z += 0.02 * k;
+            // Absolute from the settled pose, so 60/90/120 Hz screens lift identically.
+            m.position.z = settledZ[i]! + k * LIFT_HEIGHT;
             updateShadow(this.shadows[i]!, m.position, 1 - k);
           });
           if (t - fadeStart >= FADE_SECONDS) this.dispose();

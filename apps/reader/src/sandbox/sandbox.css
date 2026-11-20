@@ -210,3 +210,8 @@
   background: linear-gradient(var(--bg), transparent);
   pointer-events: none;
 }
+
+/* Line 1 starts below the header scrim at y = 0 and only dissolves once scrolled up. */
+.sb .kn-main {
+  padding-top: calc(var(--scrim-h) + 0.75rem);
+}

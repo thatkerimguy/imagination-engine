@@ -17,3 +17,6 @@ Thumbs.db
 /out/
 .sync/
 .wrangler/
+
+# QA screenshot packs are attached to handoffs, not committed.
+qa-shots*/

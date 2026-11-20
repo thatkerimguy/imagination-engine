@@ -6,7 +6,8 @@ import { h } from '../dom.ts';
 import type { ModuleHost } from '../runtime/module-host.ts';
 import { segmentEnds, segmentOf } from './segments.ts';
 
-const GATE_FALLBACK_MS = 12000;
+/** Longest one module beat may hold the trigger queue (and its gate cue) before moving on. */
+const BEAT_CAP_MS = 12000;
 
 export interface PacerOptions {
   blocks: readonly Block[];
@@ -28,6 +29,7 @@ export class Pacer {
   private cue: HTMLElement | null = null;
   private readonly observers: IntersectionObserver[] = [];
   private readonly abort = new AbortController();
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(private readonly o: PacerOptions) {
     this.ends = segmentEnds(o.blocks);
@@ -75,14 +77,18 @@ export class Pacer {
       }
     }
     addEventListener('scroll', this.onScroll, { passive: true, signal: this.abort.signal });
-    addEventListener(
-      'keydown',
-      (e) => (e.key === 'Enter' || e.key === 'ArrowRight') && this.cue?.click(),
-      {
-        signal: this.abort.signal,
-      },
-    );
+    addEventListener('keydown', this.onKey, { signal: this.abort.signal });
   }
+
+  /** Enter / → continue at a beat-stop, unless a dialog is open or a control has focus. */
+  private readonly onKey = (e: KeyboardEvent): void => {
+    if (e.key !== 'Enter' && e.key !== 'ArrowRight') return;
+    if (!this.cue || document.querySelector('.kn-sheet, .kn-curtain')) return;
+    const target = e.target instanceof Element ? e.target : null;
+    if (target?.closest('button, a, input, select, textarea, [contenteditable]')) return;
+    e.preventDefault();
+    this.cue.click();
+  };
 
   private revealSegment(s: number, scroll: boolean): void {
     if (s <= this.revealed || s >= this.ends.length) return;
@@ -109,14 +115,37 @@ export class Pacer {
     if (this.o.blocks[gate]!.kind !== 'module') this.showCue(gate);
   }
 
-  private fire(i: number): void {
-    if (this.triggered.has(i)) return;
-    this.triggered.add(i);
-    const done = this.hostFor(i, this.o.tier)?.trigger() ?? Promise.resolve();
-    if (this.ends[this.revealed] === i && this.revealed < this.ends.length - 1) {
-      const fallback = new Promise((r) => setTimeout(r, GATE_FALLBACK_MS));
-      void Promise.race([done, fallback]).then(() => this.showCue(i));
+  /**
+   * Module beats play one at a time in document order, so two spectacles that scroll into view
+   * together (a thought-link thread above a dice throw) never talk over each other. Revealed
+   * modules above `j` that were scrolled past untriggered are queued first.
+   */
+  private fire(j: number): void {
+    for (let i = 0; i <= j; i++) {
+      if (
+        this.o.blocks[i]?.kind !== 'module' ||
+        this.o.elements[i]!.hidden ||
+        this.triggered.has(i)
+      )
+        continue;
+      this.triggered.add(i);
+      this.enqueue(i);
     }
+  }
+
+  private enqueue(i: number): void {
+    const isGate = this.ends[this.revealed] === i && this.revealed < this.ends.length - 1;
+    this.queue = this.queue.then(async () => {
+      if (this.abort.signal.aborted) return;
+      const done = this.hostFor(i, this.o.tier)?.trigger() ?? Promise.resolve();
+      // A stalled or waiting module (e.g. tap-to-throw nobody taps) can delay the queue by at
+      // most this long, and can never keep the gate's continue cue from appearing.
+      let timer = 0;
+      const cap = new Promise<void>((r) => (timer = window.setTimeout(r, BEAT_CAP_MS)));
+      await Promise.race([done, cap]);
+      clearTimeout(timer);
+      if (isGate) this.showCue(i);
+    });
   }
 
   private hostFor(i: number, tier: QualityTier): ModuleHost | null {

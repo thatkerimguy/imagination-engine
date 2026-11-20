@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { FieldDescriptor } from '@kn/core';
-import { colors, space } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
+import { Icon } from '../ui/Icon.tsx';
+import { space } from '../ui/m3-tokens.ts';
 import { visibleFields } from './form-state.ts';
 import { AssetControl } from './controls/AssetControl.tsx';
 import { ColorControl } from './controls/ColorControl.tsx';
@@ -55,19 +57,29 @@ function renderControl(
 }
 
 export function SchemaForm({ fields, draft, errors, onChange }: SchemaFormProps): ReactNode {
+  // The BottomSheet body already spaces its children; fields are separated by the same 24dp here.
   return (
-    <View style={styles.form}>
+    <View style={{ gap: space.xl }}>
       {visibleFields(fields, draft).map((field) => {
         const fieldErrors = errors[field.key] ?? [];
+        // Toggles draw their own label row (label left, switch right).
+        const chrome = field.type !== 'toggle';
         return (
-          <View key={field.key} style={styles.field} testID={`form-field-${field.key}`}>
-            <Text style={styles.label}>{field.label}</Text>
-            {field.help ? <Text style={styles.help}>{field.help}</Text> : null}
+          <View key={field.key} style={{ gap: space.sm }} testID={`form-field-${field.key}`}>
+            {chrome ? <AppText variant="titleSmall">{field.label}</AppText> : null}
+            {chrome && field.help ? (
+              <AppText variant="bodySmall" color="onSurfaceVariant">
+                {field.help}
+              </AppText>
+            ) : null}
             {renderControl(field, draft[field.key], fieldErrors, (v) => onChange(field.key, v))}
             {fieldErrors.map((e) => (
-              <Text key={e} style={styles.error}>
-                {e}
-              </Text>
+              <View key={e} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
+                <Icon name="error-outline" size={16} color="error" />
+                <AppText variant="bodySmall" color="error" style={{ flex: 1 }}>
+                  {e}
+                </AppText>
+              </View>
             ))}
           </View>
         );
@@ -75,11 +87,3 @@ export function SchemaForm({ fields, draft, errors, onChange }: SchemaFormProps)
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  form: { gap: space.lg },
-  field: { gap: space.sm },
-  label: { color: colors.fg, fontSize: 14, fontWeight: '600' },
-  help: { color: colors.muted, fontSize: 12 },
-  error: { color: colors.danger, fontSize: 12, fontWeight: '600' },
-});

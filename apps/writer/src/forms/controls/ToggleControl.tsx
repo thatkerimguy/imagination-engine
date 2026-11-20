@@ -1,12 +1,23 @@
 import type { ReactNode } from 'react';
-import { Switch, View } from 'react-native';
-import { colors } from '../../ui/legacy-theme.ts';
+import { View } from 'react-native';
+import { AppText } from '../../ui/AppText.tsx';
+import { Switch } from '../../ui/Switch.tsx';
+import { space } from '../../ui/m3-tokens.ts';
 import { toggleFeedback } from '../../ui/haptics.ts';
 import type { ControlProps } from './types.ts';
 
+/** Label (and help) on the left, switch on the right. SchemaForm skips its own chrome for this. */
 export function ToggleControl({ field, value, onChange }: ControlProps<'toggle'>): ReactNode {
   return (
-    <View style={{ minHeight: 44, justifyContent: 'center', alignItems: 'flex-start' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg, minHeight: 48 }}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="titleSmall">{field.label}</AppText>
+        {field.help ? (
+          <AppText variant="bodySmall" color="onSurfaceVariant">
+            {field.help}
+          </AppText>
+        ) : null}
+      </View>
       <Switch
         testID={`field-${field.key}`}
         accessibilityLabel={field.label}
@@ -15,8 +26,6 @@ export function ToggleControl({ field, value, onChange }: ControlProps<'toggle'>
           toggleFeedback(on);
           onChange(on);
         }}
-        trackColor={{ false: colors.line, true: colors.accent }}
-        thumbColor={colors.fg}
       />
     </View>
   );

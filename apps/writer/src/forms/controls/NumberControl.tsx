@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, space } from '../../ui/legacy-theme.ts';
-import { asNumber, snapNumber } from '../form-state.ts';
+import { View } from 'react-native';
+import { AppText } from '../../ui/AppText.tsx';
+import { space } from '../../ui/m3-tokens.ts';
+import { rangeHint } from '../field-hints.ts';
+import { asNumber } from '../form-state.ts';
 import { NumberStepper } from './NumberStepper.tsx';
-import { controlStyles as s } from './styles.ts';
 import type { ControlProps } from './types.ts';
 
 export function NumberControl({
@@ -13,53 +13,21 @@ export function NumberControl({
   onChange,
   errors,
 }: ControlProps<'number'>): ReactNode {
-  const num = asNumber(value, field.min);
-  const [text, setText] = useState(String(num));
-  useEffect(() => setText(String(num)), [num]);
-
-  const commit = (): void => {
-    const parsed = Number(text.replace(',', '.'));
-    if (text.trim() === '' || !Number.isFinite(parsed)) {
-      setText(String(num));
-      return;
-    }
-    const next = snapNumber(parsed, field.min, field.max, field.step);
-    setText(String(next));
-    onChange(next);
-  };
-
   return (
-    <View style={styles.row}>
+    <View style={{ gap: space.xs }}>
       <NumberStepper
-        value={num}
+        testID={`field-${field.key}`}
+        value={asNumber(value, field.min)}
         min={field.min}
         max={field.max}
         step={field.step}
-        unit={field.unit}
         label={field.label}
+        invalid={errors.length > 0}
         onChange={onChange}
       />
-      <TextInput
-        testID={`field-${field.key}`}
-        accessibilityLabel={`${field.label} value`}
-        value={text}
-        onChangeText={setText}
-        onBlur={commit}
-        onSubmitEditing={commit}
-        keyboardType="decimal-pad"
-        returnKeyType="done"
-        selectTextOnFocus
-        style={[s.input, styles.input, errors.length > 0 && s.invalid]}
-      />
-      <Text style={styles.range}>
-        {field.min}–{field.max}
-      </Text>
+      <AppText variant="bodySmall" color="onSurfaceVariant">
+        {rangeHint(field)}
+      </AppText>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, flexWrap: 'wrap' },
-  input: { width: 80, textAlign: 'center' },
-  range: { color: colors.muted, fontSize: 12 },
-});

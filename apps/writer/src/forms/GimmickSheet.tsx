@@ -1,12 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Button } from '../ui/Button.tsx';
+import { View } from 'react-native';
+import { AppText } from '../ui/AppText.tsx';
 import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { colors, radius, space } from '../ui/legacy-theme.ts';
+import { Button } from '../ui/Button.tsx';
+import { Icon } from '../ui/Icon.tsx';
+import { IconBadge } from '../ui/layout.tsx';
+import { shape, space } from '../ui/m3-tokens.ts';
+import { makeStyles } from '../ui/theme.tsx';
 import { initialDraft, resetDraft, setField, validateDraft } from './form-state.ts';
 import type { GimmickSheetProps } from './gimmick-sheet-types.ts';
 import { SchemaForm } from './SchemaForm.tsx';
+
+function Banner({ text }: { text: string }): ReactNode {
+  const s = useStyles();
+  return (
+    <View style={s.banner}>
+      <Icon name="error-outline" size={20} color="onErrorContainer" />
+      <AppText variant="bodyMedium" color="onErrorContainer" style={s.bannerText}>
+        {text}
+      </AppText>
+    </View>
+  );
+}
 
 export function GimmickSheet(p: GimmickSheetProps): ReactNode {
   const { module, visible, initialProps } = p;
@@ -24,7 +40,8 @@ export function GimmickSheet(p: GimmickSheetProps): ReactNode {
   return (
     <BottomSheet
       visible={visible}
-      title={`${module.meta.icon} ${module.meta.name}`}
+      leading={<IconBadge glyph={module.meta.icon} />}
+      title={module.meta.name}
       subtitle={subtitle}
       onClose={p.onClose}
       testID="gimmick-sheet"
@@ -32,35 +49,27 @@ export function GimmickSheet(p: GimmickSheetProps): ReactNode {
         <>
           <Button
             label="Reset to defaults"
+            variant="text"
+            icon="restart-alt"
             testID="gimmick-reset"
             onPress={() => setDraft(resetDraft(module.schema))}
-            style={styles.flex}
           />
           <Button
             label="Save"
-            variant="primary"
             testID="gimmick-save"
             disabled={!check.valid}
             onPress={() => {
               if (check.props) p.onSave(check.props);
             }}
-            style={styles.flex}
           />
         </>
       }
     >
       {p.disabledInNovel ? (
-        <View style={styles.warn}>
-          <Text style={styles.warnText}>
-            This gimmick is not enabled for this novel, so readers will not see it until you turn it
-            on.
-          </Text>
-        </View>
+        <Banner text="This gimmick is not enabled for this novel, so readers will not see it until you turn it on." />
       ) : null}
       {check.general.map((e) => (
-        <Text key={e} style={styles.error}>
-          {e}
-        </Text>
+        <Banner key={e} text={e} />
       ))}
       <SchemaForm
         fields={module.schema.fields}
@@ -72,14 +81,14 @@ export function GimmickSheet(p: GimmickSheetProps): ReactNode {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  warn: {
-    borderWidth: 1,
-    borderColor: colors.warn,
-    borderRadius: radius.md,
-    padding: space.md,
+const useStyles = makeStyles((t) => ({
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: shape.medium,
+    backgroundColor: t.colors.errorContainer,
   },
-  warnText: { color: colors.warn, fontSize: 13 },
-  error: { color: colors.danger, fontSize: 13, fontWeight: '600' },
-});
+  bannerText: { flex: 1 },
+}));

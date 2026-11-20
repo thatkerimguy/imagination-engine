@@ -1,23 +1,48 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { WriterModule } from '../modules/registry.ts';
-import { BottomSheet } from '../ui/BottomSheet';
-import { Button } from '../ui/Button';
-import { Muted } from '../ui/layout';
-import { colors, radius, space, TAP } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
+import { BottomSheet } from '../ui/BottomSheet.tsx';
+import { Button } from '../ui/Button.tsx';
+import { IconBadge, Muted } from '../ui/layout.tsx';
+import { shape, space, TOUCH } from '../ui/m3-tokens.ts';
+import { StatePressable } from '../ui/StateLayer.tsx';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 import { INSERT_CHOICES, type InsertChoice } from './InsertBar.tsx';
 
-/** "+ Below": the same insert choices, as a sheet. */
+const useStyles = makeStyles(() => ({
+  list: { gap: space.sm },
+  item: {
+    minHeight: TOUCH + 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    borderRadius: shape.large,
+    overflow: 'hidden',
+  },
+  text: { flex: 1, gap: 2 },
+}));
+
+/** "Insert below": the same insert choices, as a sheet. */
 export function InsertChoiceSheet(p: {
   visible: boolean;
   onPick(choice: InsertChoice): void;
   onClose(): void;
 }): ReactNode {
+  const s = useStyles();
   return (
     <BottomSheet visible={p.visible} title="Insert below" onClose={p.onClose}>
-      <View style={styles.list}>
+      <View style={s.list}>
         {INSERT_CHOICES.map((c) => (
-          <Button key={c.choice} label={`+ ${c.label}`} onPress={() => p.onPick(c.choice)} />
+          <Button
+            key={c.choice}
+            variant="tonal"
+            icon={c.icon}
+            label={c.label}
+            onPress={() => p.onPick(c.choice)}
+          />
         ))}
       </View>
     </BottomSheet>
@@ -31,6 +56,8 @@ export function GimmickPicker(p: {
   onPick(module: WriterModule): void;
   onClose(): void;
 }): ReactNode {
+  const s = useStyles();
+  const { colors } = useTheme();
   return (
     <BottomSheet
       visible={p.visible}
@@ -44,39 +71,25 @@ export function GimmickPicker(p: {
         </Muted>
       ) : (
         p.modules.map((m) => (
-          <Pressable
+          <StatePressable
             key={m.meta.id}
             accessibilityRole="button"
+            accessibilityLabel={`${m.meta.name}. ${m.meta.description}`}
+            layerColor={colors.onSurface}
             onPress={() => p.onPick(m)}
             testID={`pick-${m.meta.id}`}
-            style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+            style={s.item}
           >
-            <Text style={styles.icon}>{m.meta.icon}</Text>
-            <View style={styles.text}>
-              <Text style={styles.name}>{m.meta.name}</Text>
-              <Text style={styles.desc}>{m.meta.description}</Text>
+            <IconBadge glyph={m.meta.icon} />
+            <View style={s.text}>
+              <AppText variant="titleMedium">{m.meta.name}</AppText>
+              <AppText variant="bodySmall" color="onSurfaceVariant">
+                {m.meta.description}
+              </AppText>
             </View>
-          </Pressable>
+          </StatePressable>
         ))
       )}
     </BottomSheet>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { gap: space.sm },
-  item: {
-    minHeight: TAP,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
-  },
-  pressed: { opacity: 0.8 },
-  icon: { fontSize: 26 },
-  text: { flex: 1, gap: 2 },
-  name: { color: colors.fg, fontSize: 16, fontWeight: '700' },
-  desc: { color: colors.muted, fontSize: 13 },
-});

@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text } from 'react-native';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { colors } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
 
 const LABELS: Record<ChapterDraft['status'], string> = {
   saved: 'Saved',
@@ -12,17 +11,13 @@ const LABELS: Record<ChapterDraft['status'], string> = {
 
 export function SaveStatus({ status }: { status: ChapterDraft['status'] }): ReactNode {
   return (
-    <Text
+    <AppText
+      variant="labelSmall"
+      color={status === 'error' ? 'error' : 'onSurfaceVariant'}
       testID="save-status"
-      style={[styles.text, status === 'error' && styles.error]}
       accessibilityLiveRegion="polite"
     >
       {LABELS[status]}
-    </Text>
+    </AppText>
   );
 }
-
-const styles = StyleSheet.create({
-  text: { color: colors.muted, fontSize: 12 },
-  error: { color: colors.danger },
-});

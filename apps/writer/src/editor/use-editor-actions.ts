@@ -11,11 +11,12 @@ import {
   toggleBeatStop,
 } from '../store/chapter-ops.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { confirmAction } from '../ui/confirm';
+import { useConfirm } from '../ui/Dialog.tsx';
 import type { InsertChoice } from './InsertBar.tsx';
 
 /** Selection, sheet state and every block mutation for the editor screen. */
 export function useEditorActions(update: ChapterDraft['update']) {
+  const confirm = useConfirm();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState<string | null>(null);
@@ -54,11 +55,17 @@ export function useEditorActions(update: ChapterDraft['update']) {
 
   const remove = useCallback(
     async (id: string) => {
-      if (!(await confirmAction('Delete block?', 'This cannot be undone.', 'Delete'))) return;
+      const ok = await confirm({
+        title: 'Delete block?',
+        message: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+      });
+      if (!ok) return;
       update((c) => removeBlock(c, id));
       setSelectedId((s) => (s === id ? null : s));
     },
-    [update],
+    [update, confirm],
   );
 
   return {

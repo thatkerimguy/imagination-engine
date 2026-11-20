@@ -1,16 +1,20 @@
 // Live Preview: the real apps/reader in a WebView (iframe on web), fed the unsaved draft.
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
 import { PREVIEW_TIERS, type PreviewTier, type ReaderMessage } from '../preview/protocol.ts';
 import { usePreviewPayload } from '../preview/use-preview-payload.ts';
 import { routes } from '../routes.ts';
+import { AppText } from '../ui/AppText.tsx';
 import { Button } from '../ui/Button.tsx';
-import { Chip } from '../ui/Chip.tsx';
+import { Icon } from '../ui/Icon.tsx';
+import { IconButton } from '../ui/IconButton.tsx';
 import { EmptyState, Row } from '../ui/layout.tsx';
-import { colors, space } from '../ui/legacy-theme.ts';
+import { shape, space } from '../ui/m3-tokens.ts';
+import { SegmentedButtons, type Segment } from '../ui/SegmentedButtons.tsx';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 
 type Status = 'connecting' | 'live' | 'unreachable' | 'rejected';
 const READY_TIMEOUT_MS = 8000;
@@ -20,6 +24,33 @@ const TIER_LABEL: Record<PreviewTier, string> = {
   lite: 'Lite',
   reduced: 'Reduced',
 };
+const TIER_SEGMENTS: readonly Segment<PreviewTier>[] = PREVIEW_TIERS.map((t) => ({
+  value: t,
+  label: TIER_LABEL[t],
+}));
+
+const useStyles = makeStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.colors.surface },
+  toolbar: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+    gap: space.sm,
+    borderBottomWidth: 1,
+    borderColor: t.colors.outlineVariant,
+  },
+  note: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  headerRight: { paddingRight: space.xs },
+  banner: {
+    margin: space.lg,
+    padding: space.lg,
+    gap: space.sm,
+    borderRadius: shape.large,
+    backgroundColor: t.colors.errorContainer,
+  },
+  bannerHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  bannerTitle: { flex: 1 },
+}));
 
 export default function PreviewScreen(): ReactNode {
   const p = useLocalSearchParams<{
@@ -29,6 +60,8 @@ export default function PreviewScreen(): ReactNode {
     block?: string;
   }>();
   const { data, loading } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
+  const styles = useStyles();
+  const { colors } = useTheme();
   const frame = useRef<PreviewFrameHandle>(null);
   const [tier, setTier] = useState<PreviewTier>('auto');
   const [session, setSession] = useState(0);
@@ -72,7 +105,16 @@ export default function PreviewScreen(): ReactNode {
   const header = (
     <Stack.Screen
       options={{
-        headerRight: () => <Button compact variant="ghost" label="Restart" onPress={restart} />,
+        headerRight: () => (
+          <View style={styles.headerRight}>
+            <IconButton
+              icon="refresh"
+              accessibilityLabel="Restart preview"
+              testID="preview-restart"
+              onPress={restart}
+            />
+          </View>
+        ),
       }}
     />
   );
@@ -91,39 +133,47 @@ export default function PreviewScreen(): ReactNode {
     <View style={styles.screen} testID="preview-screen">
       {header}
       <View style={styles.toolbar}>
-        <Row>
-          {PREVIEW_TIERS.map((t) => (
-            <Chip key={t} label={TIER_LABEL[t]} selected={t === tier} onPress={() => pickTier(t)} />
-          ))}
-        </Row>
-        <Text style={styles.note}>
-          {status === 'live'
-            ? '● Live'
-            : status === 'connecting'
-              ? '○ Connecting…'
-              : '⚠︎ Not connected'}
-          {fromLiveDraft ? ' · showing your unsaved draft' : ' · showing the saved chapter'}
-        </Text>
+        <SegmentedButtons
+          segments={TIER_SEGMENTS}
+          value={tier}
+          onChange={pickTier}
+          accessibilityLabel="Quality tier"
+          testID="preview-tier"
+        />
+        <View style={styles.note}>
+          <View
+            style={[
+              styles.dot,
+              { backgroundColor: status === 'live' ? colors.primary : colors.outline },
+            ]}
+          />
+          <AppText variant="labelSmall" color="onSurfaceVariant">
+            {status === 'live' ? 'Live' : status === 'connecting' ? 'Connecting…' : 'Not connected'}
+            {fromLiveDraft ? ' · showing your unsaved draft' : ' · showing the saved chapter'}
+          </AppText>
+        </View>
       </View>
       {status === 'unreachable' || status === 'rejected' || !url ? (
         <View style={styles.banner} accessibilityRole="alert">
-          <Text style={styles.bannerTitle}>
-            {!url
-              ? 'The reader URL is not valid'
-              : status === 'rejected'
-                ? 'The reader rejected this draft'
-                : 'Reader preview unreachable'}
-          </Text>
-          <Text style={styles.bannerBody}>
+          <View style={styles.bannerHead}>
+            <Icon name="cloud-off" color="onErrorContainer" />
+            <AppText variant="titleMedium" color="onErrorContainer" style={styles.bannerTitle}>
+              {!url
+                ? 'The reader URL is not valid'
+                : status === 'rejected'
+                  ? 'The reader rejected this draft'
+                  : 'Reader preview unreachable'}
+            </AppText>
+          </View>
+          <AppText variant="bodyMedium" color="onErrorContainer">
             {status === 'rejected'
               ? detail
               : `Tried ${readerUrl}. Start the reader (pnpm dev) or point the writer at a reachable reader URL. ${detail}`}
-          </Text>
+          </AppText>
           <Row>
-            <Button compact label="Retry" onPress={restart} />
+            <Button variant="tonal" label="Retry" onPress={restart} />
             <Button
-              compact
-              variant="ghost"
+              variant="text"
               label="Change reader URL"
               onPress={() => router.push(routes.appSettings)}
             />
@@ -145,26 +195,3 @@ export default function PreviewScreen(): ReactNode {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  toolbar: {
-    paddingHorizontal: space.lg,
-    paddingBottom: space.sm,
-    gap: space.sm,
-    borderBottomWidth: 1,
-    borderColor: colors.line,
-  },
-  note: { color: colors.muted, fontSize: 12 },
-  banner: {
-    margin: space.lg,
-    padding: space.lg,
-    gap: space.sm,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.warn,
-    backgroundColor: colors.surface,
-  },
-  bannerTitle: { color: colors.warn, fontSize: 15, fontWeight: '700' },
-  bannerBody: { color: colors.fg, fontSize: 13, lineHeight: 19 },
-});

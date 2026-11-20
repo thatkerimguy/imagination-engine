@@ -1,15 +1,17 @@
 import type { ChapterDocument } from '@kn/core';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shareJson } from '../export/share-json';
 import { GimmickSheet } from '../forms/GimmickSheet.tsx';
 import { getWriterModule, enabledWriterModules } from '../modules/registry.ts';
 import { replaceBlock } from '../store/chapter-ops.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { Button } from '../ui/Button';
-import { EmptyState } from '../ui/layout';
-import { colors, fonts, space } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
+import { Button } from '../ui/Button.tsx';
+import { EmptyState } from '../ui/layout.tsx';
+import { proseFont, space } from '../ui/m3-tokens.ts';
+import { makeStyles } from '../ui/theme.tsx';
 import { BlockView } from './BlockView.tsx';
 import { InsertBar } from './InsertBar.tsx';
 import { GimmickPicker, InsertChoiceSheet } from './InsertSheets.tsx';
@@ -25,6 +27,7 @@ export interface ChapterEditorProps {
 
 export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const { chapter, update } = p;
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const a = useEditorActions(update);
   const select = (id: string | null): void => {
@@ -46,11 +49,12 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         contentContainerStyle={styles.content}
         testID="chapter-stream"
       >
-        <Text style={styles.title} accessibilityRole="header">
+        <AppText variant="headlineSmall" style={styles.title} accessibilityRole="header">
           {chapter.title}
-        </Text>
+        </AppText>
         {chapter.blocks.length === 0 ? (
           <EmptyState
+            icon="edit-note"
             title="A blank page"
             body="Use the bar below to add prose, dialogue, a scene break or a gimmick."
           />
@@ -73,8 +77,8 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         ))}
         <View style={styles.footer}>
           <Button
-            compact
-            variant="ghost"
+            variant="text"
+            icon="ios-share"
             label="Export chapter JSON"
             testID="export-chapter"
             onPress={() => void shareJson(`${chapter.id}.json`, chapter)}
@@ -116,15 +120,9 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
+const useStyles = makeStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.colors.surface },
   content: { padding: space.lg, gap: space.sm, paddingBottom: space.xl * 2 },
-  title: {
-    color: colors.fg,
-    fontFamily: fonts.prose,
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: space.md,
-  },
+  title: { fontFamily: proseFont, fontSize: 26, lineHeight: 34, fontWeight: '700' },
   footer: { alignItems: 'center', paddingTop: space.xl },
-});
+}));

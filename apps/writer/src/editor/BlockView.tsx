@@ -1,12 +1,16 @@
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { isBlockComplete } from '../store/sanitize.ts';
-import { colors, radius, space } from '../ui/legacy-theme.ts';
+import { AppText } from '../ui/AppText.tsx';
+import { Icon } from '../ui/Icon.tsx';
+import { StatusBadge } from '../ui/layout.tsx';
+import { shape, space } from '../ui/m3-tokens.ts';
+import { makeStyles } from '../ui/theme.tsx';
 import { BlockActions, type BlockActionHandlers } from './BlockActions.tsx';
 import { DialogueBlockEditor } from './DialogueBlockEditor.tsx';
 import { GimmickPill } from './GimmickPill.tsx';
-import { ProseBlockEditor, ProseStyleChips } from './ProseBlockEditor.tsx';
+import { ProseBlockEditor, ProseStyleControl } from './ProseBlockEditor.tsx';
 import { SceneBreakEditor } from './SceneBreakEditor.tsx';
 
 export interface BlockViewProps extends BlockActionHandlers {
@@ -57,20 +61,48 @@ function Body(p: BlockViewProps): ReactNode {
   }
 }
 
+const useStyles = makeStyles((t) => ({
+  block: {
+    borderRadius: shape.medium,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    padding: space.sm,
+    gap: space.sm,
+  },
+  selected: {
+    borderColor: t.colors.outlineVariant,
+    backgroundColor: t.colors.surfaceContainerLow,
+  },
+  hint: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  actions: { gap: space.sm, paddingTop: space.xs },
+}));
+
 export function BlockView(p: BlockViewProps): ReactNode {
   const { block } = p;
+  const s = useStyles();
   return (
     <Pressable
       onPress={() => p.onSelect(block.id)}
       testID={`block-${block.id}`}
-      style={[styles.block, p.selected && styles.selected]}
+      style={[s.block, p.selected && s.selected]}
     >
       <Body {...p} />
-      {block.beatStop && !p.selected ? <Text style={styles.beat}>⏸ beat</Text> : null}
-      {isBlockComplete(block) ? null : <Text style={styles.hint}>Not saved until filled in</Text>}
+      {block.beatStop && !p.selected ? (
+        <StatusBadge icon="pause" label="Beat" tone="tertiary" />
+      ) : null}
+      {isBlockComplete(block) ? null : (
+        <View style={s.hint}>
+          <Icon name="edit-note" size={16} color="tertiary" />
+          <AppText variant="bodySmall" color="tertiary">
+            Not saved until filled in
+          </AppText>
+        </View>
+      )}
       {p.selected ? (
-        <View style={styles.actions}>
-          {block.kind === 'prose' ? <ProseStyleChips block={block} onChange={p.onChange} /> : null}
+        <View style={s.actions}>
+          {block.kind === 'prose' ? (
+            <ProseStyleControl block={block} onChange={p.onChange} />
+          ) : null}
           <BlockActions
             block={block}
             onToggleBeat={p.onToggleBeat}
@@ -83,17 +115,3 @@ export function BlockView(p: BlockViewProps): ReactNode {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  block: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    padding: space.sm,
-    gap: space.sm,
-  },
-  selected: { borderColor: colors.line, backgroundColor: colors.surface },
-  beat: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
-  hint: { color: colors.warn, fontSize: 12 },
-  actions: { gap: space.sm, paddingTop: space.xs },
-});

@@ -1,9 +1,8 @@
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button } from '../ui/Button';
+import { StyleSheet, View } from 'react-native';
 import { toggleFeedback } from '../ui/haptics.ts';
-import { colors, radius, space } from '../ui/legacy-theme.ts';
+import { IconButton } from '../ui/IconButton.tsx';
 
 export interface BlockActionHandlers {
   onToggleBeat(id: string): void;
@@ -17,49 +16,41 @@ export function BlockActions(p: { block: Block } & BlockActionHandlers): ReactNo
   const on = !!block.beatStop;
   return (
     <View style={styles.row}>
-      <Pressable
-        accessibilityRole="switch"
-        accessibilityState={{ checked: on }}
+      <IconButton
+        icon="pause-circle-outline"
+        accessibilityLabel="Beat stop"
+        selected={on}
+        testID={`beat-toggle-${block.id}`}
         onPress={() => {
           toggleFeedback(!on);
           p.onToggleBeat(block.id);
         }}
-        testID={`beat-toggle-${block.id}`}
-        style={[styles.beat, on && styles.beatOn]}
-      >
-        <Text style={[styles.beatText, on && styles.beatTextOn]}>
-          {on ? '⏸ Beat stop: on' : 'Beat stop'}
-        </Text>
-      </Pressable>
-      <Button
-        compact
-        label="↑"
+      />
+      <IconButton
+        icon="arrow-upward"
         accessibilityLabel="Move up"
         onPress={() => p.onMove(block.id, -1)}
       />
-      <Button
-        compact
-        label="↓"
+      <IconButton
+        icon="arrow-downward"
         accessibilityLabel="Move down"
         onPress={() => p.onMove(block.id, 1)}
       />
-      <Button compact label="+ Below" onPress={() => p.onInsertBelow(block.id)} />
-      <Button compact variant="danger" label="Delete" onPress={() => p.onDelete(block.id)} />
+      <IconButton
+        icon="playlist-add"
+        accessibilityLabel="Insert below"
+        onPress={() => p.onInsertBelow(block.id)}
+      />
+      <IconButton
+        icon="delete-outline"
+        accessibilityLabel="Delete block"
+        color="error"
+        onPress={() => p.onDelete(block.id)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'center' },
-  beat: {
-    minHeight: 36,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    justifyContent: 'center',
-  },
-  beatOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  beatText: { color: colors.fg, fontSize: 15, fontWeight: '600' },
-  beatTextOn: { color: colors.accentInk },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignItems: 'center' },
 });

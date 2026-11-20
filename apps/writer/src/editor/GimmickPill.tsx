@@ -1,10 +1,34 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { getWriterModule } from '../modules/registry.ts';
+import { AppText } from '../ui/AppText.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { Badge } from '../ui/layout';
-import { colors, radius, space, TAP } from '../ui/legacy-theme.ts';
+import { IconBadge, StatusBadge } from '../ui/layout.tsx';
+import { shape, space } from '../ui/m3-tokens.ts';
+import { StatePressable } from '../ui/StateLayer.tsx';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 import type { ModuleBlockT } from './block-types.ts';
+
+const useStyles = makeStyles((t) => ({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: 64,
+    padding: space.md,
+    borderRadius: shape.large,
+    overflow: 'hidden',
+    backgroundColor: t.colors.surfaceContainer,
+  },
+  unknown: { opacity: 0.6 },
+  text: { flex: 1, gap: 2 },
+  side: { alignItems: 'flex-end', gap: space.xs },
+}));
+
+/** Removes a leading emoji that duplicates the module icon already shown in the badge. */
+function stripIcon(title: string, icon: string): string {
+  return title.startsWith(icon) ? title.slice(icon.length).trim() : title;
+}
 
 /** Compact summary card; everything shown comes from the module's own `summarize()`. */
 export function GimmickPill(p: {
@@ -12,57 +36,51 @@ export function GimmickPill(p: {
   enabled: boolean;
   onOpen(): void;
 }): ReactNode {
+  const s = useStyles();
+  const { colors } = useTheme();
   const module = getWriterModule(p.block.moduleId);
   if (!module) {
     return (
-      <View style={[styles.pill, styles.unknown]} testID={`pill-${p.block.id}`}>
-        <Text style={styles.title}>Unknown gimmick {p.block.moduleId}</Text>
+      <View style={[s.card, s.unknown]} testID={`pill-${p.block.id}`}>
+        <AppText variant="titleMedium" color="onSurfaceVariant">
+          Unknown gimmick {p.block.moduleId}
+        </AppText>
       </View>
     );
   }
   const card = module.summarize(p.block.props);
+  const title = stripIcon(card.title, module.meta.icon);
   return (
-    <Pressable
+    <StatePressable
       accessibilityRole="button"
-      accessibilityLabel={`${card.title}. ${card.subtitle}`}
+      accessibilityLabel={`${title}. ${card.subtitle}`}
+      layerColor={colors.onSurface}
       onPress={() => {
         tapFeedback();
         p.onOpen();
       }}
       testID={`pill-${p.block.id}`}
-      style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
+      style={s.card}
     >
-      <View style={styles.top}>
-        <Text style={styles.title} numberOfLines={1}>
-          {card.title}
-        </Text>
-        {card.badge ? <Badge label={card.badge} tone="accent" /> : null}
+      <IconBadge glyph={module.meta.icon} />
+      <View style={s.text}>
+        <AppText variant="titleMedium" numberOfLines={1}>
+          {title}
+        </AppText>
+        <AppText variant="bodySmall" color="onSurfaceVariant" numberOfLines={2}>
+          {card.subtitle}
+        </AppText>
       </View>
-      <Text style={styles.subtitle} numberOfLines={2}>
-        {card.subtitle}
-      </Text>
-      <View style={styles.tags}>
-        <Badge label={module.meta.layer} />
-        {p.enabled ? null : <Badge label="Not enabled in this novel" tone="warn" />}
+      <View style={s.side}>
+        {p.enabled ? (
+          card.badge ? (
+            <StatusBadge label={card.badge} tone="primary" />
+          ) : null
+        ) : (
+          <StatusBadge label="Not enabled" tone="error" />
+        )}
+        {p.block.beatStop ? <StatusBadge icon="pause" label="Beat" tone="tertiary" /> : null}
       </View>
-    </Pressable>
+    </StatePressable>
   );
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    minHeight: TAP,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: space.md,
-    gap: space.xs,
-  },
-  unknown: { borderColor: colors.danger, borderStyle: 'dashed' },
-  pressed: { opacity: 0.8 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  title: { flex: 1, color: colors.fg, fontSize: 16, fontWeight: '700' },
-  subtitle: { color: colors.muted, fontSize: 14 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-});

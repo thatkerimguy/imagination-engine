@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { GrowingTextInput } from '../ui/GrowingTextInput.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { colors, fonts, space } from '../ui/legacy-theme.ts';
+import { proseFont, space, TOUCH } from '../ui/m3-tokens.ts';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 import type { DialogueBlock, InlineEditorProps } from './block-types.ts';
 
 /** `undefined` = no accent. */
@@ -15,9 +16,27 @@ const ACCENTS: readonly (string | undefined)[] = [
   '#c792ea',
 ];
 
+const useStyles = makeStyles((t) => ({
+  wrap: { gap: 0 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  target: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 16, height: 16, borderRadius: 8 },
+  speaker: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.4, padding: 0 },
+  line: {
+    color: t.colors.onSurface,
+    fontFamily: proseFont,
+    fontSize: 17,
+    lineHeight: 26,
+    padding: 0,
+    minHeight: 26,
+  },
+}));
+
 export function DialogueBlockEditor(p: InlineEditorProps<DialogueBlock>): ReactNode {
   const accent = p.block.accentColor;
-  const tint = accent ?? colors.muted;
+  const { colors } = useTheme();
+  const s = useStyles();
+  const tint = accent ?? colors.onSurfaceVariant;
   const cycle = (): void => {
     tapFeedback();
     const at = ACCENTS.indexOf(accent);
@@ -27,16 +46,23 @@ export function DialogueBlockEditor(p: InlineEditorProps<DialogueBlock>): ReactN
     p.onChange(next ? { ...base, accentColor: next } : base);
   };
   return (
-    <View style={styles.wrap}>
-      <View style={styles.head}>
+    <View style={s.wrap}>
+      <View style={s.head}>
         <Pressable
           onPress={cycle}
-          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Cycle accent colour"
           testID={`accent-${p.block.id}`}
+          style={s.target}
         >
-          <Text style={[styles.dot, { color: tint }]}>{accent ? '●' : '○'}</Text>
+          <View
+            style={[
+              s.dot,
+              accent
+                ? { backgroundColor: accent }
+                : { borderWidth: 2, borderColor: colors.onSurfaceVariant },
+            ]}
+          />
         </Pressable>
         <TextInput
           autoFocus={p.autoFocus}
@@ -44,9 +70,9 @@ export function DialogueBlockEditor(p: InlineEditorProps<DialogueBlock>): ReactN
           onFocus={p.onSelect}
           onChangeText={(speaker) => p.onChange({ ...p.block, speaker })}
           placeholder="SPEAKER"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={colors.onSurfaceVariant}
           autoCapitalize="characters"
-          style={[styles.speaker, { color: tint }]}
+          style={[s.speaker, { color: tint }]}
         />
       </View>
       <GrowingTextInput
@@ -55,25 +81,10 @@ export function DialogueBlockEditor(p: InlineEditorProps<DialogueBlock>): ReactN
         onFocus={p.onSelect}
         onChangeText={(text) => p.onChange({ ...p.block, text })}
         placeholder="Line…"
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={colors.onSurfaceVariant}
         textAlignVertical="top"
-        style={styles.line}
+        style={s.line}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: space.xs },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  dot: { fontSize: 18 },
-  speaker: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.4, padding: 0 },
-  line: {
-    color: colors.fg,
-    fontFamily: fonts.prose,
-    fontSize: 17,
-    lineHeight: 26,
-    padding: 0,
-    minHeight: 26,
-  },
-});

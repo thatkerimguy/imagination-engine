@@ -1,73 +1,73 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppText } from '../ui/AppText.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { colors, radius, space } from '../ui/legacy-theme.ts';
+import { Icon, type IconName } from '../ui/Icon.tsx';
+import { shape, space, TOUCH } from '../ui/m3-tokens.ts';
+import { StatePressable } from '../ui/StateLayer.tsx';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 
 export type InsertChoice = 'prose' | 'dialogue' | 'scene-break' | 'gimmick';
 
 export const INSERT_CHOICES: readonly {
   choice: InsertChoice;
   label: string;
-  glyph: string;
+  icon: IconName;
   testID: string;
 }[] = [
-  { choice: 'prose', label: 'Prose', glyph: '¶', testID: 'insert-prose' },
-  { choice: 'dialogue', label: 'Dialogue', glyph: '❝', testID: 'insert-dialogue' },
-  { choice: 'scene-break', label: 'Scene Break', glyph: '◆', testID: 'insert-scene-break' },
-  { choice: 'gimmick', label: 'Gimmick', glyph: '✦', testID: 'insert-gimmick' },
+  { choice: 'prose', label: 'Prose', icon: 'notes', testID: 'insert-prose' },
+  { choice: 'dialogue', label: 'Dialogue', icon: 'format-quote', testID: 'insert-dialogue' },
+  { choice: 'scene-break', label: 'Scene', icon: 'horizontal-rule', testID: 'insert-scene-break' },
+  { choice: 'gimmick', label: 'Gimmick', icon: 'auto-awesome', testID: 'insert-gimmick' },
 ];
 
-/** Sticky bottom bar: four equal, thumb-sized insert buttons. */
-export function InsertBar({ onPick }: { onPick(choice: InsertChoice): void }): ReactNode {
-  const insets = useSafeAreaInsets();
-  return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
-      {INSERT_CHOICES.map((c) => (
-        <Pressable
-          key={c.choice}
-          accessibilityRole="button"
-          accessibilityLabel={`+ ${c.label}`}
-          testID={c.testID}
-          onPress={() => {
-            tapFeedback();
-            onPick(c.choice);
-          }}
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-        >
-          <Text style={[styles.glyph, c.choice === 'gimmick' && styles.accent]}>+ {c.glyph}</Text>
-          <Text style={styles.label} numberOfLines={1}>
-            {c.label}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   bar: {
     flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.md,
     paddingTop: space.sm,
-    backgroundColor: colors.surface,
+    paddingHorizontal: space.sm,
+    backgroundColor: t.colors.surfaceContainer,
     borderTopWidth: 1,
-    borderColor: colors.line,
+    borderTopColor: t.colors.outlineVariant,
   },
-  button: {
+  action: {
     flex: 1,
-    minHeight: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.line,
+    minHeight: TOUCH + 8,
+    borderRadius: shape.large,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
   },
-  pressed: { opacity: 0.7 },
-  glyph: { color: colors.fg, fontSize: 16, fontWeight: '700' },
-  accent: { color: colors.accent },
-  label: { color: colors.muted, fontSize: 12, fontWeight: '600' },
-});
+}));
+
+/** M3 bottom app bar: four equal insert actions (icon over label). */
+export function InsertBar({ onPick }: { onPick(choice: InsertChoice): void }): ReactNode {
+  const insets = useSafeAreaInsets();
+  const s = useStyles();
+  const { colors } = useTheme();
+  return (
+    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
+      {INSERT_CHOICES.map((c) => (
+        <StatePressable
+          key={c.choice}
+          accessibilityRole="button"
+          accessibilityLabel={`Insert ${c.label}`}
+          testID={c.testID}
+          layerColor={colors.onSurface}
+          onPress={() => {
+            tapFeedback();
+            onPick(c.choice);
+          }}
+          style={s.action}
+        >
+          <Icon name={c.icon} size={24} color={c.choice === 'gimmick' ? 'primary' : 'onSurface'} />
+          <AppText variant="labelMedium" color="onSurfaceVariant" numberOfLines={1}>
+            {c.label}
+          </AppText>
+        </StatePressable>
+      ))}
+    </View>
+  );
+}

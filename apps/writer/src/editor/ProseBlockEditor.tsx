@@ -1,66 +1,65 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { GrowingTextInput } from '../ui/GrowingTextInput.tsx';
-import { Chip } from '../ui/Chip';
-import { colors, fonts, space } from '../ui/legacy-theme.ts';
+import { proseFont, space } from '../ui/m3-tokens.ts';
+import { SegmentedButtons } from '../ui/SegmentedButtons.tsx';
+import { makeStyles, useTheme } from '../ui/theme.tsx';
 import type { InlineEditorProps, ProseBlock } from './block-types.ts';
 
-const STYLES = ['body', 'whisper', 'emphasis'] as const;
+type ProseStyle = NonNullable<ProseBlock['style']>;
+
+const SEGMENTS: readonly { value: ProseStyle; label: string }[] = [
+  { value: 'body', label: 'Body' },
+  { value: 'whisper', label: 'Whisper' },
+  { value: 'emphasis', label: 'Emphasis' },
+];
+
+const useStyles = makeStyles((t) => ({
+  wrap: { gap: space.sm },
+  input: {
+    color: t.colors.onSurface,
+    fontFamily: proseFont,
+    fontSize: 17,
+    lineHeight: 26,
+    padding: 0,
+    minHeight: 26,
+  },
+  whisper: { fontStyle: 'italic', color: t.colors.onSurfaceVariant },
+  emphasis: { fontWeight: '700' },
+}));
 
 export function ProseBlockEditor(p: InlineEditorProps<ProseBlock>): ReactNode {
   const style = p.block.style ?? 'body';
+  const s = useStyles();
+  const { colors } = useTheme();
   return (
-    <View style={styles.wrap}>
+    <View style={s.wrap}>
       <GrowingTextInput
         autoFocus={p.autoFocus}
         value={p.block.text}
         onFocus={p.onSelect}
         onChangeText={(text) => p.onChange({ ...p.block, text })}
         placeholder="Write…"
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={colors.onSurfaceVariant}
         textAlignVertical="top"
-        style={[
-          styles.input,
-          style === 'whisper' && styles.whisper,
-          style === 'emphasis' && styles.emphasis,
-        ]}
+        style={[s.input, style === 'whisper' && s.whisper, style === 'emphasis' && s.emphasis]}
       />
     </View>
   );
 }
 
-/** Style chips; rendered by the action area of a selected prose block. */
-export function ProseStyleChips(p: {
+/** Style picker; rendered by the action area of a selected prose block. */
+export function ProseStyleControl(p: {
   block: ProseBlock;
   onChange(next: ProseBlock): void;
 }): ReactNode {
-  const current = p.block.style ?? 'body';
   return (
-    <View style={styles.chips}>
-      {STYLES.map((s) => (
-        <Chip
-          key={s}
-          label={s}
-          selected={current === s}
-          onPress={() => p.onChange({ ...p.block, style: s })}
-          testID={`prose-style-${s}-${p.block.id}`}
-        />
-      ))}
-    </View>
+    <SegmentedButtons
+      segments={SEGMENTS}
+      value={p.block.style ?? 'body'}
+      onChange={(style) => p.onChange({ ...p.block, style })}
+      accessibilityLabel="Prose style"
+      testID={`prose-style-${p.block.id}`}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: space.sm },
-  input: {
-    color: colors.fg,
-    fontFamily: fonts.prose,
-    fontSize: 17,
-    lineHeight: 26,
-    padding: 0,
-    minHeight: 26,
-  },
-  whisper: { fontStyle: 'italic', color: colors.muted },
-  emphasis: { fontWeight: '700' },
-  chips: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },
-});

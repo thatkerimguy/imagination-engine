@@ -78,6 +78,22 @@ export default function AppSettingsScreen(): ReactNode {
           onPress={() => setReaderUrl(DEFAULT_SETTINGS.readerUrl)}
         />
       </View>
+      <SectionLabel>Privacy & integrity</SectionLabel>
+      <ListRow
+        icon="lock"
+        title="Master Lock"
+        subtitle="PIN, biometric unlock and recovery code"
+        testID="open-lock"
+        onPress={() => router.push(routes.lock)}
+      />
+      <ListRow
+        icon="activity"
+        title="Document Doctor"
+        subtitle="Scan for damaged or orphaned entries"
+        last
+        testID="open-doctor"
+        onPress={() => router.push(routes.doctor)}
+      />
       <SectionLabel>Demo</SectionLabel>
       <ListRow
         icon="rotate-ccw"

@@ -96,13 +96,15 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center' },
 });
 
-type MenuAction = 'analysis' | 'growth' | 'find' | 'outline' | 'focus' | 'layout' | 'exportJson';
+type MenuAction =
+  'analysis' | 'growth' | 'find' | 'outline' | 'versions' | 'focus' | 'layout' | 'exportJson';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'analysis', label: 'Text Analysis', icon: 'bar-chart-2', testID: 'menu-analysis' },
   { action: 'growth', label: 'Growth', icon: 'trending-up', testID: 'menu-growth' },
   { action: 'find', label: 'Find & Replace', icon: 'search', testID: 'menu-find' },
   { action: 'outline', label: 'Outline', icon: 'list', testID: 'menu-outline' },
+  { action: 'versions', label: 'Version History', icon: 'clock', testID: 'menu-versions' },
   { action: 'focus', label: 'Focus Mode', icon: 'maximize', testID: 'menu-focus' },
   { action: 'layout', label: 'Appearance & Layout', icon: 'sliders', testID: 'menu-layout' },
   { action: 'exportJson', label: 'Export Chapter JSON', icon: 'share', testID: 'export-chapter' },

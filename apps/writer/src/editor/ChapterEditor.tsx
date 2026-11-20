@@ -1,9 +1,8 @@
 // Chapter editing screen (bar, metrics, blocks, toolbar, sheets); Focus Mode leaves page + Exit.
 import type { ChapterDocument } from '@kn/core';
-import { useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { shareJson } from '../export/share-json';
-import { enabledWriterModules, getWriterModule } from '../modules/registry.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionButton } from '../ui/ActionButton.tsx';
@@ -12,17 +11,14 @@ import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useWriterPrefs } from '../ui/theme.tsx';
 import { useEditorTypography } from '../ui/typography.ts';
-import { TextAnalysisSheet } from '../views/TextAnalysisSheet.tsx';
 import { FOCUS_BOTTOM_PAD, useStyles } from './chapter-editor-styles.ts';
 import { BlockView } from './BlockView.tsx';
-import { ColorPopover, CommentSheet, EditorTopBar, editorMenu } from './EditorChrome.tsx';
+import { ColorPopover, EditorTopBar, editorMenu } from './EditorChrome.tsx';
+import { EditorSheets, type EditorSheet } from './EditorSheets.tsx';
 import { FindReplaceBar } from './FindReplaceBar.tsx';
 import { FormattingToolbar } from './FormattingToolbar.tsx';
-import { GimmickBlockSheet } from './GimmickBlockSheet.tsx';
-import { GimmickPicker } from './InsertSheets.tsx';
-import { FOCUS_EXIT_CLEARANCE, FocusExitPill, LayoutPrefsSheet } from './LayoutPrefsSheet.tsx';
-import { MetricPickerSheet, MetricsRibbon } from './MetricsRibbon.tsx';
-import { OutlineSheet } from './OutlineSheet.tsx';
+import { FOCUS_EXIT_CLEARANCE, FocusExitPill } from './LayoutPrefsSheet.tsx';
+import { MetricsRibbon } from './MetricsRibbon.tsx';
 import { useEditorActions } from './use-editor-actions.ts';
 import { useFormatActions } from './use-format-actions.ts';
 import { useLiveMetrics } from './use-live-metrics.ts';
@@ -36,9 +32,9 @@ export interface ChapterEditorProps {
   onPreview(blockId: string | null): void;
   onGrowth(): void;
   onAppearance(): void;
+  /** Scrolls to and selects this block once laid out (Search deep links). */
+  initialBlockId?: string;
 }
-
-type Sheet = 'analysis' | 'outline' | 'layout' | 'metrics' | null;
 
 export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const { chapter, draft } = p;
@@ -56,7 +52,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
     updateStyles: draft.updateStyles,
     pick: a.pick,
   });
-  const [sheet, setSheet] = useState<Sheet>(null);
+  const [sheet, setSheet] = useState<EditorSheet>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [ribbonCollapsed, setRibbonCollapsed] = useState(false);
@@ -73,9 +69,12 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
       scroller.current?.scrollTo({ y: Math.max(0, y - space.xl), animated: true });
   };
 
-  const sheetBlock = chapter.blocks.find((b) => b.id === a.sheetId);
-  const sheetModule =
-    sheetBlock?.kind === 'module' ? getWriterModule(sheetBlock.moduleId) : undefined;
+  useEffect(() => {
+    if (!p.initialBlockId) return;
+    const t = setTimeout(() => jump(p.initialBlockId ?? ''), 350);
+    return () => clearTimeout(t);
+    // Only on open: a deep link jumps once.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const chrome = !focusMode;
 
   return (
@@ -97,6 +96,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             growth: p.onGrowth,
             find: () => setFindOpen(true),
             outline: () => setSheet('outline'),
+            versions: () => setSheet('versions'),
             focus: () => setFocusMode(true),
             layout: () => setSheet('layout'),
             exportJson: () => void shareJson(`${chapter.id}.json`, chapter),
@@ -202,49 +202,20 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
       </KeyboardAvoidingView>
       {focusMode ? <FocusExitPill onExit={() => setFocusMode(false)} /> : null}
 
-      <TextAnalysisSheet
-        visible={sheet === 'analysis'}
-        blocks={chapter.blocks}
-        typing={{ cpm: metrics.typingCpm, wpm: metrics.typingWpm }}
-        onClose={() => setSheet(null)}
-      />
-      <OutlineSheet
-        visible={sheet === 'outline'}
-        blocks={chapter.blocks}
-        styles={draft.styles}
-        onJump={jump}
-        onClose={() => setSheet(null)}
-      />
-      <LayoutPrefsSheet
-        visible={sheet === 'layout'}
+      <EditorSheets
+        sheet={sheet}
+        setSheet={setSheet}
+        chapter={chapter}
+        draft={draft}
+        metrics={metrics}
+        jump={jump}
         focusMode={focusMode}
-        onFocusMode={(on) => {
-          setFocusMode(on);
-          if (on) setSheet(null);
-        }}
-        onClose={() => setSheet(null)}
-        onOpenAppearance={() => {
-          setSheet(null);
-          p.onAppearance();
-        }}
+        setFocusMode={setFocusMode}
+        enabledModules={p.enabledModules}
+        onAppearance={p.onAppearance}
+        actions={a}
+        format={f}
       />
-      <MetricPickerSheet visible={sheet === 'metrics'} onClose={() => setSheet(null)} />
-      <CommentSheet visible={f.commentOpen} onAdd={f.addComment} onClose={f.closeComment} />
-      <GimmickPicker
-        visible={a.pickerOpen}
-        modules={enabledWriterModules(p.enabledModules)}
-        onPick={a.pickModule}
-        onClose={a.closePicker}
-      />
-      {sheetBlock?.kind === 'module' && sheetModule ? (
-        <GimmickBlockSheet
-          block={sheetBlock}
-          module={sheetModule}
-          enabledModules={p.enabledModules}
-          update={draft.update}
-          onDone={() => a.openSheet(null)}
-        />
-      ) : null}
     </View>
   );
 }

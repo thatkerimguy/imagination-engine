@@ -17,10 +17,11 @@ const useStyles = makeStyles((t) => ({
 }));
 
 export default function ChapterEditorScreen(): ReactNode {
-  const { novelId, seasonId, chapterId } = useLocalSearchParams<{
+  const { novelId, seasonId, chapterId, block } = useLocalSearchParams<{
     novelId: string;
     seasonId: string;
     chapterId: string;
+    block?: string;
   }>();
   const router = useRouter();
   const navigation = useNavigation();
@@ -66,6 +67,7 @@ export default function ChapterEditorScreen(): ReactNode {
         onPreview={(id) => void preview(id)}
         onGrowth={() => router.push(routes.growth(`chapter:${chapterId}`, from))}
         onAppearance={() => router.push(routes.appearance)}
+        {...(block ? { initialBlockId: block } : {})}
       />
     </>
   );

@@ -2,7 +2,7 @@
 // for folders and notes, and the sheets behind the per-item ⋯ menu.
 import { router, Stack } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { RecentStrip } from '../components/RecentStrip.tsx';
 import { ItemMetaSheet } from '../components/ItemMetaSheet.tsx';
 import { folderHref, routes } from '../routes.ts';
@@ -10,6 +10,7 @@ import { useRepoQuery, useRepository } from '../store/context.tsx';
 import { createDoc, createFolder, listAllFolders } from '../store/folders.ts';
 import { SORT_LABELS, type SortMode } from '../store/item-meta.ts';
 import { IconBtn } from '../ui/IconBtn.tsx';
+import { pickAndImport } from '../import/pick-import.ts';
 import { EmptyState, Page } from '../ui/Page.tsx';
 import { PopoverMenu } from '../ui/PopoverMenu.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -43,6 +44,14 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
     const doc = await createDoc(repo, folderId);
     router.push(routes.note(doc.id, folderId));
   };
+  const importDoc = async (): Promise<void> => {
+    try {
+      const id = await pickAndImport(repo, { folderId });
+      if (id) router.push(routes.note(id, folderId));
+    } catch (err) {
+      Alert.alert('Import failed', err instanceof Error ? err.message : 'Please try again.');
+    }
+  };
   const picked = menu.target;
 
   return (
@@ -63,6 +72,12 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
                 accessibilityLabel="New note"
                 onPress={() => void addNote()}
                 testID="notes-new-note"
+              />
+              <IconBtn
+                icon="download"
+                accessibilityLabel="Import .txt, .md or .docx"
+                onPress={() => void importDoc()}
+                testID="notes-import"
               />
             </View>
           ),

@@ -1,6 +1,9 @@
 // Book Outline: seasons and chapters in reading order, with rename / reorder / status controls.
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
+import { ItemMetaSheet } from '../../../components/ItemMetaSheet.tsx';
+import { pickAndImport } from '../../../import/pick-import.ts';
+import { PopoverMenu } from '../../../ui/PopoverMenu.tsx';
 import { Alert, View } from 'react-native';
 import { shareJson } from '../../../export/share-json';
 import { GimmickLine } from '../../../library/GimmickLine.tsx';
@@ -27,6 +30,7 @@ export default function OutlineScreen(): ReactNode {
   const repo = useRepository();
   const { data, error } = useRepoQuery(`outline:${novelId}`, (r) => r.exportNovel(novelId));
   const [problem, setProblem] = useState<string | null>(null);
+  const [metaOpen, setMetaOpen] = useState(false);
 
   const run = async (job: () => Promise<unknown>): Promise<void> => {
     try {
@@ -46,6 +50,14 @@ export default function OutlineScreen(): ReactNode {
       }
     });
 
+  const importChapter = (): Promise<void> =>
+    run(async () => {
+      const last = data?.seasons.at(-1)?.season.id;
+      if (!last) return;
+      const id = await pickAndImport(repo, { novelId, seasonId: last });
+      if (id) router.push(routes.chapter(novelId, last, id));
+    });
+
   const novel = data?.novel;
   return (
     <Page>
@@ -60,11 +72,35 @@ export default function OutlineScreen(): ReactNode {
                 onPress={() => router.push(routes.novelSettings(novelId))}
                 testID="outline-settings"
               />
-              <IconBtn
-                icon="share"
-                accessibilityLabel="Export"
-                onPress={() => void exportBook()}
-                testID="outline-export"
+              <PopoverMenu
+                accessibilityLabel="Book options"
+                testID="outline-menu"
+                items={[
+                  {
+                    label: 'Compile & Export Book',
+                    icon: 'printer',
+                    onPress: () => router.push(routes.compile(novelId)),
+                    testID: 'outline-compile',
+                  },
+                  {
+                    label: 'Import .txt / .md / .docx',
+                    icon: 'download',
+                    onPress: () => void importChapter(),
+                    testID: 'outline-import',
+                  },
+                  {
+                    label: 'Tags & Color',
+                    icon: 'tag',
+                    onPress: () => setMetaOpen(true),
+                    testID: 'outline-meta',
+                  },
+                  {
+                    label: 'Export JSON',
+                    icon: 'share',
+                    onPress: () => void exportBook(),
+                    testID: 'outline-export',
+                  },
+                ]}
               />
             </View>
           ),
@@ -128,6 +164,14 @@ export default function OutlineScreen(): ReactNode {
             testID="add-season"
           />
         </View>
+      ) : null}
+      {novel ? (
+        <ItemMetaSheet
+          visible={metaOpen}
+          itemId={novelId}
+          title={novel.title}
+          onClose={() => setMetaOpen(false)}
+        />
       ) : null}
     </Page>
   );

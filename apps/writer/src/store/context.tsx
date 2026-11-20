@@ -1,5 +1,6 @@
 // React wiring: one repository per app, plus a query hook that re-runs whenever data changes.
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { maybeAutoBackup } from '../backup/auto-backup.ts';
 import { createDefaultAdapter } from '../storage/adapter';
 import { seedOnFirstLaunch } from './demo.ts';
 import { NovelRepository } from './repository.ts';
@@ -12,7 +13,11 @@ export function RepositoryProvider({ children }: { children: ReactNode }): React
   useEffect(() => {
     seedOnFirstLaunch(repo)
       .catch((err: unknown) => console.warn('[writer] demo seed failed', err))
-      .finally(() => setReady(true));
+      .finally(() => {
+        setReady(true);
+        // Rotating emergency snapshot when the configured interval has passed (native only).
+        void maybeAutoBackup(repo);
+      });
   }, [repo]);
   return ready ? <RepoContext.Provider value={repo}>{children}</RepoContext.Provider> : null;
 }

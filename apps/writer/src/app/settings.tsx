@@ -14,6 +14,7 @@ import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { Field } from '../ui/Field.tsx';
 import { ListRow, Page, SectionLabel } from '../ui/Page.tsx';
+import { BackupSection } from '../backup/BackupSection.tsx';
 import { routes } from '../routes.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
@@ -78,6 +79,7 @@ export default function AppSettingsScreen(): ReactNode {
           onPress={() => setReaderUrl(DEFAULT_SETTINGS.readerUrl)}
         />
       </View>
+      <BackupSection />
       <SectionLabel>Privacy & integrity</SectionLabel>
       <ListRow
         icon="lock"

@@ -3,6 +3,7 @@ import { router, Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { shareJson } from '../export/share-json';
+import { RecentStrip } from '../components/RecentStrip.tsx';
 import { NovelCard } from '../library/NovelCard.tsx';
 import { routes } from '../routes.ts';
 import { DEMO_NOVEL_ID, loadDemoNovel } from '../store/demo.ts';
@@ -77,6 +78,7 @@ export default function LibraryScreen(): ReactNode {
       <Txt variant="display" accessibilityRole="header" style={{ paddingTop: space.xs }}>
         Library
       </Txt>
+      <RecentStrip />
       {error ? (
         <Txt variant="body" color="danger">
           Could not load your books.

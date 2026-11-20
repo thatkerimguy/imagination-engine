@@ -98,14 +98,6 @@ try {
   // 04 Dice sheet: scripted → scriptedNumbers visible; random → hidden (showWhen).
   await tid(`pill-${ID.dice}`).click();
   await tid('gimmick-sheet').waitFor();
-  // The first label must sit fully below the fixed sheet header (title, then subtitle and divider).
-  const header = await page.getByText('3D Dice Throw', { exact: true }).boundingBox();
-  const label = await page.getByText('Dice', { exact: true }).boundingBox();
-  if (header && label && label.y >= header.y + header.height + 24)
-    ok(
-      `first field label "Dice" is unclipped (${Math.round(label.y - header.y - header.height)}px below the header)`,
-    );
-  else fail(`"Dice" label overlaps the sheet header: ${JSON.stringify({ header, label })}`);
   const scripted = page.getByText('Faces that land up');
   await scripted.waitFor();
   await page.getByText('True random', { exact: true }).click();
@@ -113,8 +105,16 @@ try {
   else ok('showWhen hides scriptedNumbers for outcomeMode=random');
   await page.getByText('Scripted', { exact: true }).click();
   await scripted.waitFor();
-  await page.getByText('Material').scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
+  // Reopen fresh (scroll y = 0, slide-in finished) to check and capture the first field label.
+  await page.getByRole('button', { name: 'Close sheet' }).click();
+  await tid(`pill-${ID.dice}`).click();
+  await tid('gimmick-sheet').waitFor();
+  await page.waitForTimeout(700);
+  const header = await page.getByText('3D Dice Throw', { exact: true }).boundingBox();
+  const label = await page.getByText('Dice', { exact: true }).boundingBox();
+  if (header && label && label.y >= header.y + header.height + 24 && label.y < 844)
+    ok(`first field label "Dice" is unclipped at scroll 0 (${Math.round(label.y)}px from top)`);
+  else fail(`"Dice" label overlaps the sheet header: ${JSON.stringify({ header, label })}`);
   await shot('04-m3-schema-sheet-dice');
   await page.getByRole('button', { name: 'Close sheet' }).click();
 

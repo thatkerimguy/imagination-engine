@@ -53,7 +53,7 @@ export function TextField(p: TextFieldProps): ReactNode {
           typescale.bodyLarge,
           styles.input,
           dense && styles.dense,
-          multiline && styles.multiline,
+          multiline && (dense ? styles.multilineDense : styles.multiline),
           pad,
           { color: colors.onSurface, borderColor: border, borderWidth: thick ? 2 : 1 },
         ]}
@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
   },
   dense: { minHeight: 44 },
   multiline: { minHeight: 88, textAlignVertical: 'top' },
+  multilineDense: { minHeight: 48, textAlignVertical: 'top' },
   support: { flexDirection: 'row', gap: space.lg, paddingHorizontal: space.lg },
   flex: { flex: 1 },
 });

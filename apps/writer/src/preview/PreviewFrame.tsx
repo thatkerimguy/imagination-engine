@@ -2,7 +2,7 @@
 import { useImperativeHandle, useRef, type ComponentType, type ReactNode, type Ref } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView as WebViewClass, type WebViewProps } from 'react-native-webview';
-import { colors } from '../ui/legacy-theme.ts';
+import { useTheme } from '../ui/theme.tsx';
 import type { PreviewFrameProps } from './frame-types.ts';
 import { parseReaderMessage } from './protocol.ts';
 
@@ -13,6 +13,7 @@ const WebView = WebViewClass as unknown as ComponentType<
 >;
 
 export function PreviewFrame({ url, onMessage, onLoadError, ref }: PreviewFrameProps): ReactNode {
+  const { colors } = useTheme();
   const web = useRef<WebViewHandle>(null);
   useImperativeHandle(ref, () => ({
     send(message) {
@@ -27,7 +28,7 @@ export function PreviewFrame({ url, onMessage, onLoadError, ref }: PreviewFrameP
     <WebView
       ref={web}
       source={{ uri: url }}
-      style={styles.web}
+      style={[styles.web, { backgroundColor: colors.surface }]}
       originWhitelist={['*']}
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
@@ -41,4 +42,4 @@ export function PreviewFrame({ url, onMessage, onLoadError, ref }: PreviewFrameP
   );
 }
 
-const styles = StyleSheet.create({ web: { flex: 1, backgroundColor: colors.bg } });
+const styles = StyleSheet.create({ web: { flex: 1 } });

@@ -61,6 +61,12 @@ export default function BookshelfScreen(): ReactNode {
           title: 'Bookshelf',
           headerRight: () => (
             <>
+              <IconButton
+                icon="settings"
+                accessibilityLabel="Settings"
+                onPress={() => router.push(routes.appSettings)}
+                testID="app-settings"
+              />
               {empty ? null : (
                 <OverflowMenu
                   accessibilityLabel="More options"
@@ -74,12 +80,6 @@ export default function BookshelfScreen(): ReactNode {
                   ]}
                 />
               )}
-              <IconButton
-                icon="settings"
-                accessibilityLabel="Settings"
-                onPress={() => router.push(routes.appSettings)}
-                testID="app-settings"
-              />
             </>
           ),
         }}

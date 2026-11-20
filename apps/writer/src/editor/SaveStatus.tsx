@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
-import { colors } from '../ui/theme.ts';
+import { colors } from '../ui/legacy-theme.ts';
 
 const LABELS: Record<ChapterDraft['status'], string> = {
   saved: 'Saved',

@@ -9,7 +9,7 @@ import { useRepoQuery, useRepository } from '../store/context.tsx';
 import { Button } from '../ui/Button.tsx';
 import { confirmAction } from '../ui/confirm';
 import { EmptyState, screenStyles } from '../ui/layout.tsx';
-import { colors } from '../ui/theme.ts';
+import { colors } from '../ui/legacy-theme.ts';
 
 export default function BookshelfScreen(): ReactNode {
   const repo = useRepository();

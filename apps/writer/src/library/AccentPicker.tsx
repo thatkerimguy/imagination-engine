@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../ui/Button.tsx';
 import { Row } from '../ui/layout.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 
 export const ACCENT_PRESETS = [
   '#4fd1c5',

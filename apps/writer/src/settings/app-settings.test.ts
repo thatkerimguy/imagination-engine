@@ -32,6 +32,6 @@ describe('settings storage', () => {
     const repo = new NovelRepository(createMemoryAdapter());
     expect(await loadSettings(repo)).toEqual(DEFAULT_SETTINGS);
     await saveSettings(repo, { readerUrl: 'https://r.test/' });
-    expect(await loadSettings(repo)).toEqual({ readerUrl: 'https://r.test/' });
+    expect(await loadSettings(repo)).toEqual({ ...DEFAULT_SETTINGS, readerUrl: 'https://r.test/' });
   });
 });

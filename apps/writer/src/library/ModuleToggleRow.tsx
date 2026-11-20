@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import type { WriterModule } from '../modules/registry.ts';
 import { Badge, Card } from '../ui/layout.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 
 export function ModuleToggleRow({
   module: m,

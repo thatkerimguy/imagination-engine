@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../ui/Button.tsx';
 import { BottomSheet } from '../ui/BottomSheet.tsx';
-import { colors, radius, space } from '../ui/theme.ts';
+import { colors, radius, space } from '../ui/legacy-theme.ts';
 import { initialDraft, resetDraft, setField, validateDraft } from './form-state.ts';
 import type { GimmickSheetProps } from './gimmick-sheet-types.ts';
 import { SchemaForm } from './SchemaForm.tsx';

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { FieldDescriptor } from '@kn/core';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 import { visibleFields } from './form-state.ts';
 import { AssetControl } from './controls/AssetControl.tsx';
 import { ColorControl } from './controls/ColorControl.tsx';

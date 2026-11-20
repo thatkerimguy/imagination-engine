@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, space, TAP } from '../../ui/theme.ts';
+import { colors, radius, space, TAP } from '../../ui/legacy-theme.ts';
 
 export const controlStyles = StyleSheet.create({
   stack: { gap: space.sm },

@@ -2,7 +2,7 @@
 import { useImperativeHandle, useRef, type ComponentType, type ReactNode, type Ref } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView as WebViewClass, type WebViewProps } from 'react-native-webview';
-import { colors } from '../ui/theme.ts';
+import { colors } from '../ui/legacy-theme.ts';
 import type { PreviewFrameProps } from './frame-types.ts';
 import { parseReaderMessage } from './protocol.ts';
 

@@ -2,20 +2,36 @@
 import type { NovelRepository } from '../store/repository.ts';
 import { keys } from '../store/documents.ts';
 
+export type Appearance = 'dark' | 'light' | 'system';
+export const APPEARANCES: readonly Appearance[] = ['dark', 'light', 'system'];
+
 export interface AppSettings {
+  /** Writer colour scheme; 'system' follows the OS. */
+  appearance: Appearance;
   /** Base URL of an apps/reader server (dev Vite, LAN, or deployed). `?preview=1` is added. */
   readerUrl: string;
 }
 
-export const DEFAULT_SETTINGS: AppSettings = { readerUrl: 'http://127.0.0.1:5173/' };
+export const DEFAULT_SETTINGS: AppSettings = {
+  appearance: 'dark',
+  readerUrl: 'http://127.0.0.1:5173/',
+};
 
 export async function loadSettings(repo: NovelRepository): Promise<AppSettings> {
   const stored = await repo.docs.read<Partial<AppSettings>>(keys.setting('app'));
-  return { ...DEFAULT_SETTINGS, ...stored?.data };
+  const merged = { ...DEFAULT_SETTINGS, ...stored?.data };
+  if (!APPEARANCES.includes(merged.appearance)) merged.appearance = DEFAULT_SETTINGS.appearance;
+  return merged;
 }
 
-export async function saveSettings(repo: NovelRepository, settings: AppSettings): Promise<void> {
-  await repo.docs.write(keys.setting('app'), settings);
+/** Merges a partial update into the stored settings. */
+export async function saveSettings(
+  repo: NovelRepository,
+  patch: Partial<AppSettings>,
+): Promise<AppSettings> {
+  const next = { ...(await loadSettings(repo)), ...patch };
+  await repo.docs.write(keys.setting('app'), next);
+  return next;
 }
 
 /** Normalises a typed URL into the reader's preview entry point, or null when unusable. */

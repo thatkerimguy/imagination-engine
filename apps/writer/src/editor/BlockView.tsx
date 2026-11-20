@@ -2,7 +2,7 @@ import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { isBlockComplete } from '../store/sanitize.ts';
-import { colors, radius, space } from '../ui/theme.ts';
+import { colors, radius, space } from '../ui/legacy-theme.ts';
 import { BlockActions, type BlockActionHandlers } from './BlockActions.tsx';
 import { DialogueBlockEditor } from './DialogueBlockEditor.tsx';
 import { GimmickPill } from './GimmickPill.tsx';

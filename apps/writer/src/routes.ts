@@ -16,3 +16,27 @@ export const routes = {
   preview: (novelId: string, seasonId: string, chapterId: string, blockId?: string) =>
     `/preview?${q({ novel: novelId, season: seasonId, chapter: chapterId, block: blockId })}`,
 } as const;
+
+/**
+ * The logical parent of a screen, so Back always works — even after a deep link or a web
+ * reload where there is no navigation history. `null` for the bookshelf (the root).
+ */
+export function parentHref(
+  pathname: string,
+  params: Readonly<Record<string, string | string[] | undefined>>,
+): string | null {
+  const one = (k: string): string | undefined => {
+    const v = params[k];
+    return Array.isArray(v) ? v[0] : v;
+  };
+  const parts = pathname.split('/').filter(Boolean);
+  if (parts.length === 0) return null;
+  if (parts[0] === 'novel' && parts[1]) {
+    return parts.length > 2 ? routes.outline(parts[1]) : routes.shelf;
+  }
+  if (parts[0] === 'preview') {
+    const [n, s, c] = [one('novel'), one('season'), one('chapter')];
+    return n && s && c ? routes.chapter(n, s, c) : routes.shelf;
+  }
+  return routes.shelf;
+}

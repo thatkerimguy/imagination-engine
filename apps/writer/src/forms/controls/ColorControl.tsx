@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Chip } from '../../ui/Chip.tsx';
 import { Row } from '../../ui/layout.tsx';
-import { colors, space } from '../../ui/theme.ts';
+import { colors, space } from '../../ui/legacy-theme.ts';
 import { tapFeedback } from '../../ui/haptics.ts';
 import { asString } from '../form-state.ts';
 import { controlStyles as s } from './styles.ts';

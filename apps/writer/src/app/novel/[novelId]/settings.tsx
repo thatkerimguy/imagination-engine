@@ -14,7 +14,7 @@ import { Button } from '../../../ui/Button.tsx';
 import { Chip } from '../../../ui/Chip.tsx';
 import { Row, screenStyles, SectionTitle } from '../../../ui/layout.tsx';
 import { TextField } from '../../../ui/TextField.tsx';
-import { colors } from '../../../ui/theme.ts';
+import { colors } from '../../../ui/legacy-theme.ts';
 
 /** How many blocks in this novel's chapters use each module id. */
 async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<string, number>> {

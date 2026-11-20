@@ -10,7 +10,7 @@ import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { Row, screenStyles, SectionTitle } from '../ui/layout.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { colors } from '../ui/theme.ts';
+import { colors } from '../ui/legacy-theme.ts';
 
 export default function NewNovelScreen(): ReactNode {
   const repo = useRepository();

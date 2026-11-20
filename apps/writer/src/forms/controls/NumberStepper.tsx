@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, space, TAP } from '../../ui/theme.ts';
+import { colors, space, TAP } from '../../ui/legacy-theme.ts';
 import { tapFeedback } from '../../ui/haptics.ts';
 import { stepNumber } from '../form-state.ts';
 import { controlStyles as s } from './styles.ts';

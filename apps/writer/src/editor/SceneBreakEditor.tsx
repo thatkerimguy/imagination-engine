@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 import type { InlineEditorProps, SceneBreakBlock } from './block-types.ts';
 
 export function SceneBreakEditor(p: InlineEditorProps<SceneBreakBlock>): ReactNode {

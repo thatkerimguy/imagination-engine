@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../../ui/Button.tsx';
-import { colors, space } from '../../ui/theme.ts';
+import { colors, space } from '../../ui/legacy-theme.ts';
 import { tapFeedback } from '../../ui/haptics.ts';
 import { asStringArray, listAdd, listMove, listRemove, listUpdate } from '../form-state.ts';
 import { controlStyles as s } from './styles.ts';

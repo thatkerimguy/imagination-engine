@@ -8,7 +8,7 @@ export async function previewPass(page, base, { ok, fail, shot }) {
   await page.getByText('Waiting for the writer…').waitFor({ timeout: 10000 });
   const post = (mutate) =>
     page.evaluate(
-      async ({ headline, line, mutate }) => {
+      async ({ headline, line, mutate, start }) => {
         const get = (p) => fetch(`novels/vertical-slice/${p}`).then((r) => r.json());
         const [novel, season, chapter] = await Promise.all([
           get('novel.json'),
@@ -19,9 +19,11 @@ export async function previewPass(page, base, { ok, fail, shot }) {
         chapter.status = 'draft';
         chapter.blocks.find((b) => b.kind === 'dialogue').text = line;
         if (mutate === 'invalid') chapter.blocks[2].text = '';
-        window.postMessage({ type: 'kn-preview-load', novel, season, chapter, tier: 'lite' }, '*');
+        const dialogue = chapter.blocks.find((b) => b.kind === 'dialogue');
+        const extra = start ? { startBlockId: dialogue.id, tier: 'auto' } : { tier: 'lite' };
+        window.postMessage({ type: 'kn-preview-load', novel, season, chapter, ...extra }, '*');
       },
-      { headline: HEADLINE, line: LINE, mutate },
+      { headline: HEADLINE, line: LINE, mutate, start: mutate === 'from-dialogue' },
     );
 
   await post('valid');
@@ -43,4 +45,20 @@ export async function previewPass(page, base, { ok, fail, shot }) {
   await post('invalid');
   await page.getByText('This draft cannot be previewed yet:').waitFor({ timeout: 5000 });
   ok('preview bridge rejects an invalid draft with a readable message');
+
+  // Starting mid-chapter (the writer's focused block) replays earlier beats on the same queue:
+  // KESTREL-9 must be complete before the dice below the resume point settle.
+  await page.goto(`${base}?preview=1`);
+  await page.getByText('Waiting for the writer…').waitFor({ timeout: 10000 });
+  await post('from-dialogue');
+  await page.getByRole('button', { name: 'Silent' }).click({ timeout: 10000 });
+  await page.waitForFunction(() => window.__settled, null, { timeout: 20000 });
+  const chat = await page.evaluate(() => ({
+    calm: !document.querySelector('.kn-cbc')?.classList.contains('kn-cbc--motion'),
+    pending: document.querySelectorAll('.kn-cbc li.pending').length,
+    last: document.querySelector('.kn-cbc li:last-child')?.textContent,
+  }));
+  if (chat.calm && chat.pending === 0 && chat.last === "Don't relax.")
+    ok('preview from a mid-chapter block keeps beats sequential (KESTREL-9 before dice)');
+  else fail(`preview resume played beats concurrently: ${JSON.stringify(chat)}`);
 }

@@ -1,48 +1,72 @@
+// M3 filter chip: 32dp, small (8dp) shape, outline when off; secondaryContainer + ✓ when on.
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { colors, radius, space } from './theme.ts';
+import { StyleSheet, View } from 'react-native';
+import { AppText } from './AppText.tsx';
+import { Icon, type IconName } from './Icon.tsx';
+import { shape, space } from './m3-tokens.ts';
+import { slopFor, StatePressable } from './StateLayer.tsx';
+import { useTheme } from './theme.tsx';
 
 export interface ChipProps {
   label: string;
   selected?: boolean;
   onPress?(): void;
-  /** Optional leading colour dot (e.g. a swatch or dialogue accent). */
+  /** Leading icon when not selected (selected chips always lead with ✓). */
+  icon?: IconName;
+  /** Optional leading colour dot (swatch / dialogue accent). */
   dot?: string;
+  disabled?: boolean;
   testID?: string;
 }
 
-export function Chip({ label, selected, onPress, dot, testID }: ChipProps): ReactNode {
+export function Chip(p: ChipProps): ReactNode {
+  const { colors } = useTheme();
+  const fg = p.selected ? 'onSecondaryContainer' : 'onSurfaceVariant';
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : 'text'}
-      accessibilityState={{ selected: !!selected }}
-      onPress={onPress}
-      disabled={!onPress}
-      testID={testID}
-      style={({ pressed }) => [styles.chip, selected && styles.selected, pressed && styles.pressed]}
-      hitSlop={4}
+    <StatePressable
+      accessibilityRole={p.onPress ? 'checkbox' : 'text'}
+      accessibilityLabel={p.label}
+      accessibilityState={{ checked: !!p.selected, disabled: !!p.disabled }}
+      onPress={p.onPress}
+      disabled={!p.onPress || p.disabled}
+      testID={p.testID}
+      hitSlop={slopFor(0, 32)}
+      layerColor={colors[fg]}
+      style={[
+        styles.chip,
+        p.selected
+          ? { backgroundColor: colors.secondaryContainer, borderColor: colors.secondaryContainer }
+          : { borderColor: colors.outline },
+        (p.selected || p.icon || p.dot) && styles.withLeading,
+        p.disabled && styles.disabled,
+      ]}
     >
-      {dot ? <Text style={[styles.dot, { color: dot }]}>●</Text> : null}
-      <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
-    </Pressable>
+      <View style={styles.row}>
+        {p.selected ? (
+          <Icon name="check" size={18} color="onSecondaryContainer" />
+        ) : p.icon ? (
+          <Icon name={p.icon} size={18} color="primary" />
+        ) : null}
+        {p.dot ? <View style={[styles.dot, { backgroundColor: p.dot }]} /> : null}
+        <AppText variant="labelLarge" color={p.selected ? 'onSecondaryContainer' : 'onSurface'}>
+          {p.label}
+        </AppText>
+      </View>
+    </StatePressable>
   );
 }
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: 36,
-    paddingHorizontal: space.md,
-    borderRadius: radius.pill,
+    height: 32,
+    borderRadius: shape.small,
     borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    paddingHorizontal: space.lg,
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  selected: { backgroundColor: colors.accent, borderColor: colors.accent },
-  pressed: { opacity: 0.75 },
-  dot: { fontSize: 12 },
-  label: { color: colors.fg, fontSize: 14, fontWeight: '500' },
-  selectedLabel: { color: colors.accentInk, fontWeight: '700' },
+  withLeading: { paddingLeft: space.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  dot: { width: 12, height: 12, borderRadius: 6 },
+  disabled: { opacity: 0.38 },
 });

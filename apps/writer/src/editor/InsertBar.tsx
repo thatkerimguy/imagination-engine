@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tapFeedback } from '../ui/haptics.ts';
-import { colors, radius, space } from '../ui/theme.ts';
+import { colors, radius, space } from '../ui/legacy-theme.ts';
 
 export type InsertChoice = 'prose' | 'dialogue' | 'scene-break' | 'gimmick';
 

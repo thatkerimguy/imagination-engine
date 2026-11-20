@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getWriterModule } from '../modules/registry.ts';
 import { tapFeedback } from '../ui/haptics.ts';
 import { Badge } from '../ui/layout';
-import { colors, radius, space, TAP } from '../ui/theme.ts';
+import { colors, radius, space, TAP } from '../ui/legacy-theme.ts';
 import type { ModuleBlockT } from './block-types.ts';
 
 /** Compact summary card; everything shown comes from the module's own `summarize()`. */

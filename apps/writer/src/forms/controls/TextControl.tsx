@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { colors } from '../../ui/theme.ts';
+import { colors } from '../../ui/legacy-theme.ts';
 import { asString } from '../form-state.ts';
 import { controlStyles as s } from './styles.ts';
 import type { ControlProps } from './types.ts';

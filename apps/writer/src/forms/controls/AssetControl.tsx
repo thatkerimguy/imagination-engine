@@ -4,7 +4,7 @@ import { Text, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import type { AssetKind } from '@kn/core';
 import { Button } from '../../ui/Button.tsx';
-import { colors } from '../../ui/theme.ts';
+import { colors } from '../../ui/legacy-theme.ts';
 import { asString } from '../form-state.ts';
 import { controlStyles as s } from './styles.ts';
 import type { ControlProps } from './types.ts';

@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../ui/Button.tsx';
 import { Badge } from '../ui/layout.tsx';
-import { colors, radius, space } from '../ui/theme.ts';
+import { colors, radius, space } from '../ui/legacy-theme.ts';
 import { InlineRename } from './InlineRename.tsx';
 
 const TONE = { draft: 'muted', unlisted: 'warn', published: 'ok' } as const;

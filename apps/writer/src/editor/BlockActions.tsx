@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../ui/Button';
 import { toggleFeedback } from '../ui/haptics.ts';
-import { colors, radius, space } from '../ui/theme.ts';
+import { colors, radius, space } from '../ui/legacy-theme.ts';
 
 export interface BlockActionHandlers {
   onToggleBeat(id: string): void;

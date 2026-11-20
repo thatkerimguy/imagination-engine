@@ -4,7 +4,7 @@ import type { WriterModule } from '../modules/registry.ts';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Muted } from '../ui/layout';
-import { colors, radius, space, TAP } from '../ui/theme.ts';
+import { colors, radius, space, TAP } from '../ui/legacy-theme.ts';
 import { INSERT_CHOICES, type InsertChoice } from './InsertBar.tsx';
 
 /** "+ Below": the same insert choices, as a sheet. */

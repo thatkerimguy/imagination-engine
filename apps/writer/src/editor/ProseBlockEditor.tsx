@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GrowingTextInput } from '../ui/GrowingTextInput.tsx';
 import { Chip } from '../ui/Chip';
-import { colors, fonts, space } from '../ui/theme.ts';
+import { colors, fonts, space } from '../ui/legacy-theme.ts';
 import type { InlineEditorProps, ProseBlock } from './block-types.ts';
 
 const STYLES = ['body', 'whisper', 'emphasis'] as const;

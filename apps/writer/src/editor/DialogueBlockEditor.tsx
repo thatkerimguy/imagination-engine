@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { GrowingTextInput } from '../ui/GrowingTextInput.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { colors, fonts, space } from '../ui/theme.ts';
+import { colors, fonts, space } from '../ui/legacy-theme.ts';
 import type { DialogueBlock, InlineEditorProps } from './block-types.ts';
 
 /** `undefined` = no accent. */

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, space } from '../../ui/theme.ts';
+import { colors, space } from '../../ui/legacy-theme.ts';
 import { asNumber, snapNumber } from '../form-state.ts';
 import { NumberStepper } from './NumberStepper.tsx';
 import { controlStyles as s } from './styles.ts';

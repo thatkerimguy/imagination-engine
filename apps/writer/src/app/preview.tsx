@@ -10,7 +10,7 @@ import { routes } from '../routes.ts';
 import { Button } from '../ui/Button.tsx';
 import { Chip } from '../ui/Chip.tsx';
 import { EmptyState, Row } from '../ui/layout.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 
 type Status = 'connecting' | 'live' | 'unreachable' | 'rejected';
 const READY_TIMEOUT_MS = 8000;

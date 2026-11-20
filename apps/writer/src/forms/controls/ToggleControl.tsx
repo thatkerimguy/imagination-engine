@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Switch, View } from 'react-native';
-import { colors } from '../../ui/theme.ts';
+import { colors } from '../../ui/legacy-theme.ts';
 import { toggleFeedback } from '../../ui/haptics.ts';
 import type { ControlProps } from './types.ts';
 

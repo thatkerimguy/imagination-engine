@@ -8,7 +8,7 @@ import { routes } from '../../../../../routes.ts';
 import { useRepoQuery } from '../../../../../store/context.tsx';
 import { useChapterDraft } from '../../../../../store/use-chapter-draft.ts';
 import { Button } from '../../../../../ui/Button';
-import { colors, space } from '../../../../../ui/theme.ts';
+import { colors, space } from '../../../../../ui/legacy-theme.ts';
 
 export default function ChapterEditorScreen(): ReactNode {
   const { novelId, seasonId, chapterId } = useLocalSearchParams<{

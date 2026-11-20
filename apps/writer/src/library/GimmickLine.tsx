@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { enabledWriterModules } from '../modules/registry.ts';
-import { colors } from '../ui/theme.ts';
+import { colors } from '../ui/legacy-theme.ts';
 
 /** Compact "Gimmicks: 🎲 🧠" line of enabled module icons; tapping opens novel settings. */
 export function GimmickLine({

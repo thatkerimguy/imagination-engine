@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NovelSummary } from '../store/repository.ts';
 import { Button } from '../ui/Button.tsx';
 import { Card } from '../ui/layout.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 import { countLabel, relativeTime } from './relative-time.ts';
 
 export function NovelCard({

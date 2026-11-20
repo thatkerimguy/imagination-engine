@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../ui/Button.tsx';
 import { Card } from '../ui/layout.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { colors, space } from '../ui/legacy-theme.ts';
 import { ChapterRow, type ChapterRowProps } from './ChapterRow.tsx';
 import { InlineRename } from './InlineRename.tsx';
 

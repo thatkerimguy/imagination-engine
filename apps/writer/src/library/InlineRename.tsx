@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '../ui/Button.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { space } from '../ui/theme.ts';
+import { space } from '../ui/legacy-theme.ts';
 
 /** Inline text edit with Save / Cancel, used for season and chapter titles. */
 export function InlineRename({

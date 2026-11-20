@@ -18,7 +18,7 @@ import {
 } from '../../../store/outline.ts';
 import { Button } from '../../../ui/Button.tsx';
 import { EmptyState, screenStyles } from '../../../ui/layout.tsx';
-import { colors } from '../../../ui/theme.ts';
+import { colors } from '../../../ui/legacy-theme.ts';
 
 export default function OutlineScreen(): ReactNode {
   const { novelId } = useLocalSearchParams<{ novelId: string }>();

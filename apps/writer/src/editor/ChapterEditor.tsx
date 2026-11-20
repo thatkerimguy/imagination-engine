@@ -9,7 +9,7 @@ import { replaceBlock } from '../store/chapter-ops.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/layout';
-import { colors, fonts, space } from '../ui/theme.ts';
+import { colors, fonts, space } from '../ui/legacy-theme.ts';
 import { BlockView } from './BlockView.tsx';
 import { InsertBar } from './InsertBar.tsx';
 import { GimmickPicker, InsertChoiceSheet } from './InsertSheets.tsx';

@@ -71,10 +71,16 @@ export class Pacer {
         .flatMap((b, i) => (b.kind === 'module' ? [i] : []));
       seen.forEach((i) => this.triggered.add(i));
       for (let i = 0; i < restoreIndex; i++) this.o.elements[i]!.classList.add('is-in');
-      for (const i of seen) {
-        await this.hostFor(i, 'reduced')?.trigger();
-        if (this.abort.signal.aborted) return;
-      }
+      // Create the replay hosts now, before the near-observer can mount them at full tier, and
+      // run the replays on the beat queue so later beats (a dice throw just below the resume
+      // point) wait for them instead of playing over them.
+      const replays = seen.map((i) => this.hostFor(i, 'reduced'));
+      this.queue = this.queue.then(async () => {
+        for (const host of replays) {
+          if (this.abort.signal.aborted) return;
+          await host?.trigger();
+        }
+      });
     }
     addEventListener('scroll', this.onScroll, { passive: true, signal: this.abort.signal });
     addEventListener('keydown', this.onKey, { signal: this.abort.signal });

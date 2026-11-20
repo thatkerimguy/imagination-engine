@@ -105,19 +105,21 @@ const lastWrite = new Map<GrowthTarget, number>();
 
 /**
  * Records a snapshot. Skips the write when the target was written less than 5 minutes ago,
- * unless `force` (e.g. when the editor closes). Returns whether it wrote.
+ * unless `force` (e.g. when the editor closes). `counts` may be a function so the (costly) count
+ * only runs when a write will happen. Returns whether it wrote.
  */
 export async function recordGrowth(
   repo: NovelRepository,
   target: GrowthTarget,
-  counts: GrowthCounts,
+  counts: GrowthCounts | (() => GrowthCounts | Promise<GrowthCounts>),
   opts: { now?: number; force?: boolean } = {},
 ): Promise<boolean> {
   const now = opts.now ?? Date.now();
   const prev = lastWrite.get(target);
   if (!opts.force && prev !== undefined && now - prev < GROWTH_THROTTLE_MS) return false;
   lastWrite.set(target, now);
-  const next = appendPoint(await loadGrowth(repo, target), counts, now);
+  const value = typeof counts === 'function' ? await counts() : counts;
+  const next = appendPoint(await loadGrowth(repo, target), value, now);
   await repo.docs.write(growthKey(target), next);
   return true;
 }

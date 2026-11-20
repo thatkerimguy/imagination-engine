@@ -81,7 +81,9 @@ export function useEditorActions(update: ChapterDraft['update']) {
     pick,
     pickModule,
     remove,
-    change: (block: Block) => update((c) => replaceBlock(c, block)),
+    /** Text edits coalesce in undo history (800 ms, same block); other changes are boundaries. */
+    change: (block: Block) =>
+      update((c) => replaceBlock(c, block), { kind: 'typing', blockId: block.id }),
     toggleBeat: (id: string) => update((c) => toggleBeatStop(c, id)),
     move: (id: string, delta: -1 | 1) => update((c) => moveBlock(c, id, delta)),
   };

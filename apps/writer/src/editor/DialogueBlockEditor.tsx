@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { GrowingTextInput } from '../ui/GrowingTextInput.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
-import { proseFont, space, TOUCH } from '../ui/m3-tokens.ts';
+import { space, TOUCH } from '../ui/m3-tokens.ts';
 import { makeStyles, useTheme } from '../ui/theme.tsx';
 import type { DialogueBlock, InlineEditorProps } from './block-types.ts';
+import type { RichEditorExtras } from './ProseBlockEditor.tsx';
+import { RichProseInput } from './RichProseInput.tsx';
 
 /** `undefined` = no accent. */
 const ACCENTS: readonly (string | undefined)[] = [
@@ -16,23 +17,17 @@ const ACCENTS: readonly (string | undefined)[] = [
   '#c792ea',
 ];
 
-const useStyles = makeStyles((t) => ({
+const useStyles = makeStyles(() => ({
   wrap: { gap: 0 },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   target: { width: TOUCH, height: TOUCH, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 16, height: 16, borderRadius: 8 },
   speaker: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.4, padding: 0 },
-  line: {
-    color: t.colors.onSurface,
-    fontFamily: proseFont,
-    fontSize: 17,
-    lineHeight: 26,
-    padding: 0,
-    minHeight: 26,
-  },
 }));
 
-export function DialogueBlockEditor(p: InlineEditorProps<DialogueBlock>): ReactNode {
+export function DialogueBlockEditor(
+  p: InlineEditorProps<DialogueBlock> & RichEditorExtras,
+): ReactNode {
   const accent = p.block.accentColor;
   const { colors } = useTheme();
   const s = useStyles();
@@ -75,15 +70,17 @@ export function DialogueBlockEditor(p: InlineEditorProps<DialogueBlock>): ReactN
           style={[s.speaker, { color: tint }]}
         />
       </View>
-      <GrowingTextInput
-        scrollEnabled={false}
-        value={p.block.text}
+      <RichProseInput
+        text={p.block.text}
+        blockStyle={p.blockStyle}
+        focused={p.focused}
+        placeholder="Line…"
+        samsungSafeIme={p.samsungSafeIme}
+        selection={p.selection}
         onFocus={p.onSelect}
         onChangeText={(text) => p.onChange({ ...p.block, text })}
-        placeholder="Line…"
-        placeholderTextColor={colors.onSurfaceVariant}
-        textAlignVertical="top"
-        style={s.line}
+        onSelectionChange={p.onSelectionChange}
+        testID={`dialogue-text-${p.block.id}`}
       />
     </View>
   );

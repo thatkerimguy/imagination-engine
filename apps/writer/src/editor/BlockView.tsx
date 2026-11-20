@@ -1,6 +1,7 @@
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import type { BlockStyle } from '../store/chapter-styles.ts';
 import { isBlockComplete } from '../store/sanitize.ts';
 import { AppText } from '../ui/AppText.tsx';
 import { Icon } from '../ui/Icon.tsx';
@@ -8,6 +9,7 @@ import { StatusBadge } from '../ui/layout.tsx';
 import { shape, space } from '../ui/m3-tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
 import { BlockActions, type BlockActionHandlers } from './BlockActions.tsx';
+import type { Selection } from './inline-edit.ts';
 import { DialogueBlockEditor } from './DialogueBlockEditor.tsx';
 import { GimmickPill } from './GimmickPill.tsx';
 import { ProseBlockEditor, ProseStyleControl } from './ProseBlockEditor.tsx';
@@ -22,17 +24,29 @@ export interface BlockViewProps extends BlockActionHandlers {
   onSelect(id: string): void;
   onChange(block: Block): void;
   onOpenGimmick(id: string): void;
+  blockStyle?: BlockStyle;
+  samsungSafeIme?: boolean;
+  selection?: Selection;
+  onSelectionChange?(blockId: string, sel: Selection): void;
 }
 
 function Body(p: BlockViewProps): ReactNode {
   const { block } = p;
   const select = (): void => p.onSelect(block.id);
+  const rich = {
+    focused: p.selected,
+    blockStyle: p.blockStyle,
+    samsungSafeIme: !!p.samsungSafeIme,
+    selection: p.selection,
+    onSelectionChange: (sel: Selection): void => p.onSelectionChange?.(block.id, sel),
+  };
   switch (block.kind) {
     case 'prose':
       return (
         <ProseBlockEditor
           block={block}
           autoFocus={p.autoFocus}
+          {...rich}
           onChange={p.onChange}
           onSelect={select}
         />
@@ -42,13 +56,20 @@ function Body(p: BlockViewProps): ReactNode {
         <DialogueBlockEditor
           block={block}
           autoFocus={p.autoFocus}
+          {...rich}
           onChange={p.onChange}
           onSelect={select}
         />
       );
     case 'scene-break':
       return (
-        <SceneBreakEditor block={block} autoFocus={false} onChange={p.onChange} onSelect={select} />
+        <SceneBreakEditor
+          block={block}
+          autoFocus={false}
+          expanded={p.selected}
+          onChange={p.onChange}
+          onSelect={select}
+        />
       );
     case 'module':
       return (

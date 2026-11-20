@@ -88,6 +88,7 @@ packages/modules/bl-dice-3d/
 3. **Keep Files Small & Readable:** Prefer clear, modular files (target `< 250 lines` per file) with strict TypeScript (`strict: true`, zero `any`).
 4. **Verify Before Handing Off:** Before declaring a Directive task done, run typecheck, unit tests, production build, and verify zero console errors and clean bundle splitting (confirming core reader bundle stays `< 40 KB` gzipped without 3D modules).
 5. **Ask, Don't Invent:** If a creative nuance is ambiguous (e.g., how fast a smoke wisp dissipates or whether a dice throw blocks scrolling), make a tasteful default, expose it as a simple schema control if useful, and flag the choice briefly in your handoff summary.
+6. **One Report File Per Review Pass:** Every Orchestrator review pass gets its own new report at `docs/qa/pass-<n>-report.md`, plus a row in the `docs/qa/README.md` index. Never rewrite an earlier pass's report. Screenshots are attached to the handoff, not committed (`qa-shots*/` is git-ignored).
 
 ---
 

@@ -18,7 +18,7 @@ master lock and Document Doctor.
 | `pnpm build` + `bundle-report.mjs`                                | ✅ reader initial JS **18.5 KB** gzipped (`main` 6.1 + `module-host` 12.4) / 40 KB; `three` lazy only |
 | `expo export --platform web`                                      | ✅                                                                                                    |
 | `expo export --platform android`                                  | ✅ Hermes `.hbc` 3,923,878 bytes (−29 KB vs 02B-1); `cannon-es`/`THREE.WebGLRenderer`/paper grep = 0  |
-| `node scripts/smoke.mjs` (reader + preview)                       | ⏳ re-run in progress (all checks ✅ in the QA pass; process hung on teardown — pre-existing)         |
+| `node scripts/smoke.mjs` (reader + preview)                       | ✅ 12/12 + 3 tier leak checks, zero console errors, clean exit 0                                      |
 | `node scripts/writer-shots.mjs --shots qa-shots-2c`               | ✅ 15/15 checks, **zero console errors**, 7 Folio PNGs (+ live-preview PNG), attached to handoff      |
 
 ## Agents

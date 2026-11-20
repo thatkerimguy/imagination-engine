@@ -20,6 +20,19 @@ pnpm smoke        # browser smoke test against the build (needs Playwright + Chr
                   # `node scripts/smoke.mjs --shots qa-shots` writes a QA pack (git-ignored)
 ```
 
+### Writer (`apps/writer`, Expo)
+
+```bash
+pnpm writer           # Expo dev server: scan the QR code with Expo Go / a dev build
+pnpm writer:web       # the writer in a browser (localStorage instead of SQLite)
+pnpm writer:export    # static Expo Web export into apps/writer/dist
+pnpm writer:shots     # Playwright QA pack for the writer (needs pnpm build + writer:export)
+```
+
+Live Preview loads the reader at the URL set in the writer's Settings (default
+`http://127.0.0.1:5173/`) with `?preview=1`, and posts the unsaved chapter into it. On a phone,
+point it at your computer's LAN address and start the reader with `pnpm dev --host`.
+
 To try it on a phone, forward the port (`adb reverse tcp:5173 tcp:5173` on Android) or run
 `pnpm preview` behind any HTTPS tunnel. Audio and motion sensors need a secure context.
 
@@ -28,14 +41,18 @@ To try it on a phone, forward the port (`adb reverse tcp:5173 tcp:5173` on Andro
 ```
 packages/core                 frozen schema (zod), module contract, ULIDs; `@kn/core/renderer` is the web-only half
 packages/modules/<id>/        one folder per gimmick: schema.ts · card.ts · renderer.ts · index.ts
-apps/reader                   vanilla TS + Vite PWA reader, shared stage, audio bus, /sandbox
+apps/reader                   vanilla TS + Vite PWA reader, shared stage, audio bus, /sandbox, ?preview=1
+apps/writer                   Expo + Expo Router authoring app (SQLite store, schema forms, live preview)
 sample-novels/vertical-slice  the 12-block demo chapter
-scripts/                      bundle report, smoke test
-docs/qa/                      one report per review pass (pass-<n>-report.md)
+scripts/                      bundle report, smoke test, writer QA shots
+docs/qa/                      one report per review pass
+docs/directives/              archived directives
 ```
 
 ## Adding a module
 
 Create `packages/modules/<genre>-<name>/` with the four files and a `package.json`. The reader
-and sandbox discover it automatically (`import.meta.glob`); no edits to `packages/core`, the
-reader shell, or (later) the writer. Enable it per novel through `novel.json` → `enabledModules`.
+and sandbox discover it automatically (`import.meta.glob`); no edits to `packages/core` or the
+reader shell. The writer needs one line in `apps/writer/src/modules/registry.ts` plus the
+`@kn/module-<id>` dependency in `apps/writer/package.json` (see the Phase 2 report).
+Enable it per novel through `novel.json` → `enabledModules`.

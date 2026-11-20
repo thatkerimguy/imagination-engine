@@ -1,0 +1,18 @@
+{
+  "name": "@kn/reader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@kn/core": "workspace:*",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "workbox-window": "^7.4.1"
+  }
+}

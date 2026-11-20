@@ -1,23 +1,26 @@
-const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-// Largest multiple of 62 that fits in a byte; bytes above it are rejected to avoid modulo bias.
-const LIMIT = 248;
+// ULIDs: 48-bit time + 80-bit randomness, Crockford base32. Sortable by creation time, so block
+// ids survive reordering and still read chronologically in diffs.
+const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const ULID_PATTERN = /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
 
-/**
- * Creates a short random id such as `psg_4fK9xQ2mZa`. Ids are stable references in project data,
- * saves and translations, so never derive them from array positions or titles.
- */
-export function createId(prefix = '', length = 10): string {
-  if (!Number.isInteger(length) || length < 4) {
-    throw new RangeError(`Id length must be an integer of at least 4, got ${length}.`);
+export function isUlid(value: unknown): value is string {
+  return typeof value === 'string' && ULID_PATTERN.test(value);
+}
+
+export function ulid(now: number = Date.now(), random: () => number = defaultRandom): string {
+  let time = '';
+  let t = Math.floor(now);
+  for (let i = 0; i < 10; i++) {
+    time = ALPHABET.charAt(t % 32) + time;
+    t = Math.floor(t / 32);
   }
-  let out = '';
-  const bytes = new Uint8Array(length * 2);
-  while (out.length < length) {
-    crypto.getRandomValues(bytes);
-    for (const byte of bytes) {
-      if (byte < LIMIT) out += ALPHABET[byte % 62];
-      if (out.length === length) break;
-    }
-  }
-  return prefix ? `${prefix}_${out}` : out;
+  let rand = '';
+  for (let i = 0; i < 16; i++) rand += ALPHABET.charAt(Math.floor(random() * 32) % 32);
+  return time + rand;
+}
+
+function defaultRandom(): number {
+  const c = globalThis.crypto;
+  if (c?.getRandomValues) return c.getRandomValues(new Uint32Array(1))[0]! / 2 ** 32;
+  return Math.random();
 }

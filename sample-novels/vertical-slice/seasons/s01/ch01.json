@@ -1,0 +1,114 @@
+{
+  "id": "ch01",
+  "seasonId": "s01",
+  "title": "Snake Eyes",
+  "status": "published",
+  "blocks": [
+    {
+      "id": "01M7WD7TG0SRH8FFJAF28FHTHC",
+      "kind": "scene-break",
+      "label": "Pier 9 · The Lantern Room",
+      "timestamp": "02:14 · Rain"
+    },
+    {
+      "id": "01M7WD7TG1R63M5MJ69NG6995F",
+      "kind": "module",
+      "moduleId": "core-ambient-bed",
+      "moduleVersion": 1,
+      "props": { "action": "play", "preset": "rain", "volume": 0.55, "fadeSeconds": 4 }
+    },
+    {
+      "id": "01M7WD7TG2E6A9YY5JE036YWV9",
+      "kind": "prose",
+      "text": "The rain had been falling on the harbour for three days, and the Lantern Room had stopped pretending it had a roof. Water ran down the inside of the windows in long, patient lines. Nobody at the back table looked up when Mara came in. That was how she knew they had been waiting for her."
+    },
+    {
+      "id": "01M7WD7TG3C1Z266E87HFD27KR",
+      "kind": "module",
+      "moduleId": "gits-cyberbrain-chat",
+      "moduleVersion": 1,
+      "props": {
+        "senderId": "KESTREL-9",
+        "encryption": "AES-Q",
+        "side": "right",
+        "messages": [
+          "Dealer's cup is weighted. Left side.",
+          "He rolls snakes when he wants the room to relax.",
+          "Don't relax."
+        ],
+        "chime": true,
+        "lineDelay": 1.4
+      }
+    },
+    {
+      "id": "01M7WD7TG4T9804M170B4T81MM",
+      "kind": "dialogue",
+      "speaker": "The Dealer",
+      "text": "House rolls first. House always rolls first.",
+      "accentColor": "#e0a458"
+    },
+    {
+      "id": "01M7WD7TG54FMBWYMZM8XKD1V7",
+      "kind": "module",
+      "moduleId": "bl-dice-3d",
+      "moduleVersion": 1,
+      "props": {
+        "count": 2,
+        "material": "ivory",
+        "outcomeMode": "scripted",
+        "scriptedNumbers": [1, 1],
+        "trigger": "auto",
+        "holdSeconds": 2.5,
+        "sound": true
+      },
+      "beatStop": true
+    },
+    {
+      "id": "01M7WD7TG6R6734B03YH123PFY",
+      "kind": "prose",
+      "text": "Snake eyes. The room exhaled.",
+      "style": "emphasis"
+    },
+    {
+      "id": "01M7WD7TG7F2A4E8JSNGC9BMN2",
+      "kind": "module",
+      "moduleId": "core-ambient-bed",
+      "moduleVersion": 1,
+      "props": { "action": "play", "preset": "barroom", "volume": 0.5, "fadeSeconds": 3 }
+    },
+    {
+      "id": "01M7WD7TG8MNRH5HAN9SRG9HTD",
+      "kind": "dialogue",
+      "speaker": "Mara",
+      "text": "Double or nothing. My dice.",
+      "accentColor": "#4fd1c5"
+    },
+    {
+      "id": "01M7WD7TG9GHA74ZBMV74DKCNC",
+      "kind": "prose",
+      "text": "She set two obsidian cubes on the felt. Somewhere under the bar, a refrigerator hummed a note nobody else could hear.",
+      "style": "whisper"
+    },
+    {
+      "id": "01M7WD7TGAR4E536V2J9GYDN9K",
+      "kind": "module",
+      "moduleId": "bl-dice-3d",
+      "moduleVersion": 1,
+      "props": {
+        "count": 2,
+        "material": "obsidian",
+        "outcomeMode": "scripted",
+        "scriptedNumbers": [6, 6],
+        "trigger": "tap-or-shake",
+        "holdSeconds": 3,
+        "sound": true
+      },
+      "beatStop": true
+    },
+    {
+      "id": "01M7WD7TGBM50P6PCXRRWPR2B6",
+      "kind": "prose",
+      "text": "Boxcars. The Dealer smiled the way men smile when they have already decided what happens next. Outside, the rain kept writing on the glass."
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 {
-  "name": "@ie/core",
-  "version": "0.0.0",
+  "name": "@kn/core",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Kernel: module registry, action bus, event bus, state store, services, storage.",
+  "description": "Frozen core: content schema, module contract and validators. Zero DOM (except the web-only renderer contract entry).",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./renderer": "./src/renderer-contract.ts"
   },
   "dependencies": {
-    "idb": "^8.0.4",
     "zod": "^4.6.7"
   }
 }

@@ -1,68 +1,51 @@
-// @ts-check
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default tseslint.config(
-  {
-    ignores: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/dev-dist/**',
-      'coverage/**',
-      'out/**',
-      '.wrangler/**',
-      'test-results/**',
-      'playwright-report/**',
-    ],
-  },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/dev-dist/**', 'coverage/**'] },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.strict,
   {
-    languageOptions: {
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ['*.js', 'tools/*/*.mjs', 'tools/*/*/*.js'],
-          // The plain-JS tools and Cloudflare functions are a dozen small files.
-          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 16,
-        },
-        tsconfigRootDir: import.meta.dirname,
-      },
-      globals: { ...globals.browser },
-    },
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {
-      // Packages talk only through their public entry point (see CLAUDE.md).
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/consistent-type-imports': 'error',
+      // With noUncheckedIndexedAccess, a checked `!` is the honest way to index typed arrays.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      'max-lines': ['warn', { max: 250, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // The frozen core stays DOM-free except for the web-only renderer contract.
+    files: ['packages/core/src/**/*.ts'],
+    ignores: ['packages/core/src/renderer-contract.ts'],
+    languageOptions: { globals: {} },
+  },
+  {
+    // CLAUDE.md §3.3: the writer may only see meta, schema and card. Modules must keep
+    // their barrel free of renderer code so that stays true.
+    files: [
+      'packages/modules/*/index.ts',
+      'packages/modules/*/schema.ts',
+      'packages/modules/*/card.ts',
+    ],
+    rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
+            { group: ['three', 'three/*', 'cannon-es'], message: 'Renderer-only dependency.' },
             {
-              group: ['@ie/*/src/*', '../../packages/*', '../../../packages/*'],
-              message: 'Import packages through their public entry, e.g. "@ie/core".',
+              group: ['./renderer*', './high*', './lite*'],
+              message: 'Barrel must not reach renderer code.',
             },
+            { group: ['@kn/core/renderer'], message: 'Web-only contract; keep it in renderer.ts.' },
           ],
         },
       ],
-      // Keep files small enough for focused, reviewable changes.
-      'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
-      ],
-      '@typescript-eslint/consistent-type-imports': 'error',
     },
-  },
-  {
-    files: ['apps/studio/**/*.{ts,tsx}'],
-    plugins: { 'react-hooks': reactHooks },
-    rules: reactHooks.configs.recommended.rules,
-  },
-  {
-    files: ['**/*.{js,mjs}', 'tools/**'],
-    ...tseslint.configs.disableTypeChecked,
-    languageOptions: { globals: { ...globals.node } },
   },
   prettier,
 );

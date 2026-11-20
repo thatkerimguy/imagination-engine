@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "vertical-slice",
+  "title": "Chrome Tide",
+  "subtitle": "A vertical slice",
+  "author": "The Author",
+  "sectionLabel": "Season",
+  "theme": { "--accent": "#4fd1c5" },
+  "enabledModules": ["core-ambient-bed", "gits-cyberbrain-chat", "bl-dice-3d"],
+  "seasons": ["s01"]
+}

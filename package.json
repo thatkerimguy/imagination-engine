@@ -1,44 +1,36 @@
 {
-  "name": "imagination-engine",
+  "name": "kinetic-novel-platform",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.18.0",
   "engines": {
-    "node": ">=24"
+    "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --filter \"./apps/*\" --parallel dev",
-    "dev:player": "pnpm --filter @ie/player dev",
-    "dev:studio": "pnpm --filter @ie/studio dev",
-    "build": "pnpm --filter \"./apps/*\" build",
-    "preview": "pnpm --filter \"./apps/*\" --parallel preview",
-    "phone": "node tools/phone/phone.mjs",
-    "icons": "node tools/icons/generate.mjs",
-    "publish:novel": "node tools/publish/novel.mjs",
-    "publish:studio": "node tools/publish/studio.mjs",
+    "dev": "pnpm --filter @kn/reader dev",
+    "build": "pnpm --filter @kn/reader build && node scripts/bundle-report.mjs",
+    "preview": "pnpm --filter @kn/reader preview",
     "typecheck": "tsc -p tsconfig.json",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "smoke": "node scripts/smoke.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
-    "eslint": "^10.14.0",
+    "@types/three": "^0.187.0",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
-    "prettier": "^3.9.10",
-    "sharp": "^0.35.5",
+    "prettier": "^3.10.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.1",
-    "vite": "^8.3.7",
+    "typescript-eslint": "^8.73.0",
+    "vite": "^8.3.8",
     "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }

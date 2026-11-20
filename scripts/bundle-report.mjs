@@ -3,8 +3,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const DIST = new URL('../apps/reader/dist/', import.meta.url).pathname;
+const DIST = fileURLToPath(new URL('../apps/reader/dist/', import.meta.url));
 const BUDGET = 40 * 1024;
 const MODULE_BUDGET = 300 * 1024;
 const gz = (file) => gzipSync(readFileSync(join(DIST, file))).length;

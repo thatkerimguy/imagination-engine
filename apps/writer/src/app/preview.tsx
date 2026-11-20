@@ -170,7 +170,7 @@ export default function PreviewScreen(): ReactNode {
           />
           <Txt variant="caption" color="inkMuted" testID="preview-mode-note">
             {status === 'live'
-              ? `Live � ${offline ? 'Built-in offline reader' : 'Custom reader'} � ${
+              ? `Live · ${offline ? 'Built-in offline reader' : 'Custom reader'} · ${
                   fromLiveDraft ? 'draft' : 'saved chapter'
                 }`
               : status === 'connecting'

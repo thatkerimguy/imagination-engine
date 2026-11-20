@@ -1,7 +1,7 @@
 // Browser smoke test + QA screenshot pack (DIRECTIVE 01 acceptance and the review handoff).
 // Needs `pnpm build` first and Playwright with Chromium (`npx playwright install chromium`).
 // Usage: node scripts/smoke.mjs [--shots <dir>]
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { diceMaterialsPass } from './smoke-dice-materials.mjs';
 import { previewPass } from './smoke-preview.mjs';
@@ -20,7 +20,14 @@ const shotsAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
 const BASE = 'http://127.0.0.1:4173/';
-const server = spawn('pnpm', ['--filter', '@kn/reader', 'preview'], { stdio: 'ignore' });
+// Windows needs a shell to find pnpm.cmd, and a tree kill to stop the server behind it.
+const win = process.platform === 'win32';
+const server = spawn('pnpm', ['--filter', '@kn/reader', 'preview'], {
+  stdio: 'ignore',
+  shell: win,
+});
+const stopServer = () =>
+  win ? spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F']) : server.kill();
 const errors = [];
 const fail = (msg) => {
   console.error(`❌ ${msg}`);
@@ -78,7 +85,7 @@ try {
   else ok('zero console errors');
   await browser.close();
 } finally {
-  server.kill();
+  stopServer();
 }
 
 async function readerPass(page, shot, settled, resetSettled) {

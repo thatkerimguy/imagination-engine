@@ -17,7 +17,7 @@ export async function offlinePreviewShot(page, ctx) {
     ok('offline preview renders the edited, unsaved line inside the srcdoc reader');
   else fail('edited line missing from the offline srcdoc reader');
   const note = (await tid('preview-mode-note').textContent()) ?? '';
-  if (/Built-in offline reader/.test(note)) ok(`preview caption: ${note.trim()}`);
+  if (/^Live · Built-in offline reader · /.test(note.trim())) ok(`preview caption: ${note.trim()}`);
   else fail(`preview caption is not "Built-in offline reader": ${note}`);
   if (blocked.length) fail(`offline preview tried the network: ${blocked.slice(0, 3).join(', ')}`);
   else ok('offline preview made zero external requests (reader server never started)');
@@ -73,7 +73,13 @@ export async function settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok,
   await page.goto(`${WRITER}settings`);
   await tid('settings-preview-mode').waitFor({ timeout: 15000 });
   await tid('settings-haptics').waitFor();
-  await tid('settings-preview-mode').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  // Scroll so the "Live preview" section label sits just under the top bar.
+  await tid('settings-preview-mode').evaluate((el) => {
+    el.scrollIntoView({ block: 'start' });
+    let s = el.parentElement;
+    while (s && s.scrollHeight <= s.clientHeight) s = s.parentElement;
+    s?.scrollBy(0, -170);
+  });
   await page.waitForTimeout(300);
   const box = await tid('settings-haptics-test').boundingBox();
   if (box && box.y + box.height <= 844) {

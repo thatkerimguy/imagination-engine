@@ -10,8 +10,6 @@ import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 import { countLabel, relativeTime } from './relative-time.ts';
 
-const sentence = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
-
 export function NovelCard({
   novel,
   onOpen,
@@ -51,8 +49,8 @@ export function NovelCard({
     countLabel(novel.seasonCount, novel.sectionLabel.toLowerCase()),
     countLabel(novel.chapterCount, 'chapter'),
     `${novel.words.toLocaleString('en-US')} words`,
-    sentence(relativeTime(novel.updatedAt)),
   ].join(' · ');
+  const edited = `Edited ${relativeTime(novel.updatedAt)}`;
   return (
     <View style={[styles.row, { borderColor: colors.hairline }]}>
       <Press
@@ -72,8 +70,16 @@ export function NovelCard({
               {novel.subtitle}
             </Txt>
           ) : null}
-          <Txt variant="meta" color="inkMuted" numberOfLines={2}>
+          <Txt variant="meta" color="inkMuted" numberOfLines={1}>
             {meta}
+          </Txt>
+          <Txt
+            variant="meta"
+            color="inkMuted"
+            numberOfLines={1}
+            testID={`novel-edited-${novel.id}`}
+          >
+            {edited}
           </Txt>
         </View>
       </Press>

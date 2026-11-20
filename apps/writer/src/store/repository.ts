@@ -67,6 +67,11 @@ export class NovelRepository {
     for (const l of this.listeners) l();
   }
 
+  /** For writer-only sidecar stores (folders, notes, item meta) that write through `docs`. */
+  notifyChanged(): void {
+    this.changed();
+  }
+
   // ── Novels ──────────────────────────────────────────────────────────────────────────────
 
   async listNovels(): Promise<NovelSummary[]> {

@@ -7,10 +7,24 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#16171a",
-    "ios": { "supportsTablet": false, "bundleIdentifier": "dev.kinetic.writer" },
-    "android": { "package": "dev.kinetic.writer", "softwareKeyboardLayoutMode": "resize" },
-    "web": { "bundler": "metro", "output": "single" },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "dev.kinetic.writer",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Kinetic Writer uses Face ID to unlock your private manuscripts."
+      }
+    },
+    "android": {
+      "package": "dev.kinetic.writer",
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
     "plugins": ["expo-router", "expo-sqlite", "expo-font"],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

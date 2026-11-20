@@ -108,7 +108,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.hairline,
   },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: space.xxs, alignItems: 'center' },
+  content: { paddingLeft: space.xxs, paddingRight: 12, alignItems: 'center' },
   pinned: {
     flexDirection: 'row',
     alignItems: 'center',

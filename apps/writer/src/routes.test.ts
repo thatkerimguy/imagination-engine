@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parentHref, routes } from './routes.ts';
+import { folderHref, parentHref, routes, tabForPath } from './routes.ts';
 
 describe('parentHref', () => {
   it('has no parent for the bookshelf', () => {
@@ -19,5 +19,35 @@ describe('parentHref', () => {
   it('sends other screens to the shelf', () => {
     expect(parentHref('/settings', {})).toBe('/');
     expect(parentHref('/new-novel', {})).toBe('/');
+  });
+});
+
+describe('workspace routes', () => {
+  it('treats the three tab roots as roots', () => {
+    expect(parentHref('/folders', {})).toBeNull();
+    expect(parentHref('/search', {})).toBeNull();
+  });
+  it('walks nested folders and notes back up', () => {
+    expect(parentHref('/folders/f2', { parent: 'f1' })).toBe('/folders/f1');
+    expect(parentHref(folderHref('f1', null), {})).toBe('/folders');
+    expect(parentHref('/folders/note/d1', { folder: 'f1' })).toBe('/folders/f1');
+    expect(parentHref(routes.note('d1'), {})).toBe('/folders');
+  });
+  it('returns compilers, doctor and lock to their owners', () => {
+    expect(parentHref(routes.compile('n1'), {})).toBe('/novel/n1');
+    expect(parentHref('/compile-folder', { folder: 'f1' })).toBe('/folders/f1');
+    expect(parentHref(routes.doctor, {})).toBe('/settings');
+    expect(parentHref(routes.lock, {})).toBe('/settings');
+  });
+  it('deep-links a chapter at a block', () => {
+    expect(routes.chapter('n', 's', 'c', 'B1')).toBe('/novel/n/chapter/s/c?block=B1');
+  });
+  it('shows the tab bar only on tab screens', () => {
+    expect(tabForPath('/')).toBe('library');
+    expect(tabForPath('/folders')).toBe('notes');
+    expect(tabForPath('/folders/f1')).toBe('notes');
+    expect(tabForPath('/folders/note/d1')).toBeNull();
+    expect(tabForPath('/search')).toBe('search');
+    expect(tabForPath('/novel/n1')).toBeNull();
   });
 });

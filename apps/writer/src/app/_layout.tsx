@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { FolioTabBar } from '../components/FolioTabBar.tsx';
 import { RepositoryProvider } from '../store/context.tsx';
 import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
 import { HeaderScrollProvider } from '../ui/header-scroll.tsx';
@@ -30,7 +32,7 @@ export default function RootLayout(): ReactNode {
 function ThemedStack(): ReactNode {
   const { dark, colors } = useTheme();
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
@@ -50,7 +52,16 @@ function ThemedStack(): ReactNode {
         <Stack.Screen name="preview" options={{ title: 'Preview' }} />
         <Stack.Screen name="appearance" options={{ title: 'Appearance & fonts' }} />
         <Stack.Screen name="growth" options={{ title: 'Growth' }} />
+        <Stack.Screen name="folders/index" options={{ title: '', animation: 'none' }} />
+        <Stack.Screen name="folders/[folderId]" options={{ title: '' }} />
+        <Stack.Screen name="folders/note/[docId]" options={{ title: 'Note' }} />
+        <Stack.Screen name="search" options={{ title: '', animation: 'none' }} />
+        <Stack.Screen name="novel/[novelId]/compile" options={{ title: 'Book compiler' }} />
+        <Stack.Screen name="compile-folder" options={{ title: 'Book compiler' }} />
+        <Stack.Screen name="doctor" options={{ title: 'Document Doctor' }} />
+        <Stack.Screen name="lock" options={{ title: 'Master Lock' }} />
       </Stack>
-    </>
+      <FolioTabBar />
+    </View>
   );
 }

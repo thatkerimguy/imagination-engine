@@ -44,9 +44,9 @@ function MetricSection(p: {
   metric: GrowthMetric;
   points: GrowthPoint[];
   width: number;
+  onInspect(p: GrowthPoint | null): void;
 }): ReactNode {
   const { colors } = useTheme();
-  const [inspected, setInspected] = useState<GrowthPoint | null>(null);
   const last = p.points.at(-1);
   const delta = periodDelta(p.points)[p.metric];
   const tag =
@@ -81,13 +81,8 @@ function MetricSection(p: {
         points={p.points}
         metric={p.metric}
         width={p.width}
-        onInspect={setInspected}
+        onInspect={p.onInspect}
       />
-      <Txt variant="caption" color="inkMuted">
-        {inspected
-          ? `${new Date(inspected.ts).toLocaleString()} · ${fmt(inspected[p.metric])}`
-          : 'Tap the chart to inspect a point'}
-      </Txt>
     </View>
   );
 }
@@ -104,6 +99,11 @@ export default function GrowthScreen(): ReactNode {
   const { width } = useWindowDimensions();
   const target = isTarget(params.target) ? params.target : null;
   const [range, setRange] = useState<GrowthRange>('7d');
+  const [inspected, setInspected] = useState<{
+    point: GrowthPoint;
+    title: string;
+    metric: GrowthMetric;
+  } | null>(null);
   const [all, setAll] = useState<GrowthPoint[] | null>(null);
   useEffect(() => {
     if (!target) return;
@@ -135,11 +135,23 @@ export default function GrowthScreen(): ReactNode {
         accessibilityLabel="Timeframe"
         testID="growth-range"
       />
+      <Txt variant="caption" color="inkMuted" testID="growth-inspect-caption">
+        {inspected
+          ? `${inspected.title} · ${new Date(inspected.point.ts).toLocaleString()} · ${fmt(inspected.point[inspected.metric])}`
+          : 'Tap any chart to inspect a point'}
+      </Txt>
       <View>
         {METRICS.map((m, i) => (
           <View key={m.metric}>
             {i > 0 ? <Divider /> : null}
-            <MetricSection {...m} points={points} width={chartWidth} />
+            <MetricSection
+              {...m}
+              points={points}
+              width={chartWidth}
+              onInspect={(pt) =>
+                setInspected(pt ? { point: pt, title: m.title, metric: m.metric } : null)
+              }
+            />
           </View>
         ))}
       </View>

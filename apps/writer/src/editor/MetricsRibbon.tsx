@@ -46,7 +46,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.hairline,
     paddingHorizontal: space.xxs,
   },
-  strip: { alignItems: 'center', gap: space.lg, paddingHorizontal: space.xs },
+  strip: { alignItems: 'center', gap: space.lg, paddingLeft: space.xs, paddingRight: 16 },
   col: { minHeight: 36, justifyContent: 'center' },
   label: { fontSize: 10, lineHeight: 12, letterSpacing: 0.8 },
   value: { fontSize: 13, lineHeight: 17, fontWeight: '500', ...tabular },

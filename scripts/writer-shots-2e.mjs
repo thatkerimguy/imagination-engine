@@ -21,6 +21,18 @@ async function settingsJump(page, url) {
   );
 }
 
+/** Unscrolled ribbon: the last metric label must end inside the strip's visible area. */
+function ribbonClearance(page) {
+  return page.getByTestId('metrics-ribbon').evaluate((bar) => {
+    const labels = [...bar.querySelectorAll('[data-testid^="metric-"]')];
+    // The strip ends at the 1px separator just left of the customise button.
+    const button = bar.querySelector('[data-testid="metrics-customize"]');
+    const edge = (button?.getBoundingClientRect().left ?? 0) - 1;
+    const box = labels.at(-1)?.getBoundingClientRect();
+    return box ? { right: Math.round(box.right), edge: Math.round(edge) } : null;
+  });
+}
+
 export async function phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor }) {
   const shot = (name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
   const settle = (ms = 400) => page.waitForTimeout(ms);
@@ -50,20 +62,10 @@ export async function phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, ed
   // 03 Editor: ribbon scrolled to its end, last label clear of the customise button.
   await editor();
   await tid('metrics-ribbon').waitFor();
-  const clip = await tid('metrics-ribbon').evaluate((bar) => {
-    const scroller = [...bar.querySelectorAll('div')].find((d) => d.scrollWidth > d.clientWidth);
-    if (scroller) scroller.scrollLeft = scroller.scrollWidth;
-    const labels = [...bar.querySelectorAll('[data-testid^="metric-"]')].filter(
-      (n) => !/collapse|customize|toggle/.test(n.dataset.testid),
-    );
-    const last = labels.at(-1)?.getBoundingClientRect();
-    const btn = bar.querySelector('[data-testid="metrics-customize"]')?.getBoundingClientRect();
-    return last && btn ? { right: Math.round(last.right), button: Math.round(btn.left) } : null;
-  });
-  await settle();
-  if (clip && clip.right <= clip.button)
-    ok(`metrics ribbon ends ${clip.button - clip.right}px clear`);
-  else fail(`metrics ribbon label clipped under the customise button: ${JSON.stringify(clip)}`);
+  const clip = await ribbonClearance(page);
+  if (clip && clip.right <= clip.edge)
+    ok(`metrics ribbon fits at rest, last label ${clip.edge - clip.right}px clear`);
+  else fail(`metrics ribbon label clipped at rest: ${JSON.stringify(clip)}`);
   await tid('toolbar-collapse-format').waitFor();
   await tid('toolbar-collapse-add').waitFor();
   await shot('03-editor-metrics-unclipped');
@@ -79,8 +81,10 @@ export async function phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, ed
   await tid(`pill-${ID.dice}`).scrollIntoViewIfNeeded();
   await tid(`pill-${ID.dice}`).click();
   await tid('gimmick-sheet').waitFor({ timeout: 5000 });
-  await page.getByText('Reader taps or shakes', { exact: true }).click();
-  await page.getByRole('button', { name: 'Close sheet' }).last().click();
+  await tid('field-trigger-tap-or-shake').scrollIntoViewIfNeeded();
+  await tid('field-trigger-tap-or-shake').click();
+  await tid('gimmick-save').click();
+  await tid('gimmick-sheet').waitFor({ state: 'detached', timeout: 5000 });
   await tid(`dialogue-text-${ID.dialogue}`).click();
   await tid('preview-button').click();
   await tid('preview-screen').waitFor({ timeout: 10000 });
@@ -110,6 +114,9 @@ export async function phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, ed
   await tid('toolbar-collapse-add').click();
   await tid('toolbar-expand-add').waitFor({ timeout: 3000 });
   ok('Note Editor has the metrics ribbon and collapsible toolbar halves');
+  const noteClip = await ribbonClearance(page);
+  if (noteClip && noteClip.right <= noteClip.edge) ok('Note Editor ribbon fits at rest');
+  else fail(`Note Editor ribbon clipped at rest: ${JSON.stringify(noteClip)}`);
   await settle();
   await shot('05-note-editor-parity');
   await tid('toolbar-expand-add').click();

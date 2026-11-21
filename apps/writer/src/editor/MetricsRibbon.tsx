@@ -46,9 +46,18 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.hairline,
     paddingHorizontal: space.xxs,
   },
-  strip: { alignItems: 'center', gap: space.lg, paddingLeft: space.xs, paddingRight: 20 },
+  // The six default metrics fit a 390pt phone at rest; extra room is shared evenly, and longer
+  // custom sets scroll with 20pt clearance before the separator.
+  strip: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingLeft: space.xs,
+    paddingRight: 20,
+  },
   col: { minHeight: 36, justifyContent: 'center' },
-  label: { fontSize: 10, lineHeight: 12, letterSpacing: 0.8 },
+  label: { fontSize: 10, lineHeight: 12, letterSpacing: 0.6 },
   value: { fontSize: 13, lineHeight: 17, fontWeight: '500', ...tabular },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: TOUCH },
   grow: { flex: 1 },

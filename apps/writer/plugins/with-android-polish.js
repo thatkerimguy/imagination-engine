@@ -32,7 +32,11 @@ import com.facebook.react.bridge.ReactMethod
 
 ${MARK}: Android 12+ Material You wallpaper palette, or null (older Android / OEM gaps).
 class MaterialYouModule(private val ctx: ReactApplicationContext) : ReactContextBaseJavaModule(ctx) {
-  override fun getName(): String = "MaterialYou"
+  companion object {
+    const val NAME = "MaterialYou"
+  }
+
+  override fun getName(): String = NAME
 
   private fun hex(id: Int): String = String.format("#%06X", 0xFFFFFF and ctx.getColor(id))
 
@@ -70,18 +74,29 @@ class MaterialYouModule(private val ctx: ReactApplicationContext) : ReactContext
 
 const packageKt = (pkg) => `package ${pkg}
 
-import com.facebook.react.ReactPackage
+import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.uimanager.ViewManager
+import com.facebook.react.module.model.ReactModuleInfo
+import com.facebook.react.module.model.ReactModuleInfoProvider
 
-${MARK}: registers MaterialYouModule.
-class MaterialYouPackage : ReactPackage {
-  override fun createNativeModules(ctx: ReactApplicationContext): List<NativeModule> =
-    listOf(MaterialYouModule(ctx))
+${MARK}: registers MaterialYouModule (a legacy module, reached through the New Architecture interop).
+class MaterialYouPackage : BaseReactPackage() {
+  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
+    if (name == MaterialYouModule.NAME) MaterialYouModule(reactContext) else null
 
-  override fun createViewManagers(ctx: ReactApplicationContext): List<ViewManager<*, *>> =
-    emptyList()
+  override fun getReactModuleInfoProvider(): ReactModuleInfoProvider = ReactModuleInfoProvider {
+    mapOf(
+      MaterialYouModule.NAME to ReactModuleInfo(
+        MaterialYouModule.NAME,
+        MaterialYouModule::class.java.name,
+        false, // canOverrideExistingModule
+        false, // needsEagerInit
+        false, // isCxxModule
+        false, // isTurboModule
+      ),
+    )
+  }
 }
 `;
 

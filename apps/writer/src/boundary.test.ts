@@ -68,6 +68,11 @@ describe('writer source imports', () => {
   });
 });
 
+const DOM_API =
+  /\b(document|window|navigator|AudioContext|requestAnimationFrame|HTMLElement|IntersectionObserver|DeviceOrientationEvent)\s*[.(]/;
+const stripComments = (src: string): string =>
+  src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
 describe('imported module barrels', () => {
   const moduleIds = [
     ...new Set(
@@ -79,8 +84,12 @@ describe('imported module barrels', () => {
     ),
   ];
 
-  it('the writer imports at least one module', () => {
-    expect(moduleIds.length).toBeGreaterThan(0);
+  it('the writer imports every module in packages/modules (all six)', () => {
+    const dirs = readdirSync(MODULES_DIR).filter((d) =>
+      existsSync(join(MODULES_DIR, d, 'index.ts')),
+    );
+    expect(dirs.length).toBeGreaterThanOrEqual(6);
+    expect([...moduleIds].sort()).toEqual(dirs.sort());
   });
 
   it.each(moduleIds)('module %s barrel reaches no renderer, tier or 3D code', (id) => {
@@ -111,6 +120,8 @@ describe('imported module barrels', () => {
     expect(names).toContain(relative(dir, barrel));
     expect([...bare].filter((s) => s !== '@kn/core')).toEqual([]);
     expect([...bare].filter((s) => /^(three|cannon-es)/.test(s))).toEqual([]);
+    // Pure barrels: no browser globals reachable from what the writer bundles.
+    for (const f of seen) expect(stripComments(read(f)), relative(dir, f)).not.toMatch(DOM_API);
   });
 });
 

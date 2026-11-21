@@ -8,6 +8,9 @@ export function gimmickGlyph(id: string): GlyphName {
   if (id.includes('ambient') || id.includes('ambience')) return 'cloud-rain';
   if (id.includes('cyberbrain') || id.includes('chat')) return 'cpu';
   if (id.includes('dice')) return 'box';
+  if (id.includes('gaslight')) return 'eye-off';
+  if (id.includes('ghost') || id.includes('whisper')) return 'radio';
+  if (id.includes('lighter')) return 'sun';
   return 'zap';
 }
 

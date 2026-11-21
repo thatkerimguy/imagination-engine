@@ -3,6 +3,7 @@
 // Usage: node scripts/smoke.mjs [--shots <dir>]
 import { createRequire } from 'node:module';
 import { diceMaterialsPass } from './smoke-dice-materials.mjs';
+import { pack1Pass } from './smoke-pack-1.mjs';
 import { previewPass } from './smoke-preview.mjs';
 import { startPreviewServer } from './smoke-server.mjs';
 
@@ -63,6 +64,7 @@ try {
   await warmPass(await newPage(), shot, settled);
   await previewPass(await newPage(), BASE, { ok, fail, shot });
   await diceMaterialsPass(newPage, BASE, { ok, fail, shot });
+  await pack1Pass(newPage, BASE, { ok, fail, shotsAt });
   const fresh = await newPage();
   await fresh.goto(`${BASE}sandbox/?module=gits-cyberbrain-chat&tier=high`);
   await fresh.getByRole('button', { name: 'Trigger Beat' }).click();

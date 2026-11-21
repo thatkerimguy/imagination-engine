@@ -59,6 +59,36 @@ function outcomeLine(props: Props, name: string): CueLine | null {
   return null;
 }
 
+/**
+ * Passages with a hidden second reading (a gaslit rewrite, a ghost line under a surface line):
+ * on paper the visible text prints as prose, then the hidden one as an italic cue.
+ */
+const HIDDEN_PAIRS: readonly [shown: string, hidden: string, cue: string][] = [
+  ['initialText', 'mutatedText', 'On a second look it reads'],
+  ['surfaceLine', 'ghostLine', 'Beneath it, a ghost line'],
+];
+
+function pairLines(props: Props): CueLine[] {
+  for (const [shown, hidden, cue] of HIDDEN_PAIRS) {
+    const a = props[shown];
+    const b = props[hidden];
+    if (isStr(a) && isStr(b))
+      return [{ text: a.trim() }, { text: `${cue}: “${b.trim()}”`, italic: true }];
+  }
+  return [];
+}
+
+/** Ignite / extinguish style beats (a lighter, a lamp) read as a short stage direction. */
+const ACTION_CUES: Readonly<Record<string, string>> = {
+  ignite: 'flicks alight',
+  extinguish: 'snaps shut',
+};
+
+function actionLine(props: Props, name: string): CueLine | null {
+  const verb = typeof props.action === 'string' ? ACTION_CUES[props.action] : undefined;
+  return verb ? { text: `${name} ${verb}.`, italic: true } : null;
+}
+
 /** The lines a module block contributes under `mode`. */
 export function gimmickLines(block: ModuleBlock, mode: GimmickMode): CueLine[] {
   if (mode === 'omit') return [];
@@ -66,5 +96,9 @@ export function gimmickLines(block: ModuleBlock, mode: GimmickMode): CueLine[] {
   if (mode === 'summary') return [{ text: `[${name}: ${detail}]` }];
   const messages = messageLines(block.props, name);
   if (messages.length) return messages;
+  const pair = pairLines(block.props);
+  if (pair.length) return pair;
+  const action = actionLine(block.props, name);
+  if (action) return [action];
   return [outcomeLine(block.props, name) ?? { text: `${name}: ${detail}`, italic: true }];
 }

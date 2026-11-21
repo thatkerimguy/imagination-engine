@@ -3,7 +3,6 @@
 import type { StorageAdapter } from '../storage/types.ts';
 import type { NovelRepository } from '../store/repository.ts';
 import {
-  packChapter,
   packNovel,
   packWorkspace,
   restoreNovel,
@@ -56,8 +55,3 @@ export async function importChapterArchive(
   repo.notifyChanged();
   return id;
 }
-
-export const exportChapterArchive = (
-  repo: NovelRepository,
-  ids: { novelId: string; seasonId: string; chapterId: string },
-): Promise<Uint8Array> => packChapter(rawAdapter(repo), ids.novelId, ids.seasonId, ids.chapterId);

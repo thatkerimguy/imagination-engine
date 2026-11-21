@@ -60,8 +60,7 @@ export function BackupSection({
 
   const backUp = (): Promise<void> =>
     guard(async () => {
-      await manualBackup(repo);
-      return 'Backup created.';
+      return (await manualBackup(repo)) === 'saved' ? 'Backup saved.' : null;
     });
 
   const restore = (): Promise<void> =>
@@ -72,8 +71,13 @@ export function BackupSection({
       });
       const asset = picked.canceled ? undefined : picked.assets[0];
       if (!asset) return null;
+      if (!/\.(zip|knbook)$/i.test(asset.name))
+        throw new Error('Choose a backup (.zip) or a book (.knbook) file.');
       const bytes = await readAssetBytes(asset);
-      const info = await peekArchive(bytes);
+      const info = await peekArchive(bytes).catch((err: unknown) => {
+        const why = err instanceof Error && err.message ? ` (${err.message})` : '';
+        throw new Error(`“${asset.name}” is not a valid backup file${why}.`);
+      });
       const whole = info.kind === 'workspace';
       const ok = await confirm({
         title: whole ? 'Restore everything' : 'Restore book',

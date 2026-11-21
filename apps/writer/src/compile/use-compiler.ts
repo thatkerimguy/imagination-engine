@@ -29,6 +29,7 @@ export interface CompilerState {
   opts: ExportOptions;
   busy: ExportFormat | null;
   error: string | null;
+  notice: string | null;
 }
 
 const INITIAL: CompilerState = {
@@ -40,6 +41,7 @@ const INITIAL: CompilerState = {
   opts: DEFAULT_EXPORT_OPTIONS,
   busy: null,
   error: null,
+  notice: null,
 };
 
 const message = (err: unknown): string =>
@@ -119,16 +121,17 @@ export function useCompiler(source: CompileSource) {
     const order = state.rows.filter((r) => r.included).map((r) => r.id);
     if (order.length === 0 && format !== 'knbook')
       return patch({ error: 'Select at least one chapter to export.' });
-    patch({ busy: format, error: null });
+    patch({ busy: format, error: null, notice: null });
     try {
       const book =
         source.kind === 'novel'
           ? await compileNovel(repo, source.novelId, { order })
           : await compileFolder(repo, source.folderId, { order });
-      await exportBook(book, format, state.opts, {
+      const out = await exportBook(book, format, state.opts, {
         repo,
         ...(source.kind === 'novel' ? { novelId: source.novelId } : {}),
       });
+      if (out.status === 'saved') patch({ notice: `Saved ${out.filename}` });
     } catch (err) {
       patch({ error: message(err) });
     } finally {

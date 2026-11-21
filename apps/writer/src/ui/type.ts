@@ -15,9 +15,6 @@ export const mono = Platform.select({
   default: 'ui-monospace, Menlo, Consolas, monospace',
 });
 
-/** Editorial exception: the Author's prose and dialogue stay in a literary serif. */
-export const proseFont = serif;
-
 /** Tabular figures for counts, timestamps and metrics. */
 export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 

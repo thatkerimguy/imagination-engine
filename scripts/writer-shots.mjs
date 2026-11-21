@@ -3,12 +3,13 @@
 // Preview runs the built-in OFFLINE reader (iframe srcDoc) with every non-local request aborted,
 // so no reader server is needed. Needs `pnpm writer:export` (which builds the preview bundle).
 // Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase2e
-// The current phase's 5 PNGs land in <dir>; earlier packs' regression shots in <dir>/regression.
+// The current phase's 4 PNGs land in <dir>; earlier packs' regression shots in <dir>/regression.
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { extname, join, resolve } from 'node:path';
 import { phase2ePass } from './writer-shots-2e.mjs';
+import { phase2fPass } from './writer-shots-2f.mjs';
 import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
 import { workspacePass } from './writer-shots-workspace.mjs';
 
@@ -243,7 +244,9 @@ try {
   await toolbarPass(page, { tid, editor, shotsAt, ok, fail });
   await settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail });
   await flowPass(page, tid);
-  await phase2ePass(page, { WRITER, ID, tid, shotsAt: packAt, ok, fail, editor });
+  // 2E's five shots are regression now; the pack root holds only the current (2F) four.
+  await phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor });
+  await phase2fPass(page, { WRITER, tid, shotsAt: packAt, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

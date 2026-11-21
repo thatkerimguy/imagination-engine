@@ -147,10 +147,3 @@ export function sortItems<T extends SortableItem>(
   const pin = (x: T): number => (meta.get(x.id)?.pinned ? 0 : 1);
   return [...items].sort((a, b) => pin(a) - pin(b) || by[mode](a, b) || name(a, b));
 }
-
-/** Writes `manualOrder` 0..n-1 for ids in the given order (one notification). */
-export async function saveManualOrder(repo: NovelRepository, ids: readonly string[]) {
-  for (const [i, id] of ids.entries())
-    await updateItemMeta(repo, id, { manualOrder: i }, { silent: true });
-  repo.notifyChanged();
-}

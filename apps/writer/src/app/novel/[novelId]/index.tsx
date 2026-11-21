@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { ItemMetaSheet } from '../../../components/ItemMetaSheet.tsx';
 import { pickAndImport } from '../../../import/pick-import.ts';
 import { PopoverMenu } from '../../../ui/PopoverMenu.tsx';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { shareJson } from '../../../export/share-json';
 import { GimmickLine } from '../../../library/GimmickLine.tsx';
 import { SeasonSection } from '../../../library/SeasonSection.tsx';
@@ -30,11 +30,13 @@ export default function OutlineScreen(): ReactNode {
   const repo = useRepository();
   const { data, error } = useRepoQuery(`outline:${novelId}`, (r) => r.exportNovel(novelId));
   const [problem, setProblem] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
   const [metaOpen, setMetaOpen] = useState(false);
 
   const run = async (job: () => Promise<unknown>): Promise<void> => {
     try {
       setProblem(null);
+      setSaved(null);
       await job();
     } catch (err) {
       setProblem(err instanceof Error ? err.message : 'Something went wrong.');
@@ -43,11 +45,9 @@ export default function OutlineScreen(): ReactNode {
 
   const exportBook = (): Promise<void> =>
     run(async () => {
-      try {
-        await shareJson(`${novelId}.json`, await repo.exportNovel(novelId));
-      } catch (err) {
-        Alert.alert('Export failed', err instanceof Error ? err.message : 'Please try again.');
-      }
+      const filename = `${novelId}.json`;
+      const result = await shareJson(filename, await repo.exportNovel(novelId));
+      if (result === 'saved') setSaved(`Saved ${filename}`);
     });
 
   const importChapter = (): Promise<void> =>
@@ -126,6 +126,16 @@ export default function OutlineScreen(): ReactNode {
       {problem ? (
         <Txt variant="body" color="danger">
           {problem}
+        </Txt>
+      ) : null}
+      {saved ? (
+        <Txt
+          variant="meta"
+          color="inkSecondary"
+          accessibilityLiveRegion="polite"
+          testID="outline-saved"
+        >
+          {saved}
         </Txt>
       ) : null}
       {data?.seasons.map(({ season, chapters }, i) => (

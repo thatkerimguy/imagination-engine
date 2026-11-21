@@ -1,6 +1,6 @@
 // Library: every novel on this phone as a literary shelf, plus new / settings entry points.
 import { router, Stack } from 'expo-router';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { shareJson } from '../export/share-json';
 import { RecentStrip } from '../components/RecentStrip.tsx';
@@ -32,8 +32,16 @@ export default function LibraryScreen(): ReactNode {
       await repo.deleteNovel(id);
   };
 
+  const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
   const exportNovel = async (id: string): Promise<void> => {
-    await shareJson(`${id}.json`, await repo.exportNovel(id));
+    setNote(null);
+    try {
+      const filename = `${id}.json`;
+      const result = await shareJson(filename, await repo.exportNovel(id));
+      if (result === 'saved') setNote({ text: `Saved ${filename}`, error: false });
+    } catch (err) {
+      setNote({ text: err instanceof Error ? err.message : 'Export failed.', error: true });
+    }
   };
 
   const loadDemo = async (): Promise<void> => {
@@ -79,6 +87,16 @@ export default function LibraryScreen(): ReactNode {
         Library
       </Txt>
       <RecentStrip />
+      {note ? (
+        <Txt
+          variant="meta"
+          color={note.error ? 'danger' : 'inkSecondary'}
+          accessibilityLiveRegion="polite"
+          testID="library-note"
+        >
+          {note.text}
+        </Txt>
+      ) : null}
       {error ? (
         <Txt variant="body" color="danger">
           Could not load your books.

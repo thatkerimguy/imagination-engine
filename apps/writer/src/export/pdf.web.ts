@@ -30,7 +30,11 @@ function printHtml(html: string): Promise<void> {
 export const printableHtml = async (book: CompiledBook, opts: ExportOptions): Promise<string> =>
   toHtml(book, opts);
 
-export const exportPdf = async (book: CompiledBook, opts: ExportOptions): Promise<void> =>
+export const printBook = async (book: CompiledBook, opts: ExportOptions): Promise<void> =>
   printHtml(await printableHtml(book, opts));
 
-export const printBook = exportPdf;
+/** The browser print dialog gives no save/cancel signal, so this never claims 'saved'. */
+export const exportPdf = async (book: CompiledBook, opts: ExportOptions): Promise<'cancelled'> => {
+  await printBook(book, opts);
+  return 'cancelled';
+};

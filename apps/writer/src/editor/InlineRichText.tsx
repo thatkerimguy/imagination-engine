@@ -1,6 +1,6 @@
 // Unfocused WYSIWYG rendering of writer markup: nested <Text> runs, block styling, and never any
 // raw syntax (comments show as a small marker).
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Text, View, type StyleProp, type TextStyle } from 'react-native';
 import type { BlockStyle } from '../store/chapter-styles.ts';
 import { space, withAlpha } from '../ui/tokens.ts';
@@ -44,7 +44,7 @@ export function InlineRichText(p: InlineRichTextProps): ReactNode {
   const s = useStyles();
   const st = p.style;
   const indent = !!(st?.indent || p.typography.firstLineIndent) && !st?.heading && !st?.list;
-  const runs = inlineRuns(p.text);
+  const runs = useMemo(() => inlineRuns(p.text), [p.text]);
 
   const runStyle = (r: InlineRun): TextStyle => {
     const deco = [r.underline && 'underline', r.strike && 'line-through'].filter(Boolean);

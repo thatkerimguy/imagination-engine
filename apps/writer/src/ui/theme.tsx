@@ -190,8 +190,6 @@ export function useWriterPrefs(): [WriterPrefs, (patch: Partial<WriterPrefs>) =>
   return [prefs, updatePrefs];
 }
 
-export const usePrefsReady = (): boolean => useContext(ThemeContext).prefsReady;
-
 /**
  * Themed StyleSheet factory: `const useStyles = makeStyles((t) => ({ ... }))` at module level,
  * then `const s = useStyles()` in the component. One StyleSheet per scheme, cached.

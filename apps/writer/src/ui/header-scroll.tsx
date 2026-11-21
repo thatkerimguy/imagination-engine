@@ -3,7 +3,7 @@
 // State lives in a tiny external store: only the subscribed top bar re-renders, and only when the
 // 4px threshold is crossed (never per scroll event).
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 const THRESHOLD = 4;
@@ -24,11 +24,6 @@ const subscribe = (l: () => void): (() => void) => {
   };
 };
 const getSnapshot = (): boolean => scrolled;
-
-/** Kept for the root layout; the store is module-level so the provider renders nothing extra. */
-export function HeaderScrollProvider({ children }: { children: ReactNode }): ReactNode {
-  return children;
-}
 
 export const useHeaderScrolled = (): boolean =>
   useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

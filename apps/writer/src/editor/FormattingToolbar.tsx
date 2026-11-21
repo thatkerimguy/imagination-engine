@@ -1,8 +1,9 @@
 // Folio formatting bar: a 44dp `surface` strip with a 1px top hairline, monochrome 18px glyphs and
 // the add-block tools pinned right. Buttons refuse focus so the keyboard and the TextInput
 // selection survive a tap.
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ToolId } from '../store/writer-prefs.ts';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -23,6 +24,10 @@ export interface FormattingToolbarProps {
   addCollapsed?: boolean;
   /** Collapse (true) or expand (false) one toolbar half; the owner persists it. */
   onCollapse?(half: ToolbarHalf, collapsed: boolean): void;
+  /** Extra bottom margin so the bar rides on the keyboard (from useKeyboardDock). */
+  keyboardOffset?: number;
+  /** While open the keyboard covers the nav bar, so the safe-area padding is dropped. */
+  keyboardOpen?: boolean;
 }
 
 type Face = { icon: GlyphName } | { text: string };
@@ -101,11 +106,10 @@ const TEXT_TOOLS: ReadonlySet<ToolId> = new Set<ToolId>([
 ]);
 
 export const toolLabel = (id: ToolId): string => LABELS[id];
-export const toolFace = (id: ToolId): Face => FACES[id];
 
 const useStyles = makeStyles((t) => ({
   bar: {
-    height: TOUCH,
+    minHeight: TOUCH,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: t.colors.surface,
@@ -133,12 +137,19 @@ const useStyles = makeStyles((t) => ({
   text: { fontSize: 15, lineHeight: 20, fontWeight: '600' },
 }));
 
-export function FormattingToolbar(p: FormattingToolbarProps): ReactNode {
+function FormattingToolbarImpl(p: FormattingToolbarProps): ReactNode {
   const s = useStyles();
+  const insets = useSafeAreaInsets();
   const tools = p.order.filter((id) => !p.hidden.includes(id));
   const { formatCollapsed: fc, addCollapsed: ac, onCollapse } = p;
   return (
-    <View style={s.bar} testID="formatting-toolbar">
+    <View
+      style={[
+        s.bar,
+        { paddingBottom: p.keyboardOpen ? 0 : insets.bottom, marginBottom: p.keyboardOffset ?? 0 },
+      ]}
+      testID="formatting-toolbar"
+    >
       {fc ? (
         <>
           <ToolbarChevron
@@ -185,6 +196,8 @@ export function FormattingToolbar(p: FormattingToolbarProps): ReactNode {
     </View>
   );
 }
+
+export const FormattingToolbar = memo(FormattingToolbarImpl);
 
 function ToolButton(p: FormattingToolbarProps & { id: ToolId }): ReactNode {
   const s = useStyles();

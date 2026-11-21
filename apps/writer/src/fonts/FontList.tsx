@@ -1,6 +1,6 @@
 // Grouped font picker: one row per typeface family, each rendered in its own face (`Aa  Lora`),
 // plus custom-font import/delete. The active row gets an accent rail and an accent name.
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useRepository } from '../store/context.tsx';
 import { loadCustomFonts, type CustomFont } from '../store/writer-prefs.ts';
@@ -18,7 +18,8 @@ import {
   FONT_FAMILIES,
   type FontCategory,
 } from './catalog.ts';
-import { deleteCustomFont, importCustomFont, useFontFamily } from './loader';
+import { deleteCustomFont, importCustomFont } from './loader';
+import { usePreviewFamily } from './preview-queue.ts';
 
 const GROUPS: readonly { category: FontCategory; title: string }[] = [
   { category: 'serif', title: 'Serif' },
@@ -34,7 +35,7 @@ function FontRow(p: {
   onDelete?(): void;
 }): ReactNode {
   const { colors } = useTheme();
-  const family = useFontFamily(p.id);
+  const family = usePreviewFamily(p.id, p.selected);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       <Press
@@ -93,7 +94,20 @@ export function FontList(p: { fontId: string; onSelect(id: string): void }): Rea
   const repo = useRepository();
   const [custom, setCustom] = useState<CustomFont[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const refresh = useCallback(() => void loadCustomFonts(repo).then(setCustom), [repo]);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const refresh = useCallback(
+    () =>
+      void loadCustomFonts(repo).then((list) => {
+        if (alive.current) setCustom(list);
+      }),
+    [repo],
+  );
   useEffect(refresh, [refresh]);
   const doImport = async (): Promise<void> => {
     setError(null);

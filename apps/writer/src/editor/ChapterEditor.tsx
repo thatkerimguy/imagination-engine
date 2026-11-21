@@ -1,7 +1,7 @@
 // Chapter editing screen (bar, metrics, blocks, toolbar, sheets); Focus Mode leaves page + Exit.
 import type { Block, ChapterDocument } from '@kn/core';
 import { useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { shareJson } from '../export/share-json';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { EmptyState } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useWriterPrefs } from '../ui/theme.tsx';
+import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
 import { useEditorTypography } from '../ui/typography.ts';
 import { FOCUS_BOTTOM_PAD, useStyles } from './chapter-editor-styles.ts';
 import { BlockView } from './BlockView.tsx';
@@ -21,6 +22,7 @@ import { FOCUS_EXIT_CLEARANCE, FocusExitPill } from './LayoutPrefsSheet.tsx';
 import { MetricsRibbon } from './MetricsRibbon.tsx';
 import { useEditorActions } from './use-editor-actions.ts';
 import { useFormatActions } from './use-format-actions.ts';
+import { useKeyboardDock } from './use-keyboard-dock.ts';
 import { useLiveMetrics } from './use-live-metrics.ts';
 
 export interface ChapterEditorProps {
@@ -41,7 +43,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const s = useStyles();
   const insets = useSafeAreaInsets();
   const typo = useEditorTypography();
-  const [prefs, setPrefs] = useWriterPrefs();
+  const [prefs] = useWriterPrefs();
   const a = useEditorActions(draft.update);
   const f = useFormatActions({
     blocks: chapter.blocks,
@@ -62,6 +64,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const offsets = useRef(new Map<string, number>());
 
   const metrics = useLiveMetrics(chapter.blocks);
+  const dock = useKeyboardDock();
 
   // Stable, id-taking handlers (via a ref to the latest actions) so memoized BlockViews skip renders.
   const actions = useRef(a);
@@ -73,6 +76,11 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const onOpenGimmick = useCallback((id: string) => actions.current.openSheet(id), []);
   const onSelect = useCallback((id: string) => actions.current.select(id), []);
   const onLayout = useCallback((id: string, y: number) => void offsets.current.set(id, y), []);
+
+  const onCollapse = useToolbarCollapse();
+  const toggleRibbon = useCallback(() => setRibbonCollapsed((c) => !c), []);
+  const openAnalysis = useCallback(() => setSheet('analysis'), []);
+  const openMetrics = useCallback(() => setSheet('metrics'), []);
 
   const jump = (id: string): void => {
     a.select(id);
@@ -90,7 +98,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const chrome = !focusMode;
 
   return (
-    <View style={s.screen}>
+    <View style={s.screen} onLayout={dock.onRootLayout}>
       {chrome ? (
         <EditorTopBar
           words={metrics.words}
@@ -120,9 +128,9 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
           metrics={metrics}
           visible={prefs.visibleMetrics}
           collapsed={ribbonCollapsed}
-          onToggleCollapsed={() => setRibbonCollapsed((c) => !c)}
-          onOpenAnalysis={() => setSheet('analysis')}
-          onCustomize={() => setSheet('metrics')}
+          onToggleCollapsed={toggleRibbon}
+          onOpenAnalysis={openAnalysis}
+          onCustomize={openMetrics}
         />
       ) : null}
       {findOpen && chrome ? (
@@ -133,7 +141,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
           onClose={() => setFindOpen(false)}
         />
       ) : null}
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={s.flex}>
         <ScrollView
           ref={scroller}
           keyboardShouldPersistTaps="handled"
@@ -214,16 +222,12 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             onTool={f.onTool}
             formatCollapsed={prefs.toolbarFormatCollapsed}
             addCollapsed={prefs.toolbarAddCollapsed}
-            onCollapse={(half, collapsed) =>
-              setPrefs(
-                half === 'format'
-                  ? { toolbarFormatCollapsed: collapsed }
-                  : { toolbarAddCollapsed: collapsed },
-              )
-            }
+            onCollapse={onCollapse}
+            keyboardOffset={dock.keyboardOffset}
+            keyboardOpen={dock.keyboardOpen}
           />
         ) : null}
-      </KeyboardAvoidingView>
+      </View>
       {focusMode ? <FocusExitPill onExit={() => setFocusMode(false)} /> : null}
 
       <EditorSheets

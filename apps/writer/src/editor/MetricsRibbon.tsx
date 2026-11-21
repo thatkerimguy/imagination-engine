@@ -1,6 +1,6 @@
 // Hairline typographic live-metrics strip (label over value, no boxes), the picker sheet and a
 // throttle hook.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { METRICS, type DocumentMetrics } from '../analysis/metrics.ts';
 import { METRIC_IDS, type MetricId } from '../store/writer-prefs.ts';
@@ -64,7 +64,7 @@ const useStyles = makeStyles((t) => ({
   sep: { width: 1, height: 20, backgroundColor: t.colors.hairline },
 }));
 
-export function MetricsRibbon(p: MetricsRibbonProps): ReactNode {
+function MetricsRibbonImpl(p: MetricsRibbonProps): ReactNode {
   const s = useStyles();
   return (
     <View style={s.bar} testID="metrics-ribbon">
@@ -117,6 +117,8 @@ export function MetricsRibbon(p: MetricsRibbonProps): ReactNode {
     </View>
   );
 }
+
+export const MetricsRibbon = memo(MetricsRibbonImpl);
 
 /** Visible metrics in order first, then the rest. */
 const sheetOrder = (visible: readonly MetricId[]): MetricId[] => [

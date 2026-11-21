@@ -3,7 +3,8 @@ import { renderInline } from './inline.ts';
 
 // Minimal DOM shim (vitest runs in node): just what renderInline touches, plus serialisation
 // that escapes text exactly like a browser's innerHTML.
-const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 class FakeText {
   constructor(readonly data: string) {}
   get outer(): string {

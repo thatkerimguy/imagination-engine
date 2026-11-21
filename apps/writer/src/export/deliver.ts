@@ -1,18 +1,27 @@
-// Native delivery: write the file to the cache directory and open the OS share sheet
-// (Files, AirDrop, mail…).
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+// Native delivery: encode to base64 and hand off to the platform file picker
+// (save-file-native.ts: Android "Save as…", iOS share sheet with Save to Files).
+import { bytesToBase64, textToBase64 } from './base64.ts';
+import { saveFileNative, type DeliverResult } from './save-file-native.ts';
 
-export async function deliverFile(
+export type { DeliverResult } from './save-file-native.ts';
+
+/** Saves UTF-8 text. Resolves 'cancelled' when the user dismisses the picker. */
+export const deliverText = (
   filename: string,
-  data: Uint8Array | string,
+  text: string,
   mimeType: string,
-): Promise<void> {
-  if (!(await Sharing.isAvailableAsync()))
-    throw new Error('Sharing is not available on this device.');
-  const file = new File(Paths.cache, filename);
-  if (file.exists) file.delete();
-  file.create();
-  await file.write(data);
-  await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: filename });
-}
+): Promise<DeliverResult> => saveFileNative(filename, mimeType, textToBase64(text));
+
+/** Saves binary data. Resolves 'cancelled' when the user dismisses the picker. */
+export const deliverBytes = (
+  filename: string,
+  bytes: Uint8Array,
+  mimeType: string,
+): Promise<DeliverResult> => saveFileNative(filename, mimeType, bytesToBase64(bytes));
+
+/** Saves already-base64 data (e.g. a PDF read back from cache) without decode/re-encode. */
+export const deliverBase64 = (
+  filename: string,
+  base64: string,
+  mimeType: string,
+): Promise<DeliverResult> => saveFileNative(filename, mimeType, base64);

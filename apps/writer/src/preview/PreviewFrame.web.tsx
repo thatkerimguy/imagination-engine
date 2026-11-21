@@ -14,6 +14,13 @@ export function PreviewFrame({ html, url, onMessage, ref }: PreviewFrameProps): 
     send(message) {
       frame.current?.contentWindow?.postMessage(message, '*');
     },
+    triggerShake() {
+      try {
+        frame.current?.contentWindow?.dispatchEvent(new Event('kn-native-shake'));
+      } catch {
+        // Cross-origin custom reader: shakes stay tap-only there.
+      }
+    },
   }));
 
   useEffect(() => {

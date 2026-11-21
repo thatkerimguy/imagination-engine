@@ -6,6 +6,7 @@ import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
 import { PREVIEW_TIERS, type PreviewTier, type ReaderMessage } from '../preview/protocol.ts';
+import { useNativeShake } from '../preview/use-native-shake.ts';
 import { usePreviewPayload } from '../preview/use-preview-payload.ts';
 import { useRepository } from '../store/context.tsx';
 import { saveSettings } from '../settings/app-settings.ts';
@@ -66,6 +67,7 @@ export default function PreviewScreen(): ReactNode {
   const [status, setStatus] = useState<Status>('connecting');
   const [detail, setDetail] = useState('');
   const payload = data?.ok ? data.payload : null;
+  useNativeShake(status === 'live', () => frame.current?.triggerShake());
 
   const send = useCallback(
     (t: PreviewTier) => payload && frame.current?.send(payload.build(t)),

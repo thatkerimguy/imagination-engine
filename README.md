@@ -55,7 +55,15 @@ powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -InstallT
 
 `-InstallTools` installs Temurin JDK 17 (winget) and the Android command-line tools + SDK
 packages (`platform-tools`, `platforms;android-35`, `build-tools;35.0.0`); `-Install` runs
-`adb install -r` (automatic when exactly one device is attached); `-Variant debug` builds a debug
+`adb install -r` (automatic when exactly one device is attached); `-Abi arm64-v8a` (or
+`armeabi-v7a`, `x86_64`, `x86`) builds a single ABI for a much faster rebuild and smaller APK —
+the default `-Abi all` keeps the universal 4-ABI build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -Abi arm64-v8a -Install
+```
+
+`-Variant debug` builds a debug
 APK; `-SkipPrebuild` reuses `apps/writer/android/`; `-ToolsOnly` stops after the toolchain check.
 `apps/writer/android/` and `apps/writer/dist/` are generated and git-ignored. Native C++ builds are staged under `C:\knx\` and pnpm keeps short `.pnpm/_<hash>` folders (`virtualStoreDirMaxLength: 30`) so CMake/ninja stay under the Windows 260-character path limit. The first build takes ~20–40 min (Gradle, NDK); later ones are much faster.
 

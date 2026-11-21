@@ -11,10 +11,16 @@
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -InstallTools -Install
+
+.EXAMPLE
+  # Fast rebuild for a single 64-bit ARM phone (e.g. Redmi Note 12): one ABI, smaller APK.
+  powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -Abi arm64-v8a -Install
 #>
 [CmdletBinding()]
 param(
   [ValidateSet('release', 'debug')] [string] $Variant = 'release',
+  # Build one ABI only (e.g. arm64-v8a for a fast phone rebuild). Default 'all' = universal APK.
+  [ValidateSet('all', 'arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86')] [string] $Abi = 'all',
   # Install missing JDK 17 (winget) and Android command-line tools + SDK packages.
   [switch] $InstallTools,
   # Also install Android Studio through winget (not needed to build).
@@ -217,9 +223,12 @@ android.buildTypes.release.signingConfig = android.signingConfigs.knLocalRelease
 
   # ── Gradle ───────────────────────────────────────────────────────────────────────────────
   $task = if ($Variant -eq 'release') { 'assembleRelease' } else { 'assembleDebug' }
-  Write-Step "Running gradlew $task (first run downloads Gradle, the NDK and dependencies)"
+  $gradleArgs = @($task, '--no-daemon')
+  if ($Abi -ne 'all') { $gradleArgs += "-PreactNativeArchitectures=$Abi" }
+  $abiLabel = if ($Abi -eq 'all') { 'all ABIs (universal)' } else { "$Abi only" }
+  Write-Step "Running gradlew $task for $abiLabel (first run downloads Gradle, the NDK and dependencies)"
   Push-Location $AndroidDir
-  try { Invoke-Checked "gradlew $task" { & .\gradlew.bat $task --no-daemon } }
+  try { Invoke-Checked "gradlew $task" { & .\gradlew.bat @gradleArgs } }
   finally { Pop-Location }
 
   $built = Join-Path $AndroidDir "app\build\outputs\apk\$Variant\app-$Variant.apk"
@@ -228,7 +237,7 @@ android.buildTypes.release.signingConfig = android.signingConfigs.knLocalRelease
   $apk = Join-Path $Dist 'kinetic-writer.apk'
   Copy-Item $built $apk -Force
   $size = '{0:N1} MB' -f ((Get-Item $apk).Length / 1MB)
-  Write-Step "APK ready: $apk ($size, $Variant)"
+  Write-Step "APK ready: $apk ($size, $Variant, $abiLabel)"
 
   # ── Install ──────────────────────────────────────────────────────────────────────────────
   $adb = (Get-Command adb -ErrorAction SilentlyContinue).Source

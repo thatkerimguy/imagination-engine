@@ -83,8 +83,8 @@ export default tseslint.config(
     },
   },
   {
-    // Expo / Metro config files are CommonJS.
-    files: ['apps/writer/*.js'],
+    // Expo / Metro config files and local config plugins are CommonJS.
+    files: ['apps/writer/*.js', 'apps/writer/plugins/*.js'],
     languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },

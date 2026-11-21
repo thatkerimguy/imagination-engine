@@ -10,6 +10,8 @@ export const CUSTOM_FONTS_KEY = 'prefs/custom-fonts';
 export type ThemeChoice = ThemeId | 'system';
 export type MarginPreset = 'compact' | 'comfortable' | 'wide';
 export type TextAlign = 'left' | 'center' | 'right';
+/** How 'Match phone theme' uses the Android 12+ wallpaper palette. */
+export type MaterialYouStyle = 'soft' | 'exact';
 
 /** The 27 real-time metrics (order = default picker order). */
 export const METRIC_IDS = [
@@ -89,6 +91,8 @@ export interface WriterPrefs {
   toolbarAddCollapsed: boolean;
   /** Tactile feedback on taps and toggles (native only). */
   hapticsEnabled: boolean;
+  /** 'soft' blends wallpaper surfaces toward Folio neutrals; 'exact' uses them as Android gives. */
+  materialYouStyle: MaterialYouStyle;
 }
 
 export interface CustomFont {
@@ -119,6 +123,7 @@ export const DEFAULT_WRITER_PREFS: WriterPrefs = {
   toolbarFormatCollapsed: false,
   toolbarAddCollapsed: false,
   hapticsEnabled: true,
+  materialYouStyle: 'soft',
 };
 
 const clamp = (v: unknown, lo: number, hi: number, d: number): number =>
@@ -159,6 +164,7 @@ export function normalizeWriterPrefs(
     toolbarFormatCollapsed: bool(raw.toolbarFormatCollapsed, d.toolbarFormatCollapsed),
     toolbarAddCollapsed: bool(raw.toolbarAddCollapsed, d.toolbarAddCollapsed),
     hapticsEnabled: bool(raw.hapticsEnabled, d.hapticsEnabled),
+    materialYouStyle: oneOf(raw.materialYouStyle, ['soft', 'exact'], d.materialYouStyle),
   };
 }
 

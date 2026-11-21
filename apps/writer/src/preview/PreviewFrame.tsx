@@ -12,6 +12,10 @@ const WebView = WebViewClass as unknown as ComponentType<
   WebViewProps & { ref?: Ref<WebViewHandle> }
 >;
 
+/** Tells the reader that shakes arrive from the writer's accelerometer (see use-native-shake). */
+const NATIVE_SHAKE_FLAG = 'window.__KN_NATIVE_SHAKE__ = true; true;';
+const SHAKE_JS = "window.dispatchEvent(new Event('kn-native-shake')); true;";
+
 export function PreviewFrame({
   html,
   url,
@@ -29,6 +33,9 @@ export function PreviewFrame({
         `window.dispatchEvent(new MessageEvent('message', { data: ${payload} })); true;`,
       );
     },
+    triggerShake() {
+      web.current?.injectJavaScript(SHAKE_JS);
+    },
   }));
   return (
     <WebView
@@ -38,6 +45,7 @@ export function PreviewFrame({
       }
       style={[styles.web, { backgroundColor: colors.canvas }]}
       originWhitelist={['*']}
+      injectedJavaScriptBeforeContentLoaded={NATIVE_SHAKE_FLAG}
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
       onMessage={(e) => {

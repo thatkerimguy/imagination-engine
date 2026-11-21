@@ -49,13 +49,47 @@ export function renderResultChip(
   return chip;
 }
 
+/** Linear acceleration (m/s², gravity removed) above which a motion counts as a shake. */
+export const SHAKE_THRESHOLD = 11.5;
+/** Low-pass weight for the gravity estimate when only accelerationIncludingGravity exists. */
+export const GRAVITY_ALPHA = 0.8;
+/** The writer's native preview fires this when expo-sensors sees a shake. */
+export const NATIVE_SHAKE_EVENT = 'kn-native-shake';
+
 function shakeSupported(): boolean {
+  // The writer's Android/iOS WebView forwards shakes from the native accelerometer.
+  if ((window as { __KN_NATIVE_SHAKE__?: boolean }).__KN_NATIVE_SHAKE__) return true;
   const DME = globalThis.DeviceMotionEvent as
     (typeof DeviceMotionEvent & { requestPermission?: unknown }) | undefined;
   // iOS gates motion behind a permission prompt; there the tap is the honest affordance.
   return (
     DME !== undefined && typeof DME.requestPermission !== 'function' && 'ontouchstart' in window
   );
+}
+
+/**
+ * Linear-acceleration magnitude from a motion event. Android WebViews often report a null
+ * `acceleration`; then gravity is tracked with a low-pass filter on accelerationIncludingGravity
+ * and subtracted. The first gravity sample only seeds the filter.
+ */
+export function createShakeMeter(): (
+  e: Pick<DeviceMotionEvent, 'acceleration' | 'accelerationIncludingGravity'>,
+) => number {
+  let g: [number, number, number] | null = null;
+  return (e) => {
+    const a = e.acceleration;
+    if (a && a.x !== null && a.y !== null && a.z !== null) return Math.hypot(a.x, a.y, a.z);
+    const r = e.accelerationIncludingGravity;
+    if (!r || r.x === null || r.y === null || r.z === null) return 0;
+    const raw: [number, number, number] = [r.x, r.y, r.z];
+    if (!g) {
+      g = raw;
+      return 0;
+    }
+    const k = GRAVITY_ALPHA;
+    g = [k * g[0] + (1 - k) * raw[0], k * g[1] + (1 - k) * raw[1], k * g[2] + (1 - k) * raw[2]];
+    return Math.hypot(raw[0] - g[0], raw[1] - g[1], raw[2] - g[2]);
+  };
 }
 
 /** Resolves when the reader taps the button or shakes the phone. */
@@ -67,23 +101,27 @@ export function waitForThrow(host: HTMLElement, signal: AbortSignal): Promise<vo
     button.className = 'kn-dice-throw';
     button.textContent = shake ? '🎲 Tap or shake to throw' : '🎲 Tap to throw';
     host.append(button);
+    const meter = createShakeMeter();
     let done = false;
+    const cleanup = (): void => {
+      button.remove();
+      window.removeEventListener('devicemotion', onMotion);
+      window.removeEventListener(NATIVE_SHAKE_EVENT, finish);
+    };
     const finish = (): void => {
       if (done) return;
       done = true;
-      button.remove();
-      window.removeEventListener('devicemotion', onMotion);
+      cleanup();
       resolve();
     };
     const onMotion = (e: DeviceMotionEvent): void => {
-      const a = e.acceleration;
-      if (a && Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) > 14) finish();
+      if (meter(e) > SHAKE_THRESHOLD) finish();
     };
     button.addEventListener('click', finish, { signal });
-    if (shake) window.addEventListener('devicemotion', onMotion, { signal });
-    signal.addEventListener('abort', () => {
-      button.remove();
-      window.removeEventListener('devicemotion', onMotion);
-    });
+    if (shake) {
+      window.addEventListener('devicemotion', onMotion, { signal });
+      window.addEventListener(NATIVE_SHAKE_EVENT, finish, { signal });
+    }
+    signal.addEventListener('abort', cleanup);
   });
 }

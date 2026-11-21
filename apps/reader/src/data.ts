@@ -11,8 +11,12 @@ import {
 
 const cache = new Map<string, Promise<unknown>>();
 
-export const novelUrl = (novelId: string, path: string): string =>
-  new URL(`novels/${novelId}/${path}`, document.baseURI).href;
+/** Where books live: `./novels/` beside the reader, or VITE_NOVELS_BASE_URL (publish API / R2). */
+export const novelsBase = (raw?: string): string => (raw || './novels').replace(/\/*$/, '/');
+const BASE = novelsBase(import.meta.env.VITE_NOVELS_BASE_URL as string | undefined);
+const at = (path: string): string => new URL(BASE + path, document.baseURI).href;
+
+export const novelUrl = (novelId: string, path: string): string => at(`${novelId}/${path}`);
 
 function fetchJson(url: string): Promise<unknown> {
   let p = cache.get(url);
@@ -34,7 +38,7 @@ async function load<T>(url: string, parse: (d: unknown) => ParseResult<T>): Prom
 }
 
 export async function loadLibrary(): Promise<string[]> {
-  const data = await fetchJson(new URL('novels/index.json', document.baseURI).href);
+  const data = await fetchJson(at('index.json'));
   const ids = (data as { novels?: unknown }).novels;
   return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string') : [];
 }

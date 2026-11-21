@@ -10,7 +10,7 @@
     "dev": "pnpm --filter @kn/reader dev",
     "build": "pnpm --filter @kn/reader build && node scripts/bundle-report.mjs",
     "preview": "pnpm --filter @kn/reader preview",
-    "typecheck": "tsc -p tsconfig.json && tsc -p apps/writer/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/writer/tsconfig.json && tsc -p apps/publish-api/tsconfig.json",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

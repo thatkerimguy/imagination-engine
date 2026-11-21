@@ -206,6 +206,12 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(terser@5.51.2))
 
+  apps/publish-api:
+    dependencies:
+      '@kn/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   apps/reader:
     dependencies:
       '@kn/core':

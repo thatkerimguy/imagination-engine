@@ -135,6 +135,21 @@ describe('scanWorkspace', () => {
     expect(has(issues, 'bad-cover', 'meta/item/f1')).toBe(true);
     expect(has(issues, 'bad-font', 'prefs/custom-fonts')).toBe(true);
   });
+
+  it('accepts publish settings and flags publish status only for deleted books', async () => {
+    const { kv } = workspace({
+      'setting/publish': env({ apiUrl: 'https://api.example.com', readerUrl: '' }),
+      'setting/publish-secret': env('token'),
+      'meta/publish/n1': env({ lastPublishedAt: 'x', publishedChapters: 1 }),
+      'meta/publish/gone': env({ lastPublishedAt: 'x', publishedChapters: 1 }),
+    });
+    const issues = await scanWorkspace(kv);
+    const keysWithIssues = new Set(issues.map((i) => i.key));
+    expect(keysWithIssues.has('setting/publish')).toBe(false);
+    expect(keysWithIssues.has('setting/publish-secret')).toBe(false);
+    expect(keysWithIssues.has('meta/publish/n1')).toBe(false);
+    expect(has(issues, 'orphan-sidecar', 'meta/publish/gone')).toBe(true);
+  });
 });
 
 describe('repair', () => {

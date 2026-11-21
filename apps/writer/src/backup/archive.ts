@@ -34,8 +34,9 @@ export const WORKSPACE_PREFIXES = [
   'setting/',
 ] as const;
 
-/** Lock secrets never leave the device and are never overwritten by a restore. */
-export const isSecretKey = (key: string): boolean => key.startsWith('setting/lock');
+/** Lock secrets and the publish token never leave the device and are never overwritten by a restore. */
+export const isSecretKey = (key: string): boolean =>
+  key.startsWith('setting/lock') || key === 'setting/publish-secret';
 
 export const allowedKey = (key: string): boolean =>
   WORKSPACE_PREFIXES.some((p) => key.startsWith(p)) && !isSecretKey(key);

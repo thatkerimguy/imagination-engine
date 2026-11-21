@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node ../../scripts/build-preview-bundle.mjs --if-stale && expo start",
     "web": "node ../../scripts/build-preview-bundle.mjs --if-stale && expo start --web",
-    "export:web": "node ../../scripts/build-preview-bundle.mjs --if-stale && expo export --platform web --output-dir dist",
+    "export:web": "node ../../scripts/build-preview-bundle.mjs --if-stale && expo export --platform web --output-dir dist-web",
     "export:android": "node ../../scripts/build-preview-bundle.mjs --if-stale && expo export --platform android --output-dir dist-android",
     "typecheck": "tsc -p tsconfig.json"
   },

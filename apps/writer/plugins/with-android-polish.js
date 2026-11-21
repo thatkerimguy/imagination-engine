@@ -3,6 +3,8 @@
 //  1. MainActivity requests the display's highest refresh-rate mode (120Hz panels; MIUI/HyperOS
 //     otherwise caps sideloaded apps at 60Hz).
 //  2. A zero-dependency MaterialYou native module exposes the Android 12+ wallpaper palette.
+//  3. A zero-dependency SaveFile native module opens the system "Save file" picker
+//     (ACTION_CREATE_DOCUMENT) so exports land where the Author chooses, not in the share sheet.
 const fs = require('fs');
 const path = require('path');
 const { withDangerousMod, withMainActivity, withMainApplication } = require('expo/config-plugins');
@@ -72,6 +74,91 @@ class MaterialYouModule(private val ctx: ReactApplicationContext) : ReactContext
 }
 `;
 
+const saveFileKt = (pkg) => `package ${pkg}
+
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.util.Base64
+import com.facebook.react.bridge.ActivityEventListener
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+
+${MARK}: system "Save file" picker. Resolves "saved" or "cancelled"; rejects only on IO errors.
+class SaveFileModule(private val ctx: ReactApplicationContext) :
+  ReactContextBaseJavaModule(ctx), ActivityEventListener {
+  companion object {
+    const val NAME = "SaveFile"
+    private const val REQUEST_CODE = 0x4B57
+  }
+
+  private var pendingPromise: Promise? = null
+  private var pendingData: String? = null
+
+  init {
+    ctx.addActivityEventListener(this)
+  }
+
+  override fun getName(): String = NAME
+
+  @ReactMethod
+  fun saveFile(filename: String, mimeType: String, base64Data: String, promise: Promise) {
+    if (pendingPromise != null) {
+      promise.reject("E_SAVE_BUSY", "Another save is already waiting for the file picker.")
+      return
+    }
+    val activity = ctx.currentActivity
+    if (activity == null) {
+      promise.reject("E_NO_ACTIVITY", "The app is not in the foreground.")
+      return
+    }
+    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+      addCategory(Intent.CATEGORY_OPENABLE)
+      type = mimeType
+      putExtra(Intent.EXTRA_TITLE, filename)
+    }
+    pendingPromise = promise
+    pendingData = base64Data
+    try {
+      activity.startActivityForResult(intent, REQUEST_CODE)
+    } catch (e: Exception) {
+      clearPending()
+      promise.reject("E_NO_PICKER", "No file picker is available: \${e.message}", e)
+    }
+  }
+
+  override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
+    if (requestCode != REQUEST_CODE) return
+    val promise = pendingPromise ?: return
+    val payload = pendingData
+    clearPending()
+    val uri: Uri? = data?.data
+    if (resultCode != Activity.RESULT_OK || uri == null || payload == null) {
+      promise.resolve("cancelled")
+      return
+    }
+    try {
+      val bytes = Base64.decode(payload, Base64.DEFAULT)
+      val out = ctx.contentResolver.openOutputStream(uri, "wt")
+        ?: throw java.io.IOException("Could not open the chosen file for writing.")
+      out.use { it.write(bytes) }
+      promise.resolve("saved")
+    } catch (e: Exception) {
+      promise.reject("E_SAVE_FAILED", "Could not save the file: \${e.message}", e)
+    }
+  }
+
+  override fun onNewIntent(intent: Intent) {}
+
+  private fun clearPending() {
+    pendingPromise = null
+    pendingData = null
+  }
+}
+`;
+
 const packageKt = (pkg) => `package ${pkg}
 
 import com.facebook.react.BaseReactPackage
@@ -80,21 +167,29 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
 
-${MARK}: registers MaterialYouModule (a legacy module, reached through the New Architecture interop).
+${MARK}: registers MaterialYouModule and SaveFileModule (legacy modules, reached through the
+// New Architecture interop).
 class MaterialYouPackage : BaseReactPackage() {
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
-    if (name == MaterialYouModule.NAME) MaterialYouModule(reactContext) else null
+    when (name) {
+      MaterialYouModule.NAME -> MaterialYouModule(reactContext)
+      SaveFileModule.NAME -> SaveFileModule(reactContext)
+      else -> null
+    }
+
+  private fun info(name: String, className: String) = ReactModuleInfo(
+    name,
+    className,
+    false, // canOverrideExistingModule
+    false, // needsEagerInit
+    false, // isCxxModule
+    false, // isTurboModule
+  )
 
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider = ReactModuleInfoProvider {
     mapOf(
-      MaterialYouModule.NAME to ReactModuleInfo(
-        MaterialYouModule.NAME,
-        MaterialYouModule::class.java.name,
-        false, // canOverrideExistingModule
-        false, // needsEagerInit
-        false, // isCxxModule
-        false, // isTurboModule
-      ),
+      MaterialYouModule.NAME to info(MaterialYouModule.NAME, MaterialYouModule::class.java.name),
+      SaveFileModule.NAME to info(SaveFileModule.NAME, SaveFileModule::class.java.name),
     )
   }
 }
@@ -143,6 +238,7 @@ function withMaterialYouSources(config) {
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'MaterialYouModule.kt'), moduleKt(pkg));
       fs.writeFileSync(path.join(dir, 'MaterialYouPackage.kt'), packageKt(pkg));
+      fs.writeFileSync(path.join(dir, 'SaveFileModule.kt'), saveFileKt(pkg));
       return cfg;
     },
   ]);

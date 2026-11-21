@@ -178,6 +178,9 @@ async function sandboxPass(page, shot, settled, resetSettled) {
   await resetSettled(page);
   await trigger.click();
   await settled(page);
+  // holdOrTap registers its tap listener on the frame after settling; wait for two frames so a
+  // slow software GPU cannot swallow the tap before the listener exists.
+  await nextFrames(page, 2);
   const tappedAt = Date.now();
   await page.mouse.click(30, 400);
   await page.locator('.kn-dice-result').waitFor({ timeout: 6000 });
@@ -202,7 +205,11 @@ async function sandboxPass(page, shot, settled, resetSettled) {
   const afterLoss = await page.evaluate(() => document.querySelector('.sb-stats').textContent);
   await trigger.click();
   await page.locator('.kn-dice-result').waitFor({ timeout: 10000 });
-  await page.waitForTimeout(1000);
+  // The lease is released when the fade ends; poll for it instead of a fixed sleep.
+  await stats
+    .filter({ hasText: /leases 0/ })
+    .waitFor({ timeout: 8000 })
+    .catch(() => {});
   const recovered = await stats.textContent();
   if (/GL contexts made 2/.test(recovered ?? '') && /leases 0/.test(recovered ?? ''))
     ok(`context loss: beat finished, fresh context next time (${recovered})`);
@@ -250,6 +257,17 @@ async function warmPass(page, shot, settled) {
   await settled(page);
   await page.waitForTimeout(200);
   await shot(page, '02-warm-theme-dice-shadows');
+}
+
+function nextFrames(page, n) {
+  return page.evaluate(
+    (count) =>
+      new Promise((resolve) => {
+        const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : resolve());
+        step(count);
+      }),
+    n,
+  );
 }
 
 async function waitFor(url) {

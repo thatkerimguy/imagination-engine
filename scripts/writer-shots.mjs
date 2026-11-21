@@ -18,7 +18,7 @@ const packAt = process.argv.includes('--shots')
   : null;
 const shotsAt = packAt && join(packAt, 'regression');
 const WRITER = 'http://127.0.0.1:8099/';
-const DIST = resolve(import.meta.dirname, '../apps/writer/dist');
+const DIST = resolve(import.meta.dirname, '../apps/writer/dist-web');
 const ID = {
   dialogue: '01M7WD7TG4T9804M170B4T81MM',
   chat: '01M7WD7TG3C1Z266E87HFD27KR',

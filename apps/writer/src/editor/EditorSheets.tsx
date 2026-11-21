@@ -1,8 +1,10 @@
 // The chapter editor's bottom sheets in one place (analysis, outline, layout, metrics, comment,
 // gimmick picker / gimmick settings, version history), so ChapterEditor stays a thin layout.
 import type { Block, ChapterDocument } from '@kn/core';
+import { useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 import type { DocumentMetrics } from '../analysis/metrics.ts';
+import { PublishSheet } from '../publish/PublishSheet.tsx';
 import { enabledWriterModules, getWriterModule } from '../modules/registry.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { TextAnalysisSheet } from '../views/TextAnalysisSheet.tsx';
@@ -37,6 +39,7 @@ export interface EditorSheetsProps {
 export function EditorSheets(p: EditorSheetsProps): ReactNode {
   const { chapter, draft, actions: a, format: f } = p;
   const close = (): void => p.setSheet(null);
+  const { novelId } = useLocalSearchParams<{ novelId: string }>();
   const sheetBlock = chapter.blocks.find((b) => b.id === a.sheetId);
   const sheetModule =
     sheetBlock?.kind === 'module' ? getWriterModule(sheetBlock.moduleId) : undefined;
@@ -84,6 +87,9 @@ export function EditorSheets(p: EditorSheetsProps): ReactNode {
         />
       ) : null}
       {open.has('metrics') ? <MetricPickerSheet visible onClose={close} /> : null}
+      {open.has('publish') && novelId ? (
+        <PublishSheet visible novelId={novelId} onClose={close} beforePublish={draft.flush} />
+      ) : null}
       {open.has('versions') ? (
         <VersionHistorySheet
           visible

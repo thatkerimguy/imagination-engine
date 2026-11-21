@@ -21,6 +21,7 @@ import { CardGroup } from '../ui/CardGroup.tsx';
 import { Field } from '../ui/Field.tsx';
 import { ListRow, Page, SectionLabel } from '../ui/Page.tsx';
 import { BackupSection } from '../backup/BackupSection.tsx';
+import { PublishSettingsCard } from '../publish/PublishSettingsCard.tsx';
 import { routes } from '../routes.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
@@ -157,6 +158,7 @@ export default function AppSettingsScreen(): ReactNode {
         />
       </CardGroup>
       <BackupSection settings={backup} />
+      <PublishSettingsCard />
       <SectionLabel>Privacy & integrity</SectionLabel>
       <CardGroup testID="card-privacy">
         <ListRow

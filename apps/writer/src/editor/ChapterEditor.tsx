@@ -119,6 +119,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             versions: () => setSheet('versions'),
             focus: () => setFocusMode(true),
             layout: () => setSheet('layout'),
+            publish: () => setSheet('publish'),
             exportJson: () => void shareJson(`${chapter.id}.json`, chapter),
           })}
         />

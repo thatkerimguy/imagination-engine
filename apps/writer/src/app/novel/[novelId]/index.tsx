@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ItemMetaSheet } from '../../../components/ItemMetaSheet.tsx';
 import { pickAndImport } from '../../../import/pick-import.ts';
+import { PublishSheet } from '../../../publish/PublishSheet.tsx';
 import { PopoverMenu } from '../../../ui/PopoverMenu.tsx';
 import { View } from 'react-native';
 import { shareJson } from '../../../export/share-json';
@@ -32,6 +33,7 @@ export default function OutlineScreen(): ReactNode {
   const [problem, setProblem] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [metaOpen, setMetaOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const run = async (job: () => Promise<unknown>): Promise<void> => {
     try {
@@ -67,6 +69,12 @@ export default function OutlineScreen(): ReactNode {
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
               <IconBtn
+                icon="upload-cloud"
+                accessibilityLabel="Publish to web"
+                onPress={() => setPublishOpen(true)}
+                testID="outline-publish"
+              />
+              <IconBtn
                 icon="settings"
                 accessibilityLabel="Novel settings"
                 onPress={() => router.push(routes.novelSettings(novelId))}
@@ -76,6 +84,12 @@ export default function OutlineScreen(): ReactNode {
                 accessibilityLabel="Book options"
                 testID="outline-menu"
                 items={[
+                  {
+                    label: 'Publish to web…',
+                    icon: 'upload-cloud',
+                    onPress: () => setPublishOpen(true),
+                    testID: 'outline-menu-publish',
+                  },
                   {
                     label: 'Compile & Export Book',
                     icon: 'printer',
@@ -183,6 +197,7 @@ export default function OutlineScreen(): ReactNode {
           onClose={() => setMetaOpen(false)}
         />
       ) : null}
+      <PublishSheet visible={publishOpen} novelId={novelId} onClose={() => setPublishOpen(false)} />
     </Page>
   );
 }

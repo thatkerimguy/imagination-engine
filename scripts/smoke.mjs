@@ -1,10 +1,10 @@
 // Browser smoke test + QA screenshot pack (DIRECTIVE 01 acceptance and the review handoff).
 // Needs `pnpm build` first and Playwright with Chromium (`npx playwright install chromium`).
 // Usage: node scripts/smoke.mjs [--shots <dir>]
-import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { diceMaterialsPass } from './smoke-dice-materials.mjs';
 import { previewPass } from './smoke-preview.mjs';
+import { startPreviewServer } from './smoke-server.mjs';
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -20,14 +20,7 @@ const shotsAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
 const BASE = 'http://127.0.0.1:4173/';
-// Windows needs a shell to find pnpm.cmd, and a tree kill to stop the server behind it.
-const win = process.platform === 'win32';
-const server = spawn('pnpm', ['--filter', '@kn/reader', 'preview'], {
-  stdio: 'ignore',
-  shell: win,
-});
-const stopServer = () =>
-  win ? spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F']) : server.kill();
+const stopServer = await startPreviewServer(BASE);
 const errors = [];
 const fail = (msg) => {
   console.error(`❌ ${msg}`);
@@ -36,7 +29,6 @@ const fail = (msg) => {
 const ok = (msg) => console.log(`✅ ${msg}`);
 
 try {
-  await waitFor(BASE);
   const browser = await chromium.launch({
     args: [
       '--use-gl=angle',
@@ -83,10 +75,13 @@ try {
 
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
-  await browser.close();
+  // SwiftShader's GPU process can wedge browser.close(); never let that hang the run.
+  await Promise.race([browser.close(), new Promise((r) => setTimeout(r, 10000))]);
 } finally {
   stopServer();
 }
+// Exit explicitly: a wedged browser would otherwise keep the event loop (and the run) alive.
+process.exit(process.exitCode ?? 0);
 
 async function readerPass(page, shot, settled, resetSettled) {
   await page.goto(BASE);
@@ -268,16 +263,4 @@ function nextFrames(page, n) {
       }),
     n,
   );
-}
-
-async function waitFor(url) {
-  for (let i = 0; i < 50; i++) {
-    try {
-      if ((await fetch(url)).ok) return;
-    } catch {
-      // not up yet
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  throw new Error('preview server did not start');
 }

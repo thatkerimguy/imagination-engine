@@ -16,6 +16,7 @@ new file. Earlier reports are never rewritten, so the history of decisions stays
 | P2E   | [phase-2e-120hz-material-you-report.md](phase-2e-120hz-material-you-report.md) | Directive 02E: 120Hz scroll, native shake, Material You theme, Folio cards, `-Abi` APK       | `02c7014` |
 | P2F   | [phase-2f-hardening-report.md](phase-2f-hardening-report.md)                   | Directive 02F: keyboard/navbar dock, File Picker exports, smoke stability, code-health sweep | `b5e0562` |
 | P3    | [phase-3-publish-api-report.md](phase-3-publish-api-report.md)                 | Directive 03: publish-api Worker + R2, reader remote feed, one-tap Publish sheet, E2E smoke  | `f2e8557` |
+| P4A   | [phase-4a-gimmick-pack-1-report.md](phase-4a-gimmick-pack-1-report.md)         | Directive 04A: gaslight edit, ghost whisper, lighter flick modules + Phase 3 polish          | `0d64063` |
 
 Screenshots are attached to each handoff, not committed. To regenerate a pack, run
 `node scripts/writer-shots.mjs --shots qa-shots-<name>` (writer, after `pnpm writer:export`) or

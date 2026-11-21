@@ -1,8 +1,8 @@
 // Publishing from the phone: sanitize the book, PUT it to the publish API, remember the result.
-// Pure of platform imports; `fetchImpl` and `readCover` are injectable for tests and native code.
+// `fetchImpl` and `readCover` are injectable; the default cover reader is the platform one
+// (`read-cover.ts` native file:// + data:, `read-cover.web.ts` data: only).
 import type { ChapterDocument } from '@kn/core';
 import type {
-  PublishCover,
   PublishRequest,
   PublishResponse,
   UnpublishResponse,
@@ -21,6 +21,8 @@ import {
   type FetchLike,
   type PublishFailure,
 } from './publish-http.ts';
+import { isCoverSkip, type CoverReader } from './cover-data.ts';
+import { readCover as platformReadCover } from './read-cover.ts';
 import { clearPublishStatus, savePublishStatus } from './publish-settings.ts';
 import type { PublishConfig, PublishStatus } from './publish-settings.ts';
 
@@ -45,21 +47,12 @@ export interface PublishPlan {
   skippedBlocks: number;
 }
 
-export type CoverReader = (uri: string) => Promise<PublishCover | null>;
-
-const DATA_URI = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=\s]+)$/;
-
-/** Default cover reader: inline `data:` images only. */
-export const readDataUriCover: CoverReader = async (uri) => {
-  const m = DATA_URI.exec(uri.trim());
-  if (!m) return null;
-  return { mime: `image/${m[1]}` as PublishCover['mime'], base64: m[2]!.replace(/\s+/g, '') };
-};
+export type { CoverReader } from './cover-data.ts';
 
 export async function inspectNovelForPublish(
   repo: NovelRepository,
   novelId: string,
-  readCover: CoverReader = readDataUriCover,
+  readCover: CoverReader = platformReadCover,
 ): Promise<PublishPlan> {
   const bundle = await repo.exportNovel(novelId);
   const warnings: string[] = [];
@@ -114,7 +107,8 @@ export async function inspectNovelForPublish(
   const payload: PublishRequest = { novel: bundle.novel, seasons };
   const coverUri = (await loadItemMeta(repo, novelId)).coverUri;
   const cover = coverUri ? await readCover(coverUri).catch(() => null) : null;
-  if (cover) payload.cover = cover;
+  if (cover && isCoverSkip(cover)) warnings.push(cover.warning);
+  else if (cover) payload.cover = cover;
   else if (coverUri) warnings.push('The cover image could not be read and will be left out.');
 
   return {

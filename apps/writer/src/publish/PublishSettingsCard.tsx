@@ -179,5 +179,12 @@ const styles = StyleSheet.create({
   fields: { gap: space.md, paddingVertical: space.sm },
   tokenRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.xs },
   grow: { flex: 1 },
-  status: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  // Inset from the row's press highlight so "Connected" + its dot never sit flush on the edge.
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    paddingLeft: space.sm,
+    paddingRight: space.sm,
+  },
 });

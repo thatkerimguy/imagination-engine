@@ -1,11 +1,20 @@
 import type { ChapterDocument } from '@kn/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const files = vi.hoisted(() => new Map<string, string>());
+vi.mock('expo-file-system', () => ({
+  File: class {
+    constructor(private readonly uri: string) {}
+    base64 = async (): Promise<string> => files.get(this.uri) ?? '';
+  },
+}));
 import { parseRoute } from '../../../reader/src/router.ts';
 import { handleRequest } from '../../../publish-api/src/worker.ts';
 import { createMemoryStore, type ObjectStore } from '../../../publish-api/src/store.ts';
 import { packWorkspace } from '../backup/archive.ts';
 import { unzipFiles } from '../export/zip.ts';
 import { createMemoryAdapter } from '../storage/memory.ts';
+import { updateItemMeta } from '../store/item-meta.ts';
 import { NovelRepository } from '../store/repository.ts';
 import {
   inspectNovelForPublish,
@@ -107,6 +116,30 @@ describe('inspectNovelForPublish', () => {
     expect((await inspectNovelForPublish(repo, novelId)).warnings[0]).toMatch(
       /No published chapters/,
     );
+  });
+});
+
+const PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+describe('native file:// covers', () => {
+  it('reads, sniffs and publishes a local cover by default', async () => {
+    const { repo, novelId } = await seed();
+    files.set('file:///doc/covers/a.jpg', PNG); // the bytes win over the wrong extension
+    await updateItemMeta(repo, novelId, { coverUri: 'file:///doc/covers/a.jpg' });
+    const plan = await inspectNovelForPublish(repo, novelId);
+    expect(plan.payload.cover).toEqual({ mime: 'image/png', base64: PNG });
+    const store = createMemoryStore();
+    expect((await publishNovelToApi(repo, novelId, config, 'T', serverFetch(store))).ok).toBe(true);
+    expect(await store.get(`novels/${novelId}/cover.png`)).not.toBeNull();
+  });
+
+  it('leaves an oversized cover out with a clear warning', async () => {
+    const { repo, novelId } = await seed();
+    files.set('file:///doc/covers/big.jpg', `/9j/${'A'.repeat(2_200_000)}`);
+    await updateItemMeta(repo, novelId, { coverUri: 'file:///doc/covers/big.jpg' });
+    const plan = await inspectNovelForPublish(repo, novelId);
+    expect(plan.payload.cover).toBeUndefined();
+    expect(plan.warnings.some((w) => /1\.6 MB \(limit 1\.5 MB\)/.test(w))).toBe(true);
   });
 });
 

@@ -57,6 +57,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const [focusMode, setFocusMode] = useState(false);
   const [ribbonCollapsed, setRibbonCollapsed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const scrolledRef = useRef(false);
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef(new Map<string, number>());
 
@@ -145,7 +146,13 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             },
           ]}
           scrollEventThrottle={32}
-          onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
+          onScroll={(e) => {
+            const next = e.nativeEvent.contentOffset.y > 4;
+            if (scrolledRef.current !== next) {
+              scrolledRef.current = next;
+              setScrolled(next);
+            }
+          }}
           testID="chapter-stream"
         >
           <Txt

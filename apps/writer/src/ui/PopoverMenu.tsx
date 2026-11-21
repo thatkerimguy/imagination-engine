@@ -53,61 +53,61 @@ export function PopoverMenu(p: PopoverMenuProps): ReactNode {
         onPress={open}
         testID={p.testID}
       />
-      <Modal
-        visible={at !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setAt(null)}
-      >
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={() => setAt(null)}
-          accessibilityLabel="Close menu"
-        />
-        {at ? (
-          <View
-            accessibilityRole="menu"
-            style={[
-              styles.menu,
-              lift(dark, 2),
-              {
-                top: at.top,
-                left: at.left,
-                backgroundColor: colors.surfaceElevated,
-                borderColor: colors.hairline,
-              },
-            ]}
-          >
-            {p.items.map((item, i) => (
-              <Press
-                key={item.label}
-                accessibilityRole="menuitem"
-                accessibilityLabel={item.label}
-                disabled={item.disabled}
-                testID={item.testID}
-                onPress={() => pick(item)}
-                style={[styles.item, i > 0 && { borderTopWidth: 1, borderColor: colors.hairline }]}
-              >
-                <Txt
-                  variant="body"
-                  color={item.destructive ? 'danger' : 'ink'}
-                  style={styles.label}
-                  numberOfLines={1}
+      {at !== null ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setAt(null)}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setAt(null)}
+            accessibilityLabel="Close menu"
+          />
+          {at ? (
+            <View
+              accessibilityRole="menu"
+              style={[
+                styles.menu,
+                lift(dark, 2),
+                {
+                  top: at.top,
+                  left: at.left,
+                  backgroundColor: colors.surfaceElevated,
+                  borderColor: colors.hairline,
+                },
+              ]}
+            >
+              {p.items.map((item, i) => (
+                <Press
+                  key={item.label}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={item.label}
+                  disabled={item.disabled}
+                  testID={item.testID}
+                  onPress={() => pick(item)}
+                  style={[
+                    styles.item,
+                    i > 0 && { borderTopWidth: 1, borderColor: colors.hairline },
+                  ]}
                 >
-                  {item.label}
-                </Txt>
-                {item.icon ? (
-                  <Glyph
-                    name={item.icon}
-                    size={16}
-                    color={item.destructive ? 'danger' : 'inkSecondary'}
-                  />
-                ) : null}
-              </Press>
-            ))}
-          </View>
-        ) : null}
-      </Modal>
+                  <Txt
+                    variant="body"
+                    color={item.destructive ? 'danger' : 'ink'}
+                    style={styles.label}
+                    numberOfLines={1}
+                  >
+                    {item.label}
+                  </Txt>
+                  {item.icon ? (
+                    <Glyph
+                      name={item.icon}
+                      size={16}
+                      color={item.destructive ? 'danger' : 'inkSecondary'}
+                    />
+                  ) : null}
+                </Press>
+              ))}
+            </View>
+          ) : null}
+        </Modal>
+      ) : null}
     </View>
   );
 }

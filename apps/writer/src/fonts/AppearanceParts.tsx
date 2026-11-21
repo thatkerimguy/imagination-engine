@@ -1,10 +1,15 @@
 // Presentational pieces of the Appearance screen: the live paper preview and theme swatches.
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import { CardGroup } from '../ui/CardGroup.tsx';
+import { ListRow } from '../ui/Page.tsx';
+import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
+import { Toggle } from '../ui/Toggle.tsx';
 import { lift, radius, space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
-import { useTheme, useWriterPrefs } from '../ui/theme.tsx';
-import type { ThemeDef } from '../ui/themes.ts';
+import { useMaterialYou, useTheme, useWriterPrefs } from '../ui/theme.tsx';
+import type { ThemeDef, ThemeId } from '../ui/themes.ts';
+import type { WriterPrefs } from '../store/writer-prefs.ts';
 import { serif } from '../ui/type.ts';
 import { MARGIN_DP } from '../ui/typography.ts';
 import { useFontFamily } from './loader';
@@ -117,5 +122,72 @@ export function Swatch({
         {t.label}
       </Txt>
     </Pressable>
+  );
+}
+
+const STYLE_OPTIONS: readonly SegmentOption<WriterPrefs['materialYouStyle']>[] = [
+  { value: 'soft', label: 'Soft tint', testID: 'material-you-style-soft' },
+  { value: 'exact', label: 'Exact wallpaper', testID: 'material-you-style-exact' },
+];
+
+/** Three crisp colour dots (canvas, surface, accent) with a hairline ring. */
+function SwatchDots({ colors }: { colors: readonly string[] }): ReactNode {
+  const { colors: ui } = useTheme();
+  return (
+    <View testID="material-you-swatch" style={{ flexDirection: 'row', gap: 4 }}>
+      {colors.map((c, i) => (
+        <View
+          key={i}
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 7,
+            backgroundColor: c,
+            borderWidth: 1,
+            borderColor: ui.hairline,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+/** "Match phone theme" toggle card with wallpaper dots and the Soft / Exact style switch. */
+export function MatchPhoneThemeCard({ currentId }: { currentId: ThemeId }): ReactNode {
+  const [p, update] = useWriterPrefs();
+  const { active, swatch } = useMaterialYou();
+  const { colors } = useTheme();
+  const on = p.themeId === 'system';
+  const dots = active && swatch ? swatch : colors;
+  return (
+    <CardGroup>
+      <ListRow
+        last
+        title="Match phone theme"
+        subtitle={active ? 'From your phone wallpaper' : 'Follows device light or dark mode'}
+        trailing={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+            <SwatchDots colors={[dots.canvas, dots.surface, dots.accent]} />
+            <Toggle
+              testID="theme-system"
+              accessibilityLabel="Match phone theme"
+              value={on}
+              onValueChange={(v) => update({ themeId: v ? 'system' : currentId })}
+            />
+          </View>
+        }
+      />
+      {on ? (
+        <View style={{ paddingVertical: space.sm }}>
+          <SegmentControl<WriterPrefs['materialYouStyle']>
+            options={STYLE_OPTIONS}
+            value={p.materialYouStyle}
+            onChange={(materialYouStyle) => update({ materialYouStyle })}
+            accessibilityLabel="Wallpaper colour style"
+            testID="material-you-style"
+          />
+        </View>
+      ) : null}
+    </CardGroup>
   );
 }

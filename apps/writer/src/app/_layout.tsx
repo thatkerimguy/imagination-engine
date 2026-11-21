@@ -8,7 +8,6 @@ import { FolioTabBar } from '../components/FolioTabBar.tsx';
 import { LockGate } from '../security/LockGate.tsx';
 import { RepositoryProvider } from '../store/context.tsx';
 import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
-import { HeaderScrollProvider } from '../ui/header-scroll.tsx';
 import { ThemeProvider, useTheme } from '../ui/theme.tsx';
 import { StackTopBar } from '../ui/TopBar.tsx';
 import { installWebFocusReset } from '../ui/web-focus.ts';
@@ -24,11 +23,9 @@ export default function RootLayout(): ReactNode {
       <RepositoryProvider>
         <ThemeProvider>
           <ConfirmProvider>
-            <HeaderScrollProvider>
-              <LockGate>
-                <ThemedStack />
-              </LockGate>
-            </HeaderScrollProvider>
+            <LockGate>
+              <ThemedStack />
+            </LockGate>
           </ConfirmProvider>
         </ThemeProvider>
       </RepositoryProvider>

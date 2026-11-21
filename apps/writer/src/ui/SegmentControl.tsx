@@ -1,11 +1,18 @@
-// Folio segment control: a `surface` track (10px radius, 3px inset) with an elevated thumb on the
-// active segment. Segments share the width equally and never truncate short labels; no ✓.
-import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+// Folio segment control: a `surface` track (10px radius, 3px inset) with a hairline thumb that slides
+// (native-driver translateX) to the active segment. Segments share the width equally and never truncate short labels; no ✓.
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { tapFeedback } from './haptics.ts';
 import { Txt } from './Txt.tsx';
-import { lift, radius } from './tokens.ts';
+import { radius } from './tokens.ts';
 import { useTheme } from './theme.tsx';
 
 export interface SegmentOption<T extends string> {
@@ -29,8 +36,22 @@ export interface SegmentControlProps<T extends string> {
 }
 
 export function SegmentControl<T extends string>(p: SegmentControlProps<T>): ReactNode {
-  const { colors, dark } = useTheme();
+  const { colors } = useTheme();
   const h = p.compact ? 32 : 36;
+  const [segs, setSegs] = useState<Record<string, { x: number; w: number }>>({});
+  const tx = useRef(new Animated.Value(0)).current;
+  const placed = useRef(false);
+  const cur = segs[p.value];
+  useEffect(() => {
+    if (!cur) return;
+    const x = cur.x - StyleSheet.hairlineWidth;
+    if (!placed.current) {
+      placed.current = true;
+      tx.setValue(x);
+      return;
+    }
+    Animated.timing(tx, { toValue: x, duration: 160, useNativeDriver: true }).start();
+  }, [cur, tx]);
   return (
     <View
       accessibilityRole="radiogroup"
@@ -43,6 +64,20 @@ export function SegmentControl<T extends string>(p: SegmentControlProps<T>): Rea
         p.style,
       ]}
     >
+      {cur ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.thumb,
+            {
+              width: cur.w,
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.hairline,
+              transform: [{ translateX: tx }],
+            },
+          ]}
+        />
+      ) : null}
       {p.options.map((o) => {
         const on = o.value === p.value;
         return (
@@ -52,6 +87,15 @@ export function SegmentControl<T extends string>(p: SegmentControlProps<T>): Rea
             accessibilityLabel={o.label}
             accessibilityState={{ selected: on, checked: on }}
             testID={o.testID}
+            onLayout={(e) => {
+              const { x, width } = e.nativeEvent.layout;
+              setSegs((m) => {
+                const old = m[o.value];
+                return old && old.x === x && old.w === width
+                  ? m
+                  : { ...m, [o.value]: { x, w: width } };
+              });
+            }}
             hitSlop={{ top: (44 - h) / 2 + 3, bottom: (44 - h) / 2 + 3 }}
             onPress={() => {
               if (on) return;
@@ -61,10 +105,8 @@ export function SegmentControl<T extends string>(p: SegmentControlProps<T>): Rea
             style={[
               styles.seg,
               p.hug ? styles.segHug : null,
-              on && [
-                { backgroundColor: colors.surfaceElevated, borderColor: colors.hairline },
-                lift(dark),
-              ],
+              // Until the thumb is measured, the active segment paints its own fill.
+              on && !cur && { backgroundColor: colors.surfaceElevated },
             ]}
           >
             {o.icon ? <Glyph name={o.icon} size={14} color={on ? 'ink' : 'inkSecondary'} /> : null}
@@ -102,6 +144,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
+  },
+  thumb: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    left: 0,
+    borderRadius: radius.sm - 3,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   segHug: { flex: 0, paddingHorizontal: 12 },
   onLabel: { fontWeight: '600' },

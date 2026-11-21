@@ -1,11 +1,12 @@
 // Settings section: back up now, restore from a backup file, auto-backup interval.
-// Drop into the settings screen as `<BackupSection />`.
+// Drop into the settings screen as `<BackupSection settings={…} />` (loaded by the parent).
 import * as DocumentPicker from 'expo-document-picker';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { readAssetBytes } from '../import/read-asset.ts';
 import { useRepository } from '../store/context.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
+import { CardGroup } from '../ui/CardGroup.tsx';
 import { ListRow, SectionLabel } from '../ui/Page.tsx';
 import { SegmentControl } from '../ui/SegmentControl.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -13,6 +14,7 @@ import { space } from '../ui/tokens.ts';
 import { peekArchive, restoreArchive } from './archive-repo.ts';
 import { manualBackup } from './auto-backup.ts';
 import {
+  DEFAULT_BACKUP_SETTINGS,
   loadBackupSettings,
   saveBackupSettings,
   type BackupInterval,
@@ -29,14 +31,18 @@ const INTERVALS: readonly { value: `${BackupInterval}`; label: string }[] = [
 const when = (t: number | null): string => (t === null ? 'Never' : new Date(t).toLocaleString());
 const msg = (e: unknown): string => (e instanceof Error ? e.message : 'Something went wrong.');
 
-export function BackupSection(): ReactNode {
+export function BackupSection({
+  settings: initial,
+}: {
+  settings: BackupSettings | null;
+}): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
-  const [settings, setSettings] = useState<BackupSettings | null>(null);
+  const [settings, setSettings] = useState<BackupSettings | null>(initial);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
   const reload = useCallback(() => void loadBackupSettings(repo).then(setSettings), [repo]);
-  useEffect(reload, [reload]);
+  useEffect(() => setSettings((cur) => initial ?? cur), [initial]);
 
   const guard = async (job: () => Promise<string | null>): Promise<void> => {
     setBusy(true);
@@ -88,42 +94,44 @@ export function BackupSection(): ReactNode {
   };
 
   return (
-    <View>
+    <View style={styles.root}>
       <SectionLabel>Backup & restore</SectionLabel>
-      <ListRow
-        icon="download"
-        title="Back up now"
-        subtitle="Save every book and note as one .zip"
-        testID="backup-now"
-        onPress={() => void (busy || backUp())}
-      />
-      <ListRow
-        icon="upload"
-        title="Restore from backup"
-        subtitle="A workspace .zip or a .knbook"
-        testID="backup-restore"
-        onPress={() => void (busy || restore())}
-      />
-      <ListRow
-        icon="clock"
-        title="Last backup"
-        detail={settings ? when(settings.lastBackupAt) : ''}
-        last
-      />
-      {settings ? (
+      <CardGroup testID="card-backup">
+        <ListRow
+          icon="download"
+          title="Back up now"
+          subtitle="Save every book and note as one .zip"
+          last
+          testID="backup-now"
+          onPress={() => void (busy || backUp())}
+        />
+        <ListRow
+          icon="upload"
+          title="Restore from backup"
+          subtitle="A workspace .zip or a .knbook"
+          last
+          testID="backup-restore"
+          onPress={() => void (busy || restore())}
+        />
+        <ListRow
+          icon="clock"
+          title="Last backup"
+          detail={settings ? when(settings.lastBackupAt) : ' '}
+          last
+        />
         <View style={styles.interval}>
           <Txt variant="label" color="inkSecondary">
             Auto-backup (emergency snapshots on this device)
           </Txt>
           <SegmentControl
             options={INTERVALS}
-            value={`${settings.intervalHours}`}
+            value={`${(settings ?? DEFAULT_BACKUP_SETTINGS).intervalHours}`}
             onChange={(v) => void setInterval(v)}
             accessibilityLabel="Auto-backup interval"
             testID="backup-interval"
           />
         </View>
-      ) : null}
+      </CardGroup>
       {note ? (
         <Txt
           variant="meta"
@@ -138,4 +146,7 @@ export function BackupSection(): ReactNode {
   );
 }
 
-const styles = StyleSheet.create({ interval: { gap: space.xs, paddingVertical: space.sm } });
+const styles = StyleSheet.create({
+  root: { gap: space.md },
+  interval: { gap: space.xs, paddingVertical: space.sm },
+});

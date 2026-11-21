@@ -1,12 +1,11 @@
 // Appearance & fonts: live paper preview, theme swatches, grouped font picker, typography.
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { PaperPreview, Swatch } from '../fonts/AppearanceParts.tsx';
+import { MatchPhoneThemeCard, PaperPreview, Swatch } from '../fonts/AppearanceParts.tsx';
 import { FontList } from '../fonts/FontList.tsx';
 import { TypographyControls } from '../fonts/TypographyControls.tsx';
-import { ListRow, Page, SectionLabel } from '../ui/Page.tsx';
+import { Page, SectionLabel } from '../ui/Page.tsx';
 import { THEMES } from '../ui/themes.ts';
-import { Toggle } from '../ui/Toggle.tsx';
 import { useTheme, useWriterPrefs } from '../ui/theme.tsx';
 
 export default function AppearanceScreen(): ReactNode {
@@ -28,19 +27,7 @@ export default function AppearanceScreen(): ReactNode {
     <Page>
       <PaperPreview />
       <SectionLabel>Theme</SectionLabel>
-      <ListRow
-        last
-        title="Match system"
-        subtitle="Follows light or dark mode on this device."
-        trailing={
-          <Toggle
-            testID="theme-system"
-            accessibilityLabel="Match system"
-            value={p.themeId === 'system'}
-            onValueChange={(on) => update({ themeId: on ? 'system' : current.id })}
-          />
-        }
-      />
+      <MatchPhoneThemeCard currentId={current.id} />
       <SectionLabel>Night</SectionLabel>
       {swatches(true)}
       <SectionLabel>Day</SectionLabel>

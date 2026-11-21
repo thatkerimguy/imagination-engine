@@ -1,5 +1,14 @@
 // React wiring: one repository per app, plus a query hook that re-runs whenever data changes.
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useFocusEffect } from 'expo-router';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { maybeAutoBackup } from '../backup/auto-backup.ts';
 import { createDefaultAdapter } from '../storage/adapter';
 import { syncHapticsPref } from '../ui/haptics.ts';
@@ -51,7 +60,30 @@ export function useRepoQuery<T>(
   });
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
-  useEffect(() => repo.subscribe(reload), [repo, reload]);
+  // Screens stacked behind the active route skip change-driven reloads: they mark themselves
+  // dirty and reload once when focus returns.
+  const focused = useRef(true);
+  const dirty = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      focused.current = true;
+      if (dirty.current) {
+        dirty.current = false;
+        reload();
+      }
+      return () => {
+        focused.current = false;
+      };
+    }, [reload]),
+  );
+  useEffect(
+    () =>
+      repo.subscribe(() => {
+        if (focused.current) reload();
+        else dirty.current = true;
+      }),
+    [repo, reload],
+  );
   useEffect(() => {
     let live = true;
     load(repo).then(

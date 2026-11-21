@@ -165,6 +165,19 @@ function useWallpaperPalette(enabled: boolean, isDark: boolean): WallpaperPalett
 
 export const useTheme = (): Theme => useContext(ThemeContext).theme;
 
+/** Renders `children` with a fixed theme (e.g. the Live Preview theater); prefs stay shared. */
+export function ThemeOverride({
+  theme,
+  children,
+}: {
+  theme: Theme;
+  children: ReactNode;
+}): ReactNode {
+  const outer = useContext(ThemeContext);
+  const value = useMemo(() => ({ ...outer, theme }), [outer, theme]);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
 /** Material You status for the Appearance screen. */
 export function useMaterialYou(): { active: boolean; swatch: MaterialYouSwatch | null } {
   const { materialYouActive, materialYouSwatch } = useContext(ThemeContext);

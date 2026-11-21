@@ -2,18 +2,21 @@
 // appearance, live preview): drives the Expo Web export of apps/writer at 390×844. The Live
 // Preview runs the built-in OFFLINE reader (iframe srcDoc) with every non-local request aborted,
 // so no reader server is needed. Needs `pnpm writer:export` (which builds the preview bundle).
-// Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase2d
+// Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase2e
+// The current phase's 5 PNGs land in <dir>; earlier packs' regression shots in <dir>/regression.
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { extname, join, resolve } from 'node:path';
+import { phase2ePass } from './writer-shots-2e.mjs';
 import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
 import { workspacePass } from './writer-shots-workspace.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
-const shotsAt = process.argv.includes('--shots')
+const packAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
+const shotsAt = packAt && join(packAt, 'regression');
 const WRITER = 'http://127.0.0.1:8099/';
 const DIST = resolve(import.meta.dirname, '../apps/writer/dist');
 const ID = {
@@ -45,6 +48,7 @@ const GROWTH_SEED = (() => {
   return JSON.stringify({ data: { points }, updatedAt: now });
 })();
 if (shotsAt) mkdirSync(shotsAt, { recursive: true });
+
 const errors = [];
 const blocked = [];
 const fail = (msg) => {
@@ -239,13 +243,14 @@ try {
   await toolbarPass(page, { tid, editor, shotsAt, ok, fail });
   await settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail });
   await flowPass(page, tid);
+  await phase2ePass(page, { WRITER, ID, tid, shotsAt: packAt, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();
 } catch (err) {
   fail(String(err).split('\n').slice(0, 3).join(' | '));
-  if (shotsAt)
-    await globalThis.__page?.screenshot({ path: `${shotsAt}/_failure.png` }).catch(() => {});
+  if (packAt)
+    await globalThis.__page?.screenshot({ path: `${packAt}/_failure.png` }).catch(() => {});
 } finally {
   writer.closeAllConnections();
   writer.close();

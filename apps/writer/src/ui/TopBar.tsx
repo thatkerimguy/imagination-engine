@@ -8,10 +8,11 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { parentHref } from '../routes.ts';
 import { useHeaderScrolled } from './header-scroll.tsx';
+import { THEATER_BG, THEATER_THEME } from './theater.ts';
 import { IconBtn } from './IconBtn.tsx';
 import { Txt } from './Txt.tsx';
 import { space } from './tokens.ts';
-import { useTheme } from './theme.tsx';
+import { ThemeOverride, useTheme } from './theme.tsx';
 
 export const TOP_BAR_HEIGHT = 52;
 
@@ -26,7 +27,10 @@ export function StackTopBar({ options, navigation }: NativeStackHeaderProps): Re
     parent === null
       ? undefined
       : () => (navigation.canGoBack() ? navigation.goBack() : router.replace(parent));
-  return <TopBar title={title} onBack={onBack} actions={actions} scrolled={scrolled} />;
+  const bar = <TopBar title={title} onBack={onBack} actions={actions} scrolled={scrolled} />;
+  // A screen opts into the dark theater bar with `headerStyle: { backgroundColor: THEATER_BG }`.
+  const bg = (options.headerStyle as { backgroundColor?: string } | undefined)?.backgroundColor;
+  return bg === THEATER_BG ? <ThemeOverride theme={THEATER_THEME}>{bar}</ThemeOverride> : bar;
 }
 
 export interface TopBarProps {

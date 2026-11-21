@@ -88,8 +88,11 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
   v.main.replaceChildren(article);
 
   const restoreAt = opts.startBlockId ? blocks.findIndex((b) => b.id === opts.startBlockId) : -1;
-  const tier: QualityTier = resolveTier(opts.tier ?? getPrefs().tier, deviceHints());
+  const tierPref = opts.tier ?? getPrefs().tier;
+  const tier: QualityTier = resolveTier(tierPref, deviceHints());
   document.documentElement.dataset.tier = tier;
+  // The GL stage keeps full 2x sharpness only for an explicit High choice (see stage-gl.ts).
+  document.documentElement.dataset.tierPref = tierPref;
 
   const pacer = new Pacer({
     blocks,

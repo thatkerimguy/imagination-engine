@@ -1,37 +1,49 @@
 // Shared "is the page scrolled?" flag so the stack TopBar shows its hairline only once content
 // has moved under it. Pages report via useScrollReporter(); the bar reads useHeaderScrolled().
+// State lives in a tiny external store: only the subscribed top bar re-renders, and only when the
+// 4px threshold is crossed (never per scroll event).
 import { useFocusEffect } from 'expo-router';
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
-interface ScrollState {
-  scrolled: boolean;
-  setScrolled(next: boolean): void;
+const THRESHOLD = 4;
+
+let scrolled = false;
+const listeners = new Set<() => void>();
+
+function setScrolled(next: boolean): void {
+  if (scrolled === next) return;
+  scrolled = next;
+  listeners.forEach((l) => l());
 }
 
-const Ctx = createContext<ScrollState>({ scrolled: false, setScrolled: () => undefined });
+const subscribe = (l: () => void): (() => void) => {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+};
+const getSnapshot = (): boolean => scrolled;
 
+/** Kept for the root layout; the store is module-level so the provider renders nothing extra. */
 export function HeaderScrollProvider({ children }: { children: ReactNode }): ReactNode {
-  const [scrolled, setScrolled] = useState(false);
-  const value = useMemo(() => ({ scrolled, setScrolled }), [scrolled]);
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return children;
 }
 
-export const useHeaderScrolled = (): boolean => useContext(Ctx).scrolled;
+export const useHeaderScrolled = (): boolean =>
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+type ScrollHandler = (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 
 /** onScroll handler for a page's ScrollView; resets the flag whenever the page gains focus. */
-export function useScrollReporter(): (e: NativeSyntheticEvent<NativeScrollEvent>) => void {
-  const { scrolled, setScrolled } = useContext(Ctx);
+export function useScrollReporter(): ScrollHandler {
   useFocusEffect(
     useCallback(() => {
       setScrolled(false);
-    }, [setScrolled]),
+    }, []),
   );
-  return useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const next = e.nativeEvent.contentOffset.y > 2;
-      if (next !== scrolled) setScrolled(next);
-    },
-    [scrolled, setScrolled],
-  );
+  const handler = useRef<ScrollHandler>((e) => {
+    setScrolled(e.nativeEvent.contentOffset.y > THRESHOLD);
+  });
+  return handler.current;
 }

@@ -1,6 +1,7 @@
 // Live Preview: the real apps/reader in a WebView (iframe on web), fed the unsaved draft.
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
@@ -14,9 +15,10 @@ import { routes } from '../routes.ts';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { EmptyState } from '../ui/Page.tsx';
 import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
+import { THEATER_BG, THEATER_THEME } from '../ui/theater.ts';
 import { radius, space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
-import { makeStyles, useTheme } from '../ui/theme.tsx';
+import { makeStyles, ThemeOverride, useTheme } from '../ui/theme.tsx';
 
 type Status = 'connecting' | 'live' | 'unreachable' | 'rejected';
 const READY_TIMEOUT_MS = 8000;
@@ -32,9 +34,16 @@ const TIER_SEGMENTS: readonly SegmentOption<PreviewTier>[] = PREVIEW_TIERS.map((
   testID: `preview-tier-${t}`,
 }));
 
+// Rendered under THEATER_THEME, so `t` is the fixed dark surround on Day themes too.
 const useStyles = makeStyles((t) => ({
   screen: { flex: 1, backgroundColor: t.colors.canvas },
-  toolbar: { paddingHorizontal: space.gutter, paddingBottom: space.sm, gap: space.xs },
+  toolbar: {
+    paddingHorizontal: space.gutter,
+    paddingBottom: space.sm,
+    gap: space.xs,
+    borderBottomWidth: 1,
+    borderColor: t.colors.hairline,
+  },
   note: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
   banner: {
@@ -50,7 +59,17 @@ const useStyles = makeStyles((t) => ({
   actions: { flexDirection: 'row', gap: space.xs },
 }));
 
+/** The dark theater surround applies to the header, tier bar and status line alike. */
 export default function PreviewScreen(): ReactNode {
+  return (
+    <ThemeOverride theme={THEATER_THEME}>
+      <StatusBar style="light" />
+      <PreviewBody />
+    </ThemeOverride>
+  );
+}
+
+function PreviewBody(): ReactNode {
   const p = useLocalSearchParams<{
     novel: string;
     season: string;
@@ -106,6 +125,7 @@ export default function PreviewScreen(): ReactNode {
   const header = (
     <Stack.Screen
       options={{
+        headerStyle: { backgroundColor: THEATER_BG },
         headerRight: () => (
           <IconBtn
             icon="refresh-cw"

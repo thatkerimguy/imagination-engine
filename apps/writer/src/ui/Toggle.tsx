@@ -1,4 +1,5 @@
-// Folio toggle: slim 44×26 track with an inset round thumb that slides. No borders, no ✓.
+// Folio toggle: slim 44x26 track (accent layer crossfades over a neutral one) with a sliding thumb;
+// everything animates on the native driver (opacity + transform only). Hairline, no shadow.
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet } from 'react-native';
 import { toggleFeedback } from './haptics.ts';
@@ -22,7 +23,7 @@ export function Toggle(p: ToggleProps): ReactNode {
   const { colors, dark } = useTheme();
   const x = useRef(new Animated.Value(p.value ? 1 : 0)).current;
   useEffect(() => {
-    Animated.timing(x, { toValue: p.value ? 1 : 0, duration: 160, useNativeDriver: false }).start();
+    Animated.timing(x, { toValue: p.value ? 1 : 0, duration: 160, useNativeDriver: true }).start();
   }, [p.value, x]);
   return (
     <Pressable
@@ -38,15 +39,20 @@ export function Toggle(p: ToggleProps): ReactNode {
       hitSlop={slop(W, H)}
       style={[
         styles.track,
-        { backgroundColor: p.value ? colors.accent : colors.borderStrong },
+        { backgroundColor: colors.borderStrong, borderColor: colors.hairline },
         p.disabled && styles.disabled,
       ]}
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.accent, opacity: x }]}
+      />
       <Animated.View
         style={[
           styles.thumb,
           {
             backgroundColor: p.value ? colors.onAccent : dark ? colors.ink : '#FFFFFF',
+            borderColor: colors.hairline,
             transform: [
               { translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, TRAVEL] }) },
             ],
@@ -58,16 +64,20 @@ export function Toggle(p: ToggleProps): ReactNode {
 }
 
 const styles = StyleSheet.create({
-  track: { width: W, height: H, borderRadius: H / 2, padding: 3, justifyContent: 'center' },
+  track: {
+    width: W,
+    height: H,
+    borderRadius: H / 2,
+    padding: 3,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   thumb: {
     width: THUMB,
     height: THUMB,
     borderRadius: THUMB / 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 1.5,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   disabled: { opacity: 0.38 },
 });

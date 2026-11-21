@@ -5,6 +5,12 @@ import type { WorldBounds } from '@kn/core/renderer';
 const FOV = 35;
 const DIE_WORLD = 0.9;
 
+// `auto` caps the pixel ratio at 1.5x so mid-range GPUs (Adreno 610) hold 120Hz; only an explicit
+// High choice (reader setting, writer preview tier, sandbox `?tier=high`) renders at up to 2x.
+const explicitHigh = (): boolean =>
+  document.documentElement.dataset.tierPref === 'high' ||
+  new URLSearchParams(location.search).get('tier') === 'high';
+
 export interface GLStage {
   renderer: WebGLRenderer;
   scene: Scene;
@@ -42,7 +48,7 @@ export function createGLStage(overlay: HTMLElement): GLStage {
   const resize = (): void => {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, explicitHigh() ? 2 : 1.5));
     renderer.setSize(w, h, false);
     unitsPerPx = DIE_WORLD / Math.max(56, Math.min(96, Math.min(w, h) * 0.15));
     const height = h * unitsPerPx;

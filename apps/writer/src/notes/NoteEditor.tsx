@@ -1,28 +1,26 @@
 // Standalone note editor: the chapter editor's prose / dialogue / scene-break experience (toolbar,
 // metrics, find & replace, outline, analysis, undo/redo) over a note — no gimmicks, no preview.
-import { useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import type { Block } from '@kn/core';
+import { useCallback, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { BlockView } from '../editor/BlockView.tsx';
 import { useNoteEditorStyles } from './note-editor-styles.ts';
 import { FindReplaceBar } from '../editor/FindReplaceBar.tsx';
 import { FormattingToolbar } from '../editor/FormattingToolbar.tsx';
-import { MetricsRibbon, MetricPickerSheet } from '../editor/MetricsRibbon.tsx';
-import { OutlineSheet } from '../editor/OutlineSheet.tsx';
+import { MetricsRibbon } from '../editor/MetricsRibbon.tsx';
 import { useEditorActions } from '../editor/use-editor-actions.ts';
 import { useFormatActions } from '../editor/use-format-actions.ts';
 import { useLiveMetrics } from '../editor/use-live-metrics.ts';
-import { ColorPopover, CommentSheet } from '../editor/EditorChrome.tsx';
-import { ItemMetaSheet } from '../components/ItemMetaSheet.tsx';
+import { ColorPopover } from '../editor/EditorChrome.tsx';
 import { Field } from '../ui/Field.tsx';
 import { EmptyState } from '../ui/Page.tsx';
 import type { MenuItem } from '../ui/PopoverMenu.tsx';
 import { space } from '../ui/tokens.ts';
 import { useWriterPrefs } from '../ui/theme.tsx';
 import { useEditorTypography } from '../ui/typography.ts';
-import { TextAnalysisSheet } from '../views/TextAnalysisSheet.tsx';
 import { NoteTopBar } from './NoteTopBar.tsx';
 import { usePromote } from './promote.ts';
-import { PromoteSheet } from './PromoteSheet.tsx';
+import { NoteSheets, type NoteSheet } from './NoteSheets.tsx';
 import type { NoteDraft } from './use-note-draft.ts';
 
 export interface NoteEditorProps {
@@ -34,13 +32,11 @@ export interface NoteEditorProps {
   extraMenu?: MenuItem[];
 }
 
-type Sheet = 'analysis' | 'outline' | 'metrics' | 'meta' | 'promote' | null;
-
 export function NoteEditor(p: NoteEditorProps): ReactNode {
   const { draft } = p;
   const s = useNoteEditorStyles();
   const typo = useEditorTypography();
-  const [prefs] = useWriterPrefs();
+  const [prefs, setPrefs] = useWriterPrefs();
   const promote = usePromote();
   const a = useEditorActions(draft.update);
   const chapter = draft.chapter;
@@ -54,13 +50,25 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
     updateStyles: draft.updateStyles,
     pick: a.pick,
   });
-  const [sheet, setSheet] = useState<Sheet>(null);
+  const [sheet, setSheet] = useState<NoteSheet>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const scrolledRef = useRef(false);
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef(new Map<string, number>());
   const metrics = useLiveMetrics(blocks);
+
+  // Stable, id-taking handlers (via a ref to the latest actions) so memoized BlockViews skip renders.
+  const actions = useRef(a);
+  actions.current = a;
+  const onChange = useCallback((b: Block) => actions.current.change(b), []);
+  const onToggleBeat = useCallback((id: string) => actions.current.toggleBeat(id), []);
+  const onMove = useCallback((id: string, d: -1 | 1) => actions.current.move(id, d), []);
+  const onDelete = useCallback((id: string) => void actions.current.remove(id), []);
+  const onSelect = useCallback((id: string) => actions.current.select(id), []);
+  const onOpenGimmick = useCallback((): void => undefined, []);
+  const onLayout = useCallback((id: string, y: number) => void offsets.current.set(id, y), []);
 
   const jump = (id: string): void => {
     a.select(id);
@@ -128,7 +136,13 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[s.content, { paddingHorizontal: typo.margin }]}
           scrollEventThrottle={32}
-          onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
+          onScroll={(e) => {
+            const next = e.nativeEvent.contentOffset.y > 4;
+            if (scrolledRef.current !== next) {
+              scrolledRef.current = next;
+              setScrolled(next);
+            }
+          }}
           testID="note-stream"
         >
           <Field
@@ -148,10 +162,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
             />
           ) : null}
           {blocks.map((block) => (
-            <View
-              key={block.id}
-              onLayout={(e) => offsets.current.set(block.id, e.nativeEvent.layout.y)}
-            >
+            <View key={block.id} onLayout={(e) => onLayout(block.id, e.nativeEvent.layout.y)}>
               <BlockView
                 block={block}
                 selected={a.selectedId === block.id}
@@ -161,12 +172,12 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
                 samsungSafeIme={prefs.samsungSafeIme}
                 selection={f.forcedSelection(block.id)}
                 onSelectionChange={f.onSelectionChange}
-                onSelect={a.select}
-                onChange={a.change}
-                onOpenGimmick={() => undefined}
-                onToggleBeat={a.toggleBeat}
-                onMove={a.move}
-                onDelete={(id) => void a.remove(id)}
+                onSelect={onSelect}
+                onChange={onChange}
+                onOpenGimmick={onOpenGimmick}
+                onToggleBeat={onToggleBeat}
+                onMove={onMove}
+                onDelete={onDelete}
               />
             </View>
           ))}
@@ -181,38 +192,31 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
           align={f.align}
           disabledText={!f.textSelected}
           onTool={f.onTool}
+          formatCollapsed={prefs.toolbarFormatCollapsed}
+          addCollapsed={prefs.toolbarAddCollapsed}
+          onCollapse={(half, isCollapsed) =>
+            setPrefs(
+              half === 'format'
+                ? { toolbarFormatCollapsed: isCollapsed }
+                : { toolbarAddCollapsed: isCollapsed },
+            )
+          }
         />
       </KeyboardAvoidingView>
 
-      <TextAnalysisSheet
-        visible={sheet === 'analysis'}
-        blocks={blocks}
-        typing={{ cpm: metrics.typingCpm, wpm: metrics.typingWpm }}
-        onClose={() => setSheet(null)}
-      />
-      <OutlineSheet
-        visible={sheet === 'outline'}
+      <NoteSheets
+        sheet={sheet}
+        setSheet={setSheet}
+        commentOpen={f.commentOpen}
+        onAddComment={f.addComment}
+        onCloseComment={f.closeComment}
+        docId={p.docId}
+        title={shownTitle}
         blocks={blocks}
         styles={draft.styles}
-        onJump={jump}
-        onClose={() => setSheet(null)}
-      />
-      <MetricPickerSheet visible={sheet === 'metrics'} onClose={() => setSheet(null)} />
-      <CommentSheet visible={f.commentOpen} onAdd={f.addComment} onClose={f.closeComment} />
-      <ItemMetaSheet
-        visible={sheet === 'meta'}
-        itemId={p.docId}
-        title={shownTitle}
-        onClose={() => setSheet(null)}
-      />
-      <PromoteSheet
-        visible={sheet === 'promote'}
-        noteTitle={shownTitle}
-        onClose={() => setSheet(null)}
-        onPick={(n, sId) => {
-          setSheet(null);
-          void draft.flush().then(() => promote(p.docId, n, sId));
-        }}
+        metrics={metrics}
+        jump={jump}
+        onPromote={(x, y) => void draft.flush().then(() => promote(p.docId, x, y))}
       />
     </View>
   );

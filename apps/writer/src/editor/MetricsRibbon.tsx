@@ -46,12 +46,13 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.hairline,
     paddingHorizontal: space.xxs,
   },
-  strip: { alignItems: 'center', gap: space.lg, paddingLeft: space.xs, paddingRight: 16 },
+  strip: { alignItems: 'center', gap: space.lg, paddingLeft: space.xs, paddingRight: 20 },
   col: { minHeight: 36, justifyContent: 'center' },
   label: { fontSize: 10, lineHeight: 12, letterSpacing: 0.8 },
   value: { fontSize: 13, lineHeight: 17, fontWeight: '500', ...tabular },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: TOUCH },
   grow: { flex: 1 },
+  sep: { width: 1, height: 20, backgroundColor: t.colors.hairline },
 }));
 
 export function MetricsRibbon(p: MetricsRibbonProps): ReactNode {
@@ -95,6 +96,7 @@ export function MetricsRibbon(p: MetricsRibbonProps): ReactNode {
           ))}
         </ScrollView>
       )}
+      <View style={s.sep} />
       <IconBtn
         icon="filter"
         box={32}

@@ -6,6 +6,9 @@ import type { StorageAdapter } from '../storage/types.ts';
 
 export class CachedAdapter implements StorageAdapter {
   private readonly cache = new Map<string, string | null>();
+  private readonly keyLists = new Map<string, string[]>();
+  /** Bumped on every invalidation so a keys() read that raced a write is not cached. */
+  private epoch = 0;
 
   constructor(private readonly inner: StorageAdapter) {}
 
@@ -20,8 +23,10 @@ export class CachedAdapter implements StorageAdapter {
     try {
       await this.inner.set(key, value);
       this.cache.set(key, value);
+      this.invalidateKeys(key);
     } catch (err) {
       this.cache.delete(key);
+      this.invalidateKeys(key);
       throw err;
     }
   }
@@ -30,19 +35,36 @@ export class CachedAdapter implements StorageAdapter {
     try {
       await this.inner.remove(key);
       this.cache.set(key, null);
+      this.invalidateKeys(key);
     } catch (err) {
       this.cache.delete(key);
+      this.invalidateKeys(key);
       throw err;
     }
   }
 
-  keys(prefix: string): Promise<string[]> {
-    return this.inner.keys(prefix);
+  async keys(prefix: string): Promise<string[]> {
+    const hit = this.keyLists.get(prefix);
+    if (hit) return [...hit];
+    const epoch = this.epoch;
+    const list = await this.inner.keys(prefix);
+    if (epoch === this.epoch) this.keyLists.set(prefix, [...list]);
+    return list;
+  }
+
+  /** Drops every cached key list whose prefix covers `key`. */
+  private invalidateKeys(key: string): void {
+    this.epoch++;
+    for (const prefix of this.keyLists.keys()) {
+      if (key.startsWith(prefix)) this.keyLists.delete(prefix);
+    }
   }
 
   /** Drops every cached value (after a restore or repair that wrote around this adapter). */
   clear(): void {
     this.cache.clear();
+    this.keyLists.clear();
+    this.epoch++;
   }
 
   /** Number of cached keys (tests and diagnostics). */

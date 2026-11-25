@@ -2,12 +2,13 @@
 // gate covers the app with an opaque canvas overlay so navigation state survives a re-lock.
 import { router } from 'expo-router';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { AppState, BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { routes } from '../routes.ts';
 import { useRepository } from '../store/context.tsx';
 import { loadItemMeta } from '../store/item-meta.ts';
 import { unlockSession } from '../store/unlock-session.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
+import { lockGateConsumesBack } from '../ui/back-layers.ts';
 import { Glyph } from '../ui/Glyph.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
@@ -39,6 +40,14 @@ export function LockGate({ children }: { children: ReactNode }): ReactNode {
   }, [reload]);
 
   const covered = config === undefined || (config?.enabled === true && !unlocked);
+  // Android back / predictive back is swallowed while covered: no route pops or peeks under the
+  // overlay. Registered on every (re)lock, so it runs before any screen-level back listener.
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !lockGateConsumesBack(covered)) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [covered]);
+
   return (
     <View style={styles.fill}>
       <View

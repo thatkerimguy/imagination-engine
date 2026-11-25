@@ -10,6 +10,7 @@ import { EmptyState } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useWriterPrefs } from '../ui/theme.tsx';
+import { useBackIntercept } from '../ui/use-back-intercept.ts';
 import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
 import { useEditorTypography } from '../ui/typography.ts';
 import { FOCUS_BOTTOM_PAD, useStyles } from './chapter-editor-styles.ts';
@@ -24,6 +25,7 @@ import { useEditorActions } from './use-editor-actions.ts';
 import { useFormatActions } from './use-format-actions.ts';
 import { useKeyboardDock } from './use-keyboard-dock.ts';
 import { useLiveMetrics } from './use-live-metrics.ts';
+import { useScrolledFlag } from './use-scrolled-flag.ts';
 
 export interface ChapterEditorProps {
   chapter: ChapterDocument;
@@ -58,13 +60,17 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const [findOpen, setFindOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [ribbonCollapsed, setRibbonCollapsed] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const scrolledRef = useRef(false);
+  const [scrolled, onScroll] = useScrolledFlag();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef(new Map<string, number>());
 
   const metrics = useLiveMetrics(chapter.blocks);
   const dock = useKeyboardDock();
+  useBackIntercept([
+    { open: f.colorFor !== null, close: f.closeColor },
+    { open: findOpen, close: () => setFindOpen(false) },
+    { open: focusMode, close: () => setFocusMode(false) },
+  ]);
 
   // Stable, id-taking handlers (via a ref to the latest actions) so memoized BlockViews skip renders.
   const actions = useRef(a);
@@ -155,13 +161,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             },
           ]}
           scrollEventThrottle={32}
-          onScroll={(e) => {
-            const next = e.nativeEvent.contentOffset.y > 4;
-            if (scrolledRef.current !== next) {
-              scrolledRef.current = next;
-              setScrolled(next);
-            }
-          }}
+          onScroll={onScroll}
           testID="chapter-stream"
         >
           <Txt

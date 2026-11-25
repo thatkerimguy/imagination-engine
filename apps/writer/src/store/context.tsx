@@ -10,10 +10,12 @@ import {
   type ReactNode,
 } from 'react';
 import { maybeAutoBackup } from '../backup/auto-backup.ts';
+import { deleteCoverFiles } from '../media/cover-files';
 import { createDefaultAdapter } from '../storage/adapter';
 import { syncHapticsPref } from '../ui/haptics.ts';
 import { seedOnFirstLaunch } from './demo.ts';
 import { NovelRepository } from './repository.ts';
+import { purgeExpiredTrash } from './trash.ts';
 
 const RepoContext = createContext<NovelRepository | null>(null);
 
@@ -28,6 +30,10 @@ export function RepositoryProvider({ children }: { children: ReactNode }): React
         void syncHapticsPref(repo);
         // Rotating emergency snapshot when the configured interval has passed (native only).
         void maybeAutoBackup(repo);
+        // Items in Trash for 30+ days are deleted for good, with covers nothing else uses.
+        purgeExpiredTrash(repo)
+          .then(deleteCoverFiles)
+          .catch((err: unknown) => console.warn('[writer] trash purge failed', err));
       });
   }, [repo]);
   return ready ? <RepoContext.Provider value={repo}>{children}</RepoContext.Provider> : null;

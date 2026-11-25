@@ -17,6 +17,8 @@ export interface SeasonSectionProps {
   onRename(title: string): void;
   onMove(delta: -1 | 1): void;
   onAddChapter(): void;
+  /** Soft-delete (30-day Trash); unavailable for a book's only season. */
+  onTrash(): void;
   chapterProps(chapter: ChapterDocument): Omit<ChapterRowProps, 'chapter'>;
 }
 
@@ -54,6 +56,14 @@ export function SeasonSection(p: SeasonSectionProps): ReactNode {
                   icon: 'arrow-down',
                   disabled: p.index >= p.count - 1,
                   onPress: () => p.onMove(1),
+                },
+                {
+                  label: 'Move to Trash',
+                  icon: 'trash-2',
+                  destructive: true,
+                  disabled: p.count <= 1,
+                  onPress: p.onTrash,
+                  testID: `season-trash-${p.season.id}`,
                 },
               ]}
             />

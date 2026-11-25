@@ -4,13 +4,13 @@ import {
   breadcrumbs,
   createDoc,
   createFolder,
-  deleteFolderRecursive,
   fallbackTitle,
   getDoc,
   listChildren,
   moveFolder,
   saveDoc,
 } from './folders.ts';
+import { deleteFolderRecursive } from './notes-delete.ts';
 import { promoteDocToChapter } from './note-promote.ts';
 import { normalizeItemMeta, sortItems, updateItemMeta, type ItemMeta } from './item-meta.ts';
 import { NovelRepository } from './repository.ts';

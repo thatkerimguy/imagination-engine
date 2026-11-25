@@ -38,7 +38,7 @@ export function NovelCard({
       testID: `novel-settings-${novel.id}`,
     },
     {
-      label: 'Delete',
+      label: 'Move to Trash',
       icon: 'trash-2',
       destructive: true,
       onPress: onDelete,
@@ -60,7 +60,11 @@ export function NovelCard({
         testID={`novel-card-${novel.id}`}
         style={styles.body}
       >
-        <BookCoverThumb title={novel.title} {...(novel.accent ? { accent: novel.accent } : {})} />
+        <BookCoverThumb
+          title={novel.title}
+          {...(novel.accent ? { accent: novel.accent } : {})}
+          {...(novel.coverUri ? { coverUri: novel.coverUri } : {})}
+        />
         <View style={styles.text}>
           <Txt variant="heading" style={styles.title} numberOfLines={2}>
             {novel.title}

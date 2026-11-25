@@ -7,6 +7,7 @@ import { relativeTime } from '../library/relative-time.ts';
 import { routes } from '../routes.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { listAllDocs } from '../store/folders.ts';
+import { isChapterKeyTrashed, trashedIds } from '../store/trash-model.ts';
 import { loadAllItemMeta, type ItemMeta } from '../store/item-meta.ts';
 import { isRedacted } from '../store/unlock-session.ts';
 import type { NovelRepository } from '../store/repository.ts';
@@ -114,9 +115,10 @@ function loadRecent(repo: NovelRepository): Promise<RecentItem[]> {
 async function readRecent(repo: NovelRepository): Promise<RecentItem[]> {
   const chapters: RecentInput['chapters'] = [];
   const books = new Map<string, string>();
+  const trashed = await trashedIds(repo.docs);
   for (const key of await repo.docs.keys('chapter/')) {
     const [, novelId, seasonId, id] = key.split('/');
-    if (!novelId || !seasonId || !id) continue;
+    if (!novelId || !seasonId || !id || isChapterKeyTrashed(key, trashed)) continue;
     const stored = await repo.docs.read<{ title: string }>(key);
     if (!stored) continue;
     if (!books.has(novelId)) books.set(novelId, (await repo.getNovel(novelId))?.title ?? '');

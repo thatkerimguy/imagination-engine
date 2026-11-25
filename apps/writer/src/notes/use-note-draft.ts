@@ -18,7 +18,8 @@ import {
 import { createAutosaver, type Autosaver } from '../store/autosave.ts';
 import { loadChapterStyles, pruneStyles, saveChapterStyles } from '../store/chapter-styles.ts';
 import { useRepository } from '../store/context.tsx';
-import { deleteDoc, fallbackTitle, getDoc, saveDoc, type NoteBlock } from '../store/folders.ts';
+import { fallbackTitle, getDoc, saveDoc, type NoteBlock } from '../store/folders.ts';
+import { deleteDoc } from '../store/notes-delete.ts';
 import { isNoteEmpty, shouldDeleteOnExit } from './note-empty.ts';
 import { countsOf } from '../store/growth-logger.ts';
 import { recordGrowth } from '../store/growth-store.ts';

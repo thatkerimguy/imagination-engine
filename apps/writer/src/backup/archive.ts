@@ -32,6 +32,7 @@ export const WORKSPACE_PREFIXES = [
   'versions/',
   'growth/',
   'setting/',
+  'trash/',
 ] as const;
 
 /** Lock secrets and the publish token never leave the device and are never overwritten by a restore. */

@@ -17,6 +17,7 @@ import { NotFoundError, ValidationError } from './errors.ts';
 import { newSlugId } from './ids.ts';
 import { prepareChapter } from './sanitize.ts';
 import { summarizeNovel, type NovelSummary } from './novel-summary.ts';
+import { trashedIds } from './trash-model.ts';
 
 export type { NovelSummary } from './novel-summary.ts';
 
@@ -85,9 +86,11 @@ export class NovelRepository {
 
   async listNovels(): Promise<NovelSummary[]> {
     const out: NovelSummary[] = [];
+    const trashed = await trashedIds(this.docs);
     for (const key of await this.docs.keys('novel/')) {
+      if (trashed.has(key.slice(6))) continue; // in Trash
       const stored = await this.docs.read<NovelManifest>(key);
-      if (stored) out.push(await summarizeNovel(this.docs, stored));
+      if (stored) out.push(await summarizeNovel(this.docs, stored, trashed));
     }
     return out.sort((a, b) => b.updatedAt - a.updatedAt);
   }

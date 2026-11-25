@@ -15,6 +15,8 @@ export const routes = {
     `/folders/note/${docId}${folderId ? `?${q({ folder: folderId })}` : ''}`,
   search: '/search',
   doctor: '/doctor',
+  /** 30-day Trash (Settings → Backup & Restore). */
+  trash: '/trash',
   lock: '/lock',
   /** Book compiler for a novel. */
   compile: (novelId: string) => `/novel/${novelId}/compile`,
@@ -82,8 +84,7 @@ export function parentHref(
     const [n, s, c] = [one('novel'), one('season'), one('chapter')];
     return n && s && c ? routes.chapter(n, s, c) : routes.shelf;
   }
-  if (parts[0] === 'appearance' || parts[0] === 'doctor' || parts[0] === 'lock')
-    return routes.appSettings;
+  if (['appearance', 'doctor', 'lock', 'trash'].includes(parts[0] ?? '')) return routes.appSettings;
   if (parts[0] === 'search') return null;
   if (parts[0] === 'folders') {
     if (parts.length === 1) return null;

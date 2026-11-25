@@ -12,14 +12,23 @@ export type { HandlerConfig };
 
 const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
-export async function handleRequest(request: Request, config: HandlerConfig): Promise<Response> {
+/** Minimal ExecutionContext subset (Cloudflare Workers). */
+export interface WaitUntilContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+export async function handleRequest(
+  request: Request,
+  config: HandlerConfig,
+  ctx?: WaitUntilContext,
+): Promise<Response> {
   const origin = config.allowedOrigin ?? '*';
   const finish = (res: Response): Response => {
     res.headers.set('Access-Control-Allow-Origin', origin);
     return res;
   };
   try {
-    return finish(await route(request, config));
+    return finish(await route(request, config, ctx));
   } catch (err) {
     if (err instanceof PublishError)
       return finish(json({ ok: false, error: err.message }, err.status));
@@ -37,7 +46,11 @@ function authorize(request: Request, token: string | undefined): Response | null
   return null;
 }
 
-async function route(request: Request, config: HandlerConfig): Promise<Response> {
+async function route(
+  request: Request,
+  config: HandlerConfig,
+  ctx?: WaitUntilContext,
+): Promise<Response> {
   const { pathname } = new URL(request.url);
   const method = request.method.toUpperCase();
 
@@ -77,7 +90,7 @@ async function route(request: Request, config: HandlerConfig): Promise<Response>
     return json(await publishNovel(config.store, novelId, body, now));
   }
 
-  const ugc = await routeUgc(request, pathname, config);
+  const ugc = await routeUgc(request, pathname, config, ctx);
   if (ugc) return ugc;
 
   if (pathname.startsWith('/novels/')) {

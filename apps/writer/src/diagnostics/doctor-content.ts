@@ -102,6 +102,9 @@ export function checkSidecars(entries: readonly Entry[], tree: Tree): Issue[] {
     };
     if (e.key.startsWith('meta/item/')) {
       if (!items.has(e.key.slice(10))) orphan();
+    } else if (e.key.startsWith('trash/')) {
+      // A Trash record whose item is already gone (seasons count as items here).
+      if (!items.has(e.key.slice(6)) && !ids('season/', 2).has(e.key.slice(6))) orphan();
     } else if (e.key.startsWith('meta/chapter-styles/')) {
       if (!styled.has(e.key.slice(20))) orphan();
     } else if (e.key.startsWith('meta/publish/')) {

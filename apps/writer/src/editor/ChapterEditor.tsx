@@ -40,6 +40,7 @@ export interface ChapterEditorProps {
   onPreview(blockId: string | null): void;
   onGrowth(): void;
   onAppearance(): void;
+  onTrash(): void;
   /** Scrolls to and selects this block once laid out (Search deep links). */
   initialBlockId?: string;
 }
@@ -86,13 +87,11 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
     shortcuts: () => setSheet('shortcuts'),
     escape: () => (sheet ? setSheet(null) : void handleBackPress(layers, false)),
   });
-
   const onCollapse = useToolbarCollapse();
   const toggleRibbon = useCallback(() => setRibbonCollapsed((c) => !c), []);
   const openAnalysis = useCallback(() => setSheet('analysis'), []);
   const openMetrics = useCallback(() => setSheet('metrics'), []);
   const chrome = !focusMode;
-
   return (
     <View style={s.screen} onLayout={dock.onRootLayout}>
       {chrome ? (
@@ -114,6 +113,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             find: () => setFindOpen(true),
             focus: () => setFocusMode(true),
             exportJson: () => void shareJson(`${chapter.id}.json`, chapter),
+            trash: p.onTrash,
           })}
         />
       ) : null}

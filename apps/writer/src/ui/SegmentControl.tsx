@@ -19,6 +19,7 @@ import {
   thumbTarget,
   type Seg,
 } from './control-math.ts';
+import { hitSlopFor, MIN_TOUCH } from './a11y.ts';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { tapFeedback } from './haptics.ts';
 import { Txt } from './Txt.tsx';
@@ -114,7 +115,7 @@ export function SegmentControl<T extends string>(p: SegmentControlProps<T>): Rea
               const { x, width } = e.nativeEvent.layout;
               setSegs((m) => mergeSeg(m, o.value, x, width));
             }}
-            hitSlop={{ top: (44 - h) / 2 + 3, bottom: (44 - h) / 2 + 3 }}
+            hitSlop={hitSlopFor(MIN_TOUCH, h - 6)}
             onPress={() => {
               if (on) return;
               tapFeedback();
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
   hug: { alignSelf: 'flex-start' },
   seg: {
     flex: 1,
+    minWidth: MIN_TOUCH,
     flexDirection: 'row',
     gap: 4,
     alignItems: 'center',

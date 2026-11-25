@@ -63,7 +63,9 @@ export function ConfirmDialog(
             { backgroundColor: withAlpha(colors.scrim, dark ? 0.55 : 0.3) },
           ]}
           onPress={p.onCancel}
+          accessibilityRole="button"
           accessibilityLabel="Dismiss dialog"
+          focusable={false}
         />
         <View
           accessibilityRole="alert"

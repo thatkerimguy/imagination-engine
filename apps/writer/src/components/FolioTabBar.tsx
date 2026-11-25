@@ -1,6 +1,7 @@
 // Folio bottom tab bar (Library · Notes · Search): 56dp on the canvas, a 1px hairline on top,
 // a Feather glyph over an 11px label, accent tint when active — no pill, no blob. Rendered by the
-// root layout under the Stack, only on tab screens (see tabForPath in routes.ts).
+// root layout under the Stack, only on tab screens (see tabForPath in routes.ts) of Compact
+// windows; Medium / Expanded windows get FolioNavRail instead.
 import { router, usePathname } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -10,11 +11,13 @@ import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
+import { usesRail } from '../ui/layout-class.ts';
+import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { useTheme } from '../ui/theme.tsx';
 
 export const TAB_BAR_HEIGHT = 56;
 
-function go(from: TabKey, to: TabKey, href: string): void {
+export function tabNavigate(from: TabKey, to: TabKey, href: string): void {
   tapFeedback();
   // Library is the stack root, and re-tapping your own tab returns to its root: both pop back to
   // the screen already on the stack. Other tabs swap in place, so hopping never piles screens up.
@@ -28,7 +31,8 @@ export function FolioTabBar(): ReactNode {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const active = tabForPath(pathname);
-  if (!active) return null;
+  const rail = usesRail(useLayoutClass());
+  if (!active || rail) return null;
   return (
     <View
       style={[
@@ -49,7 +53,9 @@ export function FolioTabBar(): ReactNode {
           <Press
             key={tab.key}
             style={styles.tab}
-            onPress={() => (on && tab.key !== 'notes' ? undefined : go(active, tab.key, tab.href))}
+            onPress={() =>
+              on && tab.key !== 'notes' ? undefined : tabNavigate(active, tab.key, tab.href)
+            }
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             accessibilityLabel={tab.label}

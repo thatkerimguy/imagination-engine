@@ -27,6 +27,7 @@ import { NoteTopBar } from './NoteTopBar.tsx';
 import { usePromote } from './promote.ts';
 import { NoteSheets, type NoteSheet } from './NoteSheets.tsx';
 import type { NoteDraft } from './use-note-draft.ts';
+import { useLayoutClass } from '../ui/use-layout-class.ts';
 
 export interface NoteEditorProps {
   docId: string;
@@ -119,6 +120,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
   ];
   const shownTitle = draft.title || draft.autoTitle;
 
+  const wideWindow = useLayoutClass() !== 'compact';
   return (
     <View style={s.screen} onLayout={dock.onRootLayout} testID="note-editor">
       <NoteTopBar
@@ -151,7 +153,11 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
         <ScrollView
           ref={scroller}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[s.content, { paddingHorizontal: typo.margin }]}
+          contentContainerStyle={[
+            s.content,
+            { paddingHorizontal: typo.margin },
+            wideWindow && s.measure,
+          ]}
           scrollEventThrottle={32}
           onScroll={onScroll}
           testID="note-stream"

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { OsReducedPill } from '../preview/OsReducedPill.tsx';
 import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
@@ -24,6 +25,7 @@ import { IconBtn } from '../ui/IconBtn.tsx';
 import { EmptyState } from '../ui/Page.tsx';
 import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
 import { THEATER_BG, THEATER_THEME } from '../ui/theater.ts';
+import { useNavigationBarStyle } from '../ui/system-bars.ts';
 import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { makeStyles, ThemeOverride, useTheme } from '../ui/theme.tsx';
@@ -58,6 +60,7 @@ const useStyles = makeStyles((t) => ({
 
 /** The dark theater surround applies to the header, tier bar and status line alike. */
 export default function PreviewScreen(): ReactNode {
+  useNavigationBarStyle(false);
   return (
     <ThemeOverride theme={THEATER_THEME}>
       <StatusBar style="light" />
@@ -212,6 +215,7 @@ function PreviewBody(): ReactNode {
                 ? 'Connecting…'
                 : 'Not connected'}
           </Txt>
+          {reducedMotion ? <OsReducedPill /> : null}
         </View>
       </View>
       {banner ? (

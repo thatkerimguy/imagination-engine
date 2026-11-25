@@ -11,6 +11,9 @@ import { useRepoQuery, useRepository } from '../store/context.tsx';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
+import { Grid } from '../ui/Grid.tsx';
+import { gridColumns } from '../ui/layout-class.ts';
+import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { EmptyState, Page } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
@@ -19,6 +22,7 @@ export default function LibraryScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
   const { data: novels, error } = useRepoQuery('shelf', (r) => r.listNovels());
+  const columns = gridColumns(useLayoutClass());
 
   const remove = async (id: string, title: string): Promise<void> => {
     if (
@@ -61,7 +65,7 @@ export default function LibraryScreen(): ReactNode {
 
   const empty = novels?.length === 0;
   return (
-    <Page>
+    <Page wide>
       <Stack.Screen
         options={{
           title: '',
@@ -120,7 +124,7 @@ export default function LibraryScreen(): ReactNode {
           }
         />
       ) : null}
-      <View>
+      <Grid columns={columns} testID="library-grid">
         {novels?.map((n) => (
           <NovelCard
             key={n.id}
@@ -131,7 +135,7 @@ export default function LibraryScreen(): ReactNode {
             onDelete={() => void remove(n.id, n.title)}
           />
         ))}
-      </View>
+      </Grid>
     </Page>
   );
 }

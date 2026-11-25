@@ -19,3 +19,17 @@ export function computeKeyboardOffset(
   const shrunkBy = Math.max(0, fullHeight - currentHeight);
   return Math.max(0, keyboardHeight - shrunkBy);
 }
+
+/**
+ * Page IME reveal: the scroll offset that lifts a focused field (window-space bottom edge
+ * `fieldBottom`) to `margin` dp above the keyboard's top edge, or null when it already clears.
+ */
+export function computeRevealScroll(
+  fieldBottom: number,
+  keyboardTop: number,
+  scrollY: number,
+  margin = 24,
+): number | null {
+  const overlap = fieldBottom + margin - keyboardTop;
+  return overlap > 0 ? Math.max(0, scrollY + overlap) : null;
+}

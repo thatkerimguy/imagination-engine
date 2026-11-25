@@ -9,11 +9,22 @@ export interface Prefs {
   theme: ReadingTheme;
   tier: TierPreference;
   sound: boolean;
+  /** One-tap override layer: forces the reduced tier and silences audio without touching tier/sound. */
+  calmMode: boolean;
 }
 
 const KEY = 'kn:prefs';
 export const FONT_SCALES = [0.85, 0.92, 1, 1.1, 1.2, 1.32, 1.45] as const;
-export const DEFAULT_PREFS: Prefs = { fontScale: 1, theme: 'dark', tier: 'auto', sound: true };
+export const DEFAULT_PREFS: Prefs = {
+  fontScale: 1,
+  theme: 'dark',
+  tier: 'auto',
+  sound: true,
+  calmMode: false,
+};
+
+/** Audio is audible only when the reader wants sound and Calm Mode is off. */
+export const soundAllowed = (p: Prefs): boolean => p.sound && !p.calmMode;
 
 function isPrefs(v: unknown): v is Prefs {
   if (!v || typeof v !== 'object') return false;
@@ -22,11 +33,12 @@ function isPrefs(v: unknown): v is Prefs {
     typeof p.fontScale === 'number' &&
     ['warm', 'dark', 'obsidian'].includes(p.theme as string) &&
     ['auto', 'high', 'lite', 'reduced'].includes(p.tier as string) &&
-    typeof p.sound === 'boolean'
+    typeof p.sound === 'boolean' &&
+    (p.calmMode === undefined || typeof p.calmMode === 'boolean')
   );
 }
 
-let current: Prefs = readJson(KEY, isPrefs) ?? DEFAULT_PREFS;
+let current: Prefs = { ...DEFAULT_PREFS, ...readJson(KEY, isPrefs) };
 
 export const getPrefs = (): Prefs => current;
 

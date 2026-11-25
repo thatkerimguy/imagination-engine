@@ -11,6 +11,9 @@ import { createDoc, createFolder, listAllFolders } from '../store/folders.ts';
 import { SORT_LABELS, type SortMode } from '../store/item-meta.ts';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { pickAndImport } from '../import/pick-import.ts';
+import { Grid } from '../ui/Grid.tsx';
+import { gridColumns } from '../ui/layout-class.ts';
+import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { EmptyState, Page } from '../ui/Page.tsx';
 import { PopoverMenu } from '../ui/PopoverMenu.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -53,9 +56,10 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
     }
   };
   const picked = menu.target;
+  const columns = gridColumns(useLayoutClass());
 
   return (
-    <Page>
+    <Page wide>
       <Stack.Screen
         options={{
           title: '',
@@ -113,7 +117,7 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
           body="Use the buttons above to add a folder or a note."
         />
       ) : null}
-      <View>
+      <Grid columns={columns} testID="notes-grid">
         {items.map((item) => (
           <NoteRow
             key={`${item.kind}:${item.id}`}
@@ -123,7 +127,7 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
             onOpen={() => open(item)}
           />
         ))}
-      </View>
+      </Grid>
 
       <NameSheet
         visible={newFolder}

@@ -1,15 +1,9 @@
 // Folio pressable: a quiet `surfaceTint` wash while pressed / hovered (no ripples, no overlays),
-// plus a hitSlop helper that grows small visuals to the 44dp touch minimum.
+// plus a hitSlop helper that grows small visuals to the 48dp touch minimum.
+import { hitSlopFor } from './a11y.ts';
 import type { ReactNode } from 'react';
-import {
-  Pressable,
-  type Insets,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from './theme.tsx';
-import { TOUCH } from './tokens.ts';
 
 export interface PressProps extends Omit<PressableProps, 'style' | 'children'> {
   style?: StyleProp<ViewStyle>;
@@ -38,9 +32,5 @@ export function Press({ style, wash, children, ...rest }: PressProps): ReactNode
   );
 }
 
-/** hitSlop that grows a visual control of `width × height` to the 44dp touch minimum. */
-export function slop(width: number, height = width): Insets {
-  const x = Math.max(0, (TOUCH - width) / 2);
-  const y = Math.max(0, (TOUCH - height) / 2);
-  return { top: y, bottom: y, left: x, right: x };
-}
+/** hitSlop that grows a visual control of `width × height` to the 48dp touch minimum. */
+export const slop = hitSlopFor;

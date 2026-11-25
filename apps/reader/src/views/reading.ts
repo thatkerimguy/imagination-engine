@@ -3,7 +3,7 @@ import type { ChapterDocument, ModuleBlock, NovelManifest, SeasonManifest } from
 import { h } from '../dom.ts';
 import { showCurtain } from '../curtain.ts';
 import { loadChapter, loadNovel, loadSeason, novelUrl } from '../data.ts';
-import { getPrefs, type TierPreference } from '../prefs.ts';
+import { getPrefs, soundAllowed, type TierPreference } from '../prefs.ts';
 import { renderBlock } from '../reading/blocks.ts';
 import { readBookmark, saveBookmark } from '../reading/bookmark.ts';
 import { Pacer } from '../reading/pacing.ts';
@@ -91,7 +91,10 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
 
   const restoreAt = opts.startBlockId ? blocks.findIndex((b) => b.id === opts.startBlockId) : -1;
   const tierPref = opts.tier ?? getPrefs().tier;
-  const tier: QualityTier = resolveTier(tierPref, deviceHints(opts.reducedMotion));
+  const tier: QualityTier = resolveTier(
+    tierPref,
+    deviceHints(opts.reducedMotion || getPrefs().calmMode),
+  );
   document.documentElement.dataset.tier = tier;
   // The GL stage keeps full 2x sharpness only for an explicit High choice (see stage-gl.ts).
   document.documentElement.dataset.tierPref = tierPref;
@@ -121,7 +124,7 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
     preview && !preview.curtain
       ? Promise.resolve()
       : showCurtain(document.body, chapter.title, `${novel.title} · ${season.title}`, (sound) => {
-          v.audio.unlock(sound);
+          v.audio.unlock(sound && soundAllowed(getPrefs()));
           preview?.onAudioUnlocked();
         });
   void curtain.then(() => {

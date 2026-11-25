@@ -15,6 +15,7 @@ import { GimmickPicker } from './InsertSheets.tsx';
 import { LayoutPrefsSheet } from './LayoutPrefsSheet.tsx';
 import { MetricPickerSheet } from './MetricsRibbon.tsx';
 import { OutlineSheet } from './OutlineSheet.tsx';
+import { ShortcutsSheet } from './ShortcutsSheet.tsx';
 import { sheetsToMount, type EditorSheet } from './sheet-mount.ts';
 import type { useEditorActions } from './use-editor-actions.ts';
 import type { useFormatActions } from './use-format-actions.ts';
@@ -71,6 +72,7 @@ export function EditorSheets(p: EditorSheetsProps): ReactNode {
           onClose={close}
         />
       ) : null}
+      {open.has('shortcuts') ? <ShortcutsSheet visible onClose={close} /> : null}
       {open.has('layout') ? (
         <LayoutPrefsSheet
           visible

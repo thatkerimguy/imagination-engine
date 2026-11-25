@@ -1,6 +1,7 @@
 import type { ChapterDocument } from '@kn/core';
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Press } from '../ui/Press.tsx';
 import { PopoverMenu } from '../ui/PopoverMenu.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -64,6 +65,7 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
           onPress={p.onOpen}
           accessibilityRole="button"
           accessibilityLabel={`Open ${c.title}`}
+          hitSlop={{ top: 10, bottom: 0 }}
           style={styles.title}
         >
           <Txt variant="heading" style={styles.titleText} numberOfLines={2}>
@@ -75,7 +77,7 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
             onPress={p.onCycleStatus}
             accessibilityRole="button"
             accessibilityLabel={`Status ${c.status}, tap to change`}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            hitSlop={{ top: 0, bottom: 20, left: 8, right: 8 }}
             testID={`chapter-status-${c.id}`}
             style={styles.status}
           >
@@ -114,9 +116,15 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, minHeight: 64 },
   main: { flex: 1, paddingVertical: space.xs },
-  title: { minHeight: 28, justifyContent: 'center' },
+  title: { minHeight: 38, justifyContent: 'center' },
   titleText: { fontSize: 16, lineHeight: 22, fontWeight: '500' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  status: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  status: {
+    minWidth: MIN_TOUCH,
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   dot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5 },
 });

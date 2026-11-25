@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeKeyboardOffset } from './keyboard-offset.ts';
+import { computeKeyboardOffset, computeRevealScroll } from './keyboard-offset.ts';
 
 describe('computeKeyboardOffset', () => {
   it('iOS lifts by the full keyboard height', () => {
@@ -26,5 +26,16 @@ describe('computeKeyboardOffset', () => {
 
   it('web never offsets', () => {
     expect(computeKeyboardOffset('web', 300, 800, 800)).toBe(0);
+  });
+});
+
+describe('computeRevealScroll', () => {
+  it('scrolls a covered field above the keyboard with a margin', () => {
+    expect(computeRevealScroll(800, 600, 100)).toBe(324);
+    expect(computeRevealScroll(800, 600, 0, 0)).toBe(200);
+  });
+  it('leaves a clear field alone', () => {
+    expect(computeRevealScroll(500, 600, 100)).toBeNull();
+    expect(computeRevealScroll(576, 600, 100)).toBeNull();
   });
 });

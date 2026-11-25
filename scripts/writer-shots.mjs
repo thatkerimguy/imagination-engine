@@ -1,15 +1,14 @@
-// Writer QA pack (Directive 02C Folio + 02B-2 workspace: library, editor, focus, gimmick sheet, analysis, growth,
-// appearance, live preview): drives the Expo Web export of apps/writer at 390×844. The Live
-// Preview runs the built-in OFFLINE reader (iframe srcDoc) with every non-local request aborted,
-// so no reader server is needed. Needs `pnpm writer:export` (which builds the preview bundle).
-// Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase3
-// The current phase's PNGs land in <dir> (04A: writer-shots-4a.mjs); earlier packs' regression
-// shots, including Phase 3's smoke-publish.mjs pack, in <dir>/regression.
+// Writer QA pack: drives the Expo Web export of apps/writer at 390×844 (library, editor, focus,
+// gimmick sheet, analysis, growth, appearance, offline live preview with every non-local request
+// aborted). Needs `pnpm writer:export`. Usage: node scripts/writer-shots.mjs [--shots <dir>]
+// Current PNGs land in <dir> (04A pack + the D-03 tablet pack, writer-shots-tablet.mjs, which
+// also needs `pnpm build`); earlier packs (incl. smoke-publish.mjs) land in <dir>/regression.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { serveSpa } from './lib/spa-server.mjs';
+import { GROWTH_SEED, ID, RICH } from './lib/writer-fixtures.mjs';
 import { phase2ePass } from './writer-shots-2e.mjs';
 import { flowPass } from './writer-shots-flow.mjs';
 import { phase2fPass } from './writer-shots-2f.mjs';
@@ -24,34 +23,6 @@ const packAt = process.argv.includes('--shots')
 const shotsAt = packAt && join(packAt, 'regression');
 const WRITER = 'http://127.0.0.1:8099/';
 const DIST = resolve(import.meta.dirname, '../apps/writer/dist-web');
-const ID = {
-  dialogue: '01M7WD7TG4T9804M170B4T81MM',
-  chat: '01M7WD7TG3C1Z266E87HFD27KR',
-  dice: '01M7WD7TG54FMBWYMZM8XKD1V7',
-  snake: '01M7WD7TG6R6734B03YH123PFY',
-};
-const RICH =
-  '**Snake eyes.** The room *exhaled*, the ++felt++ went ~~quiet~~ still, and ==nobody breathed==.';
-/** Synthetic 40-day history so the Growth charts have a curve to draw (QA fixture only). */
-const GROWTH_SEED = (() => {
-  const day = 86400000;
-  const now = Date.now();
-  const points = [];
-  for (let i = 40; i >= 1; i--) {
-    const ts = now - i * day;
-    const d = new Date(ts);
-    const words = Math.round(40 + (40 - i) * 2 + 8 * Math.sin(i / 3));
-    points.push({
-      dayKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-      ts,
-      chars: words * 5,
-      words,
-      sentences: Math.round(words / 8),
-      paragraphs: Math.round(words / 20),
-    });
-  }
-  return JSON.stringify({ data: { points }, updatedAt: now });
-})();
 if (shotsAt) mkdirSync(shotsAt, { recursive: true });
 
 const errors = [];
@@ -62,15 +33,7 @@ const fail = (msg) => {
 };
 const ok = (msg) => console.log(`✅ ${msg}`);
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
-// Expo "single" web output is an SPA: unknown paths fall back to index.html.
-const writer = createServer((req, res) => {
-  let file = join(DIST, decodeURIComponent((req.url ?? '/').split('?')[0]));
-  if (!file.startsWith(DIST) || !statSync(file, { throwIfNoEntry: false })?.isFile())
-    file = join(DIST, 'index.html');
-  res.setHeader('Content-Type', TYPES[extname(file)] ?? 'application/octet-stream');
-  res.end(readFileSync(file));
-}).listen(8099, '127.0.0.1');
+const writer = serveSpa(DIST, 8099);
 
 try {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader'] });
@@ -276,5 +239,12 @@ const pack3 =
     },
   );
 if (pack3 && pack3.status !== 0) fail('publish pack (smoke-publish.mjs) failed');
+// DIRECTIVE-03 tablet / Calm Mode pack (pack root): rail, grids, split pane, web shortcuts.
+const tablet = spawnSync(
+  process.execPath,
+  [join(import.meta.dirname, 'writer-shots-tablet.mjs'), ...(packAt ? ['--shots', packAt] : [])],
+  { stdio: 'inherit' },
+);
+if (tablet.status !== 0) fail('tablet pack (writer-shots-tablet.mjs) failed');
 // Exit explicitly with the recorded status.
 process.exit(process.exitCode ?? 0);

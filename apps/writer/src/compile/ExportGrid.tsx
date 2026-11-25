@@ -25,6 +25,13 @@ export const TILES: readonly Tile[] = [
     testID: 'export-docx',
   },
   {
+    format: 'epub',
+    label: 'EPUB 3',
+    hint: 'E-reader book',
+    icon: 'book',
+    testID: 'export-epub',
+  },
+  {
     format: 'pdf',
     label: 'PDF Book',
     hint: 'Print-ready .pdf',

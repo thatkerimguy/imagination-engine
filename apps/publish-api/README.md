@@ -36,6 +36,30 @@ the author's `PUT /api/novels/<slug>` is refused with 410. To allow publishing a
 curl -X DELETE -H "Authorization: Bearer $MODERATION_TOKEN" https://<worker>/api/moderation/takedown/<slug>
 ```
 
+### Optional moderation webhook
+
+Set `wrangler secret put MODERATION_WEBHOOK_URL` (a Discord or Slack incoming-webhook URL) to be
+alerted on each new report. It is optional and non-blocking: when unset or blank nothing happens;
+otherwise the Worker POSTs after the `201` is decided (via `ctx.waitUntil`, 5 s timeout). Failures
+(network, timeout, non-2xx) are only logged and never affect the reporter's response.
+
+```json
+{
+  "content": "New abuse report (spam) on <novel> / <chapter>
+<details preview>
+Report id: <id>",
+  "text": "<same as content, for Slack>",
+  "reportId": "...",
+  "novelSlug": "...",
+  "chapterSlug": "...",
+  "reason": "spam",
+  "detailsPreview": "first 240 chars, truncated with an ellipsis",
+  "createdAt": "2026-01-02T03:04:05.678Z"
+}
+```
+
+The reporter's IP and its hash are never sent.
+
 An unset or empty `PUBLISH_TOKEN` makes every authed route answer 503; it is never open.
 
 ## Local development

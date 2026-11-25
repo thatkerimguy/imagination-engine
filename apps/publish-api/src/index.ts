@@ -1,5 +1,6 @@
 // Cloudflare module-worker entry. Bindings: NOVELS_BUCKET (R2), PUBLISH_TOKEN (secret).
 import { handleRequest } from './worker.ts';
+import type { WaitUntilContext } from './worker.ts';
 import { createR2Store } from './store.ts';
 import type { R2BucketLike } from './store.ts';
 import { createMemoryLimiter } from './rate-limit.ts';
@@ -15,6 +16,8 @@ export interface Env {
   JSON_MAX_AGE?: string;
   /** Secret. Never falls back to PUBLISH_TOKEN. */
   MODERATION_TOKEN?: string;
+  /** Secret, optional. Discord/Slack-compatible webhook alerted on each new report. */
+  MODERATION_WEBHOOK_URL?: string;
   PUBLIC_READER_URL?: string;
   ANDROID_PACKAGE?: string;
   ANDROID_SHA256_CERT_FINGERPRINTS?: string;
@@ -24,23 +27,30 @@ export interface Env {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: WaitUntilContext): Promise<Response> {
     const maxAge = Number(env.JSON_MAX_AGE);
-    return handleRequest(request, {
-      store: createR2Store(env.NOVELS_BUCKET),
-      ...(env.PUBLISH_TOKEN ? { token: env.PUBLISH_TOKEN } : {}),
-      ...(env.ALLOWED_ORIGIN ? { allowedOrigin: env.ALLOWED_ORIGIN } : {}),
-      limiter:
-        env.REPORT_LIMITER && env.PUBLISH_LIMITER
-          ? { report: env.REPORT_LIMITER, publish: env.PUBLISH_LIMITER }
-          : fallbackLimiter,
-      ...(env.MODERATION_TOKEN ? { moderationToken: env.MODERATION_TOKEN } : {}),
-      ...(env.PUBLIC_READER_URL ? { readerUrl: env.PUBLIC_READER_URL } : {}),
-      ...(env.ANDROID_PACKAGE ? { androidPackage: env.ANDROID_PACKAGE } : {}),
-      ...(env.ANDROID_SHA256_CERT_FINGERPRINTS
-        ? { androidCertFingerprints: env.ANDROID_SHA256_CERT_FINGERPRINTS }
-        : {}),
-      ...(env.JSON_MAX_AGE && Number.isFinite(maxAge) ? { jsonMaxAge: maxAge } : {}),
-    });
+    return handleRequest(
+      request,
+      {
+        store: createR2Store(env.NOVELS_BUCKET),
+        ...(env.PUBLISH_TOKEN ? { token: env.PUBLISH_TOKEN } : {}),
+        ...(env.ALLOWED_ORIGIN ? { allowedOrigin: env.ALLOWED_ORIGIN } : {}),
+        limiter:
+          env.REPORT_LIMITER && env.PUBLISH_LIMITER
+            ? { report: env.REPORT_LIMITER, publish: env.PUBLISH_LIMITER }
+            : fallbackLimiter,
+        ...(env.MODERATION_TOKEN ? { moderationToken: env.MODERATION_TOKEN } : {}),
+        ...(env.MODERATION_WEBHOOK_URL?.trim()
+          ? { moderationWebhookUrl: env.MODERATION_WEBHOOK_URL.trim() }
+          : {}),
+        ...(env.PUBLIC_READER_URL ? { readerUrl: env.PUBLIC_READER_URL } : {}),
+        ...(env.ANDROID_PACKAGE ? { androidPackage: env.ANDROID_PACKAGE } : {}),
+        ...(env.ANDROID_SHA256_CERT_FINGERPRINTS
+          ? { androidCertFingerprints: env.ANDROID_SHA256_CERT_FINGERPRINTS }
+          : {}),
+        ...(env.JSON_MAX_AGE && Number.isFinite(maxAge) ? { jsonMaxAge: maxAge } : {}),
+      },
+      ctx,
+    );
   },
 };

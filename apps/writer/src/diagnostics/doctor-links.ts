@@ -35,9 +35,14 @@ const invalid = (e: Entry, what: string, errors: string[]): Issue =>
     'quarantine-remove',
   );
 
+/** Ids with a `trash/<id>` record: unlinked on purpose (30-day Trash), never orphans. */
+const trashedIn = (tree: Tree): Set<string> =>
+  new Set(tree.byPrefix('trash/').map((e) => e.key.slice(6)));
+
 /** Manifests, parent/child links and orphans across novels, seasons and chapters. */
 export function checkTree(entries: readonly Entry[], tree: Tree): Issue[] {
   const out: Issue[] = [];
+  const trashed = trashedIn(tree);
   const novels = new Map<string, string[]>(); // novelId -> season ids (valid novels only)
   const seasons = new Map<string, string[]>(); // `n/s` -> chapter ids (valid seasons only)
   for (const e of entries) {
@@ -86,7 +91,12 @@ export function checkTree(entries: readonly Entry[], tree: Tree): Issue[] {
             'quarantine-remove',
           ),
         );
-      } else if (novels.has(a) && !novels.get(a)?.includes(b) && seasons.has(`${a}/${b}`)) {
+      } else if (
+        novels.has(a) &&
+        !novels.get(a)?.includes(b) &&
+        seasons.has(`${a}/${b}`) &&
+        !trashed.has(b)
+      ) {
         out.push(
           issue(
             'orphan-season',
@@ -126,7 +136,11 @@ export function checkTree(entries: readonly Entry[], tree: Tree): Issue[] {
             'quarantine-remove',
           ),
         );
-      } else if (seasons.has(`${a}/${b}`) && !seasons.get(`${a}/${b}`)?.includes(c)) {
+      } else if (
+        seasons.has(`${a}/${b}`) &&
+        !seasons.get(`${a}/${b}`)?.includes(c) &&
+        !trashed.has(c)
+      ) {
         out.push(
           issue(
             'orphan-chapter',

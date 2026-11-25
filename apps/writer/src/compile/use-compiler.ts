@@ -7,7 +7,7 @@ import {
 } from '../export/book-model.ts';
 import { compileFolder, compileNovel, exportBook } from '../export/compile-book.ts';
 import { listFolderNotes, listNovelEntries, type CompileEntry } from '../export/compile-source.ts';
-import { pickCoverImage } from '../media/pick-cover.ts';
+import { pickCoverImage } from '../media/pick-cover';
 import { getFolder } from '../store/folders.ts';
 import { loadItemMeta, updateItemMeta } from '../store/item-meta.ts';
 import { useRepository } from '../store/context.tsx';

@@ -5,6 +5,8 @@ import { fail, isRecord, json, readCappedText } from './http.ts';
 import { isSlugId } from './protocol.ts';
 import { clientKey } from './rate-limit.ts';
 import { readNovelDoc } from './takedown.ts';
+import { notifyModerationReport } from './moderation-notify.ts';
+import type { WaitUntilContext } from './worker.ts';
 
 export const REPORT_REASONS = [
   'harassment',
@@ -69,7 +71,11 @@ async function hashIp(ip: string): Promise<string> {
     .join('');
 }
 
-export async function handleReport(request: Request, config: HandlerConfig): Promise<Response> {
+export async function handleReport(
+  request: Request,
+  config: HandlerConfig,
+  ctx?: WaitUntilContext,
+): Promise<Response> {
   const isForm = (request.headers.get('content-type') ?? '').includes(
     'application/x-www-form-urlencoded',
   );
@@ -119,6 +125,12 @@ export async function handleReport(request: Request, config: HandlerConfig): Pro
     new TextEncoder().encode(JSON.stringify(record)),
     'application/json; charset=utf-8',
   );
+  const hook = config.moderationWebhookUrl?.trim();
+  if (hook) {
+    const alert = notifyModerationReport(hook, record);
+    if (ctx) ctx.waitUntil(alert);
+    else void alert;
+  }
   return isForm
     ? reply(201, 'Thank you. Our moderators will review your report.')
     : json({ ok: true, reportId: id }, 201);

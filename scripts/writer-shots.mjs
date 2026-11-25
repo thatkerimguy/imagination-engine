@@ -15,6 +15,7 @@ import { phase2fPass } from './writer-shots-2f.mjs';
 import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
 import { workspacePass } from './writer-shots-workspace.mjs';
 import { phase4aPass } from './writer-shots-4a.mjs';
+import { dir05Pass } from './writer-shots-dir05.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -216,6 +217,8 @@ try {
   await phase2fPass(page, { WRITER, tid, shotsAt, ok, fail, editor });
   // Directive 04A: the pack root holds the current shots (02–04 here, 01 from smoke.mjs).
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
+  // Directive 05: EPUB card + download, Backup & Restore, Trash (pack root).
+  await dir05Pass(page, { WRITER, packAt, tid, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

@@ -18,6 +18,8 @@ export interface ChapterRowProps {
   onCycleStatus(): void;
   onMove(delta: -1 | 1): void;
   onRename(title: string): void;
+  /** Soft-delete (30-day Trash). */
+  onTrash(): void;
   isFirst?: boolean;
   isLast?: boolean;
 }
@@ -106,6 +108,13 @@ export function ChapterRow(p: ChapterRowProps): ReactNode {
             icon: 'arrow-down',
             disabled: p.isLast,
             onPress: () => p.onMove(1),
+          },
+          {
+            label: 'Move to Trash',
+            icon: 'trash-2',
+            destructive: true,
+            onPress: p.onTrash,
+            testID: `chapter-trash-${c.id}`,
           },
         ]}
       />

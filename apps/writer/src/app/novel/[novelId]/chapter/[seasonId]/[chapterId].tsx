@@ -6,7 +6,9 @@ import { ActivityIndicator, View } from 'react-native';
 import { ChapterEditor } from '../../../../../editor/ChapterEditor.tsx';
 import { routes } from '../../../../../routes.ts';
 import { ItemLockGate } from '../../../../../security/LockGate.tsx';
-import { useRepoQuery } from '../../../../../store/context.tsx';
+import { useRepoQuery, useRepository } from '../../../../../store/context.tsx';
+import { moveToTrash, TRASH_HINT } from '../../../../../store/trash.ts';
+import { useConfirm } from '../../../../../ui/ConfirmDialog.tsx';
 import { useChapterDraft } from '../../../../../store/use-chapter-draft.ts';
 import { Txt } from '../../../../../ui/Txt.tsx';
 import { makeStyles, useTheme } from '../../../../../ui/theme.tsx';
@@ -40,6 +42,20 @@ export default function ChapterEditorScreen(): ReactNode {
     router.push(routes.preview(novelId, seasonId, chapterId, blockId ?? undefined));
   };
 
+  const repo = useRepository();
+  const confirm = useConfirm();
+  const trash = async (): Promise<void> => {
+    const ok = await confirm({
+      title: `Move “${chapter?.title ?? 'this chapter'}” to Trash?`,
+      message: TRASH_HINT,
+      confirmLabel: 'Move to Trash',
+    });
+    if (!ok) return;
+    await flush();
+    await moveToTrash(repo, { kind: 'chapter', novelId, seasonId, chapterId });
+    router.replace(routes.outline(novelId));
+  };
+
   const header = <Stack.Screen options={{ headerShown: false }} />;
   if (draft.error || novel.error || !chapter || !novel.data) {
     const failed = draft.error || novel.error;
@@ -69,6 +85,7 @@ export default function ChapterEditorScreen(): ReactNode {
           onPreview={(id) => void preview(id)}
           onGrowth={() => router.push(routes.growth(`chapter:${chapterId}`, from))}
           onAppearance={() => router.push(routes.appearance)}
+          onTrash={() => void trash()}
           {...(block ? { initialBlockId: block } : {})}
         />
       </ItemLockGate>

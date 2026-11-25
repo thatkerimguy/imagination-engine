@@ -22,3 +22,14 @@ describe('bytesToBase64', () => {
     expect(textToBase64(s)).toBe(Buffer.from(s, 'utf8').toString('base64'));
   });
 });
+
+describe('base64ToBytes', () => {
+  it('round-trips arbitrary bytes', async () => {
+    const { base64ToBytes, bytesToBase64 } = await import('./base64.ts');
+    for (const n of [0, 1, 2, 3, 4, 255, 70_000]) {
+      const bytes = Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11) & 0xff);
+      expect(base64ToBytes(bytesToBase64(bytes))).toEqual(bytes);
+    }
+    expect(new TextDecoder().decode(base64ToBytes('aGk=\n'))).toBe('hi');
+  });
+});

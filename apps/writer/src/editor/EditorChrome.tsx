@@ -120,7 +120,8 @@ type MenuAction =
   | 'layout'
   | 'publish'
   | 'shortcuts'
-  | 'exportJson';
+  | 'exportJson'
+  | 'trash';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'analysis', label: 'Text Analysis', icon: 'bar-chart-2', testID: 'menu-analysis' },
@@ -133,6 +134,13 @@ const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'publish', label: 'Publish…', icon: 'upload-cloud', testID: 'menu-publish' },
   { action: 'shortcuts', label: 'Keyboard shortcuts', icon: 'command', testID: 'menu-shortcuts' },
   { action: 'exportJson', label: 'Export Chapter JSON', icon: 'share', testID: 'export-chapter' },
+  {
+    action: 'trash',
+    label: 'Move Chapter to Trash',
+    icon: 'trash-2',
+    destructive: true,
+    testID: 'menu-trash',
+  },
 ];
 
 /** The editor's ⋯ menu items, bound to handlers. */

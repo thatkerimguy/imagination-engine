@@ -11,6 +11,8 @@ import { GimmickLine } from '../../../library/GimmickLine.tsx';
 import { SeasonSection } from '../../../library/SeasonSection.tsx';
 import { routes } from '../../../routes.ts';
 import { useRepoQuery, useRepository } from '../../../store/context.tsx';
+import { moveToTrash, TRASH_HINT, type TrashTarget } from '../../../store/trash.ts';
+import { useConfirm } from '../../../ui/ConfirmDialog.tsx';
 import {
   addChapter,
   addSeason,
@@ -34,6 +36,15 @@ export default function OutlineScreen(): ReactNode {
   const [saved, setSaved] = useState<string | null>(null);
   const [metaOpen, setMetaOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const confirm = useConfirm();
+  const trash = async (title: string, target: TrashTarget): Promise<void> => {
+    const ok = await confirm({
+      title: `Move “${title}” to Trash?`,
+      message: TRASH_HINT,
+      confirmLabel: 'Move to Trash',
+    });
+    if (ok) await run(() => moveToTrash(repo, target));
+  };
 
   const run = async (job: () => Promise<unknown>): Promise<void> => {
     try {
@@ -163,6 +174,7 @@ export default function OutlineScreen(): ReactNode {
           onRename={(t) => void run(() => renameSeason(repo, novelId, season.id, t))}
           onMove={(d) => void run(() => moveSeason(repo, novelId, season.id, d))}
           onAddChapter={() => void run(() => addChapter(repo, novelId, season.id))}
+          onTrash={() => void trash(season.title, { kind: 'season', novelId, seasonId: season.id })}
           chapterProps={(c) => ({
             onOpen: () => router.push(routes.chapter(novelId, season.id, c.id)),
             onCycleStatus: () =>
@@ -174,6 +186,13 @@ export default function OutlineScreen(): ReactNode {
             onMove: (d) => void run(() => moveChapter(repo, novelId, season.id, c.id, d)),
             onRename: (t) =>
               void run(() => updateChapterMeta(repo, novelId, season.id, c.id, { title: t })),
+            onTrash: () =>
+              void trash(c.title, {
+                kind: 'chapter',
+                novelId,
+                seasonId: season.id,
+                chapterId: c.id,
+              }),
           })}
         />
       ))}

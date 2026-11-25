@@ -1,17 +1,12 @@
 // The per-item ⋯ menu of the Notes workspace and the actions behind it.
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { pickCoverImage } from '../media/pick-cover.ts';
+import { pickCoverImage } from '../media/pick-cover';
 import { routes } from '../routes.ts';
 import { useRepository } from '../store/context.tsx';
-import {
-  deleteDoc,
-  deleteFolderRecursive,
-  moveFolder,
-  renameFolder,
-  saveDoc,
-} from '../store/folders.ts';
+import { moveFolder, renameFolder, saveDoc } from '../store/folders.ts';
 import { updateItemMeta, type ItemMeta } from '../store/item-meta.ts';
+import { TRASH_HINT, moveToTrash } from '../store/trash.ts';
 import { unlockSession } from '../store/unlock-session.ts';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import type { MenuItem } from '../ui/PopoverMenu.tsx';
@@ -38,16 +33,11 @@ export function useItemMenu() {
   const remove = async (item: NoteItem): Promise<void> => {
     const folder = item.kind === 'folder';
     const ok = await confirm({
-      title: `Delete “${item.title}”?`,
-      message: folder
-        ? 'This also deletes every folder and note inside it.'
-        : 'This note will be deleted from this phone.',
-      confirmLabel: 'Delete',
-      destructive: true,
+      title: `Move “${item.title}” to Trash?`,
+      message: `${folder ? 'Everything inside the folder goes with it. ' : ''}${TRASH_HINT}`,
+      confirmLabel: 'Move to Trash',
     });
-    if (!ok) return;
-    if (folder) await deleteFolderRecursive(repo, item.id);
-    else await deleteDoc(repo, item.id);
+    if (ok) await moveToTrash(repo, { kind: item.kind, id: item.id });
   };
   const setCover = async (item: NoteItem): Promise<void> => {
     const uri = await pickCoverImage();
@@ -104,7 +94,7 @@ export function useItemMenu() {
             },
           ]),
       {
-        label: 'Delete',
+        label: 'Move to Trash',
         icon: 'trash-2',
         destructive: true,
         onPress: () => void remove(item),

@@ -1,7 +1,8 @@
 // One hairline row of the Notes workspace: colour rail, optional cover thumb, title with tiny
 // pin / lock glyphs, muted #tags and meta, and the per-item ⋯ menu.
 import type { ReactNode } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { CoverImage } from '../components/CoverImage.tsx';
 import { relativeTime } from '../library/relative-time.ts';
 import type { ItemMeta } from '../store/item-meta.ts';
 import { isRedacted } from '../store/unlock-session.ts';
@@ -51,11 +52,7 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
         testID={`${prefix}-open-${item.id}`}
       >
         {meta?.coverUri && !redacted ? (
-          <Image
-            source={{ uri: meta.coverUri }}
-            style={styles.cover}
-            accessibilityIgnoresInvertColors
-          />
+          <CoverImage uri={meta.coverUri} style={styles.cover} />
         ) : (
           <Glyph
             name={item.kind === 'folder' ? 'folder' : 'file-text'}

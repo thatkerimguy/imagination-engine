@@ -2,10 +2,10 @@
 // Writer-only records, never published. Documents keep the Author's source text (writer markup
 // included); promoting one to a chapter sanitizes it into a @kn/core-valid ChapterDocument.
 import type { DialogueBlock, ProseBlock, SceneBreakBlock } from '@kn/core';
-import { chapterStylesKey } from './chapter-styles.ts';
 import { NotFoundError, ValidationError } from './errors.ts';
 import { newSlugId } from './ids.ts';
 import type { NovelRepository } from './repository.ts';
+import { hiddenNoteIds, trashedIds } from './trash-model.ts';
 
 /** Blocks a standalone note can hold: everything except gimmick modules. */
 export type NoteBlock = ProseBlock | DialogueBlock | SceneBreakBlock;
@@ -26,13 +26,6 @@ export interface DocRecord extends FolderRecord {
 
 export const folderKey = (id: string): string => `folder/${id}`;
 export const docKey = (id: string): string => `doc/${id}`;
-/** Sidecars removed with an item. Kept here so delete never leaves orphans behind. */
-const sidecarKeys = (id: string): string[] => [
-  `meta/item/${id}`,
-  `versions/doc:${id}`,
-  chapterStylesKey(id),
-];
-
 export const UNTITLED = 'Untitled note';
 
 /** First six words of the first text block, or "Untitled note". Pure. */
@@ -59,13 +52,36 @@ export async function getFolder(repo: NovelRepository, id: string): Promise<Fold
   return readData<FolderRecord>(repo, folderKey(id));
 }
 
-export async function listAllFolders(repo: NovelRepository): Promise<FolderRecord[]> {
-  const out: FolderRecord[] = [];
-  for (const k of await repo.docs.keys('folder/')) {
-    const f = await readData<FolderRecord>(repo, k);
-    if (f) out.push(f);
+async function scan<T>(repo: NovelRepository, prefix: string): Promise<T[]> {
+  const out: T[] = [];
+  for (const k of await repo.docs.keys(prefix)) {
+    const v = await readData<T>(repo, k);
+    if (v) out.push(v);
   }
   return out;
+}
+
+/** Every stored folder / note, trashed ones included (Trash, Doctor, permanent deletes). */
+export const scanFolders = (repo: NovelRepository) => scan<FolderRecord>(repo, 'folder/');
+export const scanDocs = (repo: NovelRepository) => scan<DocRecord>(repo, 'doc/');
+
+/** Folders and notes in the active workspace: not trashed, not inside a trashed folder. */
+async function activeNotes(repo: NovelRepository) {
+  const [folders, docs, trashed] = await Promise.all([
+    scanFolders(repo),
+    scanDocs(repo),
+    trashedIds(repo.docs),
+  ]);
+  if (trashed.size === 0) return { folders, docs };
+  const hidden = hiddenNoteIds(folders, docs, trashed);
+  return {
+    folders: folders.filter((f) => !hidden.has(f.id)),
+    docs: docs.filter((d) => !hidden.has(d.id)),
+  };
+}
+
+export async function listAllFolders(repo: NovelRepository): Promise<FolderRecord[]> {
+  return (await activeNotes(repo)).folders;
 }
 
 export async function createFolder(
@@ -133,14 +149,15 @@ export async function breadcrumbs(repo: NovelRepository, folderId: string) {
 
 /** Direct sub-folders and documents of a folder (`null` = the Notes root). */
 export async function listChildren(repo: NovelRepository, parentId: string | null) {
-  const folders = (await listAllFolders(repo)).filter((f) => f.parentFolderId === parentId);
-  const docs = (await listAllDocs(repo)).filter((d) => d.parentFolderId === parentId);
+  const all = await activeNotes(repo);
+  const folders = all.folders.filter((f) => f.parentFolderId === parentId);
+  const docs = all.docs.filter((d) => d.parentFolderId === parentId);
   return { folders, docs };
 }
 
 /** Every folder id inside `id` (inclusive), depth-first. */
 export async function descendantFolderIds(repo: NovelRepository, id: string): Promise<string[]> {
-  const all = await listAllFolders(repo);
+  const all = await scanFolders(repo);
   const out: string[] = [];
   const walk = (fid: string): void => {
     if (out.includes(fid)) return;
@@ -151,18 +168,6 @@ export async function descendantFolderIds(repo: NovelRepository, id: string): Pr
   return out;
 }
 
-/** Deletes the folder, every sub-folder, every document inside, and their sidecars. */
-export async function deleteFolderRecursive(repo: NovelRepository, id: string): Promise<void> {
-  const ids = new Set(await descendantFolderIds(repo, id));
-  for (const d of await listAllDocs(repo))
-    if (d.parentFolderId && ids.has(d.parentFolderId)) await removeDocKeys(repo, d.id);
-  for (const fid of ids) {
-    await repo.docs.remove(folderKey(fid));
-    await repo.docs.remove(`meta/item/${fid}`);
-  }
-  repo.notifyChanged();
-}
-
 // ── Documents ─────────────────────────────────────────────────────────────────────────────
 
 export async function getDoc(repo: NovelRepository, id: string): Promise<DocRecord | null> {
@@ -170,12 +175,7 @@ export async function getDoc(repo: NovelRepository, id: string): Promise<DocReco
 }
 
 export async function listAllDocs(repo: NovelRepository): Promise<DocRecord[]> {
-  const out: DocRecord[] = [];
-  for (const k of await repo.docs.keys('doc/')) {
-    const d = await readData<DocRecord>(repo, k);
-    if (d) out.push(d);
-  }
-  return out;
+  return (await activeNotes(repo)).docs;
 }
 
 export async function createDoc(
@@ -225,14 +225,4 @@ export async function saveDoc(
   await repo.docs.write(docKey(id), next);
   repo.notifyChanged();
   return next;
-}
-
-async function removeDocKeys(repo: NovelRepository, id: string): Promise<void> {
-  await repo.docs.remove(docKey(id));
-  for (const k of sidecarKeys(id)) await repo.docs.remove(k);
-}
-
-export async function deleteDoc(repo: NovelRepository, id: string): Promise<void> {
-  await removeDocKeys(repo, id);
-  repo.notifyChanged();
 }

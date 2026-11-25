@@ -8,6 +8,7 @@ import { NovelCard } from '../library/NovelCard.tsx';
 import { routes } from '../routes.ts';
 import { DEMO_NOVEL_ID, loadDemoNovel } from '../store/demo.ts';
 import { useRepoQuery, useRepository } from '../store/context.tsx';
+import { moveToTrash, TRASH_HINT } from '../store/trash.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
@@ -27,13 +28,12 @@ export default function LibraryScreen(): ReactNode {
   const remove = async (id: string, title: string): Promise<void> => {
     if (
       await confirm({
-        title: `Delete “${title}”?`,
-        message: 'This removes the book from this phone.',
-        confirmLabel: 'Delete',
-        destructive: true,
+        title: `Move “${title}” to Trash?`,
+        message: `Its seasons and chapters go with it. ${TRASH_HINT}`,
+        confirmLabel: 'Move to Trash',
       })
     )
-      await repo.deleteNovel(id);
+      await moveToTrash(repo, { kind: 'novel', novelId: id });
   };
 
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);

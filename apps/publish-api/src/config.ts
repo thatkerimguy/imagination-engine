@@ -13,6 +13,8 @@ export interface HandlerConfig {
   limiter?: RateLimiter;
   /** MODERATION_TOKEN secret (separate from `token`). Unset => moderation routes answer 503. */
   moderationToken?: string;
+  /** MODERATION_WEBHOOK_URL (secret, optional): non-blocking alert POSTed on each new report. */
+  moderationWebhookUrl?: string;
   /** PUBLIC_READER_URL: where the share page sends people. Unset => no redirect. */
   readerUrl?: string;
   /** ANDROID_PACKAGE for assetlinks.json (default `dev.kinetic.writer`). */

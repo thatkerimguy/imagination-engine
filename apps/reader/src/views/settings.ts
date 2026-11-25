@@ -1,13 +1,33 @@
 // Reading settings sheet: size, theme, spectacle quality, sound.
 import { h } from '../dom.ts';
 import { FONT_SCALES, getPrefs, setPrefs, soundAllowed, type Prefs } from '../prefs.ts';
+import { inPreviewMode, reportEndpoint } from '../report-endpoint.ts';
 import type { AudioBus } from '../runtime/audio-bus.ts';
+
+/** Published readers only: a Report abuse entry that is reachable mid-chapter (lazy modal). */
+function reportButton(close: () => void): HTMLElement | null {
+  const endpoint = reportEndpoint();
+  const q = new URLSearchParams(location.search);
+  const novelSlug = q.get('novel');
+  if (!endpoint || !novelSlug || inPreviewMode()) return null;
+  const chapterSlug = q.get('chapter') ?? undefined;
+  const open = (): void => {
+    close();
+    void import('./report-modal.ts').then((m) =>
+      m.openReportModal({ endpoint, novelSlug, ...(chapterSlug ? { chapterSlug } : {}) }),
+    );
+  };
+  const attrs = { type: 'button', class: 'kn-report-btn', 'data-testid': 'settings-report-abuse' };
+  return h('button', { ...attrs, onClick: open }, 'Report abuse');
+}
 
 function chips<T extends string>(
   label: string,
   options: readonly [T, string][],
   value: T,
   pick: (v: T) => void,
+  testId?: string,
+  overridden = false,
 ): HTMLElement {
   const group = h('div', { class: 'kn-chips', role: 'radiogroup', 'aria-label': label });
   for (const [v, text] of options) {
@@ -25,7 +45,16 @@ function chips<T extends string>(
       ),
     );
   }
-  return h('div', { class: 'kn-setting' }, h('span', { class: 'kn-setting-label' }, label), group);
+  return h(
+    'div',
+    {
+      class: overridden ? 'kn-setting kn-overridden' : 'kn-setting',
+      'data-testid': testId,
+      'aria-disabled': overridden ? 'true' : undefined,
+    },
+    h('span', { class: 'kn-setting-label' }, label),
+    group,
+  );
 }
 
 export function openSettings(audio: AudioBus): void {
@@ -109,6 +138,8 @@ export function openSettings(audio: AudioBus): void {
           ],
           p.tier,
           (tier) => update({ tier }),
+          'settings-spectacle',
+          p.calmMode,
         ),
         chips(
           'Sound',
@@ -120,12 +151,15 @@ export function openSettings(audio: AudioBus): void {
           (s) => {
             update({ sound: s === 'on' });
           },
+          'settings-sound',
+          p.calmMode,
         ),
         h(
           'p',
           { class: 'kn-setting-note' },
           'Spectacle and Calm Mode motion changes apply from the next chapter you open; sound changes apply now.',
         ),
+        reportButton(close),
         h('button', { type: 'button', class: 'kn-sheet-close', onClick: close }, 'Done'),
       ),
     );

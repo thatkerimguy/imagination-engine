@@ -2,11 +2,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRepository } from '../store/context.tsx';
 import {
+  acceptCurrentTos,
   clearPublishStatus,
+  hasAcceptedCurrentTos,
   isPublishConfigured,
   loadPublishConfig,
   loadPublishStatus,
   loadPublishToken,
+  loadTosConsent,
   type PublishConfig,
   type PublishStatus,
 } from './publish-settings.ts';
@@ -26,6 +29,9 @@ export interface PublishState {
   published: string | null;
   error: string | null;
   note: string | null;
+  /** Current Publishing Terms of Use accepted (null while loading). Publishing is gated on it. */
+  tosAccepted: boolean | null;
+  acceptTerms(): Promise<void>;
   publish(): Promise<boolean>;
   unpublish(): Promise<void>;
 }
@@ -45,11 +51,13 @@ export function usePublish(
   const [published, setPublished] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [tosAccepted, setTosAccepted] = useState<boolean | null>(null);
 
   const refresh = useCallback(async (): Promise<void> => {
     const [c, t] = await Promise.all([loadPublishConfig(repo), loadPublishToken(repo)]);
     setConfig(c);
     setToken(t);
+    setTosAccepted(hasAcceptedCurrentTos(await loadTosConsent(repo)));
     setReady(isPublishConfigured(c, t));
     setStatus(await loadPublishStatus(repo, novelId));
     if (isPublishConfigured(c, t)) setPlan(await inspectNovelForPublish(repo, novelId));
@@ -64,7 +72,15 @@ export function usePublish(
     void refresh().catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [visible, refresh]);
 
+  const acceptTerms = async (): Promise<void> => {
+    setTosAccepted(hasAcceptedCurrentTos(await acceptCurrentTos(repo, new Date())));
+  };
+
   const publish = async (): Promise<boolean> => {
+    if (!hasAcceptedCurrentTos(await loadTosConsent(repo))) {
+      setTosAccepted(false);
+      return false;
+    }
     setBusy(true);
     setError(null);
     setNote(null);
@@ -106,5 +122,8 @@ export function usePublish(
     }
   };
 
-  return { ready, config, plan, status, busy, published, error, note, publish, unpublish };
+  return {
+    ...{ ready, config, plan, status, busy, published, error, note, tosAccepted },
+    ...{ acceptTerms, publish, unpublish },
+  };
 }

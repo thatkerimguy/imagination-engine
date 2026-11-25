@@ -9,6 +9,7 @@
 //     `expo.android.predictiveBackGestureEnabled` so a template change cannot silently opt out.
 //  4. Auto Backup / device-transfer exclusions (DIRECTIVE-02): see android-backup-rules.js.
 //  5. Nav-bar icon appearance + hardware-keyboard shortcuts (DIRECTIVE-03): see android-input.js.
+//  6. Verified App Links, `autoVerify` intent filter (DIRECTIVE-04): see android-app-links.js.
 const fs = require('fs');
 const path = require('path');
 const {
@@ -18,6 +19,7 @@ const {
 } = require('expo/config-plugins');
 const withBackupRules = require('./android-backup-rules');
 const withAndroidInput = require('./android-input');
+const withAppLinks = require('./android-app-links');
 
 const MARK = '// kn-android-release';
 const DEBUG_ONLY = ['android.permission.SYSTEM_ALERT_WINDOW'];
@@ -87,8 +89,10 @@ function withReleaseOverlay(config) {
 }
 
 module.exports = function withAndroidRelease(config) {
-  return withAndroidInput(
-    withBackupRules(withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)))),
+  return withAppLinks(
+    withAndroidInput(
+      withBackupRules(withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)))),
+    ),
   );
 };
 module.exports.RELEASE_REMOVED = RELEASE_REMOVED;

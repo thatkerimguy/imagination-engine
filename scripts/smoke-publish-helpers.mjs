@@ -44,10 +44,11 @@ function spawnLogged(cmd, args, env) {
   return child;
 }
 
-export async function startApi(port, token) {
+export async function startApi(port, token, env = {}) {
   const child = spawnLogged('node', ['apps/publish-api/src/local-server.ts'], {
     PORT: String(port),
     PUBLISH_TOKEN: token,
+    ...env,
   });
   await new Promise((res, rej) => {
     const timer = setTimeout(() => rej(new Error('publish API did not start')), 15000);

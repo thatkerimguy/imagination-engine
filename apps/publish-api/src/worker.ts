@@ -2,17 +2,13 @@
 import { extractBearer, tokenMatches } from './auth.ts';
 import { PublishError, publishNovel, unpublishNovel } from './publish.ts';
 import { MAX_BODY_BYTES, PROTOCOL_VERSION, isSlugId } from './protocol.ts';
-import type { ErrorResponse } from './protocol.ts';
-import type { ObjectStore } from './store.ts';
+import type { HandlerConfig } from './config.ts';
+import { fail, json, readCappedJson } from './http.ts';
+import { checkRateLimit, clientKey } from './rate-limit.ts';
+import { routeUgc, tooMany } from './routes-ugc.ts';
+import { TAKEN_DOWN_MESSAGE, isTakenDown } from './takedown.ts';
 
-export interface HandlerConfig {
-  store: ObjectStore;
-  /** PUBLISH_TOKEN secret. Empty/undefined => every authed route answers 503 (never open). */
-  token?: string;
-  allowedOrigin?: string;
-  jsonMaxAge?: number;
-  now?: () => Date;
-}
+export type { HandlerConfig };
 
 const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -30,18 +26,6 @@ export async function handleRequest(request: Request, config: HandlerConfig): Pr
     return finish(json({ ok: false, error: 'Internal error' }, 500));
   }
 }
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-  });
-}
-
-const fail = (error: string, status: number): Response => {
-  const body: ErrorResponse = { ok: false, error };
-  return json(body, status);
-};
 
 /** Returns an error Response when the caller is not allowed in, otherwise null. */
 function authorize(request: Request, token: string | undefined): Response | null {
@@ -62,7 +46,7 @@ async function route(request: Request, config: HandlerConfig): Promise<Response>
       status: 204,
       headers: {
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Max-Age': '86400',
       },
     });
@@ -80,34 +64,27 @@ async function route(request: Request, config: HandlerConfig): Promise<Response>
   const novelMatch = /^\/api\/novels\/([^/]+)$/.exec(pathname);
   if (novelMatch) {
     if (method !== 'PUT' && method !== 'DELETE') return fail('Method not allowed', 405);
+    if (!(await checkRateLimit(config.limiter, 'publish', clientKey(request)))) return tooMany();
     const denied = authorize(request, config.token);
     if (denied) return denied;
     const novelId = novelMatch[1] ?? '';
     if (!isSlugId(novelId)) return fail('Invalid novel id', 400);
     if (method === 'DELETE') return json(await unpublishNovel(config.store, novelId));
-    const body = await readJsonBody(request);
+    if (await isTakenDown(config.store, novelId)) return fail(TAKEN_DOWN_MESSAGE, 410);
+    const body = await readCappedJson(request, MAX_BODY_BYTES);
     if (body instanceof Response) return body;
     const now = (config.now ?? (() => new Date()))();
     return json(await publishNovel(config.store, novelId, body, now));
   }
+
+  const ugc = await routeUgc(request, pathname, config);
+  if (ugc) return ugc;
 
   if (pathname.startsWith('/novels/')) {
     if (method !== 'GET' && method !== 'HEAD') return fail('Method not allowed', 405);
     return readPublic(pathname, method === 'HEAD', config);
   }
   return fail('Not found', 404);
-}
-
-async function readJsonBody(request: Request): Promise<unknown> {
-  const declared = Number(request.headers.get('content-length') ?? '0');
-  if (declared > MAX_BODY_BYTES) return fail('Request body too large', 413);
-  const bytes = new Uint8Array(await request.arrayBuffer());
-  if (bytes.byteLength > MAX_BODY_BYTES) return fail('Request body too large', 413);
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
-  } catch {
-    return fail('Body is not valid JSON', 400);
-  }
 }
 
 async function readPublic(
@@ -127,6 +104,10 @@ async function readPublic(
   const safe = segments.every((s) => SEGMENT.test(s) && !s.includes('..'));
   if (!safe || segments[0] !== 'novels' || segments.length < 2) return fail('Bad path', 400);
 
+  const slug = segments[1] ?? '';
+  if (isSlugId(slug) && (await isTakenDown(config.store, slug))) {
+    return fail(TAKEN_DOWN_MESSAGE, 410);
+  }
   const obj = await config.store.get(segments.join('/'));
   if (!obj) return fail('Not found', 404);
   const maxAge = config.jsonMaxAge ?? 60;

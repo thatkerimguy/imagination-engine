@@ -191,7 +191,7 @@ describe('http surface', () => {
     expect(res.status).toBe(204);
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
     expect(res.headers.get('access-control-allow-headers')).toBe('Authorization, Content-Type');
-    expect(res.headers.get('access-control-allow-methods')).toBe('GET, PUT, DELETE, OPTIONS');
+    expect(res.headers.get('access-control-allow-methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
     expect(res.headers.get('access-control-max-age')).toBe('86400');
   });
   it('serves health with CORS', async () => {

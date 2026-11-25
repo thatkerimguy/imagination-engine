@@ -65,3 +65,18 @@ export const getWriterModule = (id: string): WriterModule | undefined => byId.ge
 /** Modules a novel may insert, in registry order. Unknown ids in the manifest are ignored. */
 export const enabledWriterModules = (enabled: readonly string[]): WriterModule[] =>
   writerModules.filter((m) => enabled.includes(m.meta.id));
+
+/** Leading emoji / symbols of a card title ("🌧️ Rain" → "Rain"). */
+const stripLeadingSymbols = (s: string): string => s.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+
+/**
+ * Human-readable outline label for a gimmick block: module name plus its card detail, e.g.
+ * "Ambient Bed · Rain". Falls back to the raw module id only when the module is unregistered.
+ */
+export function moduleOutlineLabel(moduleId: string, props: Record<string, unknown>): string {
+  const mod = byId.get(moduleId);
+  if (!mod) return moduleId;
+  const card = mod.summarize(props);
+  const detail = card.badge === 'FIX' ? '' : stripLeadingSymbols(card.title);
+  return detail && detail !== mod.meta.name ? `${mod.meta.name} · ${detail}` : mod.meta.name;
+}

@@ -2,6 +2,7 @@
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { moduleOutlineLabel } from '../modules/registry.ts';
 import type { ChapterStyles } from '../store/chapter-styles.ts';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { Press } from '../ui/Press.tsx';
@@ -37,7 +38,8 @@ export function outlineEntries(blocks: readonly Block[], styles: ChapterStyles):
       const label = [b.label, b.timestamp].filter(Boolean).join(' · ') || 'Scene break';
       out.push({ id: b.id, label, icon: 'minus', level: 1 });
     } else if (b.kind === 'module') {
-      out.push({ id: b.id, label: b.moduleId, icon: gimmickGlyph(b.moduleId), level: 1 });
+      const label = moduleOutlineLabel(b.moduleId, b.props);
+      out.push({ id: b.id, label, icon: gimmickGlyph(b.moduleId), level: 1 });
     }
   }
   return out;

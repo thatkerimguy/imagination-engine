@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { freePort, serveStatic, startApi, stopAll, win } from './smoke-publish-helpers.mjs';
+import { MOD_TOKEN, calmModeDimming, passTosGate, reportAbuse } from './smoke-publish-ugc.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const ROOT = resolve(import.meta.dirname, '..');
@@ -15,6 +16,9 @@ const shotsAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
 if (shotsAt) mkdirSync(shotsAt, { recursive: true });
+const ugcAt = process.argv.includes('--ugc-shots')
+  ? process.argv[process.argv.indexOf('--ugc-shots') + 1]
+  : shotsAt;
 const TOKEN = 'smoke-token';
 const NOVEL = 'vertical-slice';
 const errors = [];
@@ -38,7 +42,7 @@ const servers = [];
 try {
   const apiPort = await freePort(8787);
   const API = `http://127.0.0.1:${apiPort}`;
-  await startApi(apiPort, TOKEN);
+  await startApi(apiPort, TOKEN, { MODERATION_TOKEN: MOD_TOKEN });
   ok(`publish API up on ${API}`);
 
   const build = spawnSync(
@@ -73,6 +77,7 @@ try {
     page.on('pageerror', (e) => errors.push(`${tag}: ${e}`));
   };
   const shot = (page, name) => shotsAt && page.screenshot({ path: join(shotsAt, name) });
+  const ugcShot = (page, name) => ugcAt && page.screenshot({ path: join(ugcAt, name) });
   const writer = await context.newPage();
   watch(writer, 'writer');
   const tid = (id) => writer.getByTestId(id);
@@ -143,10 +148,10 @@ try {
     ['published', 'unlisted', 'drafts'].map((n) => tid(`publish-count-${n}`).innerText()),
   );
   check(counts.join('/') === '1/1/1', `ledger counts 1/1/1 (got ${counts.join('/')})`);
-  // Let the sheet's slide-in finish: wait until Publish now sits still inside the viewport.
+  // Let the sheet's slide-in finish: wait until the ledger sits still inside the viewport.
   await writer.waitForFunction(
     () => {
-      const el = document.querySelector('[data-testid="publish-now"]');
+      const el = document.querySelector('[data-testid="publish-ledger"]');
       const y = el?.getBoundingClientRect().top ?? Infinity;
       const settled = y < innerHeight && y === window.__knLastY;
       window.__knLastY = y;
@@ -156,6 +161,7 @@ try {
     { polling: 150, timeout: 5000 },
   );
   await shot(writer, '02-publish-sheet-preflight.png');
+  await passTosGate(writer, { tid, check, shot: ugcShot, API });
   await tid('publish-now').click();
   await tid('publish-toast').waitFor({ timeout: 20000 });
   check(
@@ -211,6 +217,8 @@ try {
   if (await start.isVisible().catch(() => false)) await start.click();
   await reader.waitForTimeout(400);
   await shot(reader, '04-reader-live-from-publish-api.png');
+  await reportAbuse(reader, { check, shot: ugcShot, API });
+  await calmModeDimming(reader, { check });
 
   // Unpublish.
   await tid('publish-unpublish').click();

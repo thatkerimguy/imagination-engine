@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { folderHref, parentHref, routes, tabForPath } from './routes.ts';
+import { appLinkRedirect, folderHref, parentHref, routes, tabForPath } from './routes.ts';
 
 describe('parentHref', () => {
   it('has no parent for the bookshelf', () => {
@@ -49,5 +49,24 @@ describe('workspace routes', () => {
     expect(tabForPath('/folders/note/d1')).toBeNull();
     expect(tabForPath('/search')).toBe('search');
     expect(tabForPath('/novel/n1')).toBeNull();
+  });
+});
+
+describe('appLinkRedirect (Android App Links)', () => {
+  it('routes share links to the /open landing', () => {
+    expect(appLinkRedirect('https://read.example.app/share/chrome-tide')).toBe(
+      routes.openLink('chrome-tide'),
+    );
+    expect(appLinkRedirect('/r/chrome-tide/')).toBe('/open?novel=chrome-tide');
+  });
+  it('sends malformed share links to the Library', () => {
+    expect(appLinkRedirect('https://read.example.app/share/')).toBe('/');
+    expect(appLinkRedirect('https://read.example.app/share/..%2Fx')).toBe('/');
+    expect(appLinkRedirect('/r/UPPER')).toBe('/');
+  });
+  it('leaves every other path alone', () => {
+    expect(appLinkRedirect('/novel/n1')).toBeNull();
+    expect(appLinkRedirect('/settings')).toBeNull();
+    expect(appLinkRedirect('https://read.example.app/share/a/b')).toBeNull();
   });
 });

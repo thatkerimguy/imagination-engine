@@ -104,3 +104,38 @@ export async function clearPublishStatus(repo: NovelRepository, novelId: string)
 
 export const isPublishConfigured = (config: PublishConfig, token: string): boolean =>
   Boolean(config.apiUrl && token);
+
+// ── Publishing Terms of Use consent (Google Play UGC) ───────────────────────────────────────────
+/** Bump when the hosted Terms change: every author must accept again before the next publish. */
+export const CURRENT_TOS_VERSION = '2026-11';
+export const PUBLISH_TOS_KEY = 'setting/publish-tos';
+
+export interface TosConsent {
+  tosAcceptedVersion?: string;
+  tosAcceptedAt?: string;
+}
+
+export const hasAcceptedCurrentTos = (settings: TosConsent | null | undefined): boolean =>
+  settings?.tosAcceptedVersion === CURRENT_TOS_VERSION;
+
+export async function loadTosConsent(repo: NovelRepository): Promise<TosConsent> {
+  const data = (await repo.docs.read<unknown>(PUBLISH_TOS_KEY))?.data;
+  if (!data || typeof data !== 'object') return {};
+  const s = data as Record<string, unknown>;
+  return {
+    ...(typeof s.tosAcceptedVersion === 'string'
+      ? { tosAcceptedVersion: s.tosAcceptedVersion }
+      : {}),
+    ...(typeof s.tosAcceptedAt === 'string' ? { tosAcceptedAt: s.tosAcceptedAt } : {}),
+  };
+}
+
+export async function acceptCurrentTos(repo: NovelRepository, now: Date): Promise<TosConsent> {
+  const next = { tosAcceptedVersion: CURRENT_TOS_VERSION, tosAcceptedAt: now.toISOString() };
+  await repo.docs.write(PUBLISH_TOS_KEY, next);
+  return next;
+}
+
+/** Full Terms hosted by the publish API (`/legal/terms`); '' until an API URL is configured. */
+export const termsUrl = (config: PublishConfig): string =>
+  config.apiUrl ? `${config.apiUrl}/legal/terms` : '';

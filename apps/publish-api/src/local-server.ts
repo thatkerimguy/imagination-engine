@@ -5,9 +5,12 @@ import type { IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { createMemoryStore } from './store.ts';
+import { createMemoryLimiter } from './rate-limit.ts';
 import { handleRequest } from './worker.ts';
+import type { HandlerConfig } from './config.ts';
 
 const store = createMemoryStore();
+const limiter = createMemoryLimiter();
 
 async function toRequest(req: IncomingMessage, origin: string): Promise<Request> {
   const chunks: Buffer[] = [];
@@ -28,12 +31,17 @@ export interface LocalServer {
   close(): Promise<void>;
 }
 
-export function startLocalServer(opts: { port: number; token: string }): Promise<LocalServer> {
+export type LocalOptions = Partial<Omit<HandlerConfig, 'store' | 'token'>> & {
+  port: number;
+  token: string;
+};
+
+export function startLocalServer(opts: LocalOptions): Promise<LocalServer> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
       const origin = `http://127.0.0.1:${opts.port}`;
       toRequest(req, origin)
-        .then((request) => handleRequest(request, { store, token: opts.token }))
+        .then((request) => handleRequest(request, { limiter, ...opts, store }))
         .then(async (response) => {
           const headers: Record<string, string> = {};
           response.headers.forEach((v, k) => (headers[k] = v));
@@ -61,6 +69,16 @@ if (entry && import.meta.url === pathToFileURL(entry).href) {
   const port = Number(process.env.PORT ?? '8787');
   const token = process.env.PUBLISH_TOKEN ?? '';
   if (!token) console.warn('PUBLISH_TOKEN is not set: authed routes will answer 503.');
-  const server = await startLocalServer({ port, token });
+  const env = process.env;
+  const server = await startLocalServer({
+    port,
+    token,
+    ...(env.MODERATION_TOKEN ? { moderationToken: env.MODERATION_TOKEN } : {}),
+    ...(env.PUBLIC_READER_URL ? { readerUrl: env.PUBLIC_READER_URL } : {}),
+    ...(env.ANDROID_PACKAGE ? { androidPackage: env.ANDROID_PACKAGE } : {}),
+    ...(env.ANDROID_SHA256_CERT_FINGERPRINTS
+      ? { androidCertFingerprints: env.ANDROID_SHA256_CERT_FINGERPRINTS }
+      : {}),
+  });
   console.log(`publish-api listening on ${server.url}`);
 }

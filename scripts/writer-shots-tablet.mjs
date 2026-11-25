@@ -14,6 +14,10 @@ const shotsAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
 if (shotsAt) mkdirSync(shotsAt, { recursive: true });
+// DIRECTIVE-04 named shot (pack root); the D-03 shots above go wherever --shots points.
+const dir04At = process.argv.includes('--dir04')
+  ? process.argv[process.argv.indexOf('--dir04') + 1]
+  : shotsAt;
 const WRITER = 'http://127.0.0.1:8098/';
 const READER = 'http://127.0.0.1:4173/';
 const DIST = resolve(import.meta.dirname, '../apps/writer/dist-web');
@@ -65,6 +69,7 @@ try {
   await tid('nav-rail').waitFor({ timeout: 20000 });
   if (await tid('tab-bar').count()) fail('bottom tab bar still shows beside the rail');
   else ok('>= 600dp: FolioNavRail replaces the bottom tab bar');
+  await tid('novel-card-vertical-slice').waitFor({ timeout: 20000 });
   const tops = await page
     .locator('[data-testid^="novel-card-"]')
     .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
@@ -80,6 +85,15 @@ try {
   await tid('reference-toggle').click();
   await tid('reference-pane').waitFor();
   ok('>= 840dp: Reference pane opens beside the editor');
+  const pane = tid('reference-pane');
+  await pane
+    .getByText(/^3D Dice Throw/)
+    .first()
+    .waitFor({ timeout: 5000 });
+  const raw = await pane.getByText(/^(bl-dice-3d|gits-cyberbrain-chat|core-ambient-bed)$/).count();
+  if (raw === 0) ok('Outline shows human-readable module titles (no raw ids)');
+  else fail(`Outline still shows ${raw} raw module id(s)`);
+  if (dir04At) await page.screenshot({ path: `${dir04At}/03-tablet-outline-human-labels.png` });
   const col = await tid('chapter-stream').evaluate(
     (el) => el.firstElementChild.getBoundingClientRect().width,
   );
@@ -131,6 +145,9 @@ try {
     ok('Calm Mode persists without touching tier');
   else fail(`unexpected stored prefs ${JSON.stringify(stored)}`);
   await reader.waitForTimeout(300);
+  const dim = await reader.locator('[data-testid="settings-spectacle"].kn-overridden').count();
+  if (dim === 1) ok('Calm Mode dims the SPECTACLE / SOUND drawer sections');
+  else fail('Calm Mode did not dim the SPECTACLE section');
   if (shotsAt) await reader.screenshot({ path: `${shotsAt}/03-reader-calm-mode-settings.png` });
 
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);

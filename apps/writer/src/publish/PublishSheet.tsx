@@ -14,6 +14,8 @@ import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 
 import { chapterUrl, publicNovelUrl } from './publish-links.ts';
+import { termsUrl } from './publish-settings.ts';
+import { PublishTosGate } from './PublishTosGate.tsx';
 import { Banner, CopyRow, LedgerRow, relativeTime } from './ui-publish-parts.tsx';
 import { usePublish } from './use-publish.ts';
 
@@ -110,10 +112,13 @@ export function PublishSheet(p: PublishSheetProps): ReactNode {
               {s.note}
             </Txt>
           ) : null}
+          {s.tosAccepted === false ? (
+            <PublishTosGate termsUrl={termsUrl(config)} onAccept={s.acceptTerms} />
+          ) : null}
           <ActionButton
             label={s.busy ? 'Working…' : 'Publish now'}
             icon="upload-cloud"
-            disabled={s.busy || !plan}
+            disabled={s.busy || !plan || s.tosAccepted !== true}
             onPress={() => void publish()}
             testID="publish-now"
           />

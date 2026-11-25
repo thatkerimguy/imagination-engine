@@ -74,6 +74,7 @@ function ThemedStack(): ReactNode {
           <Stack.Screen name="compile-folder" options={{ title: 'Book compiler' }} />
           <Stack.Screen name="doctor" options={{ title: 'Document Doctor' }} />
           <Stack.Screen name="lock" options={{ title: 'Master Lock' }} />
+          <Stack.Screen name="open" options={{ title: '' }} />
         </Stack>
         <FolioTabBar />
       </View>

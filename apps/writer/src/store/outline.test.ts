@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getWriterModule, moduleOutlineLabel } from '../modules/registry.ts';
 import { createMemoryAdapter } from '../storage/memory.ts';
 import {
   addChapter,
@@ -91,5 +92,28 @@ describe('helpers', () => {
     expect(moveItem(list, 'c', 1)).toEqual(list);
     expect(moveItem(list, 'z', 1)).toEqual(list);
     expect(list).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('moduleOutlineLabel (human-readable gimmick entries)', () => {
+  const defaults = (id: string): Record<string, unknown> =>
+    getWriterModule(id)?.schema.defaults ?? {};
+  it('uses the module name plus its card detail instead of the raw id', () => {
+    expect(moduleOutlineLabel('core-ambient-bed', defaults('core-ambient-bed'))).toBe(
+      'Ambient Bed · Rain',
+    );
+    const dice = moduleOutlineLabel('bl-dice-3d', defaults('bl-dice-3d'));
+    expect(dice.startsWith('3D Dice Throw')).toBe(true);
+    expect(dice).not.toContain('bl-dice-3d');
+  });
+  it('labels every registered module by name, never by id', () => {
+    for (const id of ['gits-cyberbrain-chat', 'gits-ghost-whisper', 'pt-gaslight-edit']) {
+      const label = moduleOutlineLabel(id, defaults(id));
+      expect(label.startsWith(getWriterModule(id)?.meta.name ?? '?')).toBe(true);
+      expect(label).not.toContain(id);
+    }
+  });
+  it('falls back to the raw id only for unregistered modules', () => {
+    expect(moduleOutlineLabel('xx-unknown', {})).toBe('xx-unknown');
   });
 });

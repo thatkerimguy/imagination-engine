@@ -1,8 +1,8 @@
 // Writer QA pack: drives the Expo Web export of apps/writer at 390×844 (library, editor, focus,
 // gimmick sheet, analysis, growth, appearance, offline live preview with every non-local request
 // aborted). Needs `pnpm writer:export`. Usage: node scripts/writer-shots.mjs [--shots <dir>]
-// Current PNGs land in <dir> (04A pack + the D-03 tablet pack, writer-shots-tablet.mjs, which
-// also needs `pnpm build`); earlier packs (incl. smoke-publish.mjs) land in <dir>/regression.
+// The 3 DIRECTIVE-04 PNGs land in <dir> (ToS gate, Report abuse, tablet outline labels; the tablet
+// pack needs `pnpm build`); every earlier pack (04A, D-03, publish) lands in <dir>/regression.
 import { spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -215,7 +215,7 @@ try {
   await phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor });
   await phase2fPass(page, { WRITER, tid, shotsAt, ok, fail, editor });
   // Directive 04A: the pack root holds the current shots (02–04 here, 01 from smoke.mjs).
-  await phase4aPass(page, { WRITER, packAt, tid, ok, fail, editor });
+  await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();
@@ -227,23 +227,15 @@ try {
   writer.closeAllConnections();
   writer.close();
 }
-// Phase 3 pack (Settings → Publish sheet → live reader), now regression: the publish E2E smoke
-// owns its servers.
-const pack3 =
-  shotsAt &&
-  spawnSync(
-    process.execPath,
-    [join(import.meta.dirname, 'smoke-publish.mjs'), '--shots', shotsAt],
-    {
-      stdio: 'inherit',
-    },
-  );
+// Publish E2E + DIRECTIVE-04 ToS / Report abuse (regression; the 2 D-04 shots go to the pack root).
+const run = (script, args) =>
+  spawnSync(process.execPath, [join(import.meta.dirname, script), ...args], { stdio: 'inherit' });
+const pack3 = shotsAt && run('smoke-publish.mjs', ['--shots', shotsAt, '--ugc-shots', packAt]);
 if (pack3 && pack3.status !== 0) fail('publish pack (smoke-publish.mjs) failed');
-// DIRECTIVE-03 tablet / Calm Mode pack (pack root): rail, grids, split pane, web shortcuts.
-const tablet = spawnSync(
-  process.execPath,
-  [join(import.meta.dirname, 'writer-shots-tablet.mjs'), ...(packAt ? ['--shots', packAt] : [])],
-  { stdio: 'inherit' },
+// D-03 tablet / Calm Mode pack (regression) + D-04 outline-label shot (pack root).
+const tablet = run(
+  'writer-shots-tablet.mjs',
+  packAt ? ['--shots', shotsAt, '--dir04', packAt] : [],
 );
 if (tablet.status !== 0) fail('tablet pack (writer-shots-tablet.mjs) failed');
 // Exit explicitly with the recorded status.

@@ -10,5 +10,25 @@ bucket_name = "kinetic-novels"
 [vars]
 ALLOWED_ORIGIN = "*"
 JSON_MAX_AGE = "60"
+PUBLIC_READER_URL = ""
+ANDROID_PACKAGE = "dev.kinetic.writer"
+# Set at deploy (var or secret): comma-separated SHA-256 signing-cert fingerprints for App Links.
+# ANDROID_SHA256_CERT_FINGERPRINTS = "AA:BB:...,CC:DD:..."
 
-# PUBLISH_TOKEN is a secret: `wrangler secret put PUBLISH_TOKEN` (never commit it here).
+# Secrets (never commit them here):
+#   wrangler secret put PUBLISH_TOKEN      (authors / writer app)
+#   wrangler secret put MODERATION_TOKEN   (moderators only; separate from PUBLISH_TOKEN)
+
+[[ratelimits]]
+name = "REPORT_LIMITER"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
+[[ratelimits]]
+name = "PUBLISH_LIMITER"
+namespace_id = "1002"
+  [ratelimits.simple]
+  limit = 30
+  period = 60

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { hideInRecentsSetting, shouldBlockScreenCapture } from './screen-privacy.ts';
 
-const base = { isLocked: false, onSensitiveScreen: false, lockEnabled: false, hideInRecents: false };
+const base = {
+  isLocked: false,
+  onSensitiveScreen: false,
+  lockEnabled: false,
+  hideInRecents: false,
+};
 
 describe('shouldBlockScreenCapture', () => {
   it('always blocks while locked or on a PIN / recovery screen', () => {

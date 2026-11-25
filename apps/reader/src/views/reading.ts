@@ -4,6 +4,7 @@ import { h } from '../dom.ts';
 import { showCurtain } from '../curtain.ts';
 import { loadChapter, loadNovel, loadSeason, novelUrl } from '../data.ts';
 import { getPrefs, soundAllowed, type TierPreference } from '../prefs.ts';
+import { inPreviewMode, reportEndpoint } from '../report-endpoint.ts';
 import { renderBlock } from '../reading/blocks.ts';
 import { readBookmark, saveBookmark } from '../reading/bookmark.ts';
 import { Pacer } from '../reading/pacing.ts';
@@ -69,11 +70,36 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
     return false;
   });
   const elements = blocks.map(renderBlock);
+  const endpoint = reportEndpoint();
+  let closeReport: (() => void) | null = null;
   const footer = h(
     'footer',
     { class: 'kn-chapter-end', hidden: true },
     h('span', { class: 'kn-break-mark' }, '◆'),
     opts.footerLink,
+    endpoint && !preview && !inPreviewMode()
+      ? h(
+          'button',
+          {
+            type: 'button',
+            class: 'kn-report-btn',
+            'data-testid': 'report-abuse',
+            onClick: (e: Event) => {
+              const returnFocus = e.currentTarget as HTMLElement;
+              void import('./report-modal.ts').then((m) => {
+                closeReport?.();
+                closeReport = m.openReportModal({
+                  endpoint,
+                  novelSlug: novel.id,
+                  chapterSlug: chapter.id,
+                  returnFocus,
+                });
+              });
+            },
+          },
+          'Report abuse',
+        )
+      : null,
   );
   const article = h(
     'article',
@@ -133,6 +159,7 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
 
   return () => {
     disposed = true;
+    closeReport?.();
     document.querySelector('.kn-curtain')?.remove();
     pacer.dispose();
     v.audio.stopAmbient(1.2);

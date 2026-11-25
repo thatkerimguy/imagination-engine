@@ -5,14 +5,36 @@ published book (static JSON + cover) from an R2 bucket. No database, no reader l
 
 ## Routes
 
-| Method    | Path              | Auth   | Purpose                                              |
-| --------- | ----------------- | ------ | ---------------------------------------------------- |
-| GET       | `/api/health`     | no     | `{ok:true,version:1}`                                |
-| GET       | `/api/verify`     | bearer | Check the token                                      |
-| PUT       | `/api/novels/:id` | bearer | Validate with `@kn/core`, write, sweep stale objects |
-| DELETE    | `/api/novels/:id` | bearer | Remove the book and its index entry                  |
-| GET, HEAD | `/novels/*`       | no     | Public read of `index.json`, `novel.json`, chapters  |
-| OPTIONS   | `*`               | no     | CORS preflight                                       |
+| Method    | Path                                                | Auth               | Purpose                                                                   |
+| --------- | --------------------------------------------------- | ------------------ | ------------------------------------------------------------------------- |
+| GET       | `/api/health`                                       | no                 | `{ok:true,version:1}`                                                     |
+| GET       | `/api/verify`                                       | bearer             | Check the token                                                           |
+| PUT       | `/api/novels/:id`                                   | bearer             | Validate with `@kn/core`, write, sweep stale objects                      |
+| DELETE    | `/api/novels/:id`                                   | bearer             | Remove the book and its index entry                                       |
+| GET, HEAD | `/novels/*`                                         | no                 | Public read of `index.json`, `novel.json`, chapters                       |
+| OPTIONS   | `*`                                                 | no                 | CORS preflight                                                            |
+| POST      | `/api/reports`                                      | no                 | Abuse report (JSON or HTML form), 5/min per IP                            |
+| GET       | `/api/moderation/reports`                           | `MODERATION_TOKEN` | List pending reports                                                      |
+| POST      | `/api/moderation/takedown`                          | `MODERATION_TOKEN` | Tombstone + delete a novel                                                |
+| DELETE    | `/api/moderation/takedown/:slug`                    | `MODERATION_TOKEN` | Clear a tombstone                                                         |
+| GET       | `/legal/terms`, `/legal/privacy`, `/legal/takedown` | no                 | Static legal pages + report form                                          |
+| GET       | `/share/:slug` (alias `/r/:slug`)                   | no                 | Open Graph share page (needs `PUBLIC_READER_URL` to redirect)             |
+| GET       | `/og/:slug.png`                                     | no                 | Generated 1200x630 preview image                                          |
+| GET       | `/.well-known/assetlinks.json`                      | no                 | Android App Links (`ANDROID_PACKAGE`, `ANDROID_SHA256_CERT_FINGERPRINTS`) |
+
+Publish routes are limited to 30 requests/min per IP (`PUBLISH_LIMITER`); reports to 5/min
+(`REPORT_LIMITER`). Without the bindings an in-memory limiter is used. Exceeded => 429 + `Retry-After: 60`.
+
+## Moderation and takedown
+
+`MODERATION_TOKEN` is a separate secret (`wrangler secret put MODERATION_TOKEN`); unset => 503, and
+`PUBLISH_TOKEN` is never accepted. A takedown writes `takedowns/<slug>.json`, deletes `novels/<slug>/`
+and unlists it. Afterwards `/novels/<slug>/*`, `/share/<slug>` and `/og/<slug>.png` answer 410 and
+the author's `PUT /api/novels/<slug>` is refused with 410. To allow publishing again:
+
+```sh
+curl -X DELETE -H "Authorization: Bearer $MODERATION_TOKEN" https://<worker>/api/moderation/takedown/<slug>
+```
 
 An unset or empty `PUBLISH_TOKEN` makes every authed route answer 503; it is never open.
 

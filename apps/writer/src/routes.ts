@@ -31,9 +31,31 @@ export const routes = {
   /** `blockId` (e.g. from Search) scrolls to and selects that block on open. */
   chapter: (novelId: string, seasonId: string, chapterId: string, blockId?: string) =>
     `/novel/${novelId}/chapter/${seasonId}/${chapterId}${blockId ? `?${q({ block: blockId })}` : ''}`,
+  /** Verified App Link landing (`https://<host>/share/<slug>`): local novel if present, else Library. */
+  openLink: (slug: string) => `/open?${q({ novel: slug })}`,
   preview: (novelId: string, seasonId: string, chapterId: string, blockId?: string) =>
     `/preview?${q({ novel: novelId, season: seasonId, chapter: chapterId, block: blockId })}`,
 } as const;
+
+const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/**
+ * Rewrites an incoming Android App Link (`https://<KN_APP_LINK_HOST>/share/<slug>` or `/r/<slug>`)
+ * to the in-app `/open` landing. Any other path returns null (Expo Router keeps it as-is); a
+ * malformed share link lands on the Library rather than an unmatched-route screen.
+ */
+export function appLinkRedirect(path: string): string | null {
+  let pathname: string;
+  try {
+    pathname = new URL(path, 'kn-app://local').pathname;
+  } catch {
+    return null;
+  }
+  const m = /^\/(share|r)(?:\/([^/]*))?\/?$/.exec(pathname);
+  if (!m) return null;
+  const slug = decodeURIComponent(m[2] ?? '');
+  return SLUG.test(slug) ? routes.openLink(slug) : routes.shelf;
+}
 
 /** A sub-folder; `parentId` gives Back a parent folder after a reload. */
 export const folderHref = (folderId: string, parentId: string | null): string =>

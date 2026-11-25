@@ -28,7 +28,7 @@ Date: 2026-11-25 · Executor: Claude Opus 5.5 (main session) + `qa-runner` (Haik
 
 ## 2. Phase 4A & Open Milestones
 
-- **Phase 2F, 3 and 4A were never committed** (`main` HEAD `922184b`, 2E QA; 96 working-tree entries). With the Orchestrator's OK they landed as `9150e8b` on this branch, between Commit 1 (`bb167f6`, harness) and Commit 2 (polish + this handoff).
+- Phase 2F, 3 and 4A are merged on `origin/main` (`44eaa04`..`f6d92fd`, ending with the 4A QA report). The local `main` checkout was 12 commits behind with the same files dumped in the working tree; this branch merges `origin/main`, so its PR diff is only DIR-00 B + C.
 - Six modules present: `bl-dice-3d`, `bl-lighter-flick`, `core-ambient-bed`, `gits-cyberbrain-chat`, `gits-ghost-whisper`, `pt-gaslight-edit`.
 - `reader-preview.html` rebuilt: 733.8 KB raw / 197.2 KB gz (was 710.7 KB raw, built 2026-11-21). It is git-ignored, so it is rebuilt locally and not committed.
 - Root `DIRECTIVE.md` is stale: it still holds DIRECTIVE 02 (Writer Alpha).
@@ -91,7 +91,7 @@ Part C, all 5 landed: (1) the Test-connection row has 12 px insets on both sides
 
 ## 6. Blockers or Decisions Needed From Orchestrator
 
-- **Branch holds 3 commits, not 2:** the pending 2F/3/4A tree became its own commit (`9150e8b`) so the polish commit stays polish-only. Merge or review the branch as a unit; `main` is untouched.
+- **Sync local `main`:** the local checkout sat at `922184b` while `origin/main` was at `f6d92fd`. Run `git switch main` then `git pull --ff-only`. The branch carries one redundant snapshot commit (`9150e8b`, identical to `origin/main`'s tree) plus a merge; a squash merge drops both.
 - `reader-preview.html` is git-ignored (`.gitignore:25`), so "commit rebuilt preview" is not possible as written.
 - Fix 1 stayed in scope: the Test-connection row is now a local inset `Press` row, not a `ListRow` prop. A shared `ListRow inset` prop would be cleaner if wanted.
 - Fix 3 shrinks the High flame by ~20 % so the 22 px chimney fits the 60×110 canvas without touching `lighter.ts`. Taste check on device needed.

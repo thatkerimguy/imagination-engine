@@ -3,6 +3,7 @@
 // EmptyState. Hairlines and type do the work — no heavy cards.
 import type { ReactNode } from 'react';
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -10,6 +11,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { useScrollReporter } from './header-scroll.tsx';
 import { Press } from './Press.tsx';
@@ -17,20 +19,35 @@ import { Txt } from './Txt.tsx';
 import { space } from './tokens.ts';
 import { useTheme } from './theme.tsx';
 
+const BOTTOM_PAD = 96;
+
 export function Page({
   children,
   contentStyle,
+  onLayout,
   ...rest
 }: ScrollViewProps & { contentStyle?: StyleProp<ViewStyle> }): ReactNode {
   const { colors } = useTheme();
   const onScroll = useScrollReporter();
+  // Android 15+/16 edge-to-edge windows do not resize for the IME, so bottom form fields
+  // (Settings URL/token, Lock, New novel) need keyboard-height clearance to scroll above it.
+  // The offset already excludes any height an adjustResize window absorbed; insets are untouched.
+  const { keyboardOffset, onRootLayout } = useKeyboardDock();
+  const kbPad =
+    Platform.OS === 'android' && keyboardOffset > 0
+      ? { paddingBottom: Math.max(BOTTOM_PAD, keyboardOffset + space.xl) }
+      : null;
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.canvas }}
-      contentContainerStyle={[styles.content, contentStyle]}
+      contentContainerStyle={[styles.content, contentStyle, kbPad]}
       keyboardShouldPersistTaps="handled"
       onScroll={onScroll}
       scrollEventThrottle={32}
+      onLayout={(e) => {
+        onRootLayout(e);
+        onLayout?.(e);
+      }}
       {...rest}
     >
       {children}
@@ -156,7 +173,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: space.gutter,
     paddingTop: space.xs,
-    paddingBottom: 96,
+    paddingBottom: BOTTOM_PAD,
     gap: space.md,
   },
   section: {

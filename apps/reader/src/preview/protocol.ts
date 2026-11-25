@@ -21,14 +21,15 @@ export interface PreviewLoad {
 export type HostMessage =
   | { type: 'kn-preview-ready' }
   | { type: 'kn-preview-rendered'; chapterId: string }
+  /** Current reading block, so the writer can replay scroll after a WebView renderer crash. */
+  | { type: 'kn-preview-position'; blockId: string }
   | { type: 'kn-preview-error'; errors: string[] };
 
-const TIERS: readonly TierPreference[] = ['auto', 'high', 'lite', 'reduced'];
+/** Host → reader control messages that are not chapter loads. */
+export type HostControl =
+  { type: 'lifecycle'; state: 'active' | 'background' } | { type: 'a11y'; reducedMotion: boolean };
 
-export type ParsedLoad = { ok: true; load: PreviewLoad } | { ok: false; errors: string[] } | null;
-
-/** Returns null for messages that are not preview loads (other tools may post to the window). */
-export function parsePreviewLoad(raw: unknown): ParsedLoad {
+function decode(raw: unknown): Record<string, unknown> | null {
   let data = raw;
   if (typeof data === 'string') {
     try {
@@ -37,9 +38,28 @@ export function parsePreviewLoad(raw: unknown): ParsedLoad {
       return null;
     }
   }
-  if (!data || typeof data !== 'object') return null;
-  const msg = data as Record<string, unknown>;
-  if (msg.type !== 'kn-preview-load') return null;
+  return data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+}
+
+/** Returns null for anything that is not a well-formed lifecycle / a11y message. */
+export function parseHostControl(raw: unknown): HostControl | null {
+  const msg = decode(raw);
+  if (!msg) return null;
+  if (msg.type === 'lifecycle' && (msg.state === 'active' || msg.state === 'background'))
+    return { type: 'lifecycle', state: msg.state };
+  if (msg.type === 'a11y' && typeof msg.reducedMotion === 'boolean')
+    return { type: 'a11y', reducedMotion: msg.reducedMotion };
+  return null;
+}
+
+const TIERS: readonly TierPreference[] = ['auto', 'high', 'lite', 'reduced'];
+
+export type ParsedLoad = { ok: true; load: PreviewLoad } | { ok: false; errors: string[] } | null;
+
+/** Returns null for messages that are not preview loads (other tools may post to the window). */
+export function parsePreviewLoad(raw: unknown): ParsedLoad {
+  const msg = decode(raw);
+  if (!msg || msg.type !== 'kn-preview-load') return null;
   const novel = parseNovelManifest(msg.novel);
   const season = parseSeasonManifest(msg.season);
   const chapter = parseChapterDocument(msg.chapter);

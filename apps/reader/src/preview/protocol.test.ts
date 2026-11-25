@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import chapter from '../../../../sample-novels/vertical-slice/seasons/s01/ch01.json';
 import season from '../../../../sample-novels/vertical-slice/seasons/s01/season.json';
 import novel from '../../../../sample-novels/vertical-slice/novel.json';
-import { parsePreviewLoad } from './protocol.ts';
+import { parseHostControl, parsePreviewLoad } from './protocol.ts';
 
 const load = (extra: Record<string, unknown> = {}, ch: unknown = chapter) => ({
   type: 'kn-preview-load',
@@ -53,5 +53,31 @@ describe('parsePreviewLoad', () => {
       expect(res.errors.length).toBeGreaterThan(0);
       expect(res.errors.every((e) => e.startsWith('chapter '))).toBe(true);
     }
+  });
+});
+
+describe('parseHostControl', () => {
+  it('accepts lifecycle and a11y messages in object and string form', () => {
+    expect(parseHostControl({ type: 'lifecycle', state: 'background' })).toEqual({
+      type: 'lifecycle',
+      state: 'background',
+    });
+    expect(parseHostControl(JSON.stringify({ type: 'lifecycle', state: 'active' }))).toEqual({
+      type: 'lifecycle',
+      state: 'active',
+    });
+    expect(parseHostControl({ type: 'a11y', reducedMotion: true })).toEqual({
+      type: 'a11y',
+      reducedMotion: true,
+    });
+  });
+
+  it('rejects malformed control messages and chapter loads', () => {
+    expect(parseHostControl({ type: 'lifecycle', state: 'paused' })).toBeNull();
+    expect(parseHostControl({ type: 'a11y', reducedMotion: 'yes' })).toBeNull();
+    expect(parseHostControl(load())).toBeNull();
+    expect(parseHostControl('{nope')).toBeNull();
+    expect(parseHostControl(null)).toBeNull();
+    expect(parsePreviewLoad({ type: 'lifecycle', state: 'active' })).toBeNull();
   });
 });

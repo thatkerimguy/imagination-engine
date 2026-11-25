@@ -27,7 +27,9 @@ export interface MountOptions {
   /** Overrides the reader's own tier preference (writer preview). */
   tier?: TierPreference;
   /** Writer preview: drafts render, no bookmarks or URL updates, curtain optional. */
-  preview?: { curtain: boolean; onAudioUnlocked(): void };
+  preview?: { curtain: boolean; onAudioUnlocked(): void; onPosition?: (blockId: string) => void };
+  /** Host accessibility setting (writer preview); forces the reduced tier. */
+  reducedMotion?: boolean;
 }
 
 export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cleanup> {
@@ -89,7 +91,7 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
 
   const restoreAt = opts.startBlockId ? blocks.findIndex((b) => b.id === opts.startBlockId) : -1;
   const tierPref = opts.tier ?? getPrefs().tier;
-  const tier: QualityTier = resolveTier(tierPref, deviceHints());
+  const tier: QualityTier = resolveTier(tierPref, deviceHints(opts.reducedMotion));
   document.documentElement.dataset.tier = tier;
   // The GL stage keeps full 2x sharpness only for an explicit High choice (see stage-gl.ts).
   document.documentElement.dataset.tierPref = tierPref;
@@ -106,7 +108,7 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
         resolveAsset: (path) => novelUrl(novel.id, path),
       }),
     onPosition(blockId) {
-      if (preview) return;
+      if (preview) return preview.onPosition?.(blockId);
       saveBookmark(novel.id, { seasonId: season.id, chapterId: chapter.id, blockId });
       history.replaceState(history.state, '', `#b-${blockId}`);
     },

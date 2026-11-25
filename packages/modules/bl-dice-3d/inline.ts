@@ -2,6 +2,7 @@
 // that stays behind so the outcome is still readable when scrolling back.
 import { PIPS, describeRoll } from './faces.ts';
 import { FINISHES } from './palette.ts';
+import { createPauseGate } from './pause-gate.ts';
 import type { DiceMaterial } from './schema.ts';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -114,7 +115,9 @@ export function waitForThrow(host: HTMLElement, signal: AbortSignal): Promise<vo
       cleanup();
       resolve();
     };
+    const gate = createPauseGate(signal);
     const onMotion = (e: DeviceMotionEvent): void => {
+      if (gate.paused) return;
       if (meter(e) > SHAKE_THRESHOLD) finish();
     };
     button.addEventListener('click', finish, { signal });

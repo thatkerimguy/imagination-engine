@@ -10,6 +10,8 @@ import { space } from '../ui/tokens.ts';
 import { makeStyles, useTheme } from '../ui/theme.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { tabular } from '../ui/type.ts';
+import { PRIVACY_TAG } from './screen-privacy.ts';
+import { useScreenPrivacy } from './use-screen-privacy.ts';
 
 export interface PinPadProps {
   length: number;
@@ -34,6 +36,7 @@ const ROWS: readonly (readonly string[])[] = [
 ];
 
 export function PinPad(p: PinPadProps): ReactNode {
+  useScreenPrivacy(PRIVACY_TAG.pin);
   const { colors } = useTheme();
   const s = useStyles();
   const [pin, setPin] = useState('');

@@ -2,6 +2,7 @@ import type { ModuleRenderer, RendererContext } from '@kn/core/renderer';
 import type { GhostWhisperProps } from './schema.ts';
 import { retainStyles } from './styles.ts';
 import { playWhisper } from './chime.ts';
+import { createPauseGate } from './pause-gate.ts';
 import {
   initialReveal,
   initialTilt,
@@ -100,9 +101,15 @@ export default function createRenderer(): ModuleRenderer<GhostWhisperProps> {
     );
 
     if (p.revealMode === 'hold-or-tilt' && tier !== 'reduced' && tiltAvailable()) {
+      const gate = createPauseGate(ac.signal, (paused) => {
+        if (!paused) return;
+        tilt = initialTilt();
+        send({ type: 'tilt', on: false });
+      });
       window.addEventListener(
         'deviceorientation',
         (e: DeviceOrientationEvent) => {
+          if (gate.paused) return;
           if (e.beta === null || e.gamma === null) return;
           tilt = stepTilt(tilt, e.beta, e.gamma, p.tiltThresholdDeg);
           send({ type: 'tilt', on: tilt.active });

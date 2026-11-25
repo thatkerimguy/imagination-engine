@@ -7,7 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
-import { PREVIEW_TIERS, type PreviewTier, type ReaderMessage } from '../preview/protocol.ts';
+import {
+  a11yMessage,
+  lifecycleMessage,
+  PREVIEW_TIERS,
+  type PreviewTier,
+  type ReaderMessage,
+} from '../preview/protocol.ts';
+import { useForeground, useReduceMotion } from '../preview/use-host-signals.ts';
 import { useNativeShake } from '../preview/use-native-shake.ts';
 import { usePreviewPayload } from '../preview/use-preview-payload.ts';
 import { useRepository } from '../store/context.tsx';
@@ -17,7 +24,7 @@ import { IconBtn } from '../ui/IconBtn.tsx';
 import { EmptyState } from '../ui/Page.tsx';
 import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
 import { THEATER_BG, THEATER_THEME } from '../ui/theater.ts';
-import { radius, space } from '../ui/tokens.ts';
+import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { makeStyles, ThemeOverride, useTheme } from '../ui/theme.tsx';
 
@@ -47,17 +54,6 @@ const useStyles = makeStyles((t) => ({
   },
   note: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  banner: {
-    marginHorizontal: space.gutter,
-    marginBottom: space.sm,
-    padding: space.md,
-    gap: space.sm,
-    borderRadius: radius.md,
-    backgroundColor: t.colors.dangerSoft,
-  },
-  bannerHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  bannerTitle: { flex: 1 },
-  actions: { flexDirection: 'row', gap: space.xs },
 }));
 
 /** The dark theater surround applies to the header, tier bar and status line alike. */
@@ -88,12 +84,20 @@ function PreviewBody(): ReactNode {
   const [status, setStatus] = useState<Status>('connecting');
   const [detail, setDetail] = useState('');
   const payload = data?.ok ? data.payload : null;
+  const foreground = useForeground();
+  const reducedMotion = useReduceMotion();
+  /** Last block the reader reported; replayed after a tier switch or a renderer remount. */
+  const position = useRef<string | undefined>(undefined);
   useNativeShake(status === 'live', () => frame.current?.triggerShake());
 
   const send = useCallback(
-    (t: PreviewTier) => payload && frame.current?.send(payload.build(t)),
+    (t: PreviewTier) => payload && frame.current?.send(payload.build(t, position.current)),
     [payload],
   );
+
+  // Background/blur pauses reader audio, RAF loops and sensors; OS reduce-motion forces 'reduced'.
+  useEffect(() => frame.current?.send(lifecycleMessage(foreground)), [foreground]);
+  useEffect(() => frame.current?.send(a11yMessage(reducedMotion)), [reducedMotion]);
 
   useEffect(() => {
     setStatus('connecting');
@@ -105,7 +109,12 @@ function PreviewBody(): ReactNode {
   }, [session, payload?.url]);
 
   const onMessage = (msg: ReaderMessage): void => {
-    if (msg.type === 'kn-preview-ready') send(tier);
+    if (msg.type === 'kn-preview-ready') {
+      // Also the replay path after a renderer crash remount (see PreviewFrame / recovery.ts).
+      frame.current?.send(a11yMessage(reducedMotion));
+      frame.current?.send(lifecycleMessage(foreground));
+      send(tier);
+    } else if (msg.type === 'kn-preview-position') position.current = msg.blockId;
     else if (msg.type === 'kn-preview-rendered') setStatus('live');
     else {
       setStatus('rejected');
@@ -114,6 +123,7 @@ function PreviewBody(): ReactNode {
   };
 
   const restart = (): void => {
+    position.current = undefined;
     setDetail('');
     setSession((n) => n + 1);
     reload();

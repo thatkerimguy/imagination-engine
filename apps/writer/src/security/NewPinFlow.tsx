@@ -6,6 +6,8 @@ import { ActionButton } from '../ui/ActionButton.tsx';
 import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
 import { space } from '../ui/tokens.ts';
 import { PinPad } from './PinPad.tsx';
+import { PRIVACY_TAG } from './screen-privacy.ts';
+import { useScreenPrivacy } from './use-screen-privacy.ts';
 
 type Len = '4' | '5' | '6';
 const LENGTHS: readonly SegmentOption<Len>[] = [
@@ -21,6 +23,7 @@ export interface NewPinFlowProps {
 }
 
 export function NewPinFlow(p: NewPinFlowProps): ReactNode {
+  useScreenPrivacy(PRIVACY_TAG.pin);
   const [len, setLen] = useState<Len>('4');
   const [first, setFirst] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

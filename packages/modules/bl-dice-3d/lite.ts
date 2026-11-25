@@ -5,6 +5,7 @@ import type { AudioBusAccess } from '@kn/core/renderer';
 import { PIPS, mulberry32, pickOutcome } from './faces.ts';
 import { FINISHES } from './palette.ts';
 import { FADE_SECONDS, fadeProgress, holdOrTap } from './handoff.ts';
+import { createPauseGate } from './pause-gate.ts';
 import { scheduleClatter } from './sfx.ts';
 import type { DiceProps } from './schema.ts';
 
@@ -65,8 +66,17 @@ export class LiteDice {
 
     return new Promise<void>((resolve) => {
       this.finish = resolve;
+      const gate = createPauseGate(signal, (paused) => {
+        if (paused || this.disposed || this.raf) return;
+        last = performance.now();
+        this.raf = requestAnimationFrame(frame);
+      });
       const frame = (now: number): void => {
         if (this.disposed) return;
+        if (gate.paused) {
+          this.raf = 0;
+          return;
+        }
         acc += Math.min(0.05, (now - last) / 1000);
         last = now;
         while (acc >= STEP) {

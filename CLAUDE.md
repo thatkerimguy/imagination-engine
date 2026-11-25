@@ -43,7 +43,8 @@ Unless the Author explicitly amends this section in writing, **NEVER** design, s
 │   ├── reader/            # Vanilla TS + Vite PWA browser reader & Gimmick Sandbox.
 │   └── publish-api/       # Tiny Cloudflare Worker handling authenticated R2 publishes.
 ├── CLAUDE.md              # This constitution.
-├── DIRECTIVE.md           # Active phase or gimmick brief (your ONLY current scope).
+├── docs/directives/       # Phase briefs; the active one is attached to the session (your ONLY scope).
+├── docs/handoffs/         # One HANDOFF-<nn>-*.md report per directive.
 └── PROJECT_PLAN.md        # Reference catalog (DO NOT pre-build items from here).
 ```
 
@@ -83,7 +84,7 @@ packages/modules/bl-dice-3d/
 
 ## 5. How We Work (Directive & Sandbox Workflow)
 
-1. **Build ONLY what is in the active `DIRECTIVE.md`.** Treat `PROJECT_PLAN.md` as a menu for the future—never preemptively build unrequested modules, abstractions, or "just in case" hooks.
+1. **Build ONLY what is in the active directive brief** (attached to the session; archived under `docs/directives/`). Treat `PROJECT_PLAN.md` as a menu for the future—never preemptively build unrequested modules, abstractions, or "just in case" hooks.
 2. **Gimmick Sandbox First:** Every new gimmick MUST be registered in `apps/reader`'s standalone `/sandbox` route with live interactive controls generated from its `schema.ts` and a quality-tier switcher (`high` / `lite` / `reduced`). The Author reviews gimmicks directly on their phone via the Sandbox URL and gives creative feedback on weight, pacing, lighting, and sound.
 3. **Keep Files Small & Readable:** Prefer clear, modular files (target `< 250 lines` per file) with strict TypeScript (`strict: true`, zero `any`).
 4. **Verify Before Handing Off:** Before declaring a Directive task done, run the §7 gate commands and verify zero console errors and clean bundle splitting.

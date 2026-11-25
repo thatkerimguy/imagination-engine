@@ -86,7 +86,7 @@ packages/modules/bl-dice-3d/
 1. **Build ONLY what is in the active `DIRECTIVE.md`.** Treat `PROJECT_PLAN.md` as a menu for the future—never preemptively build unrequested modules, abstractions, or "just in case" hooks.
 2. **Gimmick Sandbox First:** Every new gimmick MUST be registered in `apps/reader`'s standalone `/sandbox` route with live interactive controls generated from its `schema.ts` and a quality-tier switcher (`high` / `lite` / `reduced`). The Author reviews gimmicks directly on their phone via the Sandbox URL and gives creative feedback on weight, pacing, lighting, and sound.
 3. **Keep Files Small & Readable:** Prefer clear, modular files (target `< 250 lines` per file) with strict TypeScript (`strict: true`, zero `any`).
-4. **Verify Before Handing Off:** Before declaring a Directive task done, run typecheck, unit tests, production build, and verify zero console errors and clean bundle splitting (confirming core reader bundle stays `< 40 KB` gzipped without 3D modules).
+4. **Verify Before Handing Off:** Before declaring a Directive task done, run the §7 gate commands and verify zero console errors and clean bundle splitting.
 5. **Ask, Don't Invent:** If a creative nuance is ambiguous (e.g., how fast a smoke wisp dissipates or whether a dice throw blocks scrolling), make a tasteful default, expose it as a simple schema control if useful, and flag the choice briefly in your handoff summary.
 6. **One Report File Per Review Pass:** Every Orchestrator review pass gets its own new report at `docs/qa/pass-<n>-report.md`, plus a row in the `docs/qa/README.md` index. Never rewrite an earlier pass's report. Screenshots are attached to the handoff, not committed (`qa-shots*/` is git-ignored).
 
@@ -101,3 +101,13 @@ packages/modules/bl-dice-3d/
 - **3D & Physics (Lazy Modules Only):** Tree-shaken `three` + `cannon-es`
 - **Audio:** Native Web Audio API (simple playback, crossfades, stereo panning, low-pass filters—no DSP/ML)
 - **Publishing (`apps/publish-api`):** Cloudflare Worker + Cloudflare R2 bucket (+ optional static GitHub archive export)
+---
+
+## 7. Immutable Invariants & Gate Commands
+
+- **Frozen core:** zero edits to `packages/core/` (`git diff 0246947..HEAD -- packages/core` stays empty).
+- **Source files:** `<= 250` lines each, `strict: true`, zero `any`.
+- **Writer UI:** Folio UI tokens/components only; icons are Feather via `@expo/vector-icons` only. No Three.js, physics, shaders or Web Audio anywhere in the Writer's Hermes JS bundle.
+- **Reader budgets:** initial reader JS `<= 20.0 KB` gzipped (hard ceiling `< 40 KB` in `bundle-report.mjs`); each module's lazy chunk `< 300 KB` gzipped excluding shared Three.js.
+- **Gate commands (repo root):** `pnpm check` (typecheck + lint + vitest) · `pnpm build` (reader build + `scripts/bundle-report.mjs`) · `pnpm build:preview-bundle` (rebuilds `apps/writer/assets/reader-preview.html` after any renderer change) · `pnpm smoke` / `node scripts/smoke-*.mjs` · `node scripts/writer-shots.mjs --shots <dir>`.
+- **Harness:** `.claude/settings.json` blocks destructive shell commands and secret files, and auto-formats edited files with Prettier. Delegate long verification sweeps to the `qa-runner` agent; small targeted edits run in the main session.

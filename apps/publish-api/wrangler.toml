@@ -1,0 +1,14 @@
+# Cloudflare Worker for one-tap publishing. Deploy steps: see README.md.
+name = "kinetic-publish-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+[[r2_buckets]]
+binding = "NOVELS_BUCKET"
+bucket_name = "kinetic-novels"
+
+[vars]
+ALLOWED_ORIGIN = "*"
+JSON_MAX_AGE = "60"
+
+# PUBLISH_TOKEN is a secret: `wrangler secret put PUBLISH_TOKEN` (never commit it here).

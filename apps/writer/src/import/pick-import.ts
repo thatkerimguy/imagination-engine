@@ -70,6 +70,12 @@ export async function pickAndImport(
   const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
   const asset = picked.canceled ? undefined : picked.assets[0];
   if (!asset) return null;
+  const ext = extOf(asset.name);
+  const allowed = ['txt', 'md', 'markdown', 'docx', ...('novelId' in target ? ['knchap'] : [])];
+  if (!allowed.includes(ext))
+    throw new Error(
+      `“${asset.name}” can’t be imported. Choose a .txt, .md or .docx file${'novelId' in target ? ' (or a .knchap)' : ''}.`,
+    );
   const bytes = await readAssetBytes(asset);
   if ('novelId' in target && extOf(asset.name) === 'knchap') {
     return importChapterArchive(repo, bytes, target);

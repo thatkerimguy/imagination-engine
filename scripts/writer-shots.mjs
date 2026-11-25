@@ -2,15 +2,20 @@
 // appearance, live preview): drives the Expo Web export of apps/writer at 390×844. The Live
 // Preview runs the built-in OFFLINE reader (iframe srcDoc) with every non-local request aborted,
 // so no reader server is needed. Needs `pnpm writer:export` (which builds the preview bundle).
-// Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase2e
-// The current phase's 5 PNGs land in <dir>; earlier packs' regression shots in <dir>/regression.
+// Usage: node scripts/writer-shots.mjs [--shots <dir>]   e.g. --shots qa-shots-phase3
+// The current phase's PNGs land in <dir> (04A: writer-shots-4a.mjs); earlier packs' regression
+// shots, including Phase 3's smoke-publish.mjs pack, in <dir>/regression.
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { extname, join, resolve } from 'node:path';
 import { phase2ePass } from './writer-shots-2e.mjs';
+import { flowPass } from './writer-shots-flow.mjs';
+import { phase2fPass } from './writer-shots-2f.mjs';
 import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
 import { workspacePass } from './writer-shots-workspace.mjs';
+import { phase4aPass } from './writer-shots-4a.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -18,7 +23,7 @@ const packAt = process.argv.includes('--shots')
   : null;
 const shotsAt = packAt && join(packAt, 'regression');
 const WRITER = 'http://127.0.0.1:8099/';
-const DIST = resolve(import.meta.dirname, '../apps/writer/dist');
+const DIST = resolve(import.meta.dirname, '../apps/writer/dist-web');
 const ID = {
   dialogue: '01M7WD7TG4T9804M170B4T81MM',
   chat: '01M7WD7TG3C1Z266E87HFD27KR',
@@ -242,8 +247,12 @@ try {
   await workspacePass(page, { WRITER, shotsAt, tid, ok, fail, editor });
   await toolbarPass(page, { tid, editor, shotsAt, ok, fail });
   await settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail });
-  await flowPass(page, tid);
-  await phase2ePass(page, { WRITER, ID, tid, shotsAt: packAt, ok, fail, editor });
+  await flowPass(page, { WRITER, tid, ok, fail });
+  // 2E's five shots are regression now; the pack root holds only the current (2F) four.
+  await phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor });
+  await phase2fPass(page, { WRITER, tid, shotsAt, ok, fail, editor });
+  // Directive 04A: the pack root holds the current shots (02–04 here, 01 from smoke.mjs).
+  await phase4aPass(page, { WRITER, packAt, tid, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();
@@ -255,30 +264,17 @@ try {
   writer.closeAllConnections();
   writer.close();
 }
+// Phase 3 pack (Settings → Publish sheet → live reader), now regression: the publish E2E smoke
+// owns its servers.
+const pack3 =
+  shotsAt &&
+  spawnSync(
+    process.execPath,
+    [join(import.meta.dirname, 'smoke-publish.mjs'), '--shots', shotsAt],
+    {
+      stdio: 'inherit',
+    },
+  );
+if (pack3 && pack3.status !== 0) fail('publish pack (smoke-publish.mjs) failed');
 // Exit explicitly with the recorded status.
 process.exit(process.exitCode ?? 0);
-
-// New novel → write a paragraph → auto-save survives a reload; gimmick picker honours modules.
-async function flowPass(page, tid) {
-  await page.goto(`${WRITER}new-novel`);
-  await tid('novel-title').fill('Flow Test');
-  await tid('novel-author').fill('QA');
-  await page.getByText('Arc', { exact: true }).click();
-  await page.getByRole('button', { name: 'Create' }).click();
-  await page.getByText('Arc 1', { exact: false }).first().waitFor();
-  await page.locator('[data-testid^="outline-chapter-"]').first().getByText('Chapter 1').click();
-  await tid('tool-addProse').click();
-  const prose = page.getByPlaceholder('Write…').last();
-  await prose.fill('A paragraph typed on the train.');
-  await page.getByTestId('save-status').filter({ hasText: 'Saved' }).waitFor({ timeout: 5000 });
-  await page.reload();
-  try {
-    await page.getByText('A paragraph typed on the train.').waitFor({ timeout: 10000 });
-    ok('auto-save persisted a new paragraph');
-  } catch {
-    fail('auto-save lost the new paragraph');
-  }
-  await tid('tool-addGimmick').click();
-  await page.getByText(/No gimmicks are enabled/).waitFor({ timeout: 5000 });
-  ok('gimmick picker is filtered to enabledModules (none for a new novel)');
-}

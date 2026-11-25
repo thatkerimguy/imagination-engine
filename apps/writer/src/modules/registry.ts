@@ -8,8 +8,11 @@ import type {
   ValidationResult,
 } from '@kn/core';
 import * as dice from '@kn/module-bl-dice-3d';
+import * as lighter from '@kn/module-bl-lighter-flick';
 import * as ambient from '@kn/module-core-ambient-bed';
 import * as chat from '@kn/module-gits-cyberbrain-chat';
+import * as whisper from '@kn/module-gits-ghost-whisper';
+import * as gaslight from '@kn/module-pt-gaslight-edit';
 
 type Props = Record<string, unknown>;
 
@@ -50,6 +53,9 @@ export const writerModules: readonly WriterModule[] = [
   register(ambient.schema, ambient.formatCardSummary),
   register(chat.schema, chat.formatCardSummary),
   register(dice.schema, dice.formatCardSummary),
+  register(gaslight.schema, gaslight.formatCardSummary),
+  register(whisper.schema, whisper.formatCardSummary),
+  register(lighter.schema, lighter.formatCardSummary),
 ];
 
 const byId = new Map(writerModules.map((m) => [m.meta.id, m]));

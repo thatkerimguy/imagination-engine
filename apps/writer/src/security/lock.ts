@@ -27,7 +27,6 @@ export interface LockConfig {
 export const LOCK_KEY = 'setting/lock';
 export const MAX_ATTEMPTS = 5;
 export const THROTTLE_MS = 30_000;
-export const PIN_LENGTHS = [4, 5, 6] as const;
 /** 32 symbols: A–Z without I/O, digits 2–9 (no 0/1) — nothing ambiguous to misread. */
 export const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const RECOVERY_LENGTH = 12;

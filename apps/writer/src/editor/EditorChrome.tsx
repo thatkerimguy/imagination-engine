@@ -97,7 +97,15 @@ const styles = StyleSheet.create({
 });
 
 type MenuAction =
-  'analysis' | 'growth' | 'find' | 'outline' | 'versions' | 'focus' | 'layout' | 'exportJson';
+  | 'analysis'
+  | 'growth'
+  | 'find'
+  | 'outline'
+  | 'versions'
+  | 'focus'
+  | 'layout'
+  | 'publish'
+  | 'exportJson';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'analysis', label: 'Text Analysis', icon: 'bar-chart-2', testID: 'menu-analysis' },
@@ -107,6 +115,7 @@ const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'versions', label: 'Version History', icon: 'clock', testID: 'menu-versions' },
   { action: 'focus', label: 'Focus Mode', icon: 'maximize', testID: 'menu-focus' },
   { action: 'layout', label: 'Appearance & Layout', icon: 'sliders', testID: 'menu-layout' },
+  { action: 'publish', label: 'Publish…', icon: 'upload-cloud', testID: 'menu-publish' },
   { action: 'exportJson', label: 'Export Chapter JSON', icon: 'share', testID: 'export-chapter' },
 ];
 

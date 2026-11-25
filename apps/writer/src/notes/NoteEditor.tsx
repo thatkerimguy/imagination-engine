@@ -1,8 +1,8 @@
 // Standalone note editor: the chapter editor's prose / dialogue / scene-break experience (toolbar,
 // metrics, find & replace, outline, analysis, undo/redo) over a note — no gimmicks, no preview.
 import type { Block } from '@kn/core';
-import { useCallback, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { ScrollView, View } from 'react-native';
 import { BlockView } from '../editor/BlockView.tsx';
 import { useNoteEditorStyles } from './note-editor-styles.ts';
 import { FindReplaceBar } from '../editor/FindReplaceBar.tsx';
@@ -10,13 +10,16 @@ import { FormattingToolbar } from '../editor/FormattingToolbar.tsx';
 import { MetricsRibbon } from '../editor/MetricsRibbon.tsx';
 import { useEditorActions } from '../editor/use-editor-actions.ts';
 import { useFormatActions } from '../editor/use-format-actions.ts';
+import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
 import { useLiveMetrics } from '../editor/use-live-metrics.ts';
+import type { ToolId } from '../store/writer-prefs.ts';
 import { ColorPopover } from '../editor/EditorChrome.tsx';
 import { Field } from '../ui/Field.tsx';
 import { EmptyState } from '../ui/Page.tsx';
 import type { MenuItem } from '../ui/PopoverMenu.tsx';
 import { space } from '../ui/tokens.ts';
 import { useWriterPrefs } from '../ui/theme.tsx';
+import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
 import { useEditorTypography } from '../ui/typography.ts';
 import { NoteTopBar } from './NoteTopBar.tsx';
 import { usePromote } from './promote.ts';
@@ -36,7 +39,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
   const { draft } = p;
   const s = useNoteEditorStyles();
   const typo = useEditorTypography();
-  const [prefs, setPrefs] = useWriterPrefs();
+  const [prefs] = useWriterPrefs();
   const promote = usePromote();
   const a = useEditorActions(draft.update);
   const chapter = draft.chapter;
@@ -58,6 +61,15 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef(new Map<string, number>());
   const metrics = useLiveMetrics(blocks);
+  const dock = useKeyboardDock();
+  const hiddenTools = useMemo<ToolId[]>(
+    () => [...prefs.hiddenTools, 'addGimmick'],
+    [prefs.hiddenTools],
+  );
+  const onCollapse = useToolbarCollapse();
+  const toggleRibbon = useCallback(() => setCollapsed((c) => !c), []);
+  const openAnalysis = useCallback(() => setSheet('analysis'), []);
+  const openMetrics = useCallback(() => setSheet('metrics'), []);
 
   // Stable, id-taking handlers (via a ref to the latest actions) so memoized BlockViews skip renders.
   const actions = useRef(a);
@@ -103,7 +115,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
   const shownTitle = draft.title || draft.autoTitle;
 
   return (
-    <View style={s.screen} testID="note-editor">
+    <View style={s.screen} onLayout={dock.onRootLayout} testID="note-editor">
       <NoteTopBar
         words={metrics.words}
         draft={draft}
@@ -117,9 +129,9 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
           metrics={metrics}
           visible={prefs.visibleMetrics}
           collapsed={collapsed}
-          onToggleCollapsed={() => setCollapsed((c) => !c)}
-          onOpenAnalysis={() => setSheet('analysis')}
-          onCustomize={() => setSheet('metrics')}
+          onToggleCollapsed={toggleRibbon}
+          onOpenAnalysis={openAnalysis}
+          onCustomize={openMetrics}
         />
       ) : null}
       {findOpen && chapter ? (
@@ -130,7 +142,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
           onClose={() => setFindOpen(false)}
         />
       ) : null}
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={s.flex}>
         <ScrollView
           ref={scroller}
           keyboardShouldPersistTaps="handled"
@@ -187,22 +199,18 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
         ) : null}
         <FormattingToolbar
           order={prefs.toolbarOrder}
-          hidden={[...prefs.hiddenTools, 'addGimmick']}
+          hidden={hiddenTools}
           active={f.active}
           align={f.align}
           disabledText={!f.textSelected}
           onTool={f.onTool}
           formatCollapsed={prefs.toolbarFormatCollapsed}
           addCollapsed={prefs.toolbarAddCollapsed}
-          onCollapse={(half, isCollapsed) =>
-            setPrefs(
-              half === 'format'
-                ? { toolbarFormatCollapsed: isCollapsed }
-                : { toolbarAddCollapsed: isCollapsed },
-            )
-          }
+          onCollapse={onCollapse}
+          keyboardOffset={dock.keyboardOffset}
+          keyboardOpen={dock.keyboardOpen}
         />
-      </KeyboardAvoidingView>
+      </View>
 
       <NoteSheets
         sheet={sheet}

@@ -95,6 +95,16 @@ export function BookCompiler({ source }: { source: CompileSource }): ReactNode {
         disabled={source.kind === 'folder' ? ['knbook'] : []}
         onExport={(f) => void run(f)}
       />
+      {state.notice ? (
+        <Txt
+          variant="meta"
+          color="inkSecondary"
+          accessibilityLiveRegion="polite"
+          testID="compile-notice"
+        >
+          {state.notice}
+        </Txt>
+      ) : null}
       {state.error ? (
         <Txt variant="meta" color="danger" accessibilityLiveRegion="polite" testID="compile-error">
           {state.error}

@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
+      '**/dist-web/**',
       '**/dev-dist/**',
       'coverage/**',
       'apps/writer/.expo/**',

@@ -108,8 +108,10 @@ export class HighDice {
       this.phase = 'roll';
       this.applyFrame(rec, 0, q, q2, 1);
       this.unsubscribe = this.lease.onFrame((dt) => {
-        // Clamp so a backgrounded tab resumes smoothly instead of teleporting.
-        t += Math.min(dt, 1 / 20);
+        // Clamp the roll so a backgrounded tab resumes smoothly instead of teleporting. The fade
+        // runs on real time (capped at 0.25 s a frame), so slow or software GPUs still finish it
+        // and release the lease about FADE_SECONDS after handoff instead of many frames later.
+        t += Math.min(dt, this.phase === 'fade' ? 0.25 : 1 / 20);
         if (this.phase === 'roll') {
           this.applyFrame(rec, Math.min(t, settleAt), q, q2, 1);
           if (t < settleAt) return;

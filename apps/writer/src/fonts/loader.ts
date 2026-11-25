@@ -10,7 +10,10 @@ import { displayNameFromFile, FontImportError, validateFontFile } from './valida
 
 export { loadFontById, useFontFamily } from './shared.ts';
 
-const PICK_TYPES = ['font/ttf', 'font/otf', 'application/x-font-ttf', 'application/octet-stream'];
+// Android reports .ttf/.otf under many MIME types (font/sfnt, application/x-font-otf, vnd.ms-opentype,
+// or none), so a narrow list greys real fonts out in Files. Accept any file; validateFontFile checks
+// the extension and magic bytes.
+const PICK_TYPES = '*/*';
 
 /** Picks, validates, copies and registers a .ttf/.otf. Call from a press handler. Returns null if cancelled. */
 export async function importCustomFont(repo: NovelRepository): Promise<CustomFont | null> {

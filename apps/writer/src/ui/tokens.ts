@@ -19,9 +19,6 @@ export const space = {
 /** Minimum interactive target (dp). Smaller visuals reach it with hitSlop. */
 export const TOUCH = 44;
 
-/** Hairline stroke (dp). */
-export const HAIRLINE = 1;
-
 /** UI sans sizes. */
 export const size = { xs: 11, sm: 13, md: 15, lg: 17, xl: 22, display: 28 } as const;
 

@@ -28,6 +28,12 @@ export function toggleFeedback(on: boolean): void {
   Haptics.impactAsync(style).catch(() => undefined);
 }
 
+/** A single success buzz (e.g. after a publish lands). */
+export function successFeedback(): void {
+  if (!enabled || Platform.OS === 'web') return;
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+}
+
 const wait = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /** Light, medium, success: runs regardless of the enabled flag (the Test vibration button). */

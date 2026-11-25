@@ -2,9 +2,15 @@
 import { Stack } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import { runAfterInteractions } from '../ui/after-interactions.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { isRedacted } from '../store/unlock-session.ts';
-import { buildSearchIndex, search, type SearchScope } from '../search/search-index.ts';
+import {
+  buildSearchIndex,
+  search,
+  type SearchIndex,
+  type SearchScope,
+} from '../search/search-index.ts';
 import { openResult } from '../search/open-result.ts';
 import { SearchResultRow } from '../search/SearchResultRow.tsx';
 import { loadSearchSources } from '../search/search-sources.ts';
@@ -32,11 +38,15 @@ export default function SearchScreen(): ReactNode {
     return () => clearTimeout(id);
   }, [text]);
 
-  const index = useMemo(() => {
+  // Build after the tab-switch animation so switching to Search stays smooth.
+  const [index, setIndex] = useState<SearchIndex | null>(null);
+  useEffect(() => {
     const src = sources.data;
-    return src
-      ? buildSearchIndex(src, { isLocked: (id) => isRedacted(id, src.meta.get(id)) })
-      : null;
+    if (!src) return;
+    const handle = runAfterInteractions(() => {
+      setIndex(buildSearchIndex(src, { isLocked: (id) => isRedacted(id, src.meta.get(id)) }));
+    });
+    return () => handle.cancel();
   }, [sources.data]);
   const results = useMemo(
     () => (index && query.trim() ? search(index, query, { scope, limit: 50 }) : []),
@@ -55,7 +65,6 @@ export default function SearchScreen(): ReactNode {
           value={text}
           onChangeText={setText}
           placeholder="Search chapters and notes"
-          autoFocus
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"

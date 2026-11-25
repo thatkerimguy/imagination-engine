@@ -1,6 +1,7 @@
 // Which editor sheets are mounted. Only open sheets get a <Modal> tree, so none stay mounted
 // (and re-render) while the Author types.
-export type EditorSheet = 'analysis' | 'outline' | 'layout' | 'metrics' | 'versions' | null;
+export type EditorSheet =
+  'analysis' | 'outline' | 'layout' | 'metrics' | 'versions' | 'publish' | null;
 
 export interface OpenSheetState {
   sheet: EditorSheet;

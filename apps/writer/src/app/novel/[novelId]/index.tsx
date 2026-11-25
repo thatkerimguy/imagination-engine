@@ -3,8 +3,9 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ItemMetaSheet } from '../../../components/ItemMetaSheet.tsx';
 import { pickAndImport } from '../../../import/pick-import.ts';
+import { PublishSheet } from '../../../publish/PublishSheet.tsx';
 import { PopoverMenu } from '../../../ui/PopoverMenu.tsx';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { shareJson } from '../../../export/share-json';
 import { GimmickLine } from '../../../library/GimmickLine.tsx';
 import { SeasonSection } from '../../../library/SeasonSection.tsx';
@@ -30,11 +31,14 @@ export default function OutlineScreen(): ReactNode {
   const repo = useRepository();
   const { data, error } = useRepoQuery(`outline:${novelId}`, (r) => r.exportNovel(novelId));
   const [problem, setProblem] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
   const [metaOpen, setMetaOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const run = async (job: () => Promise<unknown>): Promise<void> => {
     try {
       setProblem(null);
+      setSaved(null);
       await job();
     } catch (err) {
       setProblem(err instanceof Error ? err.message : 'Something went wrong.');
@@ -43,11 +47,9 @@ export default function OutlineScreen(): ReactNode {
 
   const exportBook = (): Promise<void> =>
     run(async () => {
-      try {
-        await shareJson(`${novelId}.json`, await repo.exportNovel(novelId));
-      } catch (err) {
-        Alert.alert('Export failed', err instanceof Error ? err.message : 'Please try again.');
-      }
+      const filename = `${novelId}.json`;
+      const result = await shareJson(filename, await repo.exportNovel(novelId));
+      if (result === 'saved') setSaved(`Saved ${filename}`);
     });
 
   const importChapter = (): Promise<void> =>
@@ -67,6 +69,12 @@ export default function OutlineScreen(): ReactNode {
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
               <IconBtn
+                icon="upload-cloud"
+                accessibilityLabel="Publish to web"
+                onPress={() => setPublishOpen(true)}
+                testID="outline-publish"
+              />
+              <IconBtn
                 icon="settings"
                 accessibilityLabel="Novel settings"
                 onPress={() => router.push(routes.novelSettings(novelId))}
@@ -76,6 +84,12 @@ export default function OutlineScreen(): ReactNode {
                 accessibilityLabel="Book options"
                 testID="outline-menu"
                 items={[
+                  {
+                    label: 'Publish to web…',
+                    icon: 'upload-cloud',
+                    onPress: () => setPublishOpen(true),
+                    testID: 'outline-menu-publish',
+                  },
                   {
                     label: 'Compile & Export Book',
                     icon: 'printer',
@@ -128,6 +142,16 @@ export default function OutlineScreen(): ReactNode {
           {problem}
         </Txt>
       ) : null}
+      {saved ? (
+        <Txt
+          variant="meta"
+          color="inkSecondary"
+          accessibilityLiveRegion="polite"
+          testID="outline-saved"
+        >
+          {saved}
+        </Txt>
+      ) : null}
       {data?.seasons.map(({ season, chapters }, i) => (
         <SeasonSection
           key={season.id}
@@ -173,6 +197,7 @@ export default function OutlineScreen(): ReactNode {
           onClose={() => setMetaOpen(false)}
         />
       ) : null}
+      <PublishSheet visible={publishOpen} novelId={novelId} onClose={() => setPublishOpen(false)} />
     </Page>
   );
 }

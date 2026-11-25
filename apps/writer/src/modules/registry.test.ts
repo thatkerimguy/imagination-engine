@@ -1,6 +1,9 @@
 import * as dice from '@kn/module-bl-dice-3d';
+import * as lighter from '@kn/module-bl-lighter-flick';
 import * as ambient from '@kn/module-core-ambient-bed';
 import * as chat from '@kn/module-gits-cyberbrain-chat';
+import * as whisper from '@kn/module-gits-ghost-whisper';
+import * as gaslight from '@kn/module-pt-gaslight-edit';
 import { describe, expect, it } from 'vitest';
 import { enabledWriterModules, getWriterModule, writerModules } from './registry.ts';
 
@@ -8,12 +11,22 @@ const formatters: Record<string, (p: never) => unknown> = {
   [ambient.meta.id]: ambient.formatCardSummary,
   [chat.meta.id]: chat.formatCardSummary,
   [dice.meta.id]: dice.formatCardSummary,
+  [gaslight.meta.id]: gaslight.formatCardSummary,
+  [whisper.meta.id]: whisper.formatCardSummary,
+  [lighter.meta.id]: lighter.formatCardSummary,
 };
 
 describe('writer module registry', () => {
-  it('contains exactly the three modules', () => {
+  it('contains exactly the six modules', () => {
     expect(writerModules.map((m) => m.meta.id).sort()).toEqual(
-      ['bl-dice-3d', 'core-ambient-bed', 'gits-cyberbrain-chat'].sort(),
+      [
+        'bl-dice-3d',
+        'bl-lighter-flick',
+        'core-ambient-bed',
+        'gits-cyberbrain-chat',
+        'gits-ghost-whisper',
+        'pt-gaslight-edit',
+      ].sort(),
     );
     expect(getWriterModule('bl-dice-3d')?.meta.id).toBe('bl-dice-3d');
     expect(getWriterModule('nope')).toBeUndefined();

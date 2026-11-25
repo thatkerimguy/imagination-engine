@@ -18,7 +18,8 @@ import {
 import { createAutosaver, type Autosaver } from '../store/autosave.ts';
 import { loadChapterStyles, pruneStyles, saveChapterStyles } from '../store/chapter-styles.ts';
 import { useRepository } from '../store/context.tsx';
-import { fallbackTitle, getDoc, saveDoc, type NoteBlock } from '../store/folders.ts';
+import { deleteDoc, fallbackTitle, getDoc, saveDoc, type NoteBlock } from '../store/folders.ts';
+import { isNoteEmpty, shouldDeleteOnExit } from './note-empty.ts';
 import { countsOf } from '../store/growth-logger.ts';
 import { recordGrowth } from '../store/growth-store.ts';
 import { recordAutoCheckpoint } from '../store/versions.ts';
@@ -61,6 +62,8 @@ export function useNoteDraft(docId: string): NoteDraft {
   useEffect(() => {
     let live = true;
     let last: DraftState | undefined;
+    let emptyAtOpen = false;
+    latest.current = undefined;
     const s = createAutosaver<Saved>(
       async ({ draft, title: named }) => {
         last = draft;
@@ -91,6 +94,7 @@ export function useNoteDraft(docId: string): NoteDraft {
         titleRef.current = named;
         setTitleState(named);
         setParent(doc.parentFolderId);
+        emptyAtOpen = isNoteEmpty(named, doc.blocks);
         const h = createHistory<DraftState>({ chapter: docAsChapter(doc), styles });
         latest.current = h;
         setHistory(h);
@@ -104,8 +108,16 @@ export function useNoteDraft(docId: string): NoteDraft {
     return () => {
       live = false;
       sub.remove();
+      const finalBlocks = latest.current?.present.chapter.blocks.filter(isNoteBlock);
+      const abandoned =
+        !!finalBlocks && shouldDeleteOnExit(emptyAtOpen, titleRef.current, finalBlocks);
       void s.flush().finally(() => {
         s.dispose();
+        // Flushed and disposed: nothing can schedule a save that would recreate the record.
+        if (abandoned) {
+          void deleteDoc(repo, docId).catch(() => undefined);
+          return;
+        }
         if (last)
           void recordGrowth(repo, `doc:${docId}`, () => countsOf(last!.chapter), {
             force: true,

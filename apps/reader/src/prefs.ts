@@ -27,7 +27,6 @@ function isPrefs(v: unknown): v is Prefs {
 }
 
 let current: Prefs = readJson(KEY, isPrefs) ?? DEFAULT_PREFS;
-const listeners = new Set<(p: Prefs) => void>();
 
 export const getPrefs = (): Prefs => current;
 
@@ -35,12 +34,6 @@ export function setPrefs(patch: Partial<Prefs>): void {
   current = { ...current, ...patch };
   writeJson(KEY, current);
   applyPrefs();
-  listeners.forEach((l) => l(current));
-}
-
-export function onPrefsChange(listener: (p: Prefs) => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
 }
 
 export function applyPrefs(root: HTMLElement = document.documentElement): void {

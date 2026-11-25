@@ -1,7 +1,7 @@
 // "Recent": a quiet, collapsible row of the last few chapters / notes the Author touched, one tap
 // to resume. Hidden entirely when there is nothing yet. Self-loading; navigates itself.
 import { router } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { relativeTime } from '../library/relative-time.ts';
 import { routes } from '../routes.ts';
@@ -10,6 +10,7 @@ import { listAllDocs } from '../store/folders.ts';
 import { loadAllItemMeta, type ItemMeta } from '../store/item-meta.ts';
 import { isRedacted } from '../store/unlock-session.ts';
 import type { NovelRepository } from '../store/repository.ts';
+import { runAfterInteractions } from '../ui/after-interactions.ts';
 import { Glyph } from '../ui/Glyph.tsx';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -96,7 +97,21 @@ const useStyles = makeStyles((t) => ({
   grow: { flex: 1 },
 }));
 
-async function loadRecent(repo: NovelRepository): Promise<RecentItem[]> {
+/** Last result: shown instantly on remount while the disk refresh waits for the UI to go idle. */
+let cached: RecentItem[] | undefined;
+let pendingRefresh: { cancel(): void } | null = null;
+
+function loadRecent(repo: NovelRepository): Promise<RecentItem[]> {
+  if (!cached) return readRecent(repo).then((items) => (cached = items));
+  return new Promise((resolve, reject) => {
+    pendingRefresh = runAfterInteractions(() => {
+      pendingRefresh = null;
+      readRecent(repo).then((items) => resolve((cached = items)), reject);
+    });
+  });
+}
+
+async function readRecent(repo: NovelRepository): Promise<RecentItem[]> {
   const chapters: RecentInput['chapters'] = [];
   const books = new Map<string, string>();
   for (const key of await repo.docs.keys('chapter/')) {
@@ -127,7 +142,15 @@ async function loadRecent(repo: NovelRepository): Promise<RecentItem[]> {
 export function RecentStrip({ testID = 'recent-strip' }: { testID?: string }): ReactNode {
   const s = useStyles();
   const [open, setOpen] = useState(true);
-  const { data } = useRepoQuery('recent-strip', loadRecent);
+  const query = useRepoQuery('recent-strip', loadRecent);
+  useEffect(
+    () => () => {
+      pendingRefresh?.cancel();
+      pendingRefresh = null;
+    },
+    [],
+  );
+  const data = query.data ?? cached;
   if (!data || data.length === 0) return null;
   return (
     <View testID={testID}>

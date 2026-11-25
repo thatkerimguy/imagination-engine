@@ -5,7 +5,7 @@ import { File } from 'expo-file-system';
 import * as Print from 'expo-print';
 import type { CompiledBook, ExportOptions } from './book-model.ts';
 import { fileStem } from './book-model.ts';
-import { deliverFile } from './deliver.ts';
+import { deliverBase64, type DeliverResult } from './deliver';
 import { toHtml } from './html.ts';
 
 const MARGINS = { left: 48, right: 48, top: 48, bottom: 48 } as const;
@@ -27,10 +27,23 @@ export async function printableHtml(book: CompiledBook, opts: ExportOptions): Pr
   return toHtml(cover ? { ...book, cover } : { ...book, cover: undefined }, opts);
 }
 
-export async function exportPdf(book: CompiledBook, opts: ExportOptions): Promise<void> {
+export async function exportPdf(book: CompiledBook, opts: ExportOptions): Promise<DeliverResult> {
   const html = await printableHtml(book, opts);
   const { uri } = await Print.printToFileAsync({ html, margins: MARGINS });
-  await deliverFile(`${fileStem(book.title)}.pdf`, await new File(uri).bytes(), 'application/pdf');
+  const file = new File(uri);
+  try {
+    return await deliverBase64(
+      `${fileStem(book.title)}.pdf`,
+      await file.base64(),
+      'application/pdf',
+    );
+  } finally {
+    try {
+      if (file.exists) file.delete();
+    } catch {
+      // The cache is cleared by the OS anyway.
+    }
+  }
 }
 
 export async function printBook(book: CompiledBook, opts: ExportOptions): Promise<void> {

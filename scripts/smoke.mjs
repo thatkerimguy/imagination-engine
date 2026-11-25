@@ -1,10 +1,11 @@
 // Browser smoke test + QA screenshot pack (DIRECTIVE 01 acceptance and the review handoff).
 // Needs `pnpm build` first and Playwright with Chromium (`npx playwright install chromium`).
 // Usage: node scripts/smoke.mjs [--shots <dir>]
-import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { diceMaterialsPass } from './smoke-dice-materials.mjs';
+import { pack1Pass } from './smoke-pack-1.mjs';
 import { previewPass } from './smoke-preview.mjs';
+import { startPreviewServer } from './smoke-server.mjs';
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -20,14 +21,7 @@ const shotsAt = process.argv.includes('--shots')
   ? process.argv[process.argv.indexOf('--shots') + 1]
   : null;
 const BASE = 'http://127.0.0.1:4173/';
-// Windows needs a shell to find pnpm.cmd, and a tree kill to stop the server behind it.
-const win = process.platform === 'win32';
-const server = spawn('pnpm', ['--filter', '@kn/reader', 'preview'], {
-  stdio: 'ignore',
-  shell: win,
-});
-const stopServer = () =>
-  win ? spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F']) : server.kill();
+const stopServer = await startPreviewServer(BASE);
 const errors = [];
 const fail = (msg) => {
   console.error(`❌ ${msg}`);
@@ -36,7 +30,6 @@ const fail = (msg) => {
 const ok = (msg) => console.log(`✅ ${msg}`);
 
 try {
-  await waitFor(BASE);
   const browser = await chromium.launch({
     args: [
       '--use-gl=angle',
@@ -71,6 +64,7 @@ try {
   await warmPass(await newPage(), shot, settled);
   await previewPass(await newPage(), BASE, { ok, fail, shot });
   await diceMaterialsPass(newPage, BASE, { ok, fail, shot });
+  await pack1Pass(newPage, BASE, { ok, fail, shotsAt });
   const fresh = await newPage();
   await fresh.goto(`${BASE}sandbox/?module=gits-cyberbrain-chat&tier=high`);
   await fresh.getByRole('button', { name: 'Trigger Beat' }).click();
@@ -83,10 +77,13 @@ try {
 
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
-  await browser.close();
+  // SwiftShader's GPU process can wedge browser.close(); never let that hang the run.
+  await Promise.race([browser.close(), new Promise((r) => setTimeout(r, 10000))]);
 } finally {
   stopServer();
 }
+// Exit explicitly: a wedged browser would otherwise keep the event loop (and the run) alive.
+process.exit(process.exitCode ?? 0);
 
 async function readerPass(page, shot, settled, resetSettled) {
   await page.goto(BASE);
@@ -178,6 +175,9 @@ async function sandboxPass(page, shot, settled, resetSettled) {
   await resetSettled(page);
   await trigger.click();
   await settled(page);
+  // holdOrTap registers its tap listener on the frame after settling; wait for two frames so a
+  // slow software GPU cannot swallow the tap before the listener exists.
+  await nextFrames(page, 2);
   const tappedAt = Date.now();
   await page.mouse.click(30, 400);
   await page.locator('.kn-dice-result').waitFor({ timeout: 6000 });
@@ -202,7 +202,11 @@ async function sandboxPass(page, shot, settled, resetSettled) {
   const afterLoss = await page.evaluate(() => document.querySelector('.sb-stats').textContent);
   await trigger.click();
   await page.locator('.kn-dice-result').waitFor({ timeout: 10000 });
-  await page.waitForTimeout(1000);
+  // The lease is released when the fade ends; poll for it instead of a fixed sleep.
+  await stats
+    .filter({ hasText: /leases 0/ })
+    .waitFor({ timeout: 8000 })
+    .catch(() => {});
   const recovered = await stats.textContent();
   if (/GL contexts made 2/.test(recovered ?? '') && /leases 0/.test(recovered ?? ''))
     ok(`context loss: beat finished, fresh context next time (${recovered})`);
@@ -252,14 +256,13 @@ async function warmPass(page, shot, settled) {
   await shot(page, '02-warm-theme-dice-shadows');
 }
 
-async function waitFor(url) {
-  for (let i = 0; i < 50; i++) {
-    try {
-      if ((await fetch(url)).ok) return;
-    } catch {
-      // not up yet
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  throw new Error('preview server did not start');
+function nextFrames(page, n) {
+  return page.evaluate(
+    (count) =>
+      new Promise((resolve) => {
+        const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : resolve());
+        step(count);
+      }),
+    n,
+  );
 }

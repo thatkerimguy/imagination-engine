@@ -26,5 +26,6 @@ apps/writer/assets/reader-preview.html
 # Local Android builds: `expo prebuild` output, built APKs, and the local signing keystore.
 apps/writer/android/
 apps/writer/dist/
+apps/writer/dist-web/
 apps/writer/dist-android/
 apps/writer/.keystore/

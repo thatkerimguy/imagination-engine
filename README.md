@@ -65,7 +65,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -Abi arm6
 
 `-Variant debug` builds a debug
 APK; `-SkipPrebuild` reuses `apps/writer/android/`; `-ToolsOnly` stops after the toolchain check.
-`apps/writer/android/` and `apps/writer/dist/` are generated and git-ignored. Native C++ builds are staged under `C:\knx\` and pnpm keeps short `.pnpm/_<hash>` folders (`virtualStoreDirMaxLength: 30`) so CMake/ninja stay under the Windows 260-character path limit. The first build takes ~20–40 min (Gradle, NDK); later ones are much faster.
+`apps/writer/android/`, `apps/writer/dist/` (APK) and `apps/writer/dist-web/` (web export) are generated and git-ignored. Native C++ builds are staged under `C:\knx\` and pnpm keeps short `.pnpm/_<hash>` folders (`virtualStoreDirMaxLength: 30`) so CMake/ninja stay under the Windows 260-character path limit. The first build takes ~20–40 min (Gradle, NDK); later ones are much faster.
 
 ## Layout
 

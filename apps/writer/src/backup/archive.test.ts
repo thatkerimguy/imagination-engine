@@ -39,6 +39,11 @@ async function seeded() {
   await adapter.set('setting/app', JSON.stringify({ data: { appearance: 'dark' }, updatedAt: 1 }));
   await adapter.set('setting/lock', JSON.stringify({ data: { hash: 'SECRET' }, updatedAt: 1 }));
   await adapter.set('setting/lock-pin', JSON.stringify({ data: { pin: '1234' }, updatedAt: 1 }));
+  await adapter.set(
+    'setting/publish',
+    JSON.stringify({ data: { apiUrl: 'https://a' }, updatedAt: 1 }),
+  );
+  await adapter.set('setting/publish-secret', JSON.stringify({ data: 'TOKEN', updatedAt: 1 }));
   return { adapter, repo, novel, season, chapter };
 }
 
@@ -48,11 +53,14 @@ describe('workspace archive', () => {
     const bytes = await packWorkspace(adapter);
     const names = Object.keys(await unzipFiles(bytes));
     expect(names.some((n) => n.includes('lock'))).toBe(false);
+    expect(names.some((n) => n.includes('publish-secret'))).toBe(false);
+    expect(names).toContain('kv/setting/publish');
     const target = createMemoryAdapter();
     await restoreWorkspace(target, bytes);
     const expected = await dump(adapter);
     delete expected['setting/lock'];
     delete expected['setting/lock-pin'];
+    delete expected['setting/publish-secret'];
     expect(await dump(target)).toEqual(expected);
   });
 
@@ -61,10 +69,12 @@ describe('workspace archive', () => {
     const bytes = await packWorkspace(adapter);
     const target = createMemoryAdapter({
       'setting/lock': '"mine"',
+      'setting/publish-secret': '"my-token"',
       'doc/stale': '{"data":{},"updatedAt":1}',
     });
     await restoreWorkspace(target, bytes);
     expect(await target.get('setting/lock')).toBe('"mine"');
+    expect(await target.get('setting/publish-secret')).toBe('"my-token"');
     expect(await target.get('doc/stale')).toBeNull();
   });
 

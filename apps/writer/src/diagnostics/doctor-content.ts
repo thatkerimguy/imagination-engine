@@ -75,7 +75,7 @@ export function checkModules(
 
 const SIDECAR_TARGET = /^(chapter|doc|novel|folder):(.+)$/;
 
-/** Sidecars (meta / chapter-styles / versions / growth) for items that no longer exist. */
+/** Sidecars (meta / chapter-styles / publish / versions / growth) for items that no longer exist. */
 export function checkSidecars(entries: readonly Entry[], tree: Tree): Issue[] {
   const ids = (prefix: string, at: number): Set<string> =>
     new Set(tree.byPrefix(prefix).map((e) => e.key.split('/')[at] ?? ''));
@@ -104,6 +104,8 @@ export function checkSidecars(entries: readonly Entry[], tree: Tree): Issue[] {
       if (!items.has(e.key.slice(10))) orphan();
     } else if (e.key.startsWith('meta/chapter-styles/')) {
       if (!styled.has(e.key.slice(20))) orphan();
+    } else if (e.key.startsWith('meta/publish/')) {
+      if (!ids('novel/', 1).has(e.key.slice(13))) orphan();
     } else if (e.key.startsWith('versions/') || e.key.startsWith('growth/')) {
       const m = SIDECAR_TARGET.exec(e.key.slice(e.key.indexOf('/') + 1));
       if (!m) continue;

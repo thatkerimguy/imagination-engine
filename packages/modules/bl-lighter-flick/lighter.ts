@@ -4,6 +4,7 @@ import { clampDt, drawFlame, breeze, gammaToAngle, stepSway, type Sway } from '.
 import { playClack, playIgnite } from './sfx.ts';
 import type { LighterProps } from './schema.ts';
 import type { LiveFlame } from './controller.ts';
+import { createPauseGate } from './pause-gate.ts';
 
 export const FADE_OUT_MS = 220;
 const FADE_IN_DELAY_MS = 300;
@@ -134,10 +135,16 @@ export class Flame implements LiveFlame {
     const DOE = globalThis.DeviceOrientationEvent as
       (typeof DeviceOrientationEvent & { requestPermission?: unknown }) | undefined;
     // iOS gates orientation behind a permission prompt we never show; the breeze covers it.
+    let tick: () => void = () => undefined;
+    // Paused while hidden or backgrounded by the host: no loop, orientation ignored.
+    const gate = createPauseGate(this.listeners.signal, (paused) => {
+      if (!paused) tick();
+    });
     if (DOE && typeof DOE.requestPermission !== 'function') {
       window.addEventListener(
         'deviceorientation',
         (e) => {
+          if (gate.paused) return;
           const ev = e as DeviceOrientationEvent;
           if (typeof ev.gamma === 'number') this.tilt = gammaToAngle(ev.gamma);
         },
@@ -145,10 +152,13 @@ export class Flame implements LiveFlame {
       );
     }
     const frame = (now: number): void => {
+      if (gate.paused) {
+        this.raf = 0;
+        return;
+      }
       this.raf = requestAnimationFrame(frame);
       const dt = clampDt((now - this.last) / 1000);
       this.last = now;
-      if (document.hidden) return;
       this.time += dt;
       const lean = breeze(this.time);
       const target = this.tilt === null ? lean : this.tilt + lean * 0.25;
@@ -158,8 +168,12 @@ export class Flame implements LiveFlame {
       drawFlame(g, FLAME_W, FLAME_H, this.sway.angle, this.time, 1);
       this.glow.style.opacity = String(0.9 + 0.1 * Math.sin(this.time * 9));
     };
-    this.last = performance.now();
-    this.raf = requestAnimationFrame(frame);
+    tick = (): void => {
+      if (this.raf || this.removed) return;
+      this.last = performance.now();
+      this.raf = requestAnimationFrame(frame);
+    };
+    tick();
   }
 }
 

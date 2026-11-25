@@ -22,6 +22,8 @@ export interface LockConfig {
   fails?: number;
   /** Epoch ms until which attempts are refused. */
   lockedUntil?: number;
+  /** "Hide in app switcher" (FLAG_SECURE); unset means on while Master Lock is on. */
+  hideInRecents?: boolean;
 }
 
 export const LOCK_KEY = 'setting/lock';
@@ -58,6 +60,7 @@ export async function loadLockConfig(store: LockStore): Promise<LockConfig | nul
     pinLength: typeof c.pinLength === 'number' ? c.pinLength : 4,
     fails: typeof c.fails === 'number' ? c.fails : 0,
     lockedUntil: typeof c.lockedUntil === 'number' ? c.lockedUntil : 0,
+    ...(typeof c.hideInRecents === 'boolean' ? { hideInRecents: c.hideInRecents } : {}),
   };
 }
 
@@ -200,3 +203,5 @@ export const disableLock = (store: LockStore): Promise<void> => patch(store, { e
 export const enableLock = (store: LockStore): Promise<void> => patch(store, { enabled: true });
 export const setBiometric = (store: LockStore, on: boolean): Promise<void> =>
   patch(store, { biometric: on });
+export const setHideInRecents = (store: LockStore, on: boolean): Promise<void> =>
+  patch(store, { hideInRecents: on });

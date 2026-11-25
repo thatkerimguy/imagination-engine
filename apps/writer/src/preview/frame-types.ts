@@ -1,7 +1,7 @@
-import type { PreviewLoadMessage, ReaderMessage } from './protocol.ts';
+import type { PreviewHostMessage, ReaderMessage } from './protocol.ts';
 
 export interface PreviewFrameHandle {
-  send(message: PreviewLoadMessage): void;
+  send(message: PreviewHostMessage): void;
   /** Forwards a native accelerometer shake into the reader (`kn-native-shake`). */
   triggerShake(): void;
 }

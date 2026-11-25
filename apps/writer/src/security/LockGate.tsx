@@ -14,7 +14,9 @@ import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { LockPrompt } from './LockPrompt.tsx';
+import { hideInRecentsSetting, PRIVACY_TAG, shouldBlockScreenCapture } from './screen-privacy.ts';
 import { useLockConfig } from './useLockConfig.ts';
+import { useScreenPrivacy } from './use-screen-privacy.ts';
 
 const useMasterUnlocked = (): boolean =>
   useSyncExternalStore(unlockSession.subscribe, unlockSession.isMasterUnlocked);
@@ -40,6 +42,15 @@ export function LockGate({ children }: { children: ReactNode }): ReactNode {
   }, [reload]);
 
   const covered = config === undefined || (config?.enabled === true && !unlocked);
+  useScreenPrivacy(
+    PRIVACY_TAG.gate,
+    shouldBlockScreenCapture({
+      isLocked: covered,
+      onSensitiveScreen: false,
+      lockEnabled: config?.enabled === true,
+      hideInRecents: hideInRecentsSetting(config),
+    }),
+  );
   // Android back / predictive back is swallowed while covered: no route pops or peeks under the
   // overlay. Registered on every (re)lock, so it runs before any screen-level back listener.
   useEffect(() => {

@@ -15,6 +15,8 @@ import {
 } from '../security/lock.ts';
 import { NewPinFlow } from '../security/NewPinFlow.tsx';
 import { RecoveryCodeCard } from '../security/RecoveryCodeCard.tsx';
+import { PRIVACY_TAG } from '../security/screen-privacy.ts';
+import { useScreenPrivacy } from '../security/use-screen-privacy.ts';
 import { useLockConfig } from '../security/useLockConfig.ts';
 import { useRepository } from '../store/context.tsx';
 import { unlockSession } from '../store/unlock-session.ts';
@@ -25,6 +27,8 @@ import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
 
 export default function LockScreen(): ReactNode {
+  // PIN setup, change, recovery and fresh codes all live here: never screenshot this screen.
+  useScreenPrivacy(PRIVACY_TAG.pin);
   const repo = useRepository();
   const { config } = useLockConfig();
   const [mode, setMode] = useState<LockMode>('home');

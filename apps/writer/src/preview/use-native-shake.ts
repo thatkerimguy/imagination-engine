@@ -2,9 +2,9 @@
 // offline reader, so the writer listens to the real accelerometer (expo-sensors) and forwards a
 // shake into the page. Loaded lazily, only on native, only while the Preview screen is focused
 // and the app is in the foreground; the subscription is dropped immediately otherwise.
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
+import { useForeground } from './use-host-signals.ts';
 
 const SAMPLE_MS = 33;
 const GRAVITY_ALPHA = 0.8;
@@ -15,22 +15,8 @@ const COOLDOWN_MS = 900;
 export function useNativeShake(enabled: boolean, onShake: () => void): void {
   const handler = useRef(onShake);
   handler.current = onShake;
-  const [focused, setFocused] = useState(false);
-  const [active, setActive] = useState(AppState.currentState === 'active');
-
-  useFocusEffect(
-    useCallback(() => {
-      setFocused(true);
-      return () => setFocused(false);
-    }, []),
-  );
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => setActive(s === 'active'));
-    return () => sub.remove();
-  }, []);
-
-  const listen = enabled && focused && active && Platform.OS !== 'web';
+  const foreground = useForeground();
+  const listen = enabled && foreground && Platform.OS !== 'web';
   useEffect(() => {
     if (!listen) return;
     let live = true;

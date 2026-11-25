@@ -17,13 +17,14 @@ export function resolveTier(pref: TierPreference, hints: DeviceHints): QualityTi
   return 'high';
 }
 
-export function deviceHints(): DeviceHints {
+/** `hostReducedMotion` is the writer app's accessibility setting; it joins the media query. */
+export function deviceHints(hostReducedMotion = false): DeviceHints {
   const nav = navigator as Navigator & {
     deviceMemory?: number;
     connection?: { saveData?: boolean };
   };
   return {
-    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reducedMotion: hostReducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches,
     saveData: nav.connection?.saveData,
     deviceMemory: nav.deviceMemory,
     cores: nav.hardwareConcurrency,

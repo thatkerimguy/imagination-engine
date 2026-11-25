@@ -2,6 +2,7 @@
 // Created only inside a user gesture (the chapter curtain), which is what iOS Safari and
 // Android Chrome require before any sound may play.
 import type { AmbientOptions, AmbientSource, AudioBusAccess } from '@kn/core/renderer';
+import { LIFECYCLE_EVENT, isAppActive } from './lifecycle.ts';
 
 type Build = (ctx: AudioContext, out: AudioNode) => AmbientSource;
 
@@ -63,12 +64,18 @@ export function createAudioBus(): AudioBus {
     window.setTimeout(() => old.gain.disconnect(), (end - now) * 1000 + 200);
   };
 
-  const onVisibility = (): void => {
+  // Suspended whenever the page is hidden, torn down (pagehide) or the host app is backgrounded.
+  // Resumes only when visible, lifecycle-active, sound on and unlocked.
+  const syncPlayback = (): void => {
     if (!ctx) return;
-    if (document.hidden) void ctx.suspend();
-    else if (sound) void ctx.resume();
+    if (document.hidden || !isAppActive()) void ctx.suspend().catch(() => undefined);
+    else if (sound && unlocked) void ctx.resume().catch(() => undefined);
   };
-  document.addEventListener('visibilitychange', onVisibility);
+  document.addEventListener('visibilitychange', syncPlayback);
+  window.addEventListener('pagehide', () => {
+    if (ctx) void ctx.suspend().catch(() => undefined);
+  });
+  window.addEventListener(LIFECYCLE_EVENT, syncPlayback);
 
   return {
     get context() {
@@ -97,7 +104,7 @@ export function createAudioBus(): AudioBus {
         sfx = ctx.createGain();
         sfx.connect(master);
       }
-      void ctx.resume();
+      if (!document.hidden && isAppActive()) void ctx.resume().catch(() => undefined);
       // A one-sample silent buffer started inside the gesture fully unlocks iOS.
       const blip = ctx.createBufferSource();
       blip.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);

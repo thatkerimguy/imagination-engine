@@ -16,7 +16,8 @@ export interface PreviewPayload {
   htmlError: string | null;
   url: string | null;
   readerUrl: string;
-  build(tier: PreviewTier): PreviewLoadMessage;
+  /** `at` overrides the start block (the last reported reading position, after a remount). */
+  build(tier: PreviewTier, at?: string): PreviewLoadMessage;
   /** True when the chapter came from the open editor rather than storage. */
   fromLiveDraft: boolean;
 }
@@ -67,14 +68,17 @@ export function usePreviewPayload(
           url: settings.previewMode === 'custom-url' ? previewUrl(settings.readerUrl) : null,
           readerUrl: settings.readerUrl,
           fromLiveDraft: !!live,
-          build: (tier) => ({
-            type: 'kn-preview-load',
-            novel: n,
-            season: s,
-            chapter,
-            tier,
-            ...(startBlockId ? { startBlockId } : {}),
-          }),
+          build: (tier, at) => {
+            const start = at && chapter.blocks.some((b) => b.id === at) ? at : startBlockId;
+            return {
+              type: 'kn-preview-load',
+              novel: n,
+              season: s,
+              chapter,
+              tier,
+              ...(start ? { startBlockId: start } : {}),
+            };
+          },
         },
       };
     },

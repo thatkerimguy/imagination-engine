@@ -7,6 +7,7 @@
 //     together with MANAGE_EXTERNAL_STORAGE / CAMERA / RECORD_AUDIO, whatever a library declares.
 //  3. Predictive back (Android 16): `android:enableOnBackInvokedCallback="true"`, mirroring
 //     `expo.android.predictiveBackGestureEnabled` so a template change cannot silently opt out.
+//  4. Auto Backup / device-transfer exclusions (DIRECTIVE-02): see android-backup-rules.js.
 const fs = require('fs');
 const path = require('path');
 const {
@@ -14,6 +15,7 @@ const {
   withAndroidManifest,
   withDangerousMod,
 } = require('expo/config-plugins');
+const withBackupRules = require('./android-backup-rules');
 
 const MARK = '// kn-android-release';
 const DEBUG_ONLY = ['android.permission.SYSTEM_ALERT_WINDOW'];
@@ -83,6 +85,8 @@ function withReleaseOverlay(config) {
 }
 
 module.exports = function withAndroidRelease(config) {
-  return withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)));
+  return withBackupRules(
+    withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config))),
+  );
 };
 module.exports.RELEASE_REMOVED = RELEASE_REMOVED;

@@ -3,7 +3,13 @@
 import { h } from '../dom.ts';
 import { mountChapter } from '../views/reading.ts';
 import type { Cleanup, ViewContext } from '../views/shared.ts';
-import { parsePreviewLoad, type HostMessage } from './protocol.ts';
+import { dispatchLifecycle } from '../runtime/lifecycle.ts';
+import {
+  parseHostControl,
+  parsePreviewLoad,
+  type HostMessage,
+  type PreviewLoad,
+} from './protocol.ts';
 
 interface NativeBridge {
   postMessage(data: string): void;
@@ -22,14 +28,55 @@ export function startPreview(v: ViewContext): void {
   document.documentElement.dataset.preview = '1';
   v.main.replaceChildren(h('p', { class: 'kn-empty' }, 'Waiting for the writer…'));
 
-  addEventListener('message', (event: MessageEvent<unknown>) => {
-    const parsed = parsePreviewLoad(event.data);
-    if (!parsed) return;
+  let lastLoad: PreviewLoad | null = null;
+  let lastBlockId: string | null = null;
+  let reducedMotion = false;
+
+  const mount = (load: PreviewLoad, startBlockId: string | null): void => {
     cleanup?.();
     cleanup = null;
     v.main.removeAttribute('style');
     scrollTo(0, 0);
+    const { novel, season, chapter, tier } = load;
+    v.setBar(chapter.title, null);
+    cleanup = mountChapter(
+      v,
+      { novel, season, chapter },
+      {
+        startBlockId,
+        tier,
+        reducedMotion,
+        footerLink: h('span', { class: 'kn-card-sub' }, 'End of draft preview'),
+        preview: {
+          curtain: !audioUnlocked,
+          onAudioUnlocked: () => (audioUnlocked = true),
+          onPosition(blockId) {
+            lastBlockId = blockId;
+            postToHost({ type: 'kn-preview-position', blockId });
+          },
+        },
+      },
+    );
+    postToHost({ type: 'kn-preview-rendered', chapterId: chapter.id });
+  };
+
+  addEventListener('message', (event: MessageEvent<unknown>) => {
+    const control = parseHostControl(event.data);
+    if (control?.type === 'lifecycle') return dispatchLifecycle(control.state === 'active');
+    if (control?.type === 'a11y') {
+      const changed = control.reducedMotion !== reducedMotion;
+      reducedMotion = control.reducedMotion;
+      if (changed && lastLoad) mount(lastLoad, lastBlockId ?? lastLoad.startBlockId);
+      return;
+    }
+    const parsed = parsePreviewLoad(event.data);
+    if (!parsed) return;
     if (!parsed.ok) {
+      cleanup?.();
+      cleanup = null;
+      lastLoad = null;
+      v.main.removeAttribute('style');
+      scrollTo(0, 0);
       console.warn('[reader] preview draft rejected', parsed.errors);
       v.main.replaceChildren(
         h('p', { class: 'kn-empty' }, 'This draft cannot be previewed yet:'),
@@ -38,19 +85,9 @@ export function startPreview(v: ViewContext): void {
       postToHost({ type: 'kn-preview-error', errors: parsed.errors });
       return;
     }
-    const { novel, season, chapter, startBlockId, tier } = parsed.load;
-    v.setBar(chapter.title, null);
-    cleanup = mountChapter(
-      v,
-      { novel, season, chapter },
-      {
-        startBlockId,
-        tier,
-        footerLink: h('span', { class: 'kn-card-sub' }, 'End of draft preview'),
-        preview: { curtain: !audioUnlocked, onAudioUnlocked: () => (audioUnlocked = true) },
-      },
-    );
-    postToHost({ type: 'kn-preview-rendered', chapterId: chapter.id });
+    lastLoad = parsed.load;
+    lastBlockId = null;
+    mount(parsed.load, parsed.load.startBlockId);
   });
 
   postToHost({ type: 'kn-preview-ready' });

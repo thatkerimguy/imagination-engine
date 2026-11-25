@@ -2,7 +2,8 @@
 
 Linear kinetic novels (`Book → Season → Chapter → Block`) read in any browser, with lazy-loaded
 3D/VFX/audio spectacles in the open space around the prose. Read `CLAUDE.md` (the constitution)
-and `DIRECTIVE.md` (the active scope) before changing anything. `PROJECT_PLAN.md` is a menu, not
+and the active directive brief (attached to the session; past briefs in `docs/directives/`,
+reports in `docs/handoffs/`) before changing anything. `PROJECT_PLAN.md` is a menu, not
 a to-do list.
 
 The previous engine (Studio, story graphs, rhythm, minigames…) is archived on the

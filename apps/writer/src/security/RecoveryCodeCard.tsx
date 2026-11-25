@@ -7,11 +7,14 @@ import { makeStyles } from '../ui/theme.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { mono } from '../ui/type.ts';
 import { shareText } from './share-text.ts';
+import { PRIVACY_TAG } from './screen-privacy.ts';
+import { useScreenPrivacy } from './use-screen-privacy.ts';
 
 /** `ABCD-EFGH-JKLM` for reading aloud / copying by eye. */
 export const groupCode = (code: string): string => code.replace(/(.{4})(?=.)/g, '$1-');
 
 export function RecoveryCodeCard(p: { code: string; onDone(): void }): ReactNode {
+  useScreenPrivacy(PRIVACY_TAG.recovery);
   const s = useStyles();
   const [shared, setShared] = useState(false);
   return (

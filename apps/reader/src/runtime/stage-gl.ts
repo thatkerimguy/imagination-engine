@@ -1,6 +1,7 @@
 // Lazy chunk: the only place the reader itself touches three.js.
 import { ACESFilmicToneMapping, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import type { WorldBounds } from '@kn/core/renderer';
+import { LIFECYCLE_EVENT, isAppActive } from './lifecycle.ts';
 
 const FOV = 35;
 const DIE_WORLD = 0.9;
@@ -89,7 +90,12 @@ export function createGLStage(overlay: HTMLElement): GLStage {
   let raf = 0;
   let last = 0;
   let start = 0;
+  const paused = (): boolean => document.hidden || !isAppActive();
   const frame = (now: number): void => {
+    if (paused()) {
+      raf = 0; // restarted by `resume` once visible and active
+      return;
+    }
     const dt = last ? (now - last) / 1000 : 1 / 60;
     last = now;
     for (const cb of [...subscribers]) cb(dt, (now - start) / 1000);
@@ -102,6 +108,14 @@ export function createGLStage(overlay: HTMLElement): GLStage {
       canvas.hidden = true;
     }
   };
+
+  const resume = (): void => {
+    if (raf || paused() || subscribers.size === 0) return;
+    last = 0;
+    raf = requestAnimationFrame(frame);
+  };
+  document.addEventListener('visibilitychange', resume);
+  window.addEventListener(LIFECYCLE_EVENT, resume);
 
   return {
     renderer,
@@ -131,6 +145,9 @@ export function createGLStage(overlay: HTMLElement): GLStage {
       disposing = true;
       cancelAnimationFrame(raf);
       subscribers.clear();
+      raf = 0;
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener(LIFECYCLE_EVENT, resume);
       window.removeEventListener('resize', resize);
       scene.clear();
       renderer.dispose();

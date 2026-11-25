@@ -18,13 +18,34 @@
       "package": "dev.kinetic.writer",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
-      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.VIBRATE"]
+      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.VIBRATE"],
+      "predictiveBackGestureEnabled": true,
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+        "android.permission.ACTIVITY_RECOGNITION"
+      ]
     },
     "web": {
       "bundler": "metro",
       "output": "single"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 37,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 24,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# Expo Kotlin records (SecureStore & friends) are read by reflection: keep them whole.\n-keep class expo.modules.kotlin.records.** { *; }\n# kn-android-polish legacy native modules: keep @ReactMethod bridge targets and the package.\n-keep class dev.kinetic.writer.MaterialYouModule { *; }\n-keep class dev.kinetic.writer.SaveFileModule { *; }\n-keep class dev.kinetic.writer.MaterialYouPackage { *; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }"
+          }
+        }
+      ],
+      "./plugins/with-android-release",
       "./plugins/with-android-polish",
       "expo-router",
       "expo-sqlite",

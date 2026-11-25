@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
@@ -80,6 +81,7 @@ function PreviewBody(): ReactNode {
   const { data, loading, reload } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
   const styles = useStyles();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const frame = useRef<PreviewFrameHandle>(null);
   const [tier, setTier] = useState<PreviewTier>('auto');
   const [session, setSession] = useState(0);
@@ -173,7 +175,8 @@ function PreviewBody(): ReactNode {
           };
 
   return (
-    <View style={styles.screen} testID="preview-screen">
+    // Edge-to-edge: keep the reader WebView above the gesture / 3-button navigation bar.
+    <View style={[styles.screen, { paddingBottom: insets.bottom }]} testID="preview-screen">
       {header}
       <View style={styles.toolbar}>
         <SegmentControl<PreviewTier>

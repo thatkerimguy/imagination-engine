@@ -12,6 +12,7 @@ import { useEditorActions } from '../editor/use-editor-actions.ts';
 import { useFormatActions } from '../editor/use-format-actions.ts';
 import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
 import { useLiveMetrics } from '../editor/use-live-metrics.ts';
+import { useScrolledFlag } from '../editor/use-scrolled-flag.ts';
 import type { ToolId } from '../store/writer-prefs.ts';
 import { ColorPopover } from '../editor/EditorChrome.tsx';
 import { Field } from '../ui/Field.tsx';
@@ -19,6 +20,7 @@ import { EmptyState } from '../ui/Page.tsx';
 import type { MenuItem } from '../ui/PopoverMenu.tsx';
 import { space } from '../ui/tokens.ts';
 import { useWriterPrefs } from '../ui/theme.tsx';
+import { useBackIntercept } from '../ui/use-back-intercept.ts';
 import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
 import { useEditorTypography } from '../ui/typography.ts';
 import { NoteTopBar } from './NoteTopBar.tsx';
@@ -56,12 +58,15 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
   const [sheet, setSheet] = useState<NoteSheet>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const scrolledRef = useRef(false);
+  const [scrolled, onScroll] = useScrolledFlag();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef(new Map<string, number>());
   const metrics = useLiveMetrics(blocks);
   const dock = useKeyboardDock();
+  useBackIntercept([
+    { open: f.colorFor !== null, close: f.closeColor },
+    { open: findOpen, close: () => setFindOpen(false) },
+  ]);
   const hiddenTools = useMemo<ToolId[]>(
     () => [...prefs.hiddenTools, 'addGimmick'],
     [prefs.hiddenTools],
@@ -148,13 +153,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[s.content, { paddingHorizontal: typo.margin }]}
           scrollEventThrottle={32}
-          onScroll={(e) => {
-            const next = e.nativeEvent.contentOffset.y > 4;
-            if (scrolledRef.current !== next) {
-              scrolledRef.current = next;
-              setScrolled(next);
-            }
-          }}
+          onScroll={onScroll}
           testID="note-stream"
         >
           <Field

@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
 import { IconBtn } from './IconBtn.tsx';
 import { Txt } from './Txt.tsx';
 import { radius, space, withAlpha } from './tokens.ts';
@@ -33,56 +34,69 @@ export interface SheetProps {
 }
 
 export function Sheet(p: SheetProps): ReactNode {
+  return (
+    <Modal visible={p.visible} transparent animationType="slide" onRequestClose={p.onClose}>
+      <SheetBody {...p} />
+    </Modal>
+  );
+}
+
+/** Mounted only while the Modal is visible, so hidden sheets hold no keyboard listeners. */
+function SheetBody(p: SheetProps): ReactNode {
   const insets = useSafeAreaInsets();
   const { colors, dark } = useTheme();
   const s = useStyles();
+  // Edge-to-edge: pad above the gesture / 3-button nav bar, but not while the keyboard covers it.
+  // Android lifts by whatever the (possibly non-resizing) window did not absorb; iOS uses padding.
+  const dock = useKeyboardDock();
+  const lift = Platform.OS === 'android' ? dock.keyboardOffset : 0;
+  const bottom = dock.keyboardOpen ? space.sm : Math.max(insets.bottom, space.sm);
   return (
-    <Modal visible={p.visible} transparent animationType="slide" onRequestClose={p.onClose}>
-      <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: withAlpha(colors.scrim, dark ? 0.5 : 0.28) },
-          ]}
-          onPress={p.onClose}
-          accessibilityLabel="Dismiss sheet"
-        />
-        <View
-          style={[s.sheet, { paddingBottom: Math.max(insets.bottom, space.sm) }]}
-          testID={p.testID}
-        >
-          <View style={s.handle} />
-          <View style={s.header}>
-            {p.leading}
-            <View style={s.headerText}>
-              <Txt variant="heading" numberOfLines={1} accessibilityRole="header">
-                {p.title}
+    <KeyboardAvoidingView
+      style={[s.root, { paddingBottom: lift }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      onLayout={dock.onRootLayout}
+    >
+      <Pressable
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: withAlpha(colors.scrim, dark ? 0.5 : 0.28) },
+        ]}
+        onPress={p.onClose}
+        accessibilityLabel="Dismiss sheet"
+      />
+      <View style={[s.sheet, { paddingBottom: bottom }]} testID={p.testID}>
+        <View style={s.handle} />
+        <View style={s.header}>
+          {p.leading}
+          <View style={s.headerText}>
+            <Txt variant="heading" numberOfLines={1} accessibilityRole="header">
+              {p.title}
+            </Txt>
+            {p.subtitle ? (
+              <Txt variant="meta" color="inkSecondary" numberOfLines={1}>
+                {p.subtitle}
               </Txt>
-              {p.subtitle ? (
-                <Txt variant="meta" color="inkSecondary" numberOfLines={1}>
-                  {p.subtitle}
-                </Txt>
-              ) : null}
-            </View>
-            <IconBtn
-              icon="x"
-              accessibilityLabel="Close sheet"
-              onPress={p.onClose}
-              testID="sheet-close"
-            />
+            ) : null}
           </View>
-          {p.toolbar ? <View style={s.toolbar}>{p.toolbar}</View> : <View style={s.divider} />}
-          <ScrollView
-            style={s.body}
-            contentContainerStyle={s.bodyContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {p.children}
-          </ScrollView>
-          {p.footer ? <View style={s.footer}>{p.footer}</View> : null}
+          <IconBtn
+            icon="x"
+            accessibilityLabel="Close sheet"
+            onPress={p.onClose}
+            testID="sheet-close"
+          />
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        {p.toolbar ? <View style={s.toolbar}>{p.toolbar}</View> : <View style={s.divider} />}
+        <ScrollView
+          style={s.body}
+          contentContainerStyle={s.bodyContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {p.children}
+        </ScrollView>
+        {p.footer ? <View style={s.footer}>{p.footer}</View> : null}
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -5,7 +5,9 @@ import { useRepository } from '../store/context.tsx';
 import { CardGroup } from '../ui/CardGroup.tsx';
 import { Field } from '../ui/Field.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
-import { Dot, ListRow, SectionLabel } from '../ui/Page.tsx';
+import { Glyph } from '../ui/Glyph.tsx';
+import { Dot, SectionLabel } from '../ui/Page.tsx';
+import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
@@ -161,14 +163,20 @@ export function PublishSettingsCard(): ReactNode {
             {...urlProps}
           />
         </View>
-        <ListRow
-          icon="wifi"
-          title="Test connection"
-          trailing={trailing}
-          last
-          testID="publish-test"
+        {/* Inset on both sides so the wifi glyph and "Connected" sit 12px inside the highlight. */}
+        <Press
+          accessibilityRole="button"
+          accessibilityLabel="Test connection"
           onPress={() => void test()}
-        />
+          testID="publish-test"
+          style={styles.testRow}
+        >
+          <Glyph name="wifi" size={18} color="ink" />
+          <Txt variant="body" numberOfLines={1} style={styles.grow}>
+            Test connection
+          </Txt>
+          {trailing ?? <Glyph name="chevron-right" size={18} color="inkMuted" />}
+        </Press>
       </CardGroup>
     </View>
   );
@@ -179,12 +187,14 @@ const styles = StyleSheet.create({
   fields: { gap: space.md, paddingVertical: space.sm },
   tokenRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.xs },
   grow: { flex: 1 },
-  // Inset from the row's press highlight so "Connected" + its dot never sit flush on the edge.
-  status: {
+  // Same 12px inset on both ends of the press highlight: wifi glyph left, status / chevron right.
+  testRow: {
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs,
-    paddingLeft: space.sm,
-    paddingRight: space.sm,
+    gap: space.sm,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.sm,
   },
+  status: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.sm },
 });

@@ -7,7 +7,7 @@ import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
-import { gimmickGlyph, layerRole } from './gimmick-look.ts';
+import { gimmickColor, gimmickGlyph } from './gimmick-look.ts';
 
 /** Lists only the modules the novel has enabled. */
 export function GimmickPicker(p: {
@@ -33,8 +33,8 @@ export function GimmickPicker(p: {
             testID={`pick-${m.meta.id}`}
             style={[styles.item, { backgroundColor: colors.surfaceTint }]}
           >
-            <View style={[styles.bar, { backgroundColor: colors[layerRole(m.meta.layer)] }]} />
-            <Glyph name={gimmickGlyph(m.meta.id)} size={18} color={layerRole(m.meta.layer)} />
+            <View style={[styles.bar, { backgroundColor: gimmickColor(m.meta, colors) }]} />
+            <Glyph name={gimmickGlyph(m.meta.id)} size={18} color={gimmickColor(m.meta, colors)} />
             <View style={styles.text}>
               <Txt variant="bodyStrong">{m.meta.name}</Txt>
               <Txt variant="meta" color="inkSecondary">

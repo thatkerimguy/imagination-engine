@@ -54,7 +54,10 @@ export function drawFlame(
 ): void {
   g.clearRect(0, 0, w, h);
   const cx = w / 2;
-  const baseY = h - 6;
+  const chimneyTop = h - CHIMNEY_H - 2;
+  // The wick sits just inside the chimney, so its top edge hides the flame's root.
+  const baseY = chimneyTop + 5;
+  const flameH = baseY - 8;
   const rad = (angle * Math.PI) / 180;
   const tear = (halfW: number, height: number, color: string, alpha: number): void => {
     const tipX = cx + Math.sin(rad) * height * 0.55;
@@ -82,9 +85,9 @@ export function drawFlame(
     g.fill();
   };
   const f = flicker(t) * level;
-  tear(w * 0.4, (h - 14) * f, '#ff8a1e', 0.55);
-  tear(w * 0.28, (h - 14) * 0.78 * flicker(t, 1.7) * level, '#ffc94a', 0.9);
-  tear(w * 0.12, (h - 14) * 0.34 * flicker(t, 3.1) * level, '#dff0ff', 0.95);
+  tear(w * 0.4, flameH * f, '#ff8a1e', 0.55);
+  tear(w * 0.28, flameH * 0.78 * flicker(t, 1.7) * level, '#ffc94a', 0.9);
+  tear(w * 0.12, flameH * 0.34 * flicker(t, 3.1) * level, '#dff0ff', 0.95);
   g.beginPath();
   g.ellipse(cx, baseY - 2, w * 0.1, 3, 0, 0, Math.PI * 2);
   g.globalAlpha = 0.8;
@@ -99,4 +102,38 @@ export function drawFlame(
     g.fill();
   }
   g.globalAlpha = 1;
+  drawChimney(g, cx, chimneyTop);
+}
+
+const CHIMNEY_H = 22;
+const CHIMNEY_W = 30;
+
+/** Dark brushed-brass Zippo windguard: perforated rounded chimney plus the lid hinge lip. */
+function drawChimney(g: CanvasRenderingContext2D, cx: number, top: number): void {
+  const x = cx - CHIMNEY_W / 2;
+  const body = g.createLinearGradient(x, 0, x + CHIMNEY_W, 0);
+  body.addColorStop(0, '#2e271d');
+  body.addColorStop(0.3, '#7d6a45');
+  body.addColorStop(0.55, '#4b4030');
+  body.addColorStop(0.8, '#6e5d3d');
+  body.addColorStop(1, '#2a241b');
+  g.fillStyle = body;
+  g.beginPath();
+  if (typeof g.roundRect === 'function') g.roundRect(x, top, CHIMNEY_W, CHIMNEY_H, [3, 3, 1, 1]);
+  else g.rect(x, top, CHIMNEY_W, CHIMNEY_H);
+  g.fill();
+  // Hinge lip on the right flank, and a thin lit rim along the top edge.
+  g.fillStyle = '#3a3124';
+  g.fillRect(x + CHIMNEY_W, top + 3, 3, 9);
+  g.fillStyle = 'rgba(255, 228, 170, 0.35)';
+  g.fillRect(x + 2, top, CHIMNEY_W - 4, 1);
+  // Two staggered rows of four vent holes.
+  g.fillStyle = '#15120d';
+  for (let row = 0; row < 2; row++) {
+    for (let i = 0; i < 4; i++) {
+      g.beginPath();
+      g.arc(x + 6 + i * 6 + row * 3, top + 7 + row * 6, 1.4, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
 }

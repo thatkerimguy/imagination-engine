@@ -11,7 +11,7 @@ import { Txt } from '../ui/Txt.tsx';
 import { radius } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 import type { ModuleBlockT } from './block-types.ts';
-import { gimmickGlyph, layerRole } from './gimmick-look.ts';
+import { gimmickColor, gimmickGlyph } from './gimmick-look.ts';
 
 /** Removes a leading emoji that duplicates the module glyph. */
 function stripIcon(title: string, icon: string): string {
@@ -39,7 +39,7 @@ export function GimmickPill(p: {
   }
   const card = module.summarize(p.block.props);
   const title = stripIcon(card.title, module.meta.icon);
-  const role = layerRole(module.meta.layer);
+  const tint = gimmickColor(module.meta, colors);
   const tag = p.enabled ? card.badge : 'Not enabled';
   return (
     <Press
@@ -53,9 +53,9 @@ export function GimmickPill(p: {
       wash={colors.accentSoft}
       style={[styles.strip, { backgroundColor: colors.surfaceTint }]}
     >
-      <View style={[styles.bar, { backgroundColor: colors[role] }]} />
+      <View style={[styles.bar, { backgroundColor: tint }]} />
       <View style={styles.glyph}>
-        <Glyph name={gimmickGlyph(module.meta.id)} size={18} color={role} />
+        <Glyph name={gimmickGlyph(module.meta.id)} size={18} color={tint} />
       </View>
       <View style={styles.text}>
         <View style={styles.head}>

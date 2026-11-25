@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { gimmickGlyph, layerRole } from '../editor/gimmick-look.ts';
+import { gimmickColor, gimmickGlyph } from '../editor/gimmick-look.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { Glyph } from '../ui/Glyph.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -26,6 +26,7 @@ function Banner({ text }: { text: string }): ReactNode {
 
 export function GimmickSheet(p: GimmickSheetProps): ReactNode {
   const { module, visible, initialProps } = p;
+  const { colors } = useTheme();
   const [draft, setDraft] = useState(() => initialDraft(module.schema, initialProps));
 
   // Re-initialise from the block's stored props every time the sheet opens.
@@ -41,7 +42,11 @@ export function GimmickSheet(p: GimmickSheetProps): ReactNode {
     <Sheet
       visible={visible}
       leading={
-        <Glyph name={gimmickGlyph(module.meta.id)} size={20} color={layerRole(module.meta.layer)} />
+        <Glyph
+          name={gimmickGlyph(module.meta.id)}
+          size={20}
+          color={gimmickColor(module.meta, colors)}
+        />
       }
       title={module.meta.name}
       subtitle={subtitle}

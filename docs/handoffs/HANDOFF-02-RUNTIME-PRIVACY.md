@@ -11,22 +11,10 @@ Opus did the protocol and all Writer work. One `builder-sonnet` worker did `apps
   - Telemetry logs only counts, the window and the generation (`[writer] preview renderer killed (low memory); remount (1/3 in 30s, gen 1)`). It never logs prose or titles.
   - **Replay:** a remounted page posts `kn-preview-ready`. `app/preview.tsx` then resends a11y, lifecycle and the chapter at the selected tier, starting at the last reported block.
   - This needed one new reader → host message, `{type:'kn-preview-position', blockId}`, sent on each segment change in preview mode.
-- **Security audit:**
-  - `PreviewFrame.tsx` now sets `allowFileAccess`, `allowFileAccessFromFileURLs` and `allowUniversalAccessFromFileURLs` to `false`, and `setSupportMultipleWindows={false}`.
-  - `originWhitelist` narrowed from `['*']` to `['https://*','http://*','about:*']`.
-  - No SSL-error overrides in `apps/writer/plugins/` or `src/`. `PreviewFrame.web.tsx` is unchanged.
+- **Security audit:** `PreviewFrame.tsx` sets `allowFileAccess`, `allowFileAccessFromFileURLs`, `allowUniversalAccessFromFileURLs` and `setSupportMultipleWindows` to `false`; `originWhitelist` narrowed from `['*']` to `['https://*','http://*','about:*']`. No SSL-error overrides in `plugins/` or `src/`; `PreviewFrame.web.tsx` unchanged.
 - **Protocol** (both `protocol.ts` files, tests in both): host → reader `{type:'lifecycle', state:'active'|'background'}` and `{type:'a11y', reducedMotion}`. The reader parses them with `parseHostControl()`, which rejects malformed input.
-- **Host wiring:**
-  - New `preview/use-host-signals.ts`:
-    - `useForeground()` is screen focus AND `AppState === 'active'`.
-    - `useReduceMotion()` reads `AccessibilityInfo.isReduceMotionEnabled()` and subscribes to `reduceMotionChanged`.
-  - `app/preview.tsx` sends both on change and on every `ready`.
-  - `use-native-shake.ts` now uses `useForeground()`.
-- **Host audit:**
-  - The accelerometer is subscribed only while focused, foreground and live.
-  - `store/autosave.ts` has one debounced 600 ms timer, flushed on background by the draft hooks.
-  - `backup/auto-backup.ts` runs once when the repo opens and has no timers.
-  - No wake-lock API is used anywhere.
+- **Host wiring:** new `preview/use-host-signals.ts`: `useForeground()` (screen focus AND `AppState === 'active'`) and `useReduceMotion()` (`AccessibilityInfo.isReduceMotionEnabled()` + `reduceMotionChanged`). `app/preview.tsx` sends both on change and on every `ready`; `use-native-shake.ts` reuses `useForeground()`.
+- **Host audit:** accelerometer subscribed only while focused, foreground and live; `store/autosave.ts` has one debounced 600 ms timer, flushed on background by the draft hooks; `backup/auto-backup.ts` runs once at repo open, no timers; no wake-lock API anywhere.
 - **Reader:**
   - `runtime/lifecycle.ts` dispatches `CustomEvent('kn:lifecycle', {detail:{active}})`.
   - `audio-bus.ts` suspends the `AudioContext` on `hidden`, on `pagehide` and when lifecycle is background. It resumes only when the page is visible, lifecycle is active, sound is on and the bus is unlocked. Every suspend and resume call has `.catch()`.
@@ -84,8 +72,7 @@ Opus did the protocol and all Writer work. One `builder-sonnet` worker did `apps
 | `git diff 0246947..HEAD -- packages/core` (+ working tree)       | empty                                                                                                                                                |
 | Line counts                                                      | every touched source file ≤ 250 lines (largest `app/preview.tsx` 241)                                                                                |
 
-- The first writer-shots pass was 69/71. An explicit `./capture.ts` import bypassed Metro's `.web.ts` resolution, so the web build warned `ScreenCapture … not available on web`. Changing it to `./capture` fixed it, and the rerun was 71/0.
-- The smoke and shots runs need `NODE_PATH="$(npm root -g)"`, because Playwright is installed globally.
+- First shots pass was 69/71: an explicit `./capture.ts` import bypassed Metro's `.web.ts` resolution (web warned `ScreenCapture … not available on web`); `./capture` fixed it → 71/0. Smoke/shots need `NODE_PATH="$(npm root -g)"` (global Playwright).
 
 ## 5. Unified Test Gate 1 Checklist for Operator (Directive 01 + 02)
 

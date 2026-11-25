@@ -1,12 +1,13 @@
 // Folio page furniture: Page (scrolling canvas with 20dp gutters), Divider, SectionLabel
 // (tracked small caps + hairline rule), ListRow (grouped hairline settings row), Dot and
 // EmptyState. Hairlines and type do the work — no heavy cards.
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import {
   Platform,
   ScrollView,
   StyleSheet,
   View,
+  type ScrollViewInstance,
   type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
@@ -14,10 +15,13 @@ import {
 import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { useScrollReporter } from './header-scroll.tsx';
+import { READING_MAX } from './layout-class.ts';
+import { useLayoutClass } from './use-layout-class.ts';
 import { Press } from './Press.tsx';
 import { Txt } from './Txt.tsx';
 import { space } from './tokens.ts';
 import { useTheme } from './theme.tsx';
+import { useImeReveal } from './use-ime-reveal.ts';
 
 const BOTTOM_PAD = 96;
 
@@ -25,13 +29,22 @@ export function Page({
   children,
   contentStyle,
   onLayout,
+  wide = false,
   ...rest
-}: ScrollViewProps & { contentStyle?: StyleProp<ViewStyle> }): ReactNode {
+}: ScrollViewProps & {
+  contentStyle?: StyleProp<ViewStyle>;
+  /** Grids opt out of the 720 dp readable measure on Medium / Expanded windows. */
+  wide?: boolean;
+}): ReactNode {
   const { colors } = useTheme();
   const onScroll = useScrollReporter();
+  const scroll = useRef<ScrollViewInstance>(null);
+  const trackY = useImeReveal(scroll);
+  const cls = useLayoutClass();
+  const measure = !wide && cls !== 'compact' ? styles.measure : null;
   // Android 15+/16 edge-to-edge windows do not resize for the IME, so bottom form fields
-  // (Settings URL/token, Lock, New novel) need keyboard-height clearance to scroll above it.
-  // The offset already excludes any height an adjustResize window absorbed; insets are untouched.
+  // (Settings URL/token, Lock, New novel) need keyboard-height clearance; useImeReveal then
+  // scrolls the focused field above the keyboard. Insets are untouched (no double-counting).
   const { keyboardOffset, onRootLayout } = useKeyboardDock();
   const kbPad =
     Platform.OS === 'android' && keyboardOffset > 0
@@ -39,10 +52,14 @@ export function Page({
       : null;
   return (
     <ScrollView
+      ref={scroll}
       style={{ flex: 1, backgroundColor: colors.canvas }}
-      contentContainerStyle={[styles.content, contentStyle, kbPad]}
+      contentContainerStyle={[styles.content, measure, contentStyle, kbPad]}
       keyboardShouldPersistTaps="handled"
-      onScroll={onScroll}
+      onScroll={(e) => {
+        trackY(e);
+        onScroll(e);
+      }}
       scrollEventThrottle={32}
       onLayout={(e) => {
         onRootLayout(e);
@@ -176,6 +193,7 @@ const styles = StyleSheet.create({
     paddingBottom: BOTTOM_PAD,
     gap: space.md,
   },
+  measure: { width: '100%', maxWidth: READING_MAX, alignSelf: 'center' },
   section: {
     flexDirection: 'row',
     alignItems: 'center',

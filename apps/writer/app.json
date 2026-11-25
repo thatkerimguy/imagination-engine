@@ -4,11 +4,11 @@
     "slug": "kinetic-writer",
     "scheme": "kinetic-writer",
     "version": "0.1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#16171a",
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "dev.kinetic.writer",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Kinetic Writer uses Face ID to unlock your private manuscripts."
@@ -42,7 +42,7 @@
             "minSdkVersion": 24,
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "extraProguardRules": "# Expo Kotlin records (SecureStore & friends) are read by reflection: keep them whole.\n-keep class expo.modules.kotlin.records.** { *; }\n# kn-android-polish legacy native modules: keep @ReactMethod bridge targets and the package.\n-keep class dev.kinetic.writer.MaterialYouModule { *; }\n-keep class dev.kinetic.writer.SaveFileModule { *; }\n-keep class dev.kinetic.writer.MaterialYouPackage { *; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }"
+            "extraProguardRules": "# Expo Kotlin records (SecureStore & friends) are read by reflection: keep them whole.\n-keep class expo.modules.kotlin.records.** { *; }\n# kn-android-polish legacy native modules: keep @ReactMethod bridge targets and the package.\n-keep class dev.kinetic.writer.MaterialYouModule { *; }\n-keep class dev.kinetic.writer.SaveFileModule { *; }\n-keep class dev.kinetic.writer.MaterialYouPackage { *; }\n-keep class dev.kinetic.writer.KnInputModule { *; }\n-keep class dev.kinetic.writer.KnInputPackage { *; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }"
           }
         }
       ],

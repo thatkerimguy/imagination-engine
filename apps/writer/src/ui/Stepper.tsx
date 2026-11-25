@@ -2,11 +2,12 @@
 // optional muted range caption underneath. Typed values snap to the step and commit on blur.
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
+import { hitSlopFor, MIN_TOUCH } from './a11y.ts';
 import { Glyph } from './Glyph.tsx';
 import { tapFeedback } from './haptics.ts';
 import { Press } from './Press.tsx';
 import { Txt } from './Txt.tsx';
-import { radius, TOUCH } from './tokens.ts';
+import { radius } from './tokens.ts';
 import { useTheme } from './theme.tsx';
 import { tabular, type as typeScale } from './type.ts';
 
@@ -44,7 +45,7 @@ export function Stepper(p: StepperProps): ReactNode {
   useEffect(() => {
     if (!editing) setText(format ? format(value) : String(value));
   }, [value, format, editing]);
-  const h = p.compact ? 36 : TOUCH;
+  const h = p.compact ? 36 : MIN_TOUCH;
   const commit = (): void => {
     setEditing(false);
     const n = Number(text.replace(',', '.').replace(/[^\d.-]/g, ''));
@@ -63,8 +64,9 @@ export function Stepper(p: StepperProps): ReactNode {
       accessibilityRole="button"
       accessibilityLabel={`${dir < 0 ? 'Decrease' : 'Increase'} ${p.label}`}
       disabled={dir < 0 ? p.value <= p.min : p.value >= p.max}
+      accessibilityState={{ disabled: dir < 0 ? p.value <= p.min : p.value >= p.max }}
       onPress={() => go(dir)}
-      hitSlop={p.compact ? { top: 4, bottom: 4 } : undefined}
+      hitSlop={p.compact ? hitSlopFor(MIN_TOUCH, h - 2) : undefined}
       style={[styles.btn, { height: h - 2 }]}
     >
       <Glyph name={dir < 0 ? 'minus' : 'plus'} size={16} color="ink" />
@@ -78,6 +80,7 @@ export function Stepper(p: StepperProps): ReactNode {
         <TextInput
           testID={p.testID}
           accessibilityLabel={`${p.label} value`}
+          accessibilityRole="adjustable"
           value={text}
           onChangeText={setText}
           onFocus={() => {
@@ -113,7 +116,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     overflow: 'hidden',
   },
-  btn: { width: 40, alignItems: 'center', justifyContent: 'center' },
+  btn: { width: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   sep: { width: 1, alignSelf: 'stretch' },
   input: { width: 64, textAlign: 'center', paddingVertical: 0, paddingHorizontal: 4 },
   caption: { textAlign: 'center' },

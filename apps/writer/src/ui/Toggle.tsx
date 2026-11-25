@@ -4,7 +4,7 @@ import { startTransition, useEffect, useRef, useState, type ReactNode } from 're
 import { Animated, Easing, Platform, Pressable, StyleSheet } from 'react-native';
 import { SLIDE_MS, syncOptimistic } from './control-math.ts';
 import { toggleFeedback } from './haptics.ts';
-import { slop } from './Press.tsx';
+import { hitSlopFor } from './a11y.ts';
 import { useTheme } from './theme.tsx';
 
 const NATIVE_DRIVER = Platform.OS !== 'web';
@@ -58,7 +58,7 @@ export function Toggle(p: ToggleProps): ReactNode {
         startTransition(() => p.onValueChange(next));
       }}
       testID={p.testID}
-      hitSlop={slop(W, H)}
+      hitSlop={hitSlopFor(W, H)}
       style={[
         styles.track,
         { backgroundColor: colors.borderStrong, borderColor: colors.hairline },

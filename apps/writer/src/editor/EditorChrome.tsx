@@ -10,6 +10,7 @@ import { Press } from '../ui/Press.tsx';
 import { PopoverMenu, type MenuItem } from '../ui/PopoverMenu.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import { TopBar } from '../ui/TopBar.tsx';
+import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
@@ -28,6 +29,9 @@ export interface EditorTopBarProps {
   onUndo(): void;
   onRedo(): void;
   onPreview(): void;
+  /** Toggles the split-pane reference drawer (button shown on Expanded windows only). */
+  onReference(): void;
+  referenceOpen: boolean;
 }
 
 const useStyles = makeStyles((t) => ({
@@ -42,6 +46,7 @@ const useStyles = makeStyles((t) => ({
 }));
 
 export function EditorTopBar(p: EditorTopBarProps): ReactNode {
+  const expanded = useLayoutClass() === 'expanded';
   return (
     <TopBar
       scrolled={p.scrolled}
@@ -78,6 +83,15 @@ export function EditorTopBar(p: EditorTopBarProps): ReactNode {
             disabled={!p.canRedo}
             testID="redo-button"
           />
+          {expanded ? (
+            <IconBtn
+              icon="sidebar"
+              accessibilityLabel={p.referenceOpen ? 'Close reference pane' : 'Open reference pane'}
+              active={p.referenceOpen}
+              onPress={p.onReference}
+              testID="reference-toggle"
+            />
+          ) : null}
           <IconBtn
             icon="play"
             accessibilityLabel="Live preview"
@@ -105,6 +119,7 @@ type MenuAction =
   | 'focus'
   | 'layout'
   | 'publish'
+  | 'shortcuts'
   | 'exportJson';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
@@ -116,12 +131,32 @@ const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'focus', label: 'Focus Mode', icon: 'maximize', testID: 'menu-focus' },
   { action: 'layout', label: 'Appearance & Layout', icon: 'sliders', testID: 'menu-layout' },
   { action: 'publish', label: 'Publish…', icon: 'upload-cloud', testID: 'menu-publish' },
+  { action: 'shortcuts', label: 'Keyboard shortcuts', icon: 'command', testID: 'menu-shortcuts' },
   { action: 'exportJson', label: 'Export Chapter JSON', icon: 'share', testID: 'export-chapter' },
 ];
 
 /** The editor's ⋯ menu items, bound to handlers. */
 export function editorMenu(on: Record<MenuAction, () => void>): MenuItem[] {
   return MENU.map(({ action, ...item }) => ({ ...item, onPress: on[action] }));
+}
+
+type SheetAction = 'analysis' | 'outline' | 'versions' | 'layout' | 'publish' | 'shortcuts';
+
+/** editorMenu with every sheet-opening item routed to `openSheet`. */
+export function chapterMenu(
+  openSheet: (sheet: SheetAction) => void,
+  on: Record<Exclude<MenuAction, SheetAction>, () => void>,
+): MenuItem[] {
+  const sheet = (s: SheetAction) => () => openSheet(s);
+  return editorMenu({
+    ...on,
+    analysis: sheet('analysis'),
+    outline: sheet('outline'),
+    versions: sheet('versions'),
+    layout: sheet('layout'),
+    publish: sheet('publish'),
+    shortcuts: sheet('shortcuts'),
+  });
 }
 
 export function ColorPopover(p: {

@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { getWriterModule } from '../modules/registry.ts';
+import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Glyph } from '../ui/Glyph.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
 import { Press } from '../ui/Press.tsx';
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: radius.sm,
     overflow: 'hidden',
-    minHeight: 44,
+    minHeight: MIN_TOUCH,
   },
   bar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
   glyph: { paddingTop: 1 },

@@ -63,7 +63,9 @@ function SheetBody(p: SheetProps): ReactNode {
           { backgroundColor: withAlpha(colors.scrim, dark ? 0.5 : 0.28) },
         ]}
         onPress={p.onClose}
+        accessibilityRole="button"
         accessibilityLabel="Dismiss sheet"
+        focusable={false}
       />
       <View style={[s.sheet, { paddingBottom: bottom }]} testID={p.testID}>
         <View style={s.handle} />

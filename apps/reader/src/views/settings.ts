@@ -1,6 +1,6 @@
 // Reading settings sheet: size, theme, spectacle quality, sound.
 import { h } from '../dom.ts';
-import { FONT_SCALES, getPrefs, setPrefs, type Prefs } from '../prefs.ts';
+import { FONT_SCALES, getPrefs, setPrefs, soundAllowed, type Prefs } from '../prefs.ts';
 import type { AudioBus } from '../runtime/audio-bus.ts';
 
 function chips<T extends string>(
@@ -53,6 +53,25 @@ export function openSettings(audio: AudioBus): void {
         h(
           'div',
           { class: 'kn-setting' },
+          h(
+            'button',
+            {
+              type: 'button',
+              role: 'switch',
+              class: 'kn-chip kn-calm',
+              'data-testid': 'calm-mode',
+              id: 'calm-mode',
+              'aria-checked': String(p.calmMode),
+              'aria-describedby': 'calm-mode-note',
+              onClick: () => update({ calmMode: !p.calmMode }),
+            },
+            `Calm Mode: ${p.calmMode ? 'On' : 'Off'}`,
+          ),
+          h('span', { id: 'calm-mode-note', class: 'kn-setting-note' }, 'No motion, muted effects'),
+        ),
+        h(
+          'div',
+          { class: 'kn-setting' },
           h('span', { class: 'kn-setting-label' }, 'Text size'),
           h(
             'div',
@@ -99,14 +118,13 @@ export function openSettings(audio: AudioBus): void {
           ],
           p.sound ? 'on' : 'off',
           (s) => {
-            audio.setSound(s === 'on');
             update({ sound: s === 'on' });
           },
         ),
         h(
           'p',
           { class: 'kn-setting-note' },
-          'Spectacle changes apply from the next chapter you open.',
+          'Spectacle and Calm Mode motion changes apply from the next chapter you open; sound changes apply now.',
         ),
         h('button', { type: 'button', class: 'kn-sheet-close', onClick: close }, 'Done'),
       ),
@@ -114,6 +132,7 @@ export function openSettings(audio: AudioBus): void {
   };
   const update = (patch: Partial<Prefs>): void => {
     setPrefs(patch);
+    audio.setSound(soundAllowed(getPrefs()));
     render(getPrefs());
   };
   sheet.addEventListener('click', (e) => e.target === sheet && close());

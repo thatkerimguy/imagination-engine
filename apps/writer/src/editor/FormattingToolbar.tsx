@@ -1,13 +1,14 @@
-// Folio formatting bar: a 44dp `surface` strip with a 1px top hairline, monochrome 18px glyphs and
+// Folio formatting bar: a 48dp `surface` strip with a 1px top hairline, monochrome 18px glyphs and
 // the add-block tools pinned right. Buttons refuse focus so the keyboard and the TextInput
 // selection survive a tap.
 import { memo, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ToolId } from '../store/writer-prefs.ts';
+import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { Txt } from '../ui/Txt.tsx';
-import { radius, space, TOUCH } from '../ui/tokens.ts';
+import { radius, space } from '../ui/tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
 import { ToolbarChevron, type ToolbarHalf } from './ToolbarCollapse.tsx';
 
@@ -109,7 +110,7 @@ export const toolLabel = (id: ToolId): string => LABELS[id];
 
 const useStyles = makeStyles((t) => ({
   bar: {
-    minHeight: TOUCH,
+    minHeight: MIN_TOUCH,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: t.colors.surface,
@@ -126,8 +127,8 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.hairline,
   },
   btn: {
-    minWidth: TOUCH,
-    height: TOUCH,
+    minWidth: MIN_TOUCH,
+    height: MIN_TOUCH,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',

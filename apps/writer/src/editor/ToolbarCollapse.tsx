@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { Glyph } from '../ui/Glyph.tsx';
+import { hitSlopFor } from '../ui/a11y.ts';
 import { TOUCH } from '../ui/tokens.ts';
 
 export type ToolbarHalf = 'format' | 'add';
@@ -30,6 +31,7 @@ export function ToolbarChevron(p: ToolbarChevronProps): ReactNode {
       focusable={false}
       onPress={p.onPress}
       testID={`toolbar-${p.mode}-${p.half}`}
+      hitSlop={hitSlopFor(p.mode === 'expand' ? TOUCH : 28, TOUCH)}
       style={{
         width: p.mode === 'expand' ? TOUCH : 28,
         height: TOUCH,

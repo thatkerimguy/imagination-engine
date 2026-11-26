@@ -8,7 +8,7 @@ import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { serveSpa } from './lib/spa-server.mjs';
-import { GROWTH_SEED, ID, RICH } from './lib/writer-fixtures.mjs';
+import { GROWTH_SEED, ID, RICH, skipOnboarding } from './lib/writer-fixtures.mjs';
 import { phase2ePass } from './writer-shots-2e.mjs';
 import { flowPass } from './writer-shots-flow.mjs';
 import { phase2fPass } from './writer-shots-2f.mjs';
@@ -17,6 +17,7 @@ import { workspacePass } from './writer-shots-workspace.mjs';
 import { phase4aPass } from './writer-shots-4a.mjs';
 import { dir05Pass } from './writer-shots-dir05.mjs';
 import { dir06aPass } from './writer-shots-dir06a.mjs';
+import { dir06Pass } from './writer-shots-dir06.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -45,6 +46,7 @@ try {
     hasTouch: true,
     colorScheme: 'dark',
   });
+  await skipOnboarding(page);
   // Settled dice call navigator.vibrate() (in the preview iframe too); record when.
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'vibrate', {
@@ -216,12 +218,11 @@ try {
   // 2E's five shots are regression now; the pack root holds only the current (2F) four.
   await phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor });
   await phase2fPass(page, { WRITER, tid, shotsAt, ok, fail, editor });
-  // Directive 04A: the pack root holds the current shots (02–04 here, 01 from smoke.mjs).
+  // 04A / 05 / 06A packs are regression now; the pack root holds only the Directive 06 four.
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
-  // Directive 05: EPUB card + download, Backup & Restore, Trash (pack root).
-  await dir05Pass(page, { WRITER, packAt, tid, ok, fail, editor });
-  // Directive 06A: clipped settings highlights + swipeable root tab pager (pack root).
-  await dir06aPass(page, { WRITER, packAt, tid, ok, fail });
+  await dir05Pass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
+  await dir06aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail });
+  await dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();
@@ -236,12 +237,12 @@ try {
 // Publish E2E + DIRECTIVE-04 ToS / Report abuse (regression; the 2 D-04 shots go to the pack root).
 const run = (script, args) =>
   spawnSync(process.execPath, [join(import.meta.dirname, script), ...args], { stdio: 'inherit' });
-const pack3 = shotsAt && run('smoke-publish.mjs', ['--shots', shotsAt, '--ugc-shots', packAt]);
+const pack3 = shotsAt && run('smoke-publish.mjs', ['--shots', shotsAt, '--ugc-shots', shotsAt]);
 if (pack3 && pack3.status !== 0) fail('publish pack (smoke-publish.mjs) failed');
-// D-03 tablet / Calm Mode pack (regression) + D-04 outline-label shot (pack root).
+// D-03 tablet / Calm Mode + D-04 / 06A tablet shots (all regression now).
 const tablet = run(
   'writer-shots-tablet.mjs',
-  packAt ? ['--shots', shotsAt, '--dir04', packAt] : [],
+  packAt ? ['--shots', shotsAt, '--dir04', shotsAt] : [],
 );
 if (tablet.status !== 0) fail('tablet pack (writer-shots-tablet.mjs) failed');
 // Exit explicitly with the recorded status.

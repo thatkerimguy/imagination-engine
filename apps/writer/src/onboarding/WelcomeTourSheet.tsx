@@ -118,7 +118,14 @@ export function WelcomeTourSheet(p: WelcomeTourSheetProps): ReactNode {
 const styles = StyleSheet.create({
   body: { gap: space.sm, paddingVertical: space.xs },
   actions: { gap: space.xs },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  footer: {
+    flex: 1,
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
   dots: { flexDirection: 'row', gap: space.xs },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
   nav: { flexDirection: 'row', gap: space.xs },

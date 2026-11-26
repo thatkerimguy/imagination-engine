@@ -186,6 +186,7 @@ export default function AppSettingsScreen(): ReactNode {
           icon="shield"
           title="Anonymous crash reports"
           subtitle="Off by default. Sends crash stack traces only—never your writing, titles, or notes."
+          subtitleLines={3}
           testID="settings-crash-row"
           trailing={
             <Toggle

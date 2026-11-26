@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { skipOnboarding } from './lib/writer-fixtures.mjs';
 import { freePort, serveStatic, startApi, stopAll, win } from './smoke-publish-helpers.mjs';
 import { MOD_TOKEN, calmModeDimming, passTosGate, reportAbuse } from './smoke-publish-ugc.mjs';
 
@@ -72,6 +73,7 @@ try {
     hasTouch: true,
     permissions: ['clipboard-read', 'clipboard-write'],
   });
+  await skipOnboarding(context);
   const watch = (page, tag) => {
     page.on('console', (m) => m.type() === 'error' && errors.push(`${tag}: ${m.text()}`));
     page.on('pageerror', (e) => errors.push(`${tag}: ${e}`));

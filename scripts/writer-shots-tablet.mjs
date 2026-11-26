@@ -7,6 +7,7 @@ import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { serveSpa } from './lib/spa-server.mjs';
+import { skipOnboarding } from './lib/writer-fixtures.mjs';
 import { startPreviewServer } from './smoke-server.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -47,6 +48,7 @@ try {
     deviceScaleFactor: 1,
     colorScheme: 'dark',
   });
+  await skipOnboarding(page);
   watch(page);
   await page.route('**/*', (route) => {
     const { hostname } = new URL(route.request().url());

@@ -1,15 +1,15 @@
-// Cover media inside workspace `.zip` backups: `covers/<basename>` entries next to `kv/*`.
-// Packing reads every `file:` cover referenced by `meta/item/*` (plus its `.thumb.jpg`);
-// restoring validates names strictly (no traversal, image extensions only, size cap), writes
-// the files into this device's covers folder and rewrites `meta/item/*` to the new local URIs.
-// Pure: the platform file access is injected (media/cover-archive.ts; web is a no-op).
-import { thumbUriForCover } from '../media/cover-resize.ts';
+// Cover media inside archives: `covers/<basename>` entries for every `cover` / `cover_thumb`
+// media asset. Packing reads each file through `CoverMedia` (platform file access, injected;
+// web has none because its covers are inline data URIs). Restoring writes the files into this
+// device's covers folder and rewrites `media_assets.relativePath` to the new location.
+import type { MediaAssetRecord } from '@kn/core';
 import type { ZipFiles } from '../export/zip.ts';
-import type { StorageAdapter } from '../storage/types.ts';
+import { resolveMediaUri, toRelativePath } from '../store/covers.ts';
+import { fail, LIMITS } from './archive-format.ts';
 
 export const COVER_ENTRY_PREFIX = 'covers/';
-export const MAX_COVER_BYTES = 8 * 1024 * 1024;
-export const MAX_COVER_FILES = 400;
+export const MAX_COVER_BYTES = LIMITS.coverBytes;
+export const MAX_COVER_FILES = LIMITS.coverFiles;
 
 /** Platform file access for cover images. */
 export interface CoverMedia {
@@ -19,46 +19,36 @@ export interface CoverMedia {
   write(name: string, bytes: Uint8Array): Promise<string>;
 }
 
+type MediaRoot = { mediaRoot: string };
 const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9.-]{0,127}\.(jpe?g|png|webp)$/i;
 
 /** Alphanumeric / dash / dot basenames with an image extension and no `..`. */
 export const isSafeCoverName = (name: string): boolean =>
   SAFE_NAME.test(name) && !name.includes('..');
 
-/** The basename of a local `file:` cover URI, or null for data / http / unsafe URIs. */
-export function coverBasename(uri: string): string | null {
-  if (!/^file:/i.test(uri)) return null;
-  const clean = uri.split(/[?#]/)[0] ?? '';
+const isCover = (a: MediaAssetRecord): boolean => a.kind === 'cover' || a.kind === 'cover_thumb';
+
+/** The safe basename of a stored cover path (relative or `file:`), null for data / http / odd ones. */
+export function coverBasename(path: string): string | null {
+  if (/^(data|https?|content):/i.test(path)) return null;
+  const clean = path.split(/[?#]/)[0] ?? '';
   const name = clean.slice(clean.lastIndexOf('/') + 1);
   return isSafeCoverName(name) ? name : null;
 }
 
-const coverUriOf = (raw: string): string | null => {
-  try {
-    const v = (JSON.parse(raw) as { data?: { coverUri?: unknown } }).data?.coverUri;
-    return typeof v === 'string' && v ? v : null;
-  } catch {
-    return null;
-  }
-};
-
-/** Reads every referenced cover (and thumbnail) into zip entries. Missing files are skipped. */
+/** Reads every cover / thumbnail file the assets point at. Missing files are skipped. */
 export async function collectCovers(
-  entries: readonly { key: string; value: string }[],
+  repo: MediaRoot,
+  assets: readonly MediaAssetRecord[],
   media: CoverMedia,
 ): Promise<ZipFiles> {
   const out: ZipFiles = {};
-  for (const e of entries) {
-    if (!e.key.startsWith('meta/item/')) continue;
-    const uri = coverUriOf(e.value);
-    if (!uri || !coverBasename(uri)) continue;
-    for (const u of [uri, thumbUriForCover(uri)]) {
-      const name = coverBasename(u);
-      if (!name || out[`${COVER_ENTRY_PREFIX}${name}`]) continue;
-      const bytes = await media.read(u);
-      if (bytes && bytes.length > 0 && bytes.length <= MAX_COVER_BYTES)
-        out[`${COVER_ENTRY_PREFIX}${name}`] = bytes;
-    }
+  for (const a of assets) {
+    const name = isCover(a) ? coverBasename(a.relativePath) : null;
+    if (!name || out[`${COVER_ENTRY_PREFIX}${name}`]) continue;
+    const bytes = await media.read(resolveMediaUri(repo, a.relativePath));
+    if (bytes && bytes.length > 0 && bytes.length <= MAX_COVER_BYTES)
+      out[`${COVER_ENTRY_PREFIX}${name}`] = bytes;
   }
   return out;
 }
@@ -66,33 +56,28 @@ export async function collectCovers(
 /** Validates one `covers/*` zip entry and returns its basename. Throws a readable error. */
 export function validateCoverEntry(entryName: string, data: Uint8Array): string {
   const name = entryName.slice(COVER_ENTRY_PREFIX.length);
-  if (!isSafeCoverName(name)) throw new Error(`Unsafe cover file name "${entryName}".`);
-  if (data.length > MAX_COVER_BYTES) throw new Error(`Cover "${name}" is too large.`);
+  if (!isSafeCoverName(name)) return fail(`Unsafe cover file name "${entryName}".`);
+  if (data.length > MAX_COVER_BYTES) return fail(`Cover "${name}" is too large.`);
   return name;
 }
 
 /**
- * Writes restored cover files and points `meta/item/*` at them. Covers whose file is absent
- * from the archive keep their old URI (Document Doctor reports them). Returns files written.
+ * Writes the archive's cover files and returns the assets pointed at their new local paths.
+ * Assets whose file is absent keep their old path (Document Doctor reports them).
  */
 export async function restoreCovers(
-  adapter: StorageAdapter,
+  repo: MediaRoot,
   covers: Readonly<Record<string, Uint8Array>>,
-  media: CoverMedia,
-): Promise<number> {
+  assets: readonly MediaAssetRecord[],
+  media: CoverMedia | undefined,
+): Promise<MediaAssetRecord[]> {
+  if (!media) return [...assets];
   const written = new Map<string, string>();
   for (const [name, bytes] of Object.entries(covers))
     written.set(name, await media.write(name, bytes));
-  if (written.size === 0) return 0;
-  for (const key of await adapter.keys('meta/item/')) {
-    const raw = await adapter.get(key);
-    if (raw === null) continue;
-    const uri = coverUriOf(raw);
-    const name = uri ? coverBasename(uri) : null;
-    const next = name ? written.get(name) : undefined;
-    if (!next || next === uri) continue;
-    const stored = JSON.parse(raw) as { data: Record<string, unknown> };
-    await adapter.set(key, JSON.stringify({ ...stored, data: { ...stored.data, coverUri: next } }));
-  }
-  return written.size;
+  return assets.map((a) => {
+    const name = isCover(a) ? coverBasename(a.relativePath) : null;
+    const uri = name ? written.get(name) : undefined;
+    return uri ? { ...a, relativePath: toRelativePath(repo, uri) } : a;
+  });
 }

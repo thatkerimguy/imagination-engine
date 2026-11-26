@@ -8,6 +8,7 @@ import { buildSearchIndex, search, type SearchIndex, type SearchScope } from './
 import { openResult } from './open-result.ts';
 import { SearchResultRow } from './SearchResultRow.tsx';
 import { loadSearchSources } from './search-sources.ts';
+import { rankerQuery, useFtsHits } from './use-fts-hits.ts';
 import { Field } from '../ui/Field.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { ScreenOptions } from '../ui/ScreenOptions.tsx';
@@ -43,9 +44,15 @@ export function SearchView(): ReactNode {
     });
     return () => handle.cancel();
   }, [sources.data]);
+  const hits = useFtsHits(query);
   const results = useMemo(
-    () => (index && query.trim() ? search(index, query, { scope, limit: 50 }) : []),
-    [index, query, scope],
+    () =>
+      index && hits && query.trim()
+        ? search(index, rankerQuery(query), { scope, limit: 200 })
+            .filter((r) => hits.has(r.id))
+            .slice(0, 50)
+        : [],
+    [index, hits, query, scope],
   );
   const searching = query.trim().length > 0;
 

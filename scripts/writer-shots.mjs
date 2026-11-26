@@ -8,6 +8,7 @@ import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { serveSpa } from './lib/spa-server.mjs';
+import { seedKv } from './lib/writer-v2.mjs';
 import { GROWTH_SEED, ID, RICH, skipOnboarding } from './lib/writer-fixtures.mjs';
 import { phase2ePass } from './writer-shots-2e.mjs';
 import { flowPass } from './writer-shots-flow.mjs';
@@ -18,6 +19,7 @@ import { phase4aPass } from './writer-shots-4a.mjs';
 import { dir05Pass } from './writer-shots-dir05.mjs';
 import { dir06aPass } from './writer-shots-dir06a.mjs';
 import { dir07Pass } from './writer-shots-dir07.mjs';
+import { ov01Pass } from './writer-shots-ov01.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -67,10 +69,6 @@ try {
   const tid = (id) => page.getByTestId(id);
   globalThis.__page = page;
 
-  await page.addInitScript((seed) => {
-    const key = 'kn-writer:growth/chapter:ch01';
-    if (!localStorage.getItem(key)) localStorage.setItem(key, seed);
-  }, GROWTH_SEED);
   const editor = async () => {
     await page.goto(`${WRITER}novel/vertical-slice/chapter/s01/ch01`);
     await tid(`pill-${ID.chat}`).waitFor({ timeout: 20000 });
@@ -80,6 +78,7 @@ try {
   // 01 Folio Library (dark): book rows with spine thumbs, quiet bar, no FAB.
   await page.goto(WRITER);
   await tid('novel-card-vertical-slice').waitFor({ timeout: 20000 });
+  await seedKv(page, [['growth/chapter:ch01', GROWTH_SEED]]);
   if (await page.getByRole('button', { name: /^New novel$/ }).count())
     ok('library has a quiet New novel action');
   await page.waitForTimeout(300);
@@ -222,7 +221,9 @@ try {
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir05Pass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir06aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail });
-  await dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, editor });
+  // Directive 07 is regression now; the pack root holds only the OVERHAUL-01 three.
+  await dir07Pass(page, { WRITER, packAt: shotsAt, shotsAt, tid, ok, fail, editor });
+  await ov01Pass(browser, { WRITER, packAt, ok, fail });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

@@ -1,6 +1,7 @@
 // Publish end-to-end smoke: local publish API + Expo Web writer (390x844) + a reader build that reads
 // books from that API. Needs `pnpm writer:export` (apps/writer/dist-web) and Playwright + Chromium.
 // Usage: node scripts/smoke-publish.mjs [--shots <dir>]
+import { waitForRepo } from './lib/writer-v2.mjs';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -86,13 +87,9 @@ try {
 
   // First launch seeds the demo; then add an unlisted and a draft chapter beside Snake Eyes.
   await writer.goto(WRITER);
-  await writer.waitForFunction(() => localStorage.getItem('kn-writer:novel/vertical-slice'), null, {
-    timeout: 30000,
-  });
-  await writer.evaluate(() => {
-    const NS = 'kn-writer:';
-    const put = (key, data) =>
-      localStorage.setItem(NS + key, JSON.stringify({ data, updatedAt: Date.now() }));
+  await waitForRepo(writer); // exposed once the demo is seeded
+  await writer.evaluate(async () => {
+    const repo = globalThis.__knWriterRepo;
     const chapter = (id, title, status, blockId, text) => ({
       id,
       seasonId: 's01',
@@ -100,9 +97,8 @@ try {
       status,
       blocks: [{ id: blockId, kind: 'prose', text }],
     });
-    const base = 'chapter/vertical-slice/s01/';
-    put(
-      base + 'ch02',
+    await repo.saveChapter(
+      'vertical-slice',
       chapter(
         'ch02',
         'Beta Read',
@@ -111,14 +107,12 @@ try {
         'For beta readers only.',
       ),
     );
-    put(
-      base + 'ch03',
+    await repo.saveChapter(
+      'vertical-slice',
       chapter('ch03', 'Work in Progress', 'draft', '01M7WD7TG9J1K2M3N4P5Q6R7S8', 'Not ready yet.'),
     );
-    const key = NS + 'season/vertical-slice/s01';
-    const season = JSON.parse(localStorage.getItem(key)).data;
-    season.chapters = ['ch01', 'ch02', 'ch03'];
-    put('season/vertical-slice/s01', season);
+    const season = await repo.getSeason('vertical-slice', 's01');
+    await repo.saveSeason('vertical-slice', { ...season, chapters: ['ch01', 'ch02', 'ch03'] });
   });
 
   // Settings: configure publishing and test the connection.

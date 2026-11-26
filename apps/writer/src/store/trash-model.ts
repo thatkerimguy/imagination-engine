@@ -1,13 +1,11 @@
-// 30-day Trash: record shape and pure helpers. @kn/core manifests are frozen, so the soft-delete
-// marker (`deletedAt`, ISO-8601 UTC) lives in a writer-only `trash/<id>` record per trashed item.
-// Seasons and chapters are also unlinked from their parent's reading order (index remembered),
-// so every order-driven consumer (outline, compile, publish, search) skips them for free.
-import type { DocumentStore } from './documents.ts';
+// 30-day relational Trash: record shape and pure helpers. Trashing sets `nodes.deleted_at`
+// (ISO-8601 UTC) on the item itself and keeps its `position`; every active query skips nodes that
+// are trashed or sit under a trashed ancestor, so outline, compile, publish, search and the
+// widget skip them for free. Restore clears it; permanent delete lets ON DELETE CASCADE clean up.
+import type { NodeKind, NodeRecord } from '@kn/core';
 
 export const TRASH_RETENTION_DAYS = 30;
 export const DAY_MS = 86_400_000;
-export const TRASH_PREFIX = 'trash/';
-export const trashKey = (id: string): string => `${TRASH_PREFIX}${id}`;
 
 /** The calm undo hint every "Move to Trash" confirmation shows. */
 export const TRASH_HINT =
@@ -33,8 +31,6 @@ export interface TrashListItem extends TrashRecord {
   daysLeft: number;
 }
 
-const KINDS: readonly TrashKind[] = ['novel', 'season', 'chapter', 'folder', 'doc'];
-
 export const TRASH_KIND_LABEL: Readonly<Record<TrashKind, string>> = {
   novel: 'Book',
   season: 'Season',
@@ -42,25 +38,6 @@ export const TRASH_KIND_LABEL: Readonly<Record<TrashKind, string>> = {
   folder: 'Folder',
   doc: 'Note',
 };
-
-/** Cleans any stored value into a record, or null when unusable. Pure. */
-export function normalizeTrashRecord(v: unknown): TrashRecord | null {
-  if (!v || typeof v !== 'object') return null;
-  const s = v as Record<string, unknown>;
-  const kind = KINDS.find((k) => k === s.kind);
-  if (!kind || typeof s.id !== 'string' || !s.id) return null;
-  if (typeof s.deletedAt !== 'string' || Number.isNaN(Date.parse(s.deletedAt))) return null;
-  const r: TrashRecord = {
-    id: s.id,
-    kind,
-    title: typeof s.title === 'string' ? s.title : '',
-    deletedAt: s.deletedAt,
-  };
-  if (typeof s.novelId === 'string') r.novelId = s.novelId;
-  if (typeof s.seasonId === 'string') r.seasonId = s.seasonId;
-  if (typeof s.index === 'number' && Number.isInteger(s.index) && s.index >= 0) r.index = s.index;
-  return r;
-}
 
 export const trashAgeMs = (r: Pick<TrashRecord, 'deletedAt'>, now: number): number =>
   now - Date.parse(r.deletedAt);
@@ -75,14 +52,6 @@ export const isTrashExpired = (r: Pick<TrashRecord, 'deletedAt'>, now: number): 
 export function deletesInLabel(daysLeft: number): string {
   if (daysLeft <= 0) return 'Deletes today';
   return `Deletes in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`;
-}
-
-/** Inserts `id` at `index` (clamped), never duplicating it. Pure. */
-export function insertAt(list: readonly string[], id: string, index = list.length): string[] {
-  if (list.includes(id)) return [...list];
-  const out = [...list];
-  out.splice(Math.min(Math.max(0, index), out.length), 0, id);
-  return out;
 }
 
 interface NoteNode {
@@ -122,13 +91,52 @@ export function hiddenNoteIds(
   return out;
 }
 
-/** True for a `chapter/<novel>/<season>/<chapter>` key whose book, season or self is trashed. */
-export function isChapterKeyTrashed(key: string, trashed: ReadonlySet<string>): boolean {
-  const [, n, s, c] = key.split('/');
-  return [n, s, c].some((id) => !!id && trashed.has(id));
+const TRASH_KIND_OF: Partial<Record<NodeKind, TrashKind>> = {
+  book: 'novel',
+  season: 'season',
+  chapter: 'chapter',
+  folder: 'folder',
+  note: 'doc',
+};
+
+/** The Trash record of a trashed node (`null` for active nodes and story-bible kinds). Pure. */
+export function trashRecordOf(n: NodeRecord): TrashRecord | null {
+  const kind = TRASH_KIND_OF[n.kind];
+  if (!kind || !n.deletedAt) return null;
+  const r: TrashRecord = { id: n.id, kind, title: n.title, deletedAt: n.deletedAt };
+  if ((kind === 'season' || kind === 'chapter') && n.bookId) r.novelId = n.bookId;
+  if (kind === 'chapter' && n.parentId) r.seasonId = n.parentId;
+  if (kind === 'season' || kind === 'chapter') r.index = n.position;
+  return r;
 }
 
-/** Ids of every trashed item (cheap: key scan only). */
-export async function trashedIds(docs: DocumentStore): Promise<Set<string>> {
-  return new Set((await docs.keys(TRASH_PREFIX)).map((k) => k.slice(TRASH_PREFIX.length)));
+/** Ids of nodes that are trashed or sit under a trashed ancestor (cycle-safe). Pure. */
+export function hiddenNodeIds(
+  nodes: readonly Pick<NodeRecord, 'id' | 'parentId' | 'deletedAt'>[],
+): Set<string> {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const memo = new Map<string, boolean>();
+  const hidden = (id: string): boolean => {
+    const path: string[] = [];
+    let at: string | null | undefined = id;
+    let result = false;
+    while (at && !path.includes(at)) {
+      const known = memo.get(at);
+      if (known !== undefined) {
+        result = known;
+        break;
+      }
+      const n = byId.get(at);
+      if (!n) break;
+      path.push(at);
+      if (n.deletedAt) {
+        result = true;
+        break;
+      }
+      at = n.parentId;
+    }
+    for (const p of path) memo.set(p, result);
+    return result;
+  };
+  return new Set(nodes.filter((n) => hidden(n.id)).map((n) => n.id));
 }

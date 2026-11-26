@@ -6,11 +6,10 @@ vi.mock('expo-file-system', () => ({
   },
 }));
 
-import { kvFromAdapter, scanWorkspace } from '../diagnostics/doctor.ts';
 import { listFolderNotes, listNovelEntries } from '../export/compile-source.ts';
 import { inspectNovelForPublish } from '../publish/publish-client.ts';
 import { loadSearchSources } from '../search/search-sources.ts';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { createDoc, createFolder, getDoc, listAllDocs, listChildren } from './folders.ts';
 import { recordGrowth } from './growth-store.ts';
 import { updateItemMeta } from './item-meta.ts';
@@ -32,7 +31,7 @@ import {
 const T0 = Date.parse('2026-11-01T12:00:00Z');
 
 async function setup() {
-  const adapter = createMemoryAdapter();
+  const adapter = createMemoryDatabase();
   const repo = new NovelRepository(adapter);
   const novel = await repo.createNovel({ title: 'Tide', author: 'A', sectionLabel: 'Season' });
   const s1 = novel.seasons[0]!;
@@ -135,26 +134,26 @@ describe('30-day Trash', () => {
     await updateItemMeta(repo, c1, { tags: ['x'] });
     await moveToTrash(repo, { kind: 'novel', novelId: n }, T0);
     await permanentlyDeleteItem(repo, n);
-    const left = await adapter.keys('');
-    expect(left.filter((k) => /^(novel|season|chapter|trash|meta\/item)\//.test(k))).toEqual([]);
+    expect(await adapter.listNodes({ kinds: ['book', 'season', 'chapter'], includeDeleted: true })).toEqual([]);
+    expect(await adapter.listSettingKeys('meta/item/')).toEqual([]);
+    expect(await adapter.integrity()).toMatchObject({ orphanBodies: 0, orphanGrowth: 0 });
     await createDoc(repo, null, { title: 'X' });
     await moveToTrash(repo, { kind: 'doc', id: (await listAllDocs(repo))[0]!.id }, T0);
     await emptyTrash(repo);
     expect(await listAllDocs(repo)).toEqual([]);
   });
 
-  it('Doctor does not report trashed items as orphans', async () => {
+  it('keeps trashed items out of the search index but never orphans them', async () => {
     const { adapter, repo, n, s1, s2, c2 } = await setup();
     await moveToTrash(repo, { kind: 'chapter', novelId: n, seasonId: s1, chapterId: c2 }, T0);
     await moveToTrash(repo, { kind: 'season', novelId: n, seasonId: s2 }, T0);
     const f = await createFolder(repo, 'F', null);
     await createDoc(repo, f.id, { title: 'N' });
     await moveToTrash(repo, { kind: 'folder', id: f.id }, T0);
-    expect(await scanWorkspace(kvFromAdapter(adapter))).toEqual([]);
-    await adapter.set('trash/ghost', JSON.stringify({ data: {}, updatedAt: 1 }));
-    expect((await scanWorkspace(kvFromAdapter(adapter))).map((i) => i.id)).toEqual([
-      'orphan-sidecar:trash/ghost',
-    ]);
+    const i = await adapter.integrity();
+    expect(i.ftsRows).toBe(i.activeNodes);
+    expect(i).toMatchObject({ brokenParents: 0, orphanBodies: 0, orphanLinks: 0, orphanGrowth: 0 });
+    expect(await adapter.search('Two')).toEqual([]); // the trashed chapter itself
   });
 });
 
@@ -171,8 +170,9 @@ describe('Gate 2 E4: Empty Trash leaves no sidecars', () => {
     await updateItemMeta(repo, note.id, { tags: ['x'] });
     await moveToTrash(repo, { kind: 'doc', id: note.id }, T0);
     await emptyTrash(repo);
-    expect(await adapter.keys(`growth/doc:${note.id}`)).toEqual([]);
-    expect(await scanWorkspace(kvFromAdapter(adapter))).toEqual([]);
+    expect(await adapter.listGrowthLogs({ nodeId: note.id })).toEqual([]);
+    expect(await adapter.listSettingKeys(`meta/item/${note.id}`)).toEqual([]);
+    expect(await adapter.integrity()).toMatchObject({ orphanBodies: 0, orphanGrowth: 0 });
   });
 
   it('purges chapter and novel growth when a whole book is deleted forever', async () => {
@@ -182,8 +182,8 @@ describe('Gate 2 E4: Empty Trash leaves no sidecars', () => {
     await recordGrowth(repo, `novel:${n}`, counts, { force: true });
     await moveToTrash(repo, { kind: 'novel', novelId: n }, T0);
     await permanentlyDeleteItem(repo, n);
-    expect(await adapter.keys('growth/')).toEqual([]);
-    expect(await scanWorkspace(kvFromAdapter(adapter))).toEqual([]);
+    expect(await adapter.listGrowthLogs({})).toEqual([]);
+    expect(await adapter.integrity()).toMatchObject({ orphanBodies: 0, orphanGrowth: 0 });
   });
 });
 

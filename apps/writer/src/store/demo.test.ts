@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { DEMO_NOVEL_ID, demoBundle, loadDemoNovel, seedOnFirstLaunch } from './demo.ts';
 import { updateChapterMeta } from './outline.ts';
 import { NovelRepository } from './repository.ts';
 
-const fresh = () => new NovelRepository(createMemoryAdapter());
+const fresh = () => new NovelRepository(createMemoryDatabase());
 
 describe('demo novel', () => {
   it('demoBundle passes importBundle and returns independent copies', async () => {

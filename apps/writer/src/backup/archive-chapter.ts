@@ -1,44 +1,54 @@
-// `.knchap` import: adds the chapter to a season under a fresh id (never overwrites a chapter).
-import { parseSeasonManifest } from '@kn/core';
-import type { StorageAdapter } from '../storage/types.ts';
+// Single-chapter `.knchap`: the chapter row + body and its sidecar settings. Importing adds the
+// chapter to a season under a fresh id (never overwrites a chapter) through `repo.saveChapter`,
+// which also records the day-0 growth baseline.
+import { buildArchive, parseArchive } from './archive.ts';
+import { emptyTables } from '../db/port.ts';
 import { newSlugId } from '../store/ids.ts';
-import { parseArchive } from './archive.ts';
+import { toChapter } from '../store/node-mapping.ts';
+import type { NovelRepository } from '../store/repository.ts';
+import { fail } from './archive-format.ts';
 
-interface Stored {
-  data: Record<string, unknown>;
-  updatedAt: number;
+const sidecarKeys = (id: string): string[] => [`meta/chapter-styles/${id}`, `meta/item/${id}`];
+
+export async function packChapter(
+  repo: NovelRepository,
+  chapterId: string,
+  now = Date.now(),
+): Promise<Uint8Array> {
+  const node = await repo.db.getNode(chapterId);
+  if (node?.kind !== 'chapter' || node.deletedAt) throw new Error('That chapter was not found.');
+  const body = await repo.db.getBody(chapterId);
+  const settings = [];
+  for (const key of sidecarKeys(chapterId)) {
+    const valueJson = await repo.db.getSetting(key);
+    if (valueJson !== null) settings.push({ key, valueJson, updatedAt: repo.nowIso() });
+  }
+  const tables = {
+    ...emptyTables(),
+    nodes: [{ ...node, coverAssetId: null }],
+    nodeBodies: body ? [body] : [],
+    settings,
+  };
+  return buildArchive('knchap', tables, {}, now, node.title);
 }
 
 export async function restoreChapter(
-  adapter: StorageAdapter,
+  repo: NovelRepository,
   bytes: Uint8Array,
   target: { novelId: string; seasonId: string },
-  now = Date.now(),
 ): Promise<string> {
-  const { entries } = await parseArchive(bytes, 'knchap');
-  const chapter = entries.find((e) => e.key.startsWith('chapter/'));
-  if (!chapter) throw new Error('A .knchap must contain one chapter.');
-  const seasonKey = `season/${target.novelId}/${target.seasonId}`;
-  const rawSeason = await adapter.get(seasonKey);
-  if (rawSeason === null) throw new Error('That season was not found.');
-  const season = JSON.parse(rawSeason) as Stored;
-  const oldId = chapter.key.slice(chapter.key.lastIndexOf('/') + 1);
+  const { tables } = await parseArchive(bytes, 'knchap');
+  const node = tables.nodes[0];
+  if (tables.nodes.length !== 1 || node?.kind !== 'chapter')
+    return fail('A .knchap must contain one chapter.');
   const id = newSlugId();
-  const stored = JSON.parse(chapter.value) as Stored;
-  const nextSeason = parseSeasonManifest({
-    ...season.data,
-    chapters: [...((season.data.chapters as string[] | undefined) ?? []), id],
-  });
-  if (!nextSeason.ok) throw new Error(`Season: ${nextSeason.errors.join('; ')}`);
-  await adapter.set(
-    `chapter/${target.novelId}/${target.seasonId}/${id}`,
-    JSON.stringify({ ...stored, data: { ...stored.data, id, seasonId: target.seasonId } }),
-  );
-  for (const e of entries) {
-    if (e.key === `meta/chapter-styles/${oldId}`)
-      await adapter.set(`meta/chapter-styles/${id}`, e.value);
-    if (e.key === `meta/item/${oldId}`) await adapter.set(`meta/item/${id}`, e.value);
+  const chapter = toChapter(node, tables.nodeBodies[0] ?? null);
+  await repo.saveChapter(target.novelId, { ...chapter, id, seasonId: target.seasonId });
+  const [from, to] = [sidecarKeys(node.id), sidecarKeys(id)];
+  for (const [i, key] of from.entries()) {
+    const row = tables.settings.find((s) => s.key === key);
+    if (row) await repo.db.setSetting(to[i]!, row.valueJson);
   }
-  await adapter.set(seasonKey, JSON.stringify({ data: nextSeason.value, updatedAt: now }));
+  repo.notifyChanged();
   return id;
 }

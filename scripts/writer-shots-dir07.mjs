@@ -4,10 +4,10 @@
 //   02 Live Preview rendering litrpg-system-box | Book Compiler with the Royal Road tile,
 //   03 9:16 BookTok / Reels Teaser Studio | 9:16 Record Mode,
 //   04 Settings › Language = Español | Library in Spanish (no horizontal overflow).
+import { waitForRepo } from './lib/writer-v2.mjs';
 import { dir06Pass } from './writer-shots-dir06.mjs';
 import { composite } from './lib/composite.mjs';
 
-const NS = 'kn-writer:';
 const SYS_ID = '01M7WD7TG7SYSTEMBXQ0000000';
 const EMOJI = /\p{Extended_Pictographic}/u;
 const SYS_BLOCK = {
@@ -25,24 +25,18 @@ const SYS_BLOCK = {
 };
 
 /** Enables the module on the demo novel and puts a System box at the top of ch01. */
-const seedSystemBox = (page) =>
-  page.evaluate(
-    ([ns, block]) => {
-      const patch = (key, fn) => {
-        const raw = JSON.parse(localStorage.getItem(ns + key));
-        fn(raw.data);
-        raw.updatedAt = Date.now();
-        localStorage.setItem(ns + key, JSON.stringify(raw));
-      };
-      patch('novel/vertical-slice', (n) => {
-        if (!n.enabledModules.includes(block.moduleId)) n.enabledModules.push(block.moduleId);
-      });
-      patch('chapter/vertical-slice/s01/ch01', (c) => {
-        if (!c.blocks.some((b) => b.id === block.id)) c.blocks.unshift(block);
-      });
-    },
-    [NS, SYS_BLOCK],
-  );
+const seedSystemBox = async (page) => {
+  await waitForRepo(page);
+  await page.evaluate(async (block) => {
+    const repo = globalThis.__knWriterRepo;
+    const n = await repo.requireNovel('vertical-slice');
+    if (!n.enabledModules.includes(block.moduleId))
+      await repo.saveNovel({ ...n, enabledModules: [...n.enabledModules, block.moduleId] });
+    const c = await repo.getChapter('vertical-slice', 's01', 'ch01');
+    if (!c.blocks.some((b) => b.id === block.id))
+      await repo.saveChapter('vertical-slice', { ...c, blocks: [block, ...c.blocks] });
+  }, SYS_BLOCK);
+};
 
 const overflowX = (page) =>
   page.evaluate(() => document.scrollingElement.scrollWidth - window.innerWidth);

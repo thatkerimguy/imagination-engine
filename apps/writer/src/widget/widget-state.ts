@@ -1,7 +1,8 @@
 // Pure payload for the Android home-screen writing widget (DIRECTIVE-07 E). The widget lives
 // outside the app's Master Lock overlay, so whenever any lock covers the work the payload is
 // redacted: no novel or chapter title, no counts, and the tap lands on the Library (`/`).
-import { dayKeyOf, type GrowthPoint } from '../store/growth-store.ts';
+import { computeTodayWords } from '@kn/core';
+import { dayKeyOf, type GrowthPoint } from '../store/growth-series.ts';
 
 export const WIDGET_SCHEME = 'kinetic-writer://';
 export const REDACTED_HEADLINE = 'Imagination Engine';
@@ -78,16 +79,17 @@ export function buildWidgetPayload(input: WidgetInput): WidgetPayload {
 }
 
 /**
- * Words added today from a growth series: the last snapshot of today minus the last snapshot
- * before today (0 when nothing was written today). Never negative (deleting is not "writing").
+ * Words added today from one growth series: today's latest snapshot minus today's day-0 baseline
+ * (create / import / restore) or, without one, the last snapshot before today. 0 when nothing was
+ * written today; never negative (deleting is not "writing").
  */
 export function todayWordsFrom(points: readonly GrowthPoint[], now: number): number {
-  const today = dayKeyOf(now);
-  let before = 0;
-  let latest: number | null = null;
-  for (const p of points) {
-    if (p.dayKey < today) before = p.words;
-    else if (p.dayKey === today) latest = p.words;
-  }
-  return latest === null ? 0 : Math.max(0, latest - before);
+  const logs = points.map((p) => ({
+    nodeId: 'series',
+    dateKey: p.dayKey,
+    wordCount: p.words,
+    isBaseline: p.baseline === true,
+    recordedAt: new Date(p.ts).toISOString(),
+  }));
+  return computeTodayWords(logs, dayKeyOf(now));
 }

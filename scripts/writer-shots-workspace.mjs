@@ -3,7 +3,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const NS = 'kn-writer:';
+import { seedKv } from './lib/writer-v2.mjs';
+
 const chapter = JSON.parse(
   readFileSync(
     resolve(import.meta.dirname, '../sample-novels/vertical-slice/seasons/s01/ch01.json'),
@@ -118,10 +119,7 @@ function seed(now) {
 
 export async function workspacePass(page, { WRITER, shotsAt, tid, ok, fail, editor }) {
   const shot = (name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
-  const entries = Object.entries(seed(Date.now())).map(([k, v]) => [NS + k, v]);
-  await page.evaluate((list) => {
-    for (const [k, v] of list) localStorage.setItem(k, v);
-  }, entries);
+  await seedKv(page, Object.entries(seed(Date.now())));
 
   // 01 Notes: nested folders, Recent strip, rails, pin/tag cues, sort, 3-tab bar.
   await page.goto(`${WRITER}folders`);
@@ -184,27 +182,12 @@ export async function workspacePass(page, { WRITER, shotsAt, tid, ok, fail, edit
   for (const d of ['2', '0', '7']) await tid(`pin-key-${d}`).click();
   await page.waitForTimeout(300);
   const lockPng = await page.screenshot();
-  await page.evaluate((ns) => {
-    localStorage.setItem(
-      `${ns}doc/d-orphan`,
-      JSON.stringify({
-        data: {
-          id: 'd-orphan',
-          parentFolderId: 'f-gone',
-          title: 'Stray',
-          blocks: [],
-          createdAt: 0,
-          updatedAt: 0,
-        },
-        updatedAt: 0,
-      }),
-    );
-    localStorage.setItem(
-      `${ns}meta/item/zz-missing`,
-      JSON.stringify({ data: { tags: [] }, updatedAt: 0 }),
-    );
-    localStorage.setItem(`${ns}growth/doc:zz-missing`, '{"data":{"points":[}');
-  }, NS);
+  // v2 foreign keys make orphan notes impossible; seed what can still go wrong: an orphan
+  // sidecar and a corrupt settings row.
+  await seedKv(page, [
+    ['meta/item/zz-missing', JSON.stringify({ data: { tags: [] }, updatedAt: 0 })],
+    ['prefs/qa-corrupt', '{"data":{"points":[}'],
+  ]);
   await page.goto(`${WRITER}doctor`);
   await tid('doctor-issue-0').waitFor({ timeout: 10000 });
   ok(`doctor reports ${await page.locator('[data-testid^="doctor-issue-"]').count()} issues`);

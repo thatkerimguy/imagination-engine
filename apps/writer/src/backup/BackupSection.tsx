@@ -109,7 +109,7 @@ export function BackupSection({
         title: whole ? 'Restore everything' : 'Restore book',
         message: whole
           ? `Replace all writing on this device with the backup from ${when(info.createdAt)}? Your lock settings are kept.`
-          : `Add “${info.title ?? 'this book'}” to your library? A book with the same id is overwritten.`,
+          : `Add “${info.title ?? 'this book'}” to your library? Nothing in your library is overwritten.`,
         confirmLabel: 'Restore',
         destructive: whole,
       });

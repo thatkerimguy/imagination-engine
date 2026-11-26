@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEMO_NOVEL_ID } from '../store/demo.ts';
 import { NovelRepository } from '../store/repository.ts';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import {
   hasUserNovels,
   loadOnboarding,
@@ -11,7 +11,7 @@ import {
   TOUR_STEPS,
 } from './onboarding-state.ts';
 
-const repo = (): NovelRepository => new NovelRepository(createMemoryAdapter(), () => 5);
+const repo = (): NovelRepository => new NovelRepository(createMemoryDatabase(), () => 5);
 
 describe('shouldShowOnboarding', () => {
   it('shows for a fresh workspace', () => {

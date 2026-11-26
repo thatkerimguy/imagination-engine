@@ -1,43 +1,36 @@
-// The writer's single source of truth: books, seasons, chapters and their ordered blocks.
-// Every write is validated with @kn/core first, so storage never holds an invalid document.
+// The writer's single source of truth over the v2 relational node tree: books, seasons, chapters
+// (and, via folders.ts, the Notes workspace). Speaks @kn/core v1 documents to the rest of the
+// app; every write is validated with @kn/core first, so storage never holds an invalid document.
+// Reading order = sibling `position`; trashed nodes (`deletedAt`) drop out of every active list.
 import {
   parseNovelManifest,
   parseSeasonManifest,
-  SCHEMA_VERSION,
   type ChapterDocument,
+  type NodeRecord,
   type NovelManifest,
   type ParseResult,
   type SeasonManifest,
-  type SectionLabel,
+  type WorkspaceMode,
 } from '@kn/core';
-import type { StorageAdapter } from '../storage/types.ts';
-import { CachedAdapter } from './cached-adapter.ts';
-import { DocumentStore, keys } from './documents.ts';
+import type { DatabasePort } from '../db/port.ts';
+import { settingsAdapter } from '../db/settings-adapter.ts';
+import { DocumentStore } from './documents.ts';
 import { NotFoundError, ValidationError } from './errors.ts';
-import { newSlugId } from './ids.ts';
+import { bookNode, ms, seasonNode, toChapter, toManifest, toSeason } from './node-mapping.ts';
+import {
+  importBundleInto,
+  newNovelBundle,
+  type NewNovelInput,
+  type NovelBundle,
+} from './repository-bundle.ts';
+import { chapterWrite, nextPosition } from './repository-writes.ts';
 import { prepareChapter } from './sanitize.ts';
-import { summarizeNovel, type NovelSummary } from './novel-summary.ts';
-import { trashedIds } from './trash-model.ts';
+import { summarizeNovels, type NovelSummary } from './novel-summary.ts';
 
 export type { NovelSummary } from './novel-summary.ts';
+export type { NovelBundle, SeasonBundle } from './repository-bundle.ts';
 
-export interface NewNovelInput {
-  title: string;
-  subtitle?: string;
-  author: string;
-  sectionLabel: SectionLabel;
-}
-
-export interface SeasonBundle {
-  season: SeasonManifest;
-  chapters: ChapterDocument[];
-}
-
-/** A whole book as plain JSON: the export format and the demo import format. */
-export interface NovelBundle {
-  novel: NovelManifest;
-  seasons: SeasonBundle[];
-}
+export type { NewNovelInput } from './repository-bundle.ts';
 
 export interface ChapterSaveResult {
   chapter: ChapterDocument;
@@ -47,25 +40,27 @@ export interface ChapterSaveResult {
 
 type Listener = () => void;
 
-function check<T>(what: string, result: ParseResult<T>): T {
+export function check<T>(what: string, result: ParseResult<T>): T {
   if (!result.ok) throw new ValidationError(what, result.errors);
   return result.value;
 }
 
 export class NovelRepository {
+  /** Settings-table sidecars (item meta, styles, versions, prefs) as JSON documents. */
   readonly docs: DocumentStore;
-  private readonly cache: CachedAdapter;
   private readonly listeners = new Set<Listener>();
 
-  constructor(adapter: StorageAdapter, now: () => number = Date.now) {
-    // Read-through cache: every save/delete/import goes through it and updates it atomically.
-    this.cache = new CachedAdapter(adapter);
-    this.docs = new DocumentStore(this.cache, now);
+  constructor(
+    readonly db: DatabasePort,
+    readonly now: () => number = Date.now,
+    /** Document-directory URI that relative media paths resolve against ('' on web / tests). */
+    readonly mediaRoot = '',
+  ) {
+    this.docs = new DocumentStore(settingsAdapter(db), now);
   }
 
-  /** Forget cached reads after storage changed behind the repository (Doctor repair, restore). */
-  clearCache(): void {
-    this.cache.clear();
+  nowIso(): string {
+    return new Date(this.now()).toISOString();
   }
 
   subscribe(listener: Listener): () => void {
@@ -77,26 +72,34 @@ export class NovelRepository {
     for (const l of this.listeners) l();
   }
 
-  /** For writer-only sidecar stores (folders, notes, item meta) that write through `docs`. */
+  /** For stores that write through `db` / `docs` directly (folders, trash, item meta). */
   notifyChanged(): void {
     this.changed();
+  }
+
+  /** Active children of a node in reading order. */
+  children(parentId: string, kind: NodeRecord['kind']): Promise<NodeRecord[]> {
+    return this.db.listNodes({ parentId, kinds: [kind] });
+  }
+
+  private async kindNode(id: string, kind: NodeRecord['kind']): Promise<NodeRecord | null> {
+    const n = await this.db.getNode(id);
+    return n && n.kind === kind ? n : null;
   }
 
   // ── Novels ──────────────────────────────────────────────────────────────────────────────
 
   async listNovels(): Promise<NovelSummary[]> {
-    const out: NovelSummary[] = [];
-    const trashed = await trashedIds(this.docs);
-    for (const key of await this.docs.keys('novel/')) {
-      if (trashed.has(key.slice(6))) continue; // in Trash
-      const stored = await this.docs.read<NovelManifest>(key);
-      if (stored) out.push(await summarizeNovel(this.docs, stored, trashed));
-    }
-    return out.sort((a, b) => b.updatedAt - a.updatedAt);
+    return summarizeNovels(this, await this.db.listNodes({ parentId: null, kinds: ['book'] }));
   }
 
   async getNovel(novelId: string): Promise<NovelManifest | null> {
-    return (await this.docs.read<NovelManifest>(keys.novel(novelId)))?.data ?? null;
+    const node = await this.kindNode(novelId, 'book');
+    if (!node) return null;
+    return toManifest(
+      node,
+      (await this.children(novelId, 'season')).map((s) => s.id),
+    );
   }
 
   async requireNovel(novelId: string): Promise<NovelManifest> {
@@ -105,71 +108,85 @@ export class NovelRepository {
     return novel;
   }
 
+  /** Saves the manifest; `seasons` reorders the book's active seasons. */
   async saveNovel(manifest: NovelManifest): Promise<NovelManifest> {
     const novel = check('Novel', parseNovelManifest(manifest));
-    await this.docs.write(keys.novel(novel.id), novel);
+    const existing = await this.kindNode(novel.id, 'book');
+    const now = this.nowIso();
+    const writes = [{ node: bookNode(novel, existing, now) }];
+    const order = new Map(novel.seasons.map((id, i) => [id, i]));
+    for (const s of await this.children(novel.id, 'season')) {
+      const at = order.get(s.id);
+      if (at !== undefined && at !== s.position) writes.push({ node: { ...s, position: at } });
+    }
+    await this.db.putNodes(writes);
     this.changed();
     return novel;
   }
 
   /** Creates the book with a first season and an empty first chapter, ready to write in. */
   async createNovel(input: NewNovelInput): Promise<NovelManifest> {
-    const novelId = newSlugId();
-    const seasonId = newSlugId();
-    const chapterId = newSlugId();
-    const season: SeasonManifest = {
-      id: seasonId,
-      title: `${input.sectionLabel} 1`,
-      chapters: [chapterId],
-    };
-    const chapter: ChapterDocument = {
-      id: chapterId,
-      seasonId,
-      title: 'Chapter 1',
-      status: 'draft',
-      blocks: [],
-    };
-    const novel: NovelManifest = {
-      schemaVersion: SCHEMA_VERSION,
-      id: novelId,
-      title: input.title.trim(),
-      ...(input.subtitle?.trim() ? { subtitle: input.subtitle.trim() } : {}),
-      author: input.author.trim(),
-      sectionLabel: input.sectionLabel,
-      theme: {},
-      enabledModules: [],
-      seasons: [seasonId],
-    };
-    await this.importBundle({ novel, seasons: [{ season, chapters: [chapter] }] });
-    return novel;
+    const bundle = newNovelBundle(input);
+    await this.importBundle(bundle);
+    return bundle.novel;
   }
 
+  /** Deletes a book for good; ON DELETE CASCADE removes everything inside it. */
   async deleteNovel(novelId: string): Promise<void> {
-    const all = [
-      keys.novel(novelId),
-      ...(await this.docs.keys(keys.seasonsOf(novelId))),
-      ...(await this.docs.keys(keys.chaptersOf(novelId))),
-    ];
-    for (const k of all) await this.docs.remove(k);
+    await this.db.deleteNodes([novelId]);
+    this.changed();
+  }
+
+  async getWorkspaceMode(bookId: string): Promise<WorkspaceMode> {
+    return (await this.kindNode(bookId, 'book'))?.workspaceMode ?? 'prose';
+  }
+
+  /** Toggles a book between clean prose and interactive (kinetic) authoring. */
+  async setWorkspaceMode(bookId: string, mode: WorkspaceMode): Promise<void> {
+    const node = await this.kindNode(bookId, 'book');
+    if (!node) throw new NotFoundError(`Novel ${bookId}`);
+    await this.db.putNodes([{ node: { ...node, workspaceMode: mode, updatedAt: this.nowIso() } }]);
     this.changed();
   }
 
   // ── Seasons ─────────────────────────────────────────────────────────────────────────────
 
   async getSeason(novelId: string, seasonId: string): Promise<SeasonManifest | null> {
-    return (await this.docs.read<SeasonManifest>(keys.season(novelId, seasonId)))?.data ?? null;
+    const node = await this.kindNode(seasonId, 'season');
+    if (!node || node.parentId !== novelId) return null;
+    return toSeason(
+      node,
+      (await this.children(seasonId, 'chapter')).map((c) => c.id),
+    );
   }
 
-  /** Seasons in the novel's reading order. */
+  /** Active seasons in the novel's reading order. */
   async listSeasons(novelId: string): Promise<SeasonManifest[]> {
-    const novel = await this.requireNovel(novelId);
-    const seasons = await Promise.all(novel.seasons.map((id) => this.getSeason(novelId, id)));
-    return seasons.filter((s): s is SeasonManifest => s !== null);
+    await this.requireNovel(novelId);
+    const out: SeasonManifest[] = [];
+    for (const s of await this.children(novelId, 'season'))
+      out.push(
+        toSeason(
+          s,
+          (await this.children(s.id, 'chapter')).map((c) => c.id),
+        ),
+      );
+    return out;
   }
 
+  /** Saves the manifest; `chapters` reorders the season's active chapters. */
   async saveSeason(novelId: string, manifest: SeasonManifest): Promise<SeasonManifest> {
     const season = check('Season', parseSeasonManifest(manifest));
-    await this.docs.write(keys.season(novelId, season.id), season);
+    if (!(await this.kindNode(novelId, 'book'))) throw new NotFoundError(`Novel ${novelId}`);
+    const existing = await this.kindNode(season.id, 'season');
+    const position = existing?.position ?? (await nextPosition(this.db, novelId));
+    const writes = [{ node: seasonNode(season, novelId, existing, position, this.nowIso()) }];
+    const order = new Map(season.chapters.map((id, i) => [id, i]));
+    for (const c of await this.children(season.id, 'chapter')) {
+      const at = order.get(c.id);
+      if (at !== undefined && at !== c.position) writes.push({ node: { ...c, position: at } });
+    }
+    await this.db.putNodes(writes);
     this.changed();
     return season;
   }
@@ -181,60 +198,52 @@ export class NovelRepository {
     seasonId: string,
     chapterId: string,
   ): Promise<ChapterDocument | null> {
-    const key = keys.chapter(novelId, seasonId, chapterId);
-    return (await this.docs.read<ChapterDocument>(key))?.data ?? null;
+    const node = await this.kindNode(chapterId, 'chapter');
+    if (!node || node.parentId !== seasonId || node.bookId !== novelId) return null;
+    return toChapter(node, await this.db.getBody(chapterId));
   }
 
-  /** Chapters in the season's reading order. */
+  /** Active chapters in the season's reading order. */
   async listChapters(novelId: string, seasonId: string): Promise<ChapterDocument[]> {
-    const season = await this.getSeason(novelId, seasonId);
-    if (!season) throw new NotFoundError(`Season ${seasonId}`);
-    const chapters = await Promise.all(
-      season.chapters.map((id) => this.getChapter(novelId, seasonId, id)),
-    );
-    return chapters.filter((c): c is ChapterDocument => c !== null);
+    const season = await this.kindNode(seasonId, 'season');
+    if (!season || season.parentId !== novelId) throw new NotFoundError(`Season ${seasonId}`);
+    const out: ChapterDocument[] = [];
+    for (const c of await this.children(seasonId, 'chapter'))
+      out.push(toChapter(c, await this.db.getBody(c.id)));
+    return out;
   }
 
-  /** Cleans and validates a draft; unfinished blocks are left out (see sanitize.ts). */
+  /**
+   * Cleans and validates a draft (unfinished blocks are left out, see sanitize.ts), refreshes
+   * its search text and @mention links, and records a day-0 growth baseline for a new chapter.
+   */
   async saveChapter(novelId: string, draft: ChapterDocument): Promise<ChapterSaveResult> {
     const prepared = prepareChapter(draft);
     if (!prepared.ok) throw new ValidationError('Chapter', prepared.errors);
     const { chapter, skipped } = prepared;
-    const updatedAt = await this.docs.write(
-      keys.chapter(novelId, chapter.seasonId, chapter.id),
-      chapter,
-    );
+    const season = await this.kindNode(chapter.seasonId, 'season');
+    if (!season || season.parentId !== novelId)
+      throw new NotFoundError(`Season ${chapter.seasonId}`);
+    const write = await chapterWrite(this, novelId, chapter);
+    await this.db.putNodes([write.entry]);
+    await write.afterCommit();
     this.changed();
-    return { chapter, skipped, updatedAt };
+    return { chapter, skipped, updatedAt: ms(write.entry.node.updatedAt) };
   }
 
   // ── Bundles (import / export) ───────────────────────────────────────────────────────────
 
-  /** Validates every document before writing any of them. */
+  /** Validates every document before writing any of them; one atomic write. */
   async importBundle(bundle: NovelBundle): Promise<void> {
-    const novel = check('Novel', parseNovelManifest(bundle.novel));
-    const seasons = bundle.seasons.map((s) => ({
-      season: check(`Season ${s.season.id}`, parseSeasonManifest(s.season)),
-      chapters: s.chapters.map((c) => {
-        const p = prepareChapter(c);
-        if (!p.ok) throw new ValidationError(`Chapter ${c.id}`, p.errors);
-        return p.chapter;
-      }),
-    }));
-    await this.docs.write(keys.novel(novel.id), novel);
-    for (const { season, chapters } of seasons) {
-      await this.docs.write(keys.season(novel.id, season.id), season);
-      for (const c of chapters) await this.docs.write(keys.chapter(novel.id, season.id, c.id), c);
-    }
+    await importBundleInto(this, bundle);
     this.changed();
   }
 
   async exportNovel(novelId: string): Promise<NovelBundle> {
     const novel = check('Novel', parseNovelManifest(await this.requireNovel(novelId)));
-    const seasons: SeasonBundle[] = [];
-    for (const season of await this.listSeasons(novelId)) {
+    const seasons = [];
+    for (const season of await this.listSeasons(novelId))
       seasons.push({ season, chapters: await this.listChapters(novelId, season.id) });
-    }
-    return { novel, seasons };
+    return { novel, seasons, workspaceMode: await this.getWorkspaceMode(novelId) };
   }
 }

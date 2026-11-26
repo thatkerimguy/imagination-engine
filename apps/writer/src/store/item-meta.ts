@@ -1,6 +1,8 @@
-// Writer-only item metadata (`meta/item/<id>`) shared by novels, chapters, folders and notes:
-// tags, colour rail, pin, lock, cover art, synopsis, word goal, manual order, last opened.
-// Plus one sort helper every list uses (pinned items always float first).
+// Writer-only item metadata shared by novels, chapters, folders and notes: tags, colour rail,
+// pin, synopsis, word goal, manual order, last opened live in the `meta/item/<id>` settings row;
+// `locked` and cover art are columns of the item's node (`nodes.locked`, `cover_asset_id`) and
+// are joined in on read. Plus one sort helper every list uses (pinned items always float first).
+import { allCoverUris, clearItemCover, coverFromUri, coverUriOf, setItemCover } from './covers.ts';
 import type { NovelRepository } from './repository.ts';
 
 export interface ItemMeta {
@@ -61,8 +63,20 @@ export function normalizeItemMeta(v: unknown): ItemMeta {
   return out;
 }
 
+/** Node-owned fields (lock, cover) joined over the settings-row meta. */
+function withNode(meta: ItemMeta, locked: boolean, coverUri: string | undefined): ItemMeta {
+  const out: ItemMeta = { ...meta };
+  delete out.locked;
+  delete out.coverUri;
+  if (locked) out.locked = true;
+  if (coverUri) out.coverUri = coverUri;
+  return out;
+}
+
 export async function loadItemMeta(repo: NovelRepository, id: string): Promise<ItemMeta> {
-  return normalizeItemMeta((await repo.docs.read<unknown>(itemMetaKey(id)))?.data);
+  const meta = normalizeItemMeta((await repo.docs.read<unknown>(itemMetaKey(id)))?.data);
+  const node = await repo.db.getNode(id);
+  return node ? withNode(meta, node.locked, await coverUriOf(repo, node)) : meta;
 }
 
 /** Every stored item meta, keyed by item id. */
@@ -70,6 +84,12 @@ export async function loadAllItemMeta(repo: NovelRepository): Promise<Map<string
   const out = new Map<string, ItemMeta>();
   for (const k of await repo.docs.keys('meta/item/')) {
     out.set(k.slice('meta/item/'.length), normalizeItemMeta((await repo.docs.read(k))?.data));
+  }
+  const covers = await allCoverUris(repo);
+  for (const n of await repo.db.listNodes({ includeDeleted: true })) {
+    const cover = covers.get(n.id);
+    const meta = out.get(n.id);
+    if (meta || n.locked || cover) out.set(n.id, withNode(meta ?? { tags: [] }, n.locked, cover));
   }
   return out;
 }
@@ -81,16 +101,27 @@ export async function updateItemMeta(
   patch: { [K in keyof ItemMeta]?: ItemMeta[K] | undefined },
   opts: { silent?: boolean } = {},
 ): Promise<ItemMeta> {
-  const current: Record<string, unknown> = { ...(await loadItemMeta(repo, id)) };
+  const node = await repo.db.getNode(id);
+  if (node && 'locked' in patch && (patch.locked === true) !== node.locked)
+    await repo.db.putNodes([{ node: { ...node, locked: patch.locked === true } }]);
+  if (node && 'coverUri' in patch) {
+    if (patch.coverUri) await setItemCover(repo, id, coverFromUri(patch.coverUri));
+    else await clearItemCover(repo, id);
+  }
+  const stored = normalizeItemMeta((await repo.docs.read<unknown>(itemMetaKey(id)))?.data);
   const merged = Object.fromEntries(
-    Object.entries({ ...current, ...patch }).filter(([, v]) => v !== undefined),
+    Object.entries({ ...stored, ...patch }).filter(([, v]) => v !== undefined),
   );
   const next = normalizeItemMeta(merged);
+  if (node) {
+    delete next.locked;
+    delete next.coverUri;
+  }
   const empty = next.tags.length === 0 && Object.keys(next).length === 1;
   if (empty) await repo.docs.remove(itemMetaKey(id));
   else await repo.docs.write(itemMetaKey(id), next);
   if (!opts.silent) repo.notifyChanged();
-  return next;
+  return loadItemMeta(repo, id);
 }
 
 /** Records that an item was just opened (for the Recent strip). Silent: no list reloads. */

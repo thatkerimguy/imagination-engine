@@ -1,5 +1,6 @@
 // DIRECTIVE-04 UGC gates for smoke-publish.mjs: the non-skippable Publishing Terms of Use gate in
 // the writer, and Report abuse + Calm Mode dimming on the published reader.
+import { readSetting } from './lib/writer-v2.mjs';
 
 export const MOD_TOKEN = 'smoke-moderation-token';
 
@@ -32,7 +33,7 @@ export async function passTosGate(writer, { tid, check, shot, API }) {
   await tid('publish-tos-accept').click();
   await tid('publish-tos-gate').waitFor({ state: 'detached', timeout: 10000 });
   check(!(await disabled('publish-now')), 'Publish now enabled after accepting the Terms');
-  const stored = await writer.evaluate(() => localStorage.getItem('kn-writer:setting/publish-tos'));
+  const stored = await readSetting(writer, 'setting/publish-tos');
   check(Boolean(stored?.includes('"tosAcceptedVersion":"2026-11"')), 'consent persisted (2026-11)');
 }
 

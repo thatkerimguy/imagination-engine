@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import {
   breadcrumbs,
   createDoc,
@@ -28,7 +28,7 @@ import {
 
 const A = '01M7WD7TG0SRH8FFJAF28FHTHC';
 const B = '01M7WD7TG1R63M5MJ69NG6995F';
-const repo = (): NovelRepository => new NovelRepository(createMemoryAdapter());
+const repo = (): NovelRepository => new NovelRepository(createMemoryDatabase());
 
 describe('folders & notes', () => {
   it('nests folders endlessly and walks breadcrumbs', async () => {

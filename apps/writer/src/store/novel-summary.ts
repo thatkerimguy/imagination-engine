@@ -1,8 +1,9 @@
-// Bookshelf row data for one novel: counts, words, accent and the latest edit time.
-import type { ChapterDocument, NovelManifest, SectionLabel } from '@kn/core';
-import { keys, type DocumentStore, type Stored } from './documents.ts';
-import { isChapterKeyTrashed } from './trash-model.ts';
-import { chapterWords } from './word-count.ts';
+// Bookshelf row data for each active book: counts, words, accent, cover and latest edit time —
+// straight from node rows (word counts are maintained on every chapter save; no body reads).
+import type { NodeRecord, SectionLabel } from '@kn/core';
+import { coverUriOf } from './covers.ts';
+import { ms, toManifest } from './node-mapping.ts';
+import type { NovelRepository } from './repository.ts';
 
 export interface NovelSummary {
   id: string;
@@ -12,45 +13,58 @@ export interface NovelSummary {
   sectionLabel: SectionLabel;
   seasonCount: number;
   chapterCount: number;
-  /** Prose + dialogue words across every chapter. */
+  /** Prose + dialogue words across every active chapter. */
   words: number;
   /** The novel's `--accent` theme colour, when set. */
   accent?: string;
-  /** Cover art (`meta/item/<id>`), when set. */
+  /** Cover art (`media_assets` via `nodes.cover_asset_id`), when set. */
   coverUri?: string;
   updatedAt: number;
 }
 
 export async function summarizeNovel(
-  docs: DocumentStore,
-  stored: Stored<NovelManifest>,
-  trashed: ReadonlySet<string> = new Set(),
+  repo: NovelRepository,
+  book: NodeRecord,
 ): Promise<NovelSummary> {
-  const n = stored.data;
-  const chapterKeys = (await docs.keys(keys.chaptersOf(n.id))).filter(
-    (k) => !isChapterKeyTrashed(k, trashed),
+  const seasons = await repo.children(book.id, 'season');
+  const active = new Set(seasons.map((s) => s.id));
+  const chapters = (await repo.db.listNodes({ bookId: book.id, kinds: ['chapter'] })).filter(
+    (c) => c.parentId !== null && active.has(c.parentId),
   );
-  let updatedAt = stored.updatedAt;
+  const n = toManifest(
+    book,
+    seasons.map((s) => s.id),
+  );
+  let updatedAt = ms(book.updatedAt);
   let words = 0;
-  for (const ck of chapterKeys) {
-    const c = await docs.read<ChapterDocument>(ck);
-    if (!c) continue;
-    if (c.updatedAt > updatedAt) updatedAt = c.updatedAt;
-    words += chapterWords(c.data);
+  for (const c of chapters) {
+    updatedAt = Math.max(updatedAt, ms(c.updatedAt));
+    words += c.wordCount;
   }
   const accent = n.theme['--accent'];
-  const cover = (await docs.read<{ coverUri?: unknown }>(`meta/item/${n.id}`))?.data?.coverUri;
+  const coverUri = await coverUriOf(repo, book);
   return {
     id: n.id,
     title: n.title,
     ...(n.subtitle ? { subtitle: n.subtitle } : {}),
     author: n.author,
     sectionLabel: n.sectionLabel,
-    seasonCount: n.seasons.length,
-    chapterCount: chapterKeys.length,
+    seasonCount: seasons.length,
+    chapterCount: chapters.length,
     words,
     ...(accent ? { accent } : {}),
-    ...(typeof cover === 'string' && cover ? { coverUri: cover } : {}),
+    ...(coverUri ? { coverUri } : {}),
     updatedAt,
   };
 }
+
+/** Summaries of the given books, most recently edited first. */
+export async function summarizeNovels(
+  repo: NovelRepository,
+  books: readonly NodeRecord[],
+): Promise<NovelSummary[]> {
+  const out: NovelSummary[] = [];
+  for (const b of books) out.push(await summarizeNovel(repo, b));
+  return out.sort((a, b) => b.updatedAt - a.updatedAt);
+}
+

@@ -56,7 +56,8 @@ export async function dir05Pass(page, { WRITER, packAt, tid, ok, fail, editor })
     (await tid('backup-transfer-note').textContent())?.includes('Device transfer excludes'),
     trashRow.includes('Trash · 1 item'),
   ];
-  if (parts.every(Boolean)) ok(`Backup & Restore: "${fresh}", external folder, note, "${trashRow}"`);
+  if (parts.every(Boolean))
+    ok(`Backup & Restore: "${fresh}", external folder, note, "${trashRow}"`);
   else fail(`Backup & Restore card incomplete: ${JSON.stringify(parts)} ${trashRow}`);
   await shot('02-settings-saf-backup-card');
 

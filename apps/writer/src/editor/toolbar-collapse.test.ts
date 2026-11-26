@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { NovelRepository } from '../store/repository.ts';
 import {
   DEFAULT_WRITER_PREFS,
@@ -8,7 +8,7 @@ import {
   saveWriterPrefs,
 } from '../store/writer-prefs.ts';
 
-const repo = (): NovelRepository => new NovelRepository(createMemoryAdapter());
+const repo = (): NovelRepository => new NovelRepository(createMemoryDatabase());
 
 describe('toolbar collapse prefs', () => {
   it('defaults to both halves expanded', async () => {

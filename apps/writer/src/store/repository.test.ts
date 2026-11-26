@@ -1,12 +1,12 @@
 import { isUlid, type ChapterDocument, type NovelManifest } from '@kn/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { ValidationError } from './errors.ts';
 import { NovelRepository } from './repository.ts';
 
 function setup(start = 1000) {
   let t = start;
-  const adapter = createMemoryAdapter();
+  const adapter = createMemoryDatabase();
   const repo = new NovelRepository(adapter, () => t++);
   return { adapter, repo, tick: (to: number) => void (t = to) };
 }
@@ -69,7 +69,7 @@ describe('NovelRepository.saveNovel', () => {
     await expect(repo.saveNovel({ ...base, theme: { color: 'red' } })).rejects.toBeInstanceOf(
       ValidationError,
     );
-    expect(await adapter.keys('')).toEqual([]);
+    expect(await adapter.listNodes({ includeDeleted: true })).toEqual([]);
   });
 });
 
@@ -130,14 +130,25 @@ describe('NovelRepository subscribe / delete', () => {
     expect(fn.mock.calls.length).toBe(calls);
   });
 
-  it('deleteNovel removes novel, season and chapter keys', async () => {
+  it('deleteNovel cascades to the season, chapter, body and growth rows', async () => {
     const { repo, adapter } = setup();
     const keep = await repo.createNovel(input);
     const gone = await repo.createNovel(input);
     await repo.deleteNovel(gone.id);
-    const left = await adapter.keys('');
-    expect(left.some((k) => k.includes(gone.id))).toBe(false);
-    expect(left.filter((k) => k.includes(keep.id))).toHaveLength(3);
+    const left = await adapter.listNodes({ includeDeleted: true });
+    expect(left.some((n) => n.id === gone.id || n.bookId === gone.id)).toBe(false);
+    expect(left.filter((n) => n.id === keep.id || n.bookId === keep.id)).toHaveLength(3);
+    expect((await adapter.listGrowthLogs({})).every((g) => g.bookId === keep.id)).toBe(true);
+    expect(await adapter.integrity()).toMatchObject({ orphanBodies: 0, orphanGrowth: 0 });
+  });
+
+  it('keeps workspace mode per book: prose by default, toggleable', async () => {
+    const { repo } = setup();
+    const n = await repo.createNovel(input);
+    expect(await repo.getWorkspaceMode(n.id)).toBe('prose');
+    await repo.setWorkspaceMode(n.id, 'interactive');
+    expect(await repo.getWorkspaceMode(n.id)).toBe('interactive');
+    expect((await repo.exportNovel(n.id)).workspaceMode).toBe('interactive');
   });
 });
 
@@ -164,6 +175,6 @@ describe('bundles', () => {
     );
     const b = setup();
     await expect(b.repo.importBundle(bad)).rejects.toBeInstanceOf(ValidationError);
-    expect(await b.adapter.keys('')).toEqual([]);
+    expect(await b.adapter.listNodes({ includeDeleted: true })).toEqual([]);
   });
 });

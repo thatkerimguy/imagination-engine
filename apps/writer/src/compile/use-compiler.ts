@@ -10,9 +10,11 @@ import {
 import { compileFolder, compileNovel, exportBook } from '../export/compile-book.ts';
 import { buildRoyalRoadHtml } from '../export/royal-road.ts';
 import { listFolderNotes, listNovelEntries, type CompileEntry } from '../export/compile-source.ts';
+import { deleteCoverFiles } from '../media/cover-files';
 import { pickCoverImage } from '../media/pick-cover';
+import { setItemCover } from '../store/covers.ts';
 import { getFolder } from '../store/folders.ts';
-import { loadItemMeta, updateItemMeta } from '../store/item-meta.ts';
+import { loadItemMeta } from '../store/item-meta.ts';
 import { useRepository } from '../store/context.tsx';
 
 export type CompileSource =
@@ -111,9 +113,10 @@ export function useCompiler(source: CompileSource) {
 
   const changeCover = async (): Promise<void> => {
     try {
-      const uri = await pickCoverImage();
-      if (!uri) return;
-      await updateItemMeta(repo, itemId, { coverUri: uri });
+      const picked = await pickCoverImage();
+      if (!picked) return;
+      const { uri, unusedUris } = await setItemCover(repo, itemId, picked);
+      void deleteCoverFiles(unusedUris);
       patch({ coverUri: uri });
     } catch (err) {
       patch({ error: message(err) });

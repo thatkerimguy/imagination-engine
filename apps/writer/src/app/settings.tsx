@@ -90,7 +90,7 @@ export default function AppSettingsScreen(): ReactNode {
       </CardGroup>
       <SectionLabel>Live preview</SectionLabel>
       <CardGroup testID="card-preview">
-        <View style={{ gap: space.sm, paddingVertical: space.md }}>
+        <View style={{ gap: space.sm, padding: space.md }}>
           <SegmentControl<PreviewMode>
             options={MODE_SEGMENTS}
             value={mode}

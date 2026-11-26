@@ -13,6 +13,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
+import { useCardInset } from './CardGroup.tsx';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { useScrollReporter } from './header-scroll.tsx';
 import { READING_MAX } from './layout-class.ts';
@@ -139,7 +140,12 @@ export function ListRow(p: ListRowProps): ReactNode {
       {p.trailing ?? (p.onPress ? <Glyph name="chevron-right" size={18} color="inkMuted" /> : null)}
     </>
   );
-  const style = [styles.row, !p.last && { borderBottomWidth: 1, borderColor: colors.hairline }];
+  const inset = useCardInset();
+  const style = [
+    styles.row,
+    inset && styles.rowInset,
+    !p.last && { borderBottomWidth: 1, borderColor: colors.hairline },
+  ];
   return p.onPress ? (
     <Press
       accessibilityRole="button"
@@ -209,6 +215,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingVertical: space.sm,
   },
+  rowInset: { paddingHorizontal: space.md },
   rowText: { flex: 1, gap: 2 },
   empty: {
     paddingVertical: space.xxl * 2,

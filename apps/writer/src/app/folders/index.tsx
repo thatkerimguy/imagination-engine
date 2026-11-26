@@ -1,7 +1,7 @@
-// Notes tab root: nested folders and standalone notes.
+// `/folders` — the Notes tab lives in the root pager (page 1); this route just focuses it.
 import type { ReactNode } from 'react';
-import { NotesWorkspace } from '../../notes/NotesWorkspace.tsx';
+import { RootTabRoute } from '../../components/RootTabRoute.tsx';
 
-export default function NotesScreen(): ReactNode {
-  return <NotesWorkspace folderId={null} />;
+export default function NotesRoute(): ReactNode {
+  return <RootTabRoute tab="notes" />;
 }

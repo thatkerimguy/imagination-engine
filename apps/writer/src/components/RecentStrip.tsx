@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { relativeTime } from '../library/relative-time.ts';
 import { routes } from '../routes.ts';
+import { claimInnerHorizontal } from './root-tab.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { listAllDocs } from '../store/folders.ts';
 import { isChapterKeyTrashed, trashedIds } from '../store/trash-model.ts';
@@ -171,7 +172,13 @@ export function RecentStrip({ testID = 'recent-strip' }: { testID?: string }): R
         <Glyph name={open ? 'chevron-down' : 'chevron-right'} size={14} color="inkMuted" />
       </Press>
       {open ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.row}
+          // The carousel owns horizontal drags inside its bounds; the root pager stands aside.
+          onTouchStart={claimInnerHorizontal}
+        >
           {data.map((item) => (
             <Press
               key={`${item.kind}:${item.id}`}

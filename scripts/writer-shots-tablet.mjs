@@ -125,6 +125,25 @@ try {
   else fail(`draft or pane lost across resize (text hits ${kept})`);
   await page.waitForTimeout(500);
   await shot('02-tablet-editor-split-pane');
+
+  // D-06A: rail tab switching inside the root pager (instant, no drag capture on wide windows).
+  await page.goto(WRITER);
+  await tid('nav-rail').waitFor({ timeout: 20000 });
+  const railOn = (k) =>
+    tid(`rail-${k}`).evaluate((el) => el.getAttribute('aria-selected') === 'true');
+  await tid('rail-notes').click();
+  await tid('notes-sort').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(200);
+  const notesOk = (await railOn('notes')) && new URL(page.url()).pathname === '/';
+  await tid('rail-search').click();
+  await tid('search-field').waitFor({ timeout: 10000 });
+  const searchOk = await railOn('search');
+  await tid('rail-notes').click();
+  await page.waitForTimeout(300);
+  if (notesOk && searchOk && (await railOn('notes')))
+    ok('FolioNavRail switches Library / Notes / Search inside the root pager');
+  else fail(`rail tab switching broken (notes ${notesOk}, search ${searchOk})`);
+  if (dir04At) await page.screenshot({ path: `${dir04At}/03-tablet-rail-tabs-intact.png` });
   await page.close();
 
   // 03 Reader Aa drawer with Calm Mode on.

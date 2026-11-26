@@ -211,7 +211,7 @@ export function BackupSection({
 
 const styles = StyleSheet.create({
   root: { gap: space.md },
-  interval: { gap: space.xs, paddingVertical: space.sm },
+  interval: { gap: space.xs, paddingVertical: space.sm, paddingHorizontal: space.md },
   badge: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: -space.xs },
   dot: { width: 8, height: 8, borderRadius: 4 },
 });

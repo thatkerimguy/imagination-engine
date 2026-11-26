@@ -1,6 +1,6 @@
 // The Notes workspace for one level (root or a folder): title, breadcrumbs, sort, hairline rows
 // for folders and notes, and the sheets behind the per-item ⋯ menu.
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Alert, View } from 'react-native';
 import { RecentStrip } from '../components/RecentStrip.tsx';
@@ -10,6 +10,7 @@ import { useRepoQuery, useRepository } from '../store/context.tsx';
 import { createDoc, createFolder, listAllFolders } from '../store/folders.ts';
 import { SORT_LABELS, type SortMode } from '../store/item-meta.ts';
 import { IconBtn } from '../ui/IconBtn.tsx';
+import { ScreenOptions } from '../ui/ScreenOptions.tsx';
 import { pickAndImport } from '../import/pick-import.ts';
 import { Grid } from '../ui/Grid.tsx';
 import { gridColumns } from '../ui/layout-class.ts';
@@ -60,7 +61,7 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
 
   return (
     <Page wide>
-      <Stack.Screen
+      <ScreenOptions
         options={{
           title: '',
           headerRight: () => (

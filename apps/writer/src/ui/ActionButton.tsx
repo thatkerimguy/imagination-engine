@@ -5,6 +5,7 @@ import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { Press } from './Press.tsx';
 import { Txt, type InkRole } from './Txt.tsx';
+import { clipped } from './press-shape.ts';
 import { radius, space, TOUCH } from './tokens.ts';
 import { useTheme } from './theme.tsx';
 
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.xs,
-    borderRadius: radius.sm,
+    ...clipped(radius.sm),
   },
   label: { fontWeight: '600' },
 });

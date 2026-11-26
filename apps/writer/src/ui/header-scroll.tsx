@@ -17,6 +17,9 @@ function setScrolled(next: boolean): void {
   listeners.forEach((l) => l());
 }
 
+/** Clears the hairline when a pager swaps the visible page under the same top bar. */
+export const resetHeaderScrolled = (): void => setScrolled(false);
+
 const subscribe = (l: () => void): (() => void) => {
   listeners.add(l);
   return () => {

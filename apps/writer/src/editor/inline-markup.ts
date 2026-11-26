@@ -1,7 +1,8 @@
+import { renderWikilinks } from '@kn/core';
 // Inline markup shared by the editor, analyzers and the reader bridge.
 // Core spans (also rendered by apps/reader): **bold** *italic* ++underline++ ~~strike~~ ==highlight==
 // Writer-only spans (stripped before anything leaves the writer): {fg:#hex}…{/fg} {bg:#hex}…{/bg}
-// and {{comment:note}}. A backslash escapes * _ ~ + = \ (matching apps/reader/src/reading/inline.ts).
+// and {{comment:note}}; [[Title|Alias]] wikilinks are rendered to their display text. A backslash escapes * _ ~ + = \ (matching apps/reader/src/reading/inline.ts).
 
 export type MarkKind = 'bold' | 'italic' | 'underline' | 'strike' | 'highlight';
 export type ColorChannel = 'fg' | 'bg';
@@ -196,9 +197,10 @@ export function stripInlineMarkup(s: string): string {
 
 /**
  * What the reader receives: core spans and escapes kept byte-for-byte, writer-only colour tags
- * and comments removed. Text without writer-only tokens is returned unchanged.
+ * and comments removed, `[[Title|Alias]]` wikilinks shown as their alias (or title). Text without writer-only tokens is returned unchanged.
  */
-export function sanitizeForReader(s: string): string {
+export function sanitizeForReader(src: string): string {
+  const s = renderWikilinks(src);
   if (!s.includes('{')) return s;
   let out = '';
   for (let i = 0; i < s.length; i++) {

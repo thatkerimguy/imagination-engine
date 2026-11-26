@@ -1,9 +1,10 @@
-﻿// OVERHAUL-01 shot pack (pack root; run last by writer-shots.mjs), each in its own fresh context:
+// OVERHAUL-01 shot pack (pack root; run last by writer-shots.mjs), each in its own fresh context:
 //   01 Library seeded from relational v2 `nodes` | instant FTS search returning chapter + note,
 //   02 Document Doctor v2 "All clear" after a Trash â†’ Empty trash cycle,
 //   03 compact landscape editor with the soft keyboard up: MetricsRibbon auto-collapsed.
 import { skipOnboarding } from './lib/writer-fixtures.mjs';
 import { seedKv } from './lib/writer-v2.mjs';
+import { ov02Pass } from './writer-shots-overhaul02.mjs';
 
 async function composite(browser, panels, path) {
   const tab = await browser.newPage({ deviceScaleFactor: 2 });
@@ -38,7 +39,11 @@ const NOTE = {
   parentFolderId: null,
   title: 'Harbour pilot',
   blocks: [
-    { id: '01M7WD7TGC0000000000000001', kind: 'prose', text: 'The lantern pilot knows every buoy.' },
+    {
+      id: '01M7WD7TGC0000000000000001',
+      kind: 'prose',
+      text: 'The lantern pilot knows every buoy.',
+    },
   ],
   createdAt: Date.now(),
   updatedAt: Date.now(),
@@ -116,7 +121,8 @@ export async function ov01Pass(browser, { WRITER, packAt, ok, fail }) {
   if ((await toggle.getAttribute('aria-label')) === 'Hide metrics')
     ok('landscape, keyboard down: ribbon expanded');
   else fail('ribbon collapsed before typing');
-  await b.getByTestId('block-01M7WD7TG2E6A9YY5JE036YWV9').click();
+  // OVERHAUL-02: prose is a live run surface, so one tap focuses it directly.
+  await b.locator('textarea[data-testid^="prose-text-"]').first().click();
   await b.locator('textarea').first().waitFor({ timeout: 10000 });
   await b.locator('textarea').first().focus();
   await b.waitForFunction(
@@ -142,4 +148,5 @@ export async function ov01Pass(browser, { WRITER, packAt, ok, fail }) {
 
   if (errors.length) fail(`OVERHAUL-01 pack console errors:\n  ${errors.join('\n  ')}`);
   else ok('OVERHAUL-01 pack: zero console/page errors');
+  await ov02Pass(browser, { WRITER, packAt, ok, fail });
 }

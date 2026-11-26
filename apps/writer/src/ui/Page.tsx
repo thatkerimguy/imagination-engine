@@ -1,19 +1,16 @@
 // Folio page furniture: Page (scrolling canvas with 20dp gutters), Divider, SectionLabel
 // (tracked small caps + hairline rule), ListRow (grouped hairline settings row), Dot and
 // EmptyState. Hairlines and type do the work — no heavy cards.
-import { useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
-  Platform,
-  ScrollView,
   StyleSheet,
   View,
-  type ScrollViewInstance,
   type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
 import { useCardInset } from './CardGroup.tsx';
+import { PageScroll } from './PageScroll';
 import { Glyph, type GlyphName } from './Glyph.tsx';
 import { useScrollReporter } from './header-scroll.tsx';
 import { READING_MAX } from './layout-class.ts';
@@ -22,7 +19,6 @@ import { Press } from './Press.tsx';
 import { Txt } from './Txt.tsx';
 import { space } from './tokens.ts';
 import { useTheme } from './theme.tsx';
-import { useImeReveal } from './use-ime-reveal.ts';
 
 const BOTTOM_PAD = 96;
 
@@ -39,37 +35,23 @@ export function Page({
 }): ReactNode {
   const { colors } = useTheme();
   const onScroll = useScrollReporter();
-  const scroll = useRef<ScrollViewInstance>(null);
-  const trackY = useImeReveal(scroll);
   const cls = useLayoutClass();
   const measure = !wide && cls !== 'compact' ? styles.measure : null;
-  // Android 15+/16 edge-to-edge windows do not resize for the IME, so bottom form fields
-  // (Settings URL/token, Lock, New novel) need keyboard-height clearance; useImeReveal then
-  // scrolls the focused field above the keyboard. Insets are untouched (no double-counting).
-  const { keyboardOffset, onRootLayout } = useKeyboardDock();
-  const kbPad =
-    Platform.OS === 'android' && keyboardOffset > 0
-      ? { paddingBottom: Math.max(BOTTOM_PAD, keyboardOffset + space.xl) }
-      : null;
+  // Android 15+/16 edge-to-edge windows do not resize for the IME: on native PageScroll is a
+  // KeyboardAwareScrollView that keeps the focused field (Settings URL/token, Lock, New novel)
+  // above the keyboard on the UI thread. Insets are untouched (no double-counting).
   return (
-    <ScrollView
-      ref={scroll}
+    <PageScroll
       style={{ flex: 1, backgroundColor: colors.canvas }}
-      contentContainerStyle={[styles.content, measure, contentStyle, kbPad]}
+      contentContainerStyle={[styles.content, measure, contentStyle]}
       keyboardShouldPersistTaps="handled"
-      onScroll={(e) => {
-        trackY(e);
-        onScroll(e);
-      }}
+      onScroll={onScroll}
       scrollEventThrottle={32}
-      onLayout={(e) => {
-        onRootLayout(e);
-        onLayout?.(e);
-      }}
+      onLayout={onLayout}
       {...rest}
     >
       {children}
-    </ScrollView>
+    </PageScroll>
   );
 }
 

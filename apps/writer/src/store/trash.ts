@@ -4,6 +4,7 @@
 // sidecars of every removed id go too. Returns now-unused cover URIs so the caller can delete the
 // files (media/cover-files.ts).
 import type { NodeRecord } from '@kn/core';
+import { isStoryKind } from '../notes/kind-meta.ts';
 import { countsOf } from './growth-logger.ts';
 import { recordBaseline } from './growth-store.ts';
 import { releaseUnusedMedia } from './covers.ts';
@@ -63,7 +64,8 @@ export async function moveToTrash(
   now = Date.now(),
 ): Promise<TrashRecord> {
   const node = await repo.db.getNode(targetId(t));
-  if (!node || node.kind !== KIND[t.kind]) throw new NotFoundError(`${t.kind} ${targetId(t)}`);
+  const okKind = t.kind === 'doc' ? isStoryKind(node?.kind) : node?.kind === KIND[t.kind];
+  if (!node || !okKind) throw new NotFoundError(`${t.kind} ${targetId(t)}`);
   if (t.kind === 'season' && (await repo.children(t.novelId, 'season')).length <= 1)
     throw new ValidationError('Season', ['A book needs at least one season']);
   const trashed: NodeRecord = { ...node, deletedAt: iso(now) };

@@ -1,5 +1,8 @@
 // Calm read-only peek at a note from inside a chapter, with a way to open the full note.
 import type { ReactNode } from 'react';
+import { BacklinksSection } from '../notes/BacklinksSection.tsx';
+import { useOpenBacklink } from '../notes/backlink-nav.ts';
+import { KIND_META } from '../notes/kind-meta.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -16,12 +19,15 @@ export interface StoryBiblePeekCardProps {
 
 export function StoryBiblePeekCard(p: StoryBiblePeekCardProps): ReactNode {
   const { note } = p;
+  const openBacklink = useOpenBacklink();
   const excerpt = note ? noteExcerpt(note.blocks, 900) : '';
   return (
     <Sheet
       visible={p.visible && note !== null}
       title={note?.title ?? ''}
-      subtitle={note?.folderPath}
+      subtitle={[note ? KIND_META[note.kind].label : '', note?.folderPath]
+        .filter(Boolean)
+        .join(' · ')}
       onClose={p.onClose}
       testID="story-bible-peek"
       footer={
@@ -39,6 +45,16 @@ export function StoryBiblePeekCard(p: StoryBiblePeekCardProps): ReactNode {
       <Txt variant="serifBody" color={excerpt ? 'ink' : 'inkSecondary'}>
         {excerpt || 'This note is empty.'}
       </Txt>
+      {note ? (
+        <BacklinksSection
+          targetId={note.id}
+          defaultOpen
+          onOpen={(b) => {
+            p.onClose();
+            openBacklink(b);
+          }}
+        />
+      ) : null}
     </Sheet>
   );
 }

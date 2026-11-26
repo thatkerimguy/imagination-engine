@@ -97,9 +97,12 @@ const TRASH_KIND_OF: Partial<Record<NodeKind, TrashKind>> = {
   chapter: 'chapter',
   folder: 'folder',
   note: 'doc',
+  character: 'doc',
+  location: 'doc',
+  lore: 'doc',
 };
 
-/** The Trash record of a trashed node (`null` for active nodes and story-bible kinds). Pure. */
+/** The Trash record of a trashed node (`null` for active nodes; every story kind is a `doc`). Pure. */
 export function trashRecordOf(n: NodeRecord): TrashRecord | null {
   const kind = TRASH_KIND_OF[n.kind];
   if (!kind || !n.deletedAt) return null;

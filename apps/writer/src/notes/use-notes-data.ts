@@ -17,6 +17,7 @@ import {
   type SortMode,
   type SortableItem,
 } from '../store/item-meta.ts';
+import type { StoryKind } from './kind-meta.ts';
 
 export const SORT_KEY = 'notes-sort';
 const SORT_MODES: readonly SortMode[] = [
@@ -34,6 +35,8 @@ export interface NoteItem extends SortableItem {
   parentId: string | null;
   /** Folders: how many items sit directly inside. */
   count?: number;
+  /** Documents: note, character, location or lore. */
+  storyKind?: StoryKind;
 }
 
 interface Level {
@@ -75,6 +78,7 @@ export function useNotesData(folderId: string | null) {
         .map((d) => ({
           id: d.id,
           kind: 'doc' as const,
+          storyKind: d.kind,
           title: d.title,
           updatedAt: d.updatedAt,
           createdAt: d.createdAt,

@@ -1,6 +1,8 @@
 // Compact list of notes matching an `@query`. Controlled: the editor owns visibility and query.
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
+import { KIND_META } from '../notes/kind-meta.ts';
+import { Glyph } from '../ui/Glyph.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
@@ -37,9 +39,19 @@ export function StoryBiblePopover(p: StoryBiblePopoverProps): ReactNode {
               style={s.main}
               testID={`story-bible-insert-${n.id}`}
             >
-              <Txt variant="bodyStrong" numberOfLines={1}>
-                {n.title}
-              </Txt>
+              <View style={s.titleRow}>
+                <Txt variant="bodyStrong" numberOfLines={1} style={s.title}>
+                  {n.title}
+                </Txt>
+                {n.kind ? (
+                  <View style={s.badge} testID={`story-bible-kind-${n.id}`}>
+                    <Glyph name={KIND_META[n.kind].icon} size={11} color="inkMuted" />
+                    <Txt variant="caption" color="inkMuted">
+                      {KIND_META[n.kind].label}
+                    </Txt>
+                  </View>
+                ) : null}
+              </View>
               {n.folderPath ? (
                 <Txt variant="caption" color="inkSecondary" numberOfLines={1}>
                   {n.folderPath}
@@ -70,5 +82,8 @@ const useStyles = makeStyles((t) => ({
   },
   row: { flexDirection: 'row', alignItems: 'center', paddingLeft: space.xs },
   main: { flex: 1, minHeight: 44, justifyContent: 'center', paddingHorizontal: space.xs },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  title: { flexShrink: 1 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   empty: { padding: space.sm },
 }));

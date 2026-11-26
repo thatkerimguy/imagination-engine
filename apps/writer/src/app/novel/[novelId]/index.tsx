@@ -28,6 +28,7 @@ import { IconBtn } from '../../../ui/IconBtn.tsx';
 import { EmptyState, Page } from '../../../ui/Page.tsx';
 import { Txt } from '../../../ui/Txt.tsx';
 import { space } from '../../../ui/tokens.ts';
+import { workspaceCapabilities } from '../../../workspace/mode-policy.ts';
 
 export default function OutlineScreen(): ReactNode {
   const { novelId } = useLocalSearchParams<{ novelId: string }>();
@@ -74,6 +75,7 @@ export default function OutlineScreen(): ReactNode {
     });
 
   const novel = data?.novel;
+  const caps = workspaceCapabilities(data?.workspaceMode ?? 'prose');
   return (
     <Page>
       <Stack.Screen
@@ -81,12 +83,14 @@ export default function OutlineScreen(): ReactNode {
           title: '',
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              <IconBtn
-                icon="upload-cloud"
-                accessibilityLabel="Publish to web"
-                onPress={() => setPublishOpen(true)}
-                testID="outline-publish"
-              />
+              {caps.webPublish ? (
+                <IconBtn
+                  icon="upload-cloud"
+                  accessibilityLabel="Publish to web"
+                  onPress={() => setPublishOpen(true)}
+                  testID="outline-publish"
+                />
+              ) : null}
               <IconBtn
                 icon="settings"
                 accessibilityLabel="Novel settings"
@@ -97,12 +101,16 @@ export default function OutlineScreen(): ReactNode {
                 accessibilityLabel="Book options"
                 testID="outline-menu"
                 items={[
-                  {
-                    label: 'Publish to web…',
-                    icon: 'upload-cloud',
-                    onPress: () => setPublishOpen(true),
-                    testID: 'outline-menu-publish',
-                  },
+                  ...(caps.webPublish
+                    ? [
+                        {
+                          label: 'Publish to web…',
+                          icon: 'upload-cloud' as const,
+                          onPress: () => setPublishOpen(true),
+                          testID: 'outline-menu-publish',
+                        },
+                      ]
+                    : []),
                   {
                     label: 'Compile & Export Book',
                     icon: 'printer',
@@ -150,10 +158,12 @@ export default function OutlineScreen(): ReactNode {
               {novel.subtitle}
             </Txt>
           ) : null}
-          <GimmickLine
-            enabled={novel.enabledModules}
-            onPress={() => router.push(routes.novelSettings(novelId))}
-          />
+          {caps.modulesSettings ? (
+            <GimmickLine
+              enabled={novel.enabledModules}
+              onPress={() => router.push(routes.novelSettings(novelId))}
+            />
+          ) : null}
         </View>
       ) : null}
       {problem ? (
@@ -224,8 +234,17 @@ export default function OutlineScreen(): ReactNode {
           onClose={() => setMetaOpen(false)}
         />
       ) : null}
-      <TeaserSheet visible={teaserOpen} novelId={novelId} onClose={() => setTeaserOpen(false)} />
-      <PublishSheet visible={publishOpen} novelId={novelId} onClose={() => setPublishOpen(false)} />
+      <TeaserSheet
+        visible={teaserOpen}
+        novelId={novelId}
+        recordMode={caps.recordMode}
+        onClose={() => setTeaserOpen(false)}
+      />
+      <PublishSheet
+        visible={publishOpen && caps.webPublish}
+        novelId={novelId}
+        onClose={() => setPublishOpen(false)}
+      />
     </Page>
   );
 }

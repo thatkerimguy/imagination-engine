@@ -96,7 +96,7 @@ try {
   await snake.waitFor();
   await snake.fill(RICH);
   await tid(`dialogue-text-${ID.dialogue}`).click();
-  const wysiwyg = tid(`prose-text-${ID.snake}`);
+  const wysiwyg = tid(`prose-text-${ID.snake}-view`);
   const raw = await wysiwyg.textContent();
   if (raw.includes('**') || raw.includes('==')) fail(`unfocused prose shows raw markup: ${raw}`);
   else ok('unfocused prose renders WYSIWYG with zero raw syntax');

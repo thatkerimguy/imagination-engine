@@ -22,9 +22,10 @@ export async function phase4aPass(page, { WRITER, packAt, tid, ok, fail, editor 
 
   // 02 Gimmick picker with all 6 modules.
   await editor();
-  const last = page.locator('[data-testid^="block-"]').last();
+  // OVERHAUL-02: prose edits as continuous runs (`run-*`); select the last one as insert point.
+  const last = page.locator('textarea[data-testid^="prose-text-"]').last();
   await last.scrollIntoViewIfNeeded();
-  await last.click({ position: { x: 40, y: 10 } });
+  await last.click();
   await tid('tool-addGimmick').click();
   await tid('gimmick-picker').waitFor({ timeout: 5000 });
   const listed = [];

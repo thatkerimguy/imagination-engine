@@ -19,6 +19,9 @@ import { EmptyState, Page } from '../ui/Page.tsx';
 import { PopoverMenu } from '../ui/PopoverMenu.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
+import { KindFilter, type KindFilterValue } from './KindFilter.tsx';
+import type { StoryKind } from './kind-meta.ts';
+import { KIND_META, STORY_KINDS } from './kind-meta.ts';
 import { Breadcrumbs } from './Breadcrumbs.tsx';
 import { MoveSheet } from './MoveSheet.tsx';
 import { NameSheet } from './NameSheet.tsx';
@@ -37,15 +40,18 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
   const menu = useItemMenu();
   const promote = usePromote();
   const [newFolder, setNewFolder] = useState(false);
-  const { items = [], meta, crumbs = [], folder, sort = 'date-edited' } = data.data ?? {};
+  const [filter, setFilter] = useState<KindFilterValue>('all');
+  const { items: all = [], meta, crumbs = [], folder, sort = 'date-edited' } = data.data ?? {};
+  const items =
+    filter === 'all' ? all : all.filter((i) => i.kind === 'folder' || i.storyKind === filter);
   const title = folderId ? (folder?.title ?? '') : 'Notes';
 
   const open = (item: NoteItem): void =>
     router.push(
       item.kind === 'folder' ? folderHref(item.id, folderId) : routes.note(item.id, folderId),
     );
-  const addNote = async (): Promise<void> => {
-    const doc = await createDoc(repo, folderId);
+  const addDoc = async (kind: StoryKind): Promise<void> => {
+    const doc = await createDoc(repo, folderId, { kind });
     router.push(routes.note(doc.id, folderId));
   };
   const importDoc = async (): Promise<void> => {
@@ -66,17 +72,24 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
           title: '',
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              <IconBtn
-                icon="folder-plus"
-                accessibilityLabel="New folder"
-                onPress={() => setNewFolder(true)}
-                testID="notes-new-folder"
-              />
-              <IconBtn
+              <PopoverMenu
                 icon="file-plus"
-                accessibilityLabel="New note"
-                onPress={() => void addNote()}
-                testID="notes-new-note"
+                accessibilityLabel="Create new"
+                testID="notes-new"
+                items={[
+                  ...STORY_KINDS.map((k) => ({
+                    label: KIND_META[k].label,
+                    icon: KIND_META[k].icon,
+                    onPress: () => void addDoc(k),
+                    testID: `notes-new-${k}`,
+                  })),
+                  {
+                    label: 'Folder',
+                    icon: 'folder-plus' as const,
+                    onPress: () => setNewFolder(true),
+                    testID: 'notes-new-folder',
+                  },
+                ]}
               />
               <IconBtn
                 icon="download"
@@ -111,11 +124,18 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
           }))}
         />
       </View>
+      <KindFilter value={filter} onChange={setFilter} />
       {data.data && items.length === 0 ? (
         <EmptyState
           icon={folderId ? 'folder' : 'edit-3'}
-          title={folderId ? 'This folder is empty' : 'No notes yet'}
-          body="Use the buttons above to add a folder or a note."
+          title={
+            filter !== 'all'
+              ? 'Nothing here yet'
+              : folderId
+                ? 'This folder is empty'
+                : 'No notes yet'
+          }
+          body="Use the + button above to add a note, character, location, lore entry or folder."
         />
       ) : null}
       <Grid columns={columns} testID="notes-grid">

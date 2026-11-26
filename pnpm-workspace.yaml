@@ -11,3 +11,5 @@ virtualStoreDirMaxLength: 30
 # never upload source maps unless SENTRY_AUTH_TOKEN is set, so the download is skipped.
 allowBuilds:
   '@sentry/cli': false
+  # Native assets for code highlight / LaTeX are opted out in package.json "enriched-markdown".
+  react-native-enriched-markdown: false

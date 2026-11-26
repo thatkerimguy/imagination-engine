@@ -1,24 +1,23 @@
 // Standalone note editor: the chapter editor's prose / dialogue / scene-break experience (toolbar,
-// metrics, find & replace, outline, analysis, undo/redo) over a note — no gimmicks, no preview.
-import type { Block } from '@kn/core';
-import { useCallback, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+// metrics, find & replace, outline, analysis, undo/redo) on the shared UnifiedBlocks stream, plus a
+// Backlinks panel, over a note — no gimmicks, no preview.
+import { useCallback, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
-import { BlockView } from '../editor/BlockView.tsx';
 import { useNoteEditorStyles } from './note-editor-styles.ts';
 import { FindReplaceBar } from '../editor/FindReplaceBar.tsx';
 import { FormattingToolbar } from '../editor/FormattingToolbar.tsx';
 import { MetricsRibbon } from '../editor/MetricsRibbon.tsx';
-import { useEditorActions } from '../editor/use-editor-actions.ts';
-import { useFormatActions } from '../editor/use-format-actions.ts';
-import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
+import { UnifiedBlocks } from '../editor/UnifiedBlocks.tsx';
+import { useBlockHandlers } from '../editor/use-block-handlers.ts';
+import { useKeyboardDock } from '../editor/use-keyboard-dock';
 import { useLiveMetrics } from '../editor/use-live-metrics.ts';
 import { useScrolledFlag } from '../editor/use-scrolled-flag.ts';
-import type { ToolId } from '../store/writer-prefs.ts';
+import { useEditorCore } from '../editor/use-unified-editing.ts';
 import { ColorPopover } from '../editor/EditorChrome.tsx';
 import { Field } from '../ui/Field.tsx';
-import { EmptyState } from '../ui/Page.tsx';
 import type { MenuItem } from '../ui/PopoverMenu.tsx';
-import { space } from '../ui/tokens.ts';
+import { useOpenBacklink } from './backlink-nav.ts';
+import { BacklinksSection } from './BacklinksSection.tsx';
 import { useWriterPrefs } from '../ui/theme.tsx';
 import { useBackIntercept } from '../ui/use-back-intercept.ts';
 import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
@@ -38,62 +37,41 @@ export interface NoteEditorProps {
   extraMenu?: MenuItem[];
 }
 
+const NO_MODULES: readonly string[] = [];
+
 export function NoteEditor(p: NoteEditorProps): ReactNode {
   const { draft } = p;
   const s = useNoteEditorStyles();
   const typo = useEditorTypography();
   const [prefs] = useWriterPrefs();
   const promote = usePromote();
-  const a = useEditorActions(draft.update);
   const chapter = draft.chapter;
   const blocks = draft.blocks ?? [];
-  const f = useFormatActions({
+  const { a, f, u } = useEditorCore({
     blocks,
-    styles: draft.styles,
-    selectedId: a.selectedId,
+    draft,
+    mode: 'note',
+    hiddenTools: prefs.hiddenTools,
     defaultAlign: typo.defaultAlign,
-    update: draft.update,
-    updateStyles: draft.updateStyles,
-    pick: a.pick,
   });
+  const openBacklink = useOpenBacklink();
   const [sheet, setSheet] = useState<NoteSheet>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [scrolled, onScroll] = useScrolledFlag();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
-  const offsets = useRef(new Map<string, number>());
+  const h = useBlockHandlers(a, scroller, undefined);
   const metrics = useLiveMetrics(blocks);
   const dock = useKeyboardDock();
   useBackIntercept([
     { open: f.colorFor !== null, close: f.closeColor },
     { open: findOpen, close: () => setFindOpen(false) },
   ]);
-  const hiddenTools = useMemo<ToolId[]>(
-    () => [...prefs.hiddenTools, 'addGimmick'],
-    [prefs.hiddenTools],
-  );
   const onCollapse = useToolbarCollapse();
   const toggleRibbon = useCallback(() => setCollapsed((c) => !c), []);
   const openAnalysis = useCallback(() => setSheet('analysis'), []);
   const openMetrics = useCallback(() => setSheet('metrics'), []);
-
-  // Stable, id-taking handlers (via a ref to the latest actions) so memoized BlockViews skip renders.
-  const actions = useRef(a);
-  actions.current = a;
-  const onChange = useCallback((b: Block) => actions.current.change(b), []);
-  const onToggleBeat = useCallback((id: string) => actions.current.toggleBeat(id), []);
-  const onMove = useCallback((id: string, d: -1 | 1) => actions.current.move(id, d), []);
-  const onDelete = useCallback((id: string) => void actions.current.remove(id), []);
-  const onSelect = useCallback((id: string) => actions.current.select(id), []);
-  const onOpenGimmick = useCallback((): void => undefined, []);
-  const onLayout = useCallback((id: string, y: number) => void offsets.current.set(id, y), []);
-
-  const jump = (id: string): void => {
-    a.select(id);
-    const y = offsets.current.get(id);
-    if (y !== undefined)
-      scroller.current?.scrollTo({ y: Math.max(0, y - space.xl), animated: true });
-  };
+  const { jump } = h;
   const menu: MenuItem[] = [
     {
       label: 'Text Analysis',
@@ -172,50 +150,38 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
             disableFullscreenUI
             testID="note-title"
           />
-          {blocks.length === 0 ? (
-            <EmptyState
-              icon="edit-3"
-              title="A blank page"
-              body="Use the toolbar below to add prose, dialogue or a scene break."
-            />
-          ) : null}
-          {blocks.map((block) => (
-            <View key={block.id} onLayout={(e) => onLayout(block.id, e.nativeEvent.layout.y)}>
-              <BlockView
-                block={block}
-                selected={a.selectedId === block.id}
-                autoFocus={a.focusId === block.id}
-                moduleEnabled
-                blockStyle={draft.styles[block.id]}
-                samsungSafeIme={prefs.samsungSafeIme}
-                selection={f.forcedSelection(block.id)}
-                onSelectionChange={f.onSelectionChange}
-                onSelect={onSelect}
-                onChange={onChange}
-                onOpenGimmick={onOpenGimmick}
-                onToggleBeat={onToggleBeat}
-                onMove={onMove}
-                onDelete={onDelete}
-              />
-            </View>
-          ))}
+          <UnifiedBlocks
+            {...h}
+            blocks={blocks}
+            selectedId={a.selectedId}
+            focusId={a.focusId}
+            enabledModules={NO_MODULES}
+            styles={draft.styles}
+            includeCues={u.caps.cues}
+            samsungSafeIme={prefs.samsungSafeIme}
+            forcedSelection={f.forcedSelection}
+            onSelectionChange={f.onSelectionChange}
+            onRunChange={u.onRunChange}
+            tools={u.tools}
+          />
+          {u.caps.backlinks ? <BacklinksSection targetId={p.docId} onOpen={openBacklink} /> : null}
         </ScrollView>
         {f.colorFor ? (
           <ColorPopover channel={f.colorFor} onPick={f.pickColor} onClose={f.closeColor} />
         ) : null}
         <FormattingToolbar
           order={prefs.toolbarOrder}
-          hidden={hiddenTools}
-          active={f.active}
+          hidden={u.hiddenTools}
+          active={u.active}
           align={f.align}
           disabledText={!f.textSelected}
-          onTool={f.onTool}
+          onTool={u.onTool}
           formatCollapsed={prefs.toolbarFormatCollapsed}
           addCollapsed={prefs.toolbarAddCollapsed}
           onCollapse={onCollapse}
-          keyboardOffset={dock.keyboardOffset}
           keyboardOpen={dock.keyboardOpen}
         />
+        <dock.Spacer />
       </View>
 
       <NoteSheets

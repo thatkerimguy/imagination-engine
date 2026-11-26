@@ -3,6 +3,7 @@
 // markup included) in `node_bodies`; promoting one to a chapter sanitizes it into a valid
 // ChapterDocument. Saving a note refreshes its search text and its @mention links.
 import type { DialogueBlock, NodeRecord, ProseBlock, SceneBreakBlock } from '@kn/core';
+import { isStoryKind, STORY_KINDS, type StoryKind } from '../notes/kind-meta.ts';
 import { kindMeta, ms, parseBlocks } from './node-mapping.ts';
 import type { NovelRepository } from './repository.ts';
 import { hiddenNoteIds } from './trash-model.ts';
@@ -19,6 +20,8 @@ export interface FolderRecord {
 }
 
 export interface DocRecord extends FolderRecord {
+  /** Story Bible kind: a plain note, character, location or lore entry. */
+  kind: StoryKind;
   blocks: NoteBlock[];
   /** True while the title is generated from the first words (the Author never named it). */
   autoTitle?: boolean;
@@ -52,14 +55,17 @@ export async function toDoc(repo: NovelRepository, n: NodeRecord): Promise<DocRe
   const auto = kindMeta<{ autoTitle: boolean }>(n.metaJson).autoTitle === true;
   return {
     ...toFolder(n),
+    kind: isStoryKind(n.kind) ? n.kind : 'note',
     blocks: parseBlocks<NoteBlock>(await repo.db.getBody(n.id)),
     ...(auto ? { autoTitle: true } : {}),
   };
 }
 
+/** `'note'` means any document kind (note, character, location, lore). */
 export async function nodeOf(repo: NovelRepository, id: string, kind: 'folder' | 'note') {
   const n = await repo.db.getNode(id);
-  return n && n.kind === kind ? n : null;
+  if (!n) return null;
+  return (kind === 'folder' ? n.kind === 'folder' : isStoryKind(n.kind)) ? n : null;
 }
 
 export function folderNode(
@@ -89,7 +95,10 @@ export function folderNode(
 }
 
 export const scanNodes = (repo: NovelRepository, kind: 'folder' | 'note') =>
-  repo.db.listNodes({ kinds: [kind], includeDeleted: true });
+  repo.db.listNodes({
+    kinds: kind === 'folder' ? ['folder'] : [...STORY_KINDS],
+    includeDeleted: true,
+  });
 
 /** Every stored folder / note, trashed ones included (Trash, Doctor, permanent deletes). */
 export const scanFolders = async (repo: NovelRepository): Promise<FolderRecord[]> =>

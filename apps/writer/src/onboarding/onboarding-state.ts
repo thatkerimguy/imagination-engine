@@ -72,14 +72,14 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: 'customize',
-    title: 'Customize any gimmick',
-    body: 'In the Chapter Editor, tap an inline cue card to tweak its settings with simple controls. No code, no markup.',
+    title: 'Classic or interactive, your call',
+    body: 'Write a clean classic novel or keep notes with nothing in your way. Choose Interactive Studio for a book to add kinetic cues, tweaked with simple controls. No code, no markup.',
     icon: 'sliders',
   },
   {
     id: 'start',
     title: 'Start writing & protect your work',
-    body: 'Begin a novel, bring in a document, or restore a backup. On Android, link an external backup folder (Settings › Backup & Restore) so backups survive a phone change.',
+    body: 'Begin a novel (switch modes anytime without losing a word), bring in a document, or restore a backup. On Android, link an external backup folder (Settings › Backup & Restore) so backups survive a phone change.',
     icon: 'shield',
   },
 ];

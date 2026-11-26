@@ -1,12 +1,11 @@
 // Chapter editing screen (bar, metrics, blocks, toolbar, sheets); Focus Mode leaves page + Exit.
-import type { ChapterDocument } from '@kn/core';
+import type { ChapterDocument, WorkspaceMode } from '@kn/core';
 import { useCallback, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { TeaserSheet } from '../teaser/TeaserSheet.tsx';
 import { shareJson } from '../export/share-json';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActionButton } from '../ui/ActionButton.tsx';
 import { handleBackPress } from '../ui/back-layers.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { useWriterPrefs } from '../ui/theme.tsx';
@@ -15,7 +14,7 @@ import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
 import { useEditorTypography } from '../ui/typography.ts';
 import { FOCUS_BOTTOM_PAD, useStyles } from './chapter-editor-styles.ts';
-import { ChapterBlocks } from './ChapterBlocks.tsx';
+import { ChapterFooter } from './ChapterFooter.tsx';
 import { chapterMenu, ColorPopover, EditorTopBar } from './EditorChrome.tsx';
 import { EditorQol } from './EditorQol.tsx';
 import { EditorSheets, type EditorSheet } from './EditorSheets.tsx';
@@ -25,19 +24,21 @@ import { FOCUS_EXIT_CLEARANCE, FocusExitPill } from './LayoutPrefsSheet.tsx';
 import { MetricsRibbon } from './MetricsRibbon.tsx';
 import { ReferencePane } from './ReferencePane.tsx';
 import { useBlockHandlers } from './use-block-handlers.ts';
-import { useEditorActions } from './use-editor-actions.ts';
 import { formatShortcuts, useEditorShortcuts } from './use-editor-shortcuts.ts';
-import { useFormatActions } from './use-format-actions.ts';
-import { useKeyboardDock } from './use-keyboard-dock.ts';
+import { useKeyboardDock } from './use-keyboard-dock';
 import { useLiveMetrics } from './use-live-metrics.ts';
 import { useRibbonCollapse } from './use-ribbon-collapse.ts';
 import { useScrolledFlag } from './use-scrolled-flag.ts';
 import { useStoryBible } from './use-story-bible.ts';
+import { useEditorCore } from './use-unified-editing.ts';
+import { UnifiedBlocks } from './UnifiedBlocks.tsx';
 
 export interface ChapterEditorProps {
   chapter: ChapterDocument;
   draft: ChapterDraft;
   enabledModules: readonly string[];
+  /** Classic Novel (`prose`) hides every cue and Live Preview; Interactive Studio shows them. */
+  mode: WorkspaceMode;
   onBack(): void;
   /** Starts Preview, at the selected block when there is one. */
   onPreview(blockId: string | null): void;
@@ -53,16 +54,14 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const insets = useSafeAreaInsets();
   const typo = useEditorTypography();
   const [prefs] = useWriterPrefs();
-  const a = useEditorActions(draft.update);
-  const f = useFormatActions({
+  const { a, f, u } = useEditorCore({
     blocks: chapter.blocks,
-    styles: draft.styles,
-    selectedId: a.selectedId,
+    draft,
+    mode: p.mode,
+    hiddenTools: prefs.hiddenTools,
     defaultAlign: typo.defaultAlign,
-    update: draft.update,
-    updateStyles: draft.updateStyles,
-    pick: a.pick,
   });
+  const preview = u.caps.livePreview ? () => p.onPreview(a.selectedId) : undefined;
   const [sheet, setSheet] = useState<EditorSheet>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
@@ -88,9 +87,9 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   useBackIntercept(layers);
   const h = useBlockHandlers(a, scroller, p.initialBlockId);
   useEditorShortcuts({
-    ...formatShortcuts(f.onTool, draft),
+    ...formatShortcuts(u.onTool, draft),
     find: () => setFindOpen((o) => !o),
-    preview: () => p.onPreview(a.selectedId),
+    preview,
     shortcuts: () => setSheet('shortcuts'),
     escape: () => (sheet ? setSheet(null) : void handleBackPress(layers, false)),
   });
@@ -111,7 +110,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
           onStats={() => setSheet('analysis')}
           onUndo={draft.undo}
           onRedo={draft.redo}
-          onPreview={() => p.onPreview(a.selectedId)}
+          onPreview={preview}
           referenceOpen={refOpen}
           onReference={() => setRefOpen((o) => !o)}
           menu={chapterMenu(setSheet, {
@@ -178,28 +177,21 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             >
               {chapter.title}
             </Txt>
-            <ChapterBlocks
+            <UnifiedBlocks
               {...h}
               blocks={chapter.blocks}
               selectedId={a.selectedId}
               focusId={a.focusId}
               enabledModules={p.enabledModules}
               styles={draft.styles}
+              includeCues={u.caps.cues}
               samsungSafeIme={prefs.samsungSafeIme}
               forcedSelection={f.forcedSelection}
               onSelectionChange={f.onSelectionChange}
+              onRunChange={u.onRunChange}
+              tools={u.tools}
             />
-            <View style={s.footer}>
-              {focusMode ? null : (
-                <ActionButton
-                  variant="ghost"
-                  quiet
-                  icon="list"
-                  label="Outline"
-                  onPress={() => setSheet('outline')}
-                />
-              )}
-            </View>
+            <ChapterFooter hidden={focusMode} onOutline={() => setSheet('outline')} />
           </ScrollView>
           {chrome && f.colorFor ? (
             <ColorPopover channel={f.colorFor} onPick={f.pickColor} onClose={f.closeColor} />
@@ -207,18 +199,18 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
           {chrome ? (
             <FormattingToolbar
               order={prefs.toolbarOrder}
-              hidden={prefs.hiddenTools}
-              active={f.active}
+              hidden={u.hiddenTools}
+              active={u.active}
               align={f.align}
               disabledText={!f.textSelected}
-              onTool={f.onTool}
+              onTool={u.onTool}
               formatCollapsed={prefs.toolbarFormatCollapsed}
               addCollapsed={prefs.toolbarAddCollapsed}
               onCollapse={onCollapse}
-              keyboardOffset={dock.keyboardOffset}
               keyboardOpen={dock.keyboardOpen}
             />
           ) : null}
+          <dock.Spacer />
         </View>
         {pane && chrome ? (
           <ReferencePane
@@ -230,7 +222,12 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         ) : null}
       </View>
       {focusMode ? <FocusExitPill onExit={() => setFocusMode(false)} /> : null}
-      <TeaserSheet visible={teaserOpen} chapter={chapter} onClose={() => setTeaserOpen(false)} />
+      <TeaserSheet
+        visible={teaserOpen}
+        chapter={chapter}
+        recordMode={u.caps.recordMode}
+        onClose={() => setTeaserOpen(false)}
+      />
       <EditorSheets
         sheet={sheet}
         setSheet={setSheet}

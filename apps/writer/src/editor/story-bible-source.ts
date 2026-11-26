@@ -1,10 +1,12 @@
-// Loads the notes the story bible can mention: active (not trashed, not in a trashed folder),
+// Loads the documents the story bible can mention (notes, characters, locations, lore): active (not trashed, not in a trashed folder),
 // each with its folder path ("Places / Harbour").
 import { listAllDocs, listAllFolders, type NoteBlock } from '../store/folders.ts';
 import type { NovelRepository } from '../store/repository.ts';
+import type { StoryKind } from '../notes/kind-meta.ts';
 import type { MentionNote } from './story-bible.ts';
 
 export interface StoryBibleNote extends MentionNote {
+  kind: StoryKind;
   parentFolderId: string | null;
   blocks: NoteBlock[];
 }
@@ -32,6 +34,7 @@ export async function loadStoryBibleNotes(repo: NovelRepository): Promise<StoryB
       return {
         id: d.id,
         title: d.title,
+        kind: d.kind,
         ...(folderPath ? { folderPath } : {}),
         parentFolderId: d.parentFolderId,
         blocks: d.blocks,

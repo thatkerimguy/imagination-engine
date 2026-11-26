@@ -28,7 +28,8 @@ export interface EditorTopBarProps {
   onStats(): void;
   onUndo(): void;
   onRedo(): void;
-  onPreview(): void;
+  /** Live Preview; omitted (Classic Novel) hides the play button. */
+  onPreview?(): void;
   /** Toggles the split-pane reference drawer (button shown on Expanded windows only). */
   onReference(): void;
   referenceOpen: boolean;
@@ -92,12 +93,14 @@ export function EditorTopBar(p: EditorTopBarProps): ReactNode {
               testID="reference-toggle"
             />
           ) : null}
-          <IconBtn
-            icon="play"
-            accessibilityLabel="Live preview"
-            onPress={p.onPreview}
-            testID="preview-button"
-          />
+          {p.onPreview ? (
+            <IconBtn
+              icon="play"
+              accessibilityLabel="Live preview"
+              onPress={p.onPreview}
+              testID="preview-button"
+            />
+          ) : null}
           <PopoverMenu items={p.menu} accessibilityLabel="More" testID="editor-menu" />
         </View>
       }

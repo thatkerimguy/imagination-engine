@@ -1,5 +1,6 @@
 // Book Compiler: a quiet print-shop desk — cover, contents, layout options and the export grid.
 // One screen for both a novel and a Notes folder (see CompileSource).
+import type { WorkspaceMode } from '@kn/core';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { GimmickMode } from '../export/book-model.ts';
@@ -8,6 +9,7 @@ import { SegmentControl } from '../ui/SegmentControl.tsx';
 import { Toggle } from '../ui/Toggle.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
+import { workspaceCapabilities } from '../workspace/mode-policy.ts';
 import { ChapterRows } from './ChapterRows.tsx';
 import { CoverSlot } from './CoverSlot.tsx';
 import { ExportGrid } from './ExportGrid.tsx';
@@ -27,7 +29,15 @@ const GIMMICK_HINT: Record<GimmickMode, string> = {
   omit: 'Gimmicks are left out of the printed book.',
 };
 
-export function BookCompiler({ source }: { source: CompileSource }): ReactNode {
+/** `mode` defaults to prose (notes folders have no workspace mode): no gimmick export controls. */
+export function BookCompiler({
+  source,
+  mode = 'prose',
+}: {
+  source: CompileSource;
+  mode?: WorkspaceMode;
+}): ReactNode {
+  const caps = workspaceCapabilities(mode);
   const { state, toggleRow, moveRow, setOpt, changeCover, run, copyRoyalRoad } =
     useCompiler(source);
   if (state.loading) return null;
@@ -79,17 +89,21 @@ export function BookCompiler({ source }: { source: CompileSource }): ReactNode {
           }
         />
       </View>
-      <SectionLabel>Gimmick export mode</SectionLabel>
-      <SegmentControl
-        options={GIMMICK_OPTIONS}
-        value={opts.gimmickMode}
-        onChange={(v) => setOpt('gimmickMode', v)}
-        accessibilityLabel="Gimmick export mode"
-        testID="compile-gimmick-mode"
-      />
-      <Txt variant="meta" color="inkSecondary" style={styles.hint}>
-        {GIMMICK_HINT[opts.gimmickMode]}
-      </Txt>
+      {caps.gimmickExportMode ? (
+        <>
+          <SectionLabel>Gimmick export mode</SectionLabel>
+          <SegmentControl
+            options={GIMMICK_OPTIONS}
+            value={opts.gimmickMode}
+            onChange={(v) => setOpt('gimmickMode', v)}
+            accessibilityLabel="Gimmick export mode"
+            testID="compile-gimmick-mode"
+          />
+          <Txt variant="meta" color="inkSecondary" style={styles.hint}>
+            {GIMMICK_HINT[opts.gimmickMode]}
+          </Txt>
+        </>
+      ) : null}
       <SectionLabel>Export</SectionLabel>
       <ExportGrid
         busy={state.busy}

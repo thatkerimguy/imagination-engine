@@ -53,7 +53,11 @@ export function useStoryBible(
   const insert = (n: MentionNote): void => {
     if (!text) return setPeek(findNote(n));
     const at = sel?.end ?? text.text.length;
-    const r = insertMention(text.text, mention ?? { query: '', start: at, end: at }, n.title);
+    const r = insertMention(
+      text.text,
+      mention ?? { trigger: '@', query: '', start: at, end: at },
+      n.title,
+    );
     p.update((c) => replaceBlock(c, { ...text, text: r.text }));
     p.forceSelection(text.id, { start: r.cursor, end: r.cursor });
     setManual(false);

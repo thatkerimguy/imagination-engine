@@ -16,6 +16,8 @@ import { Field } from '../../../ui/Field.tsx';
 import { ListRow, Page, SectionLabel as Label } from '../../../ui/Page.tsx';
 import { SegmentControl, type SegmentOption } from '../../../ui/SegmentControl.tsx';
 import { Txt } from '../../../ui/Txt.tsx';
+import { ModePicker } from '../../../workspace/ModePicker.tsx';
+import { workspaceCapabilities } from '../../../workspace/mode-policy.ts';
 
 /** How many blocks in this novel's chapters use each module id. */
 async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<string, number>> {
@@ -41,6 +43,7 @@ export default function NovelSettingsScreen(): ReactNode {
   const { data } = useRepoQuery(`novel-settings:${novelId}`, async (r) => ({
     novel: await r.requireNovel(novelId),
     usage: await moduleUsage(r, novelId),
+    mode: await r.getWorkspaceMode(novelId),
   }));
   const [draft, setDraft] = useState<NovelManifest | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -133,18 +136,32 @@ export default function NovelSettingsScreen(): ReactNode {
       />
       <Label>Reading theme</Label>
       <AccentPicker value={draft.theme['--accent']} onChange={setAccent} />
-      <Label>Gimmick modules</Label>
-      <View>
-        {writerModules.map((m) => (
-          <ModuleToggleRow
-            key={m.meta.id}
-            module={m}
-            enabled={draft.enabledModules.includes(m.meta.id)}
-            usedBy={data.usage.get(m.meta.id) ?? 0}
-            onChange={(on) => toggle(m.meta.id, on)}
-          />
-        ))}
-      </View>
+      <Label>Workspace mode</Label>
+      <ModePicker
+        value={data.mode}
+        onChange={(m) => void repo.setWorkspaceMode(novelId, m)}
+        testID="settings-mode"
+      />
+      {workspaceCapabilities(data.mode).modulesSettings ? (
+        <>
+          <Label>Gimmick modules</Label>
+          <View>
+            {writerModules.map((m) => (
+              <ModuleToggleRow
+                key={m.meta.id}
+                module={m}
+                enabled={draft.enabledModules.includes(m.meta.id)}
+                usedBy={data.usage.get(m.meta.id) ?? 0}
+                onChange={(on) => toggle(m.meta.id, on)}
+              />
+            ))}
+          </View>
+        </>
+      ) : (
+        <Txt variant="meta" color="inkSecondary" testID="settings-modules-hidden-note">
+          Interactive modules live in Interactive Studio. Switch anytime — you won't lose a word.
+        </Txt>
+      )}
       <Label>Insights</Label>
       <ListRow
         icon="trending-up"

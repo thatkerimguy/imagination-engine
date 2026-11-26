@@ -63,7 +63,7 @@ ripple/wash double-tint). Haiku `qa-runner` ran the final sweep. No new dependen
 - `RootTabsPager` (`components/RootTabsPager.tsx`) hosts the 0 Library, 1 Notes and 2 Search pages in the `/`
   route, built on `Animated` + `PanResponder` with no native deps.
   - Follows the finger 1:1 (resisting past the ends). Past 25% of the width, or a flick over 0.5 dp/ms, it
-    commits with a 260 ms ease-out (native driver). Tab taps animate too; Reduce Motion and the rail are instant.
+    commits with a velocity-carrying spring (native driver; see HANDOFF-06A-2). Reduce Motion and the rail are instant.
   - **Edge dead zone:** swipes starting within 32 dp of either edge are never claimed. The start is computed as
     `moveX - dx`, because PanResponder leaves `x0` at 0 until grant; this bug surfaced in testing.
   - **Scroll yield:** the pager claims only when `|dx| > 16` and `|dx| > 1.5·|dy|`. `RecentStrip`'s carousel
@@ -103,7 +103,7 @@ ripple/wash double-tint). Haiku `qa-runner` ran the final sweep. No new dependen
 3. `qa-shots-dir06a/03-tablet-rail-tabs-intact.png`: 1280×800, with FolioNavRail switching to Notes inside the
    pager. The editor draft-survival gate passes in the same run.
 
-## 6. Quick Physical Android 15 Phone Smoke Check
+## 6. Quick Physical Android 15 Phone Smoke Check (results: `HANDOFF-06A-2-PHONE-SMOKE-FOLLOWUP.md`)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1 -Abi arm64-v8a -Install

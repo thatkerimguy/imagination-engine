@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { NovelRepository } from '../store/repository.ts';
 import { loadBackupSettings, saveBackupSettings } from './backup-settings.ts';
 import {
@@ -66,7 +66,7 @@ describe('backup freshness badge', () => {
 describe('backup settings (external folder)', () => {
   it('stores, clears and normalizes the SAF fields', async () => {
     vi.useRealTimers();
-    const repo = new NovelRepository(createMemoryAdapter());
+    const repo = new NovelRepository(createMemoryDatabase());
     expect(await loadBackupSettings(repo)).toEqual({ intervalHours: 24, lastBackupAt: null });
     await saveBackupSettings(repo, {
       safFolderUri: tree,

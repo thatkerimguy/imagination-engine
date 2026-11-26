@@ -10,8 +10,9 @@ import {
   type ReactNode,
 } from 'react';
 import { maybeAutoBackup } from '../backup/auto-backup.ts';
+import { openDatabase } from '../db/sqlite-driver';
 import { deleteCoverFiles } from '../media/cover-files';
-import { createDefaultAdapter } from '../storage/adapter';
+import { mediaRoot } from '../media/media-root';
 import { syncHapticsPref } from '../ui/haptics.ts';
 import { seedOnFirstLaunch } from './demo.ts';
 import { NovelRepository } from './repository.ts';
@@ -20,23 +21,37 @@ import { purgeExpiredTrash } from './trash.ts';
 const RepoContext = createContext<NovelRepository | null>(null);
 
 export function RepositoryProvider({ children }: { children: ReactNode }): ReactNode {
-  const [repo] = useState(() => new NovelRepository(createDefaultAdapter()));
-  const [ready, setReady] = useState(false);
+  const [repo, setRepo] = useState<NovelRepository | null>(null);
   useEffect(() => {
-    seedOnFirstLaunch(repo)
-      .catch((err: unknown) => console.warn('[writer] demo seed failed', err))
-      .finally(() => {
-        setReady(true);
-        void syncHapticsPref(repo);
-        // Rotating emergency snapshot when the configured interval has passed (native only).
-        void maybeAutoBackup(repo);
-        // Items in Trash for 30+ days are deleted for good, with covers nothing else uses.
-        purgeExpiredTrash(repo)
-          .then(deleteCoverFiles)
-          .catch((err: unknown) => console.warn('[writer] trash purge failed', err));
-      });
-  }, [repo]);
-  return ready ? <RepoContext.Provider value={repo}>{children}</RepoContext.Provider> : null;
+    let live = true;
+    void openDatabase().then((db) => {
+      const r = new NovelRepository(db, Date.now, mediaRoot());
+      seedOnFirstLaunch(r)
+        .catch((err: unknown) => console.warn('[writer] demo seed failed', err))
+        .finally(() => {
+          if (live) setRepo(r);
+          // Web QA hook (scripts/lib/writer-v2.mjs): only once seeded, and only when the web
+          // driver exposed its engine (`kn-writer-v2:qa`).
+          if ('__knWriterDb' in globalThis) Object.assign(globalThis, { __knWriterRepo: r });
+          onOpened(r);
+        });
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return repo ? <RepoContext.Provider value={repo}>{children}</RepoContext.Provider> : null;
+}
+
+/** Launch housekeeping once the database is open and seeded. */
+function onOpened(repo: NovelRepository): void {
+  void syncHapticsPref(repo);
+  // Rotating emergency snapshot when the configured interval has passed (native only).
+  void maybeAutoBackup(repo);
+  // Items in Trash for 30+ days are deleted for good, with covers nothing else uses.
+  purgeExpiredTrash(repo)
+    .then(deleteCoverFiles)
+    .catch((err: unknown) => console.warn('[writer] trash purge failed', err));
 }
 
 export function useRepository(): NovelRepository {

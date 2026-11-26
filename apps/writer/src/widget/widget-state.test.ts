@@ -89,3 +89,27 @@ describe('todayWordsFrom', () => {
     expect(todayWordsFrom([], now)).toBe(0);
   });
 });
+
+describe('todayWordsFrom with day-0 baselines (Gate 3 Bug 3)', () => {
+  const now = new Date(2026, 10, 26, 15).getTime();
+  const point = (minutes: number, words: number, baseline = false): GrowthPoint => ({
+    dayKey: dayKeyOf(now),
+    ts: now - 60 * 60_000 + minutes * 60_000,
+    words,
+    chars: 0,
+    sentences: 0,
+    paragraphs: 0,
+    ...(baseline ? { baseline: true } : {}),
+  });
+
+  it('3 words typed into a 118-word chapter created today → "3 words today"', () => {
+    const words = todayWordsFrom([point(0, 118, true), point(5, 121)], now);
+    expect(words).toBe(3);
+    const label = buildWidgetPayload({ lockEnabled: false, recent: null, todayWords: words });
+    expect(label.todayWordsLabel).toBe('3 words today');
+  });
+
+  it('a baseline with no edits yet reports 0, not the chapter length', () => {
+    expect(todayWordsFrom([point(0, 118, true)], now)).toBe(0);
+  });
+});

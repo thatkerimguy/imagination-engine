@@ -4,7 +4,8 @@
 //   03 Chapter Editor with the Read-Aloud bar + @mention Story Bible popover | peek card,
 //   04 Trash with danger-red Delete forever / Empty trash | Settings › Privacy & integrity
 //      (Anonymous crash reports off by default + Help & Legal row).
-const NS = 'kn-writer:';
+import { readSetting, seedKv } from './lib/writer-v2.mjs';
+
 const NOTE_ID = 'qa-bible-harbour';
 
 /** Side-by-side composite of 390×844 @2× panels, rendered in a scratch tab. */
@@ -61,7 +62,7 @@ export async function dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   else fail('step 3 quick actions missing');
   await ftid('welcome-skip').click();
   await first.waitForTimeout(300);
-  const stored = await first.evaluate((ns) => localStorage.getItem(`${ns}setting/onboarding`), NS);
+  const stored = await readSetting(first, 'setting/onboarding');
   if (stored?.includes('dismissedAt')) ok('Skip persists setting/onboarding.dismissedAt');
   else fail(`onboarding not persisted: ${stored}`);
   await first.reload();
@@ -102,23 +103,16 @@ export async function dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   await page.getByRole('button', { name: 'Close sheet' }).last().click();
 
   // 03 — Chapter Editor: Read aloud bar + Story Bible popover, then the peek card.
-  await page.evaluate(
-    ([ns, id]) => {
-      const now = Date.now();
-      const data = {
-        id,
-        parentFolderId: null,
-        title: 'Harbour District',
-        blocks: [
-          { id: 'qa-b1', kind: 'prose', text: 'Rain-slick quays, **neon** over the cranes.' },
-        ],
-        createdAt: now,
-        updatedAt: now,
-      };
-      localStorage.setItem(`${ns}doc/${id}`, JSON.stringify({ data, updatedAt: now }));
-    },
-    [NS, NOTE_ID],
-  );
+  const now = Date.now();
+  const note = {
+    id: NOTE_ID,
+    parentFolderId: null,
+    title: 'Harbour District',
+    blocks: [{ id: 'qa-b1', kind: 'prose', text: 'Rain-slick quays, **neon** over the cranes.' }],
+    createdAt: now,
+    updatedAt: now,
+  };
+  await seedKv(page, [[`doc/${NOTE_ID}`, JSON.stringify({ data: note, updatedAt: now })]]);
   await editor();
   await tid('editor-menu').click();
   await tid('menu-read-aloud').click();
@@ -138,7 +132,7 @@ export async function dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   if (packAt) await composite(page, [qol, peek], path('03-editor-read-aloud-and-bible'));
   await page.getByRole('button', { name: 'Close sheet' }).last().click();
   await tid('read-aloud-close').click();
-  await page.evaluate(([ns, id]) => localStorage.removeItem(`${ns}doc/${id}`), [NS, NOTE_ID]);
+  await page.evaluate((id) => globalThis.__knWriterDb.deleteNodes([id]), NOTE_ID);
 
   // 04 — Trash: destructive actions in danger red, beside Settings › Privacy & integrity.
   await tid('editor-menu').click();

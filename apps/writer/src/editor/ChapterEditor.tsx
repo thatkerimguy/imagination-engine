@@ -30,6 +30,7 @@ import { formatShortcuts, useEditorShortcuts } from './use-editor-shortcuts.ts';
 import { useFormatActions } from './use-format-actions.ts';
 import { useKeyboardDock } from './use-keyboard-dock.ts';
 import { useLiveMetrics } from './use-live-metrics.ts';
+import { useRibbonCollapse } from './use-ribbon-collapse.ts';
 import { useScrolledFlag } from './use-scrolled-flag.ts';
 import { useStoryBible } from './use-story-bible.ts';
 
@@ -65,7 +66,6 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const [sheet, setSheet] = useState<EditorSheet>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [ribbonCollapsed, setRibbonCollapsed] = useState(false);
   const [scrolled, onScroll] = useScrolledFlag();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const cls = useLayoutClass();
@@ -76,6 +76,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const pane = refOpen && cls === 'expanded';
   const metrics = useLiveMetrics(chapter.blocks);
   const dock = useKeyboardDock();
+  const ribbon = useRibbonCollapse(dock.keyboardOpen);
   const layers = [
     { open: f.colorFor !== null, close: f.closeColor },
     { open: findOpen, close: () => setFindOpen(false) },
@@ -94,7 +95,6 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
     escape: () => (sheet ? setSheet(null) : void handleBackPress(layers, false)),
   });
   const onCollapse = useToolbarCollapse();
-  const toggleRibbon = useCallback(() => setRibbonCollapsed((c) => !c), []);
   const openAnalysis = useCallback(() => setSheet('analysis'), []);
   const openMetrics = useCallback(() => setSheet('metrics'), []);
   const chrome = !focusMode;
@@ -130,8 +130,8 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         <MetricsRibbon
           metrics={metrics}
           visible={prefs.visibleMetrics}
-          collapsed={ribbonCollapsed}
-          onToggleCollapsed={toggleRibbon}
+          collapsed={ribbon.collapsed}
+          onToggleCollapsed={ribbon.toggle}
           onOpenAnalysis={openAnalysis}
           onCustomize={openMetrics}
         />

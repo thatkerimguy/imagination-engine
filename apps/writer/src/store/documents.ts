@@ -1,5 +1,5 @@
-// Typed JSON documents on top of the key-value adapter. Every document records when it was
-// last written so the bookshelf can show "last edited".
+// Typed JSON documents for small writer sidecars, stored as rows of the relational `settings`
+// table (see db/settings-adapter.ts). Every document records when it was last written.
 import type { StorageAdapter } from '../storage/types.ts';
 
 export interface Stored<T> {
@@ -8,13 +8,6 @@ export interface Stored<T> {
 }
 
 export const keys = {
-  novel: (novelId: string) => `novel/${novelId}`,
-  season: (novelId: string, seasonId: string) => `season/${novelId}/${seasonId}`,
-  seasonsOf: (novelId: string) => `season/${novelId}/`,
-  chapter: (novelId: string, seasonId: string, chapterId: string) =>
-    `chapter/${novelId}/${seasonId}/${chapterId}`,
-  chaptersOf: (novelId: string, seasonId = '') =>
-    `chapter/${novelId}/${seasonId ? `${seasonId}/` : ''}`,
   setting: (name: string) => `setting/${name}`,
 } as const;
 

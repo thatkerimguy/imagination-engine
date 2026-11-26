@@ -1,6 +1,6 @@
 import type { ChapterDocument } from '@kn/core';
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { applyRawText, captureRawText, pruneStyles, setBlockStyle } from './chapter-styles.ts';
 import {
   appendPoint,
@@ -12,6 +12,7 @@ import {
   resetGrowthThrottle,
   seriesForRange,
 } from './growth-store.ts';
+import { createDoc } from './folders.ts';
 import { NovelRepository } from './repository.ts';
 import {
   DEFAULT_WRITER_PREFS,
@@ -23,7 +24,7 @@ import {
 
 const A = '01M7WD7TG0SRH8FFJAF28FHTHC';
 const B = '01M7WD7TG1R63M5MJ69NG6995F';
-const repo = (): NovelRepository => new NovelRepository(createMemoryAdapter());
+const repo = (): NovelRepository => new NovelRepository(createMemoryDatabase());
 
 describe('writer prefs', () => {
   it('migrates the Phase 2 appearance setting', async () => {
@@ -105,9 +106,11 @@ describe('growth store', () => {
   it('skips storage writes inside the throttle window unless forced', async () => {
     resetGrowthThrottle();
     const r = repo();
-    expect(await recordGrowth(r, 'chapter:x', c(1), { now: t0 })).toBe(true);
-    expect(await recordGrowth(r, 'chapter:x', c(2), { now: t0 + 1000 })).toBe(false);
-    expect(await recordGrowth(r, 'chapter:x', c(3), { now: t0 + 2000, force: true })).toBe(true);
-    expect((await loadGrowth(r, 'chapter:x')).points.map((p) => p.words)).toEqual([3]);
+    const { id } = await createDoc(r, null, { title: 'x' });
+    expect(await recordGrowth(r, `doc:${id}`, c(1), { now: t0 })).toBe(true);
+    expect(await recordGrowth(r, `doc:${id}`, c(2), { now: t0 + 1000 })).toBe(false);
+    expect(await recordGrowth(r, `doc:${id}`, c(3), { now: t0 + 2000, force: true })).toBe(true);
+    expect((await loadGrowth(r, `doc:${id}`)).points.map((p) => p.words)).toEqual([3]);
+    expect(await recordGrowth(r, 'chapter:missing', c(1), { force: true })).toBe(false);
   });
 });

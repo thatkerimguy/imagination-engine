@@ -1,205 +1,132 @@
 import { ulid } from '@kn/core';
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
-import { kvFromAdapter, repairAll, repairIssue, scanWorkspace, type Issue } from './doctor.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
+import type { DatabasePort } from '../db/port.ts';
+import { loadDemoNovel } from '../store/demo.ts';
+import { setItemCover } from '../store/covers.ts';
+import { NovelRepository } from '../store/repository.ts';
+import { repairAll, repairIssue, scanWorkspace, summaryLine, type Issue } from './doctor.ts';
 
-const prose = (text = 'Hello') => ({ id: ulid(), kind: 'prose', text });
-const env = (data: unknown) => JSON.stringify({ data, updatedAt: 1 });
+const NOW = Date.parse('2026-11-26T12:00:00Z');
+const prose = (text = 'Hello lighthouse') => ({ id: ulid(), kind: 'prose' as const, text });
 
-function workspace(extra: Record<string, string> = {}) {
-  const adapter = createMemoryAdapter({
-    'novel/n1': env({
-      schemaVersion: 1,
-      id: 'n1',
-      title: 'Book',
-      author: 'A',
-      sectionLabel: 'Season',
-      theme: {},
-      enabledModules: [],
-      seasons: ['s1'],
-    }),
-    'season/n1/s1': env({ id: 's1', title: 'S', chapters: ['c1'] }),
-    'chapter/n1/s1/c1': env({
-      id: 'c1',
-      seasonId: 's1',
-      title: 'One',
-      status: 'draft',
-      blocks: [prose()],
-    }),
-    'folder/f1': env({ id: 'f1', parentFolderId: null, title: 'F', createdAt: 1, updatedAt: 1 }),
-    'doc/d1': env({
-      id: 'd1',
-      parentFolderId: 'f1',
-      title: 'D',
-      createdAt: 1,
-      updatedAt: 1,
-      blocks: [],
-    }),
-    'meta/item/c1': env({ tags: [] }),
-    ...extra,
-  });
-  return { adapter, kv: kvFromAdapter(adapter) };
+async function workspace(root = '') {
+  const db = createMemoryDatabase();
+  const repo = new NovelRepository(db, () => NOW, root);
+  const novel = await repo.createNovel({ title: 'Tide', author: 'Me', sectionLabel: 'Season' });
+  const season = (await repo.listSeasons(novel.id))[0]!;
+  const chapter = (await repo.listChapters(novel.id, season.id))[0]!;
+  await repo.saveChapter(novel.id, { ...chapter, blocks: [prose()] });
+  return { db, repo, novel, season, chapter };
 }
 
-const has = (issues: Issue[], id: string, key: string): boolean =>
-  issues.some((i) => i.id.startsWith(`${id}:`) && i.key === key);
+const find = (issues: Issue[], code: string, key?: string): Issue | undefined =>
+  issues.find((i) => i.id.startsWith(`${code}:`) && (key === undefined || i.key === key));
 
 describe('scanWorkspace', () => {
-  it('reports nothing for a healthy workspace', async () => {
-    expect(await scanWorkspace(workspace().kv)).toEqual([]);
+  it('reports nothing for a fresh workspace and the demo novel', async () => {
+    const { repo } = await workspace();
+    expect(await scanWorkspace(repo)).toEqual([]);
+    await loadDemoNovel(repo);
+    expect(await scanWorkspace(repo)).toEqual([]);
+    expect(summaryLine([], 12)).toBe('No issues · scanned 12 entries');
   });
 
-  it('detects corrupt JSON and invalid manifests', async () => {
-    const { kv } = workspace({
-      'season/n1/s2': '{not json',
-      'chapter/n1/s1/c9': env({ id: 'c9' }),
+  it('stays clear after Trash and after emptying the Trash', async () => {
+    const { db, repo, chapter } = await workspace();
+    const node = (await db.getNode(chapter.id))!;
+    await db.putNodes([{ node: { ...node, deletedAt: '2026-11-25T00:00:00.000Z' } }]);
+    expect(await scanWorkspace(repo)).toEqual([]);
+    await db.deleteNodes([chapter.id]);
+    await db.deleteSetting(`meta/item/${chapter.id}`);
+    expect(await scanWorkspace(repo)).toEqual([]);
+  });
+
+  it('detects a search index mismatch and repairs it', async () => {
+    const { db, repo } = await workspace();
+    let stale = true;
+    const faulty: DatabasePort = Object.create(db) as DatabasePort;
+    faulty.integrity = async () => {
+      const ig = await db.integrity();
+      return stale ? { ...ig, ftsRows: ig.ftsRows + 2 } : ig;
+    };
+    faulty.rebuildSearchIndex = async () => {
+      stale = false;
+      await db.rebuildSearchIndex();
+    };
+    const broken = new NovelRepository(faulty, () => NOW);
+    const issues = await scanWorkspace(broken);
+    expect(find(issues, 'fts', 'fts')?.repair).toBe('rebuild-index');
+    expect(await repairAll(broken)).toBe(1);
+    expect(await scanWorkspace(broken)).toEqual([]);
+    expect(repo.db.driver).toBe('memory');
+  });
+
+  it('detects a cover whose file is missing and clears it', async () => {
+    const { db, repo, novel } = await workspace('file:///docs/');
+    const f = (uri: string) => ({ uri, width: 1, height: 1, bytes: 1, mimeType: 'image/jpeg' });
+    await setItemCover(repo, novel.id, {
+      cover: f('file:///docs/covers/a.jpg'),
+      thumb: f('file:///docs/covers/a.thumb.jpg'),
     });
-    const issues = await scanWorkspace(kv);
-    expect(has(issues, 'corrupt', 'season/n1/s2')).toBe(true);
-    expect(has(issues, 'invalid', 'chapter/n1/s1/c9')).toBe(true);
-    expect(issues.every((i) => i.severity === 'error' || i.severity === 'warning')).toBe(true);
+    expect(await scanWorkspace(repo, { fileExists: async () => true })).toEqual([]);
+    const issues = await scanWorkspace(repo, { fileExists: async () => false });
+    const media = issues.filter((i) => i.key.startsWith('media/'));
+    expect(media).toHaveLength(2);
+    expect(media[0]!.repair).toBe('clear-uri');
+    expect(await repairAll(repo, { fileExists: async () => false })).toBe(2);
+    expect((await db.getNode(novel.id))!.coverAssetId).toBeNull();
+    expect(await scanWorkspace(repo, { fileExists: async () => false })).toEqual([]);
   });
 
-  it('detects orphan and missing season / chapter links', async () => {
-    const { kv } = workspace({
-      'season/n1/s2': env({ id: 's2', title: 'Loose', chapters: [] }),
-      'chapter/n1/s1/c2': env({
-        id: 'c2',
-        seasonId: 's1',
-        title: 'Loose',
-        status: 'draft',
-        blocks: [],
-      }),
-    });
-    await kv.set(
-      'novel/n1',
-      env({
-        schemaVersion: 1,
-        id: 'n1',
-        title: 'B',
-        author: 'A',
-        sectionLabel: 'Season',
-        theme: {},
-        enabledModules: [],
-        seasons: ['s1', 'ghost'],
-      }),
-    );
-    await kv.set('season/n1/s1', env({ id: 's1', title: 'S', chapters: ['c1', 'gone'] }));
-    const issues = await scanWorkspace(kv);
-    expect(has(issues, 'orphan-season', 'season/n1/s2')).toBe(true);
-    expect(has(issues, 'orphan-chapter', 'chapter/n1/s1/c2')).toBe(true);
-    expect(has(issues, 'missing-season', 'novel/n1')).toBe(true);
-    expect(has(issues, 'missing-chapter', 'season/n1/s1')).toBe(true);
+  it('detects orphan sidecars and removes them to quarantine', async () => {
+    const { db, repo, chapter } = await workspace();
+    await db.setSetting(`meta/item/${chapter.id}`, '{"data":{},"updatedAt":1}');
+    await db.setSetting('meta/item/ghost', '{"data":{"tags":[]},"updatedAt":1}');
+    await db.setSetting('versions/chapter:ghost', '{"data":[],"updatedAt":1}');
+    const issues = await scanWorkspace(repo);
+    expect(issues.map((i) => i.key).sort()).toEqual([
+      'setting/meta/item/ghost',
+      'setting/versions/chapter:ghost',
+    ]);
+    expect(issues.every((i) => i.repair === 'remove-sidecar' && i.severity === 'info')).toBe(true);
+    expect(await repairIssue(repo, issues[0]!, { now: () => 7 })).toBe(true);
+    expect(await db.getSetting('meta/item/ghost')).toBeNull();
+    expect(await db.getSetting('quarantine/meta/item/ghost')).toContain('"quarantinedAt":7');
+    await repairAll(repo);
+    expect(await scanWorkspace(repo)).toEqual([]);
+    expect(await db.getSetting(`meta/item/${chapter.id}`)).not.toBeNull();
   });
 
-  it('detects bad module blocks', async () => {
-    const mod = (moduleId: string, props: Record<string, unknown>) => ({
+  it('detects invalid bodies, unknown modules and bad module props', async () => {
+    const { db, repo, chapter } = await workspace();
+    const body = (await db.getBody(chapter.id))!;
+    const node = (await db.getNode(chapter.id))!;
+    const mod = (moduleId: string, props: unknown) => ({
       id: ulid(),
       kind: 'module',
       moduleId,
       moduleVersion: 1,
       props,
     });
-    const { kv } = workspace({
-      'chapter/n1/s1/c1': env({
-        id: 'c1',
-        seasonId: 's1',
-        title: 'One',
-        status: 'draft',
-        blocks: [mod('no-such-module', {}), mod('bl-dice-3d', { count: 99 })],
-      }),
-    });
-    const issues = await scanWorkspace(kv);
-    expect(has(issues, 'unknown-module', 'chapter/n1/s1/c1')).toBe(true);
-    expect(has(issues, 'bad-props', 'chapter/n1/s1/c1')).toBe(true);
+    const put = (blocks: string) => db.putNodes([{ node, body: { ...body, blocksJson: blocks } }]);
+    await put('{not json');
+    expect(find(await scanWorkspace(repo), 'invalid-body', `node/${chapter.id}`)?.severity).toBe(
+      'error',
+    );
+    await put(JSON.stringify([{ id: 'nope', kind: 'prose', text: 'x' }]));
+    expect(find(await scanWorkspace(repo), 'invalid-body')).toBeDefined();
+    await put(JSON.stringify([mod('no-such-module', {})]));
+    expect(find(await scanWorkspace(repo), 'unknown-module')?.ref).toBeDefined();
+    const getModule = () => ({ validate: () => ({ ok: false, errors: ['bad'] }) });
+    await put(JSON.stringify([mod('x-y', {})]));
+    expect(find(await scanWorkspace(repo, { getModule }), 'bad-props')?.detail).toContain('bad');
   });
 
-  it('detects missing parent folders, orphan sidecars and broken URIs', async () => {
-    const { kv } = workspace({
-      'doc/d2': env({ id: 'd2', parentFolderId: 'nope', title: 'X', blocks: [] }),
-      'meta/item/ghost': env({ tags: [] }),
-      'meta/chapter-styles/ghost': env({}),
-      'versions/doc:ghost': env({ snapshots: [] }),
-      'meta/item/d1': env({ tags: [], coverUri: 'nonsense' }),
-      'meta/item/f1': env({ tags: [], coverUri: 'file:///gone.png' }),
-      'prefs/custom-fonts': env([
-        { id: 'custom-font-1', displayName: 'Bad', uri: 'file:///gone.ttf', format: 'ttf' },
-      ]),
-    });
-    const issues = await scanWorkspace(kv, { fileExists: async () => false });
-    expect(has(issues, 'orphan-parent', 'doc/d2')).toBe(true);
-    expect(has(issues, 'orphan-sidecar', 'meta/item/ghost')).toBe(true);
-    expect(has(issues, 'orphan-sidecar', 'meta/chapter-styles/ghost')).toBe(true);
-    expect(has(issues, 'orphan-sidecar', 'versions/doc:ghost')).toBe(true);
-    expect(has(issues, 'bad-cover', 'meta/item/d1')).toBe(true);
-    expect(has(issues, 'bad-cover', 'meta/item/f1')).toBe(true);
-    expect(has(issues, 'bad-font', 'prefs/custom-fonts')).toBe(true);
-  });
-
-  it('accepts publish settings and flags publish status only for deleted books', async () => {
-    const { kv } = workspace({
-      'setting/publish': env({ apiUrl: 'https://api.example.com', readerUrl: '' }),
-      'setting/publish-secret': env('token'),
-      'meta/publish/n1': env({ lastPublishedAt: 'x', publishedChapters: 1 }),
-      'meta/publish/gone': env({ lastPublishedAt: 'x', publishedChapters: 1 }),
-    });
-    const issues = await scanWorkspace(kv);
-    const keysWithIssues = new Set(issues.map((i) => i.key));
-    expect(keysWithIssues.has('setting/publish')).toBe(false);
-    expect(keysWithIssues.has('setting/publish-secret')).toBe(false);
-    expect(keysWithIssues.has('meta/publish/n1')).toBe(false);
-    expect(has(issues, 'orphan-sidecar', 'meta/publish/gone')).toBe(true);
-  });
-});
-
-describe('repair', () => {
-  it('quarantines the raw payload before modifying it', async () => {
-    const { adapter, kv } = workspace({
-      'doc/d2': env({ id: 'd2', parentFolderId: 'nope', blocks: [] }),
-    });
-    const original = (await adapter.get('doc/d2')) as string;
-    const issue = (await scanWorkspace(kv)).find((i) => i.key === 'doc/d2') as Issue;
-    await repairIssue(kv, issue);
-    const q = JSON.parse((await adapter.get('quarantine/doc/d2')) as string) as {
-      data: { raw: string; key: string };
-    };
-    expect(q.data.raw).toBe(original);
-    expect(q.data.key).toBe('doc/d2');
-    expect((await adapter.get('doc/d2')) as string).toContain('"parentFolderId":null');
-  });
-
-  it('quarantines corrupt values instead of deleting them', async () => {
-    const { adapter, kv } = workspace({ 'season/n1/s2': '{broken' });
-    await repairAll(kv);
-    expect(await adapter.get('season/n1/s2')).toBeNull();
-    expect(await adapter.get('quarantine/season/n1/s2')).toContain('{broken');
-  });
-
-  it('repairAll leaves a clean rescan with no errors', async () => {
-    const { adapter, kv } = workspace({
-      'season/n1/s2': '{broken',
-      'chapter/n1/s1/c9': env({ id: 'c9' }),
-      'chapter/n1/s1/c2': env({
-        id: 'c2',
-        seasonId: 's1',
-        title: 'Loose',
-        status: 'draft',
-        blocks: [],
-      }),
-      'doc/d2': env({ id: 'd2', parentFolderId: 'nope', blocks: [] }),
-      'meta/item/ghost': env({ tags: [] }),
-      'meta/item/d1': env({ tags: [], coverUri: 'nonsense' }),
-    });
-    await kv.set('season/n1/s1', env({ id: 's1', title: 'S', chapters: ['c1', 'gone'] }));
-    expect((await scanWorkspace(kv)).length).toBeGreaterThan(3);
-    expect(await repairAll(kv)).toBeGreaterThan(3);
-    const after = await scanWorkspace(kv);
-    expect(after.filter((i) => i.severity === 'error')).toEqual([]);
-    expect(after.filter((i) => i.repair)).toEqual([]);
-    expect((await adapter.keys('quarantine/')).length).toBeGreaterThan(3);
-    const season = JSON.parse((await adapter.get('season/n1/s1')) as string) as {
-      data: { chapters: string[] };
-    };
-    expect(season.data.chapters).toEqual(['c1', 'c2']);
+  it('detects a misplaced chapter', async () => {
+    const { db, repo, novel, chapter } = await workspace();
+    const node = (await db.getNode(chapter.id))!;
+    await db.putNodes([{ node: { ...node, parentId: novel.id } }]);
+    expect(find(await scanWorkspace(repo), 'broken-tree', `node/${chapter.id}`)).toBeDefined();
   });
 });

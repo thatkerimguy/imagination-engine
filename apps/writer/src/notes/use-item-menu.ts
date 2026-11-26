@@ -1,7 +1,9 @@
 // The per-item ⋯ menu of the Notes workspace and the actions behind it.
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { deleteCoverFiles } from '../media/cover-files';
 import { pickCoverImage } from '../media/pick-cover';
+import { setItemCover } from '../store/covers.ts';
 import { routes } from '../routes.ts';
 import { useRepository } from '../store/context.tsx';
 import { moveFolder, renameFolder, saveDoc } from '../store/folders.ts';
@@ -40,8 +42,10 @@ export function useItemMenu() {
     if (ok) await moveToTrash(repo, { kind: item.kind, id: item.id });
   };
   const setCover = async (item: NoteItem): Promise<void> => {
-    const uri = await pickCoverImage();
-    if (uri) await updateItemMeta(repo, item.id, { coverUri: uri });
+    const picked = await pickCoverImage();
+    if (!picked) return;
+    const { unusedUris } = await setItemCover(repo, item.id, picked);
+    void deleteCoverFiles(unusedUris);
   };
   const toggleLock = async (item: NoteItem, locked: boolean): Promise<void> => {
     // The Author just locked it: keep it open for this session; it re-locks on next launch.

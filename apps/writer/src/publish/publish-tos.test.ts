@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { NovelRepository } from '../store/repository.ts';
 import {
   acceptCurrentTos,
@@ -10,7 +10,7 @@ import {
   termsUrl,
 } from './publish-settings.ts';
 
-const repo = (): NovelRepository => new NovelRepository(createMemoryAdapter(), () => 5);
+const repo = (): NovelRepository => new NovelRepository(createMemoryDatabase(), () => 5);
 
 describe('Publishing Terms of Use consent', () => {
   it('pins the current Terms version', () => {

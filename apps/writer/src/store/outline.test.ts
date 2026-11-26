@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getWriterModule, moduleOutlineLabel } from '../modules/registry.ts';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import {
   addChapter,
   addSeason,
@@ -14,7 +14,7 @@ import {
 import { NovelRepository } from './repository.ts';
 
 async function setup() {
-  const repo = new NovelRepository(createMemoryAdapter());
+  const repo = new NovelRepository(createMemoryDatabase());
   const novel = await repo.createNovel({ title: 'T', author: 'A', sectionLabel: 'Arc' });
   return { repo, novelId: novel.id, seasonId: novel.seasons[0]! };
 }

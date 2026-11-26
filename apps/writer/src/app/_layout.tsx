@@ -12,6 +12,7 @@ import { I18nProvider, useI18n } from '../i18n/I18nProvider.tsx';
 import { recordActiveDayAsync } from '../settings/review-request';
 import { RepositoryProvider, useRepository } from '../store/context.tsx';
 import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
+import { MotionProviders } from '../ui/MotionProviders';
 import { ThemeProvider, useTheme } from '../ui/theme.tsx';
 import { THEATER_BG } from '../ui/theater.ts';
 import { StackTopBar } from '../ui/TopBar.tsx';
@@ -33,19 +34,21 @@ const PUSH = Platform.OS === 'ios' ? 'ios_from_right' : 'slide_from_right';
 
 export default function RootLayout(): ReactNode {
   return (
-    <SafeAreaProvider>
-      <RepositoryProvider>
-        <I18nProvider>
-          <ThemeProvider>
-            <ConfirmProvider>
-              <LockGate>
-                <ThemedStack />
-              </LockGate>
-            </ConfirmProvider>
-          </ThemeProvider>
-        </I18nProvider>
-      </RepositoryProvider>
-    </SafeAreaProvider>
+    <MotionProviders>
+      <SafeAreaProvider>
+        <RepositoryProvider>
+          <I18nProvider>
+            <ThemeProvider>
+              <ConfirmProvider>
+                <LockGate>
+                  <ThemedStack />
+                </LockGate>
+              </ConfirmProvider>
+            </ThemeProvider>
+          </I18nProvider>
+        </RepositoryProvider>
+      </SafeAreaProvider>
+    </MotionProviders>
   );
 }
 

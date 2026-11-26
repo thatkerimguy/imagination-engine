@@ -1,133 +1,93 @@
-// Document Doctor repairs. Every repair first copies the damaged raw value to
-// `quarantine/<key>` (never overwriting an earlier quarantine), then fixes links safely.
+// Document Doctor repairs, all through `DatabasePort`. A damaged settings row is first copied to
+// `quarantine/<key>` (never overwriting an earlier quarantine; backups skip those keys).
+import type { NovelRepository } from '../store/repository.ts';
+import { CUSTOM_FONTS_KEY } from './doctor-settings.ts';
 import { scanWorkspace } from './doctor-scan.ts';
-import {
-  QUARANTINE,
-  isRecord,
-  parseEntry,
-  type Issue,
-  type RawKV,
-  type ScanOptions,
-} from './doctor-types.ts';
+import { isRecord, QUARANTINE, type Issue, type ScanOptions } from './doctor-types.ts';
 
-export interface RepairContext {
-  now: () => number;
-  /** Keys already quarantined during this repair run. */
-  quarantined: Set<string>;
-}
+const settingKeyOf = (issueKey: string): string => issueKey.slice('setting/'.length);
 
-const newContext = (opts: ScanOptions): RepairContext => ({
-  now: opts.now ?? Date.now,
-  quarantined: new Set(),
-});
-
-/** Copies the raw value to `quarantine/<key>` (suffixed with a timestamp if taken). */
-export async function quarantineKey(kv: RawKV, key: string, ctx: RepairContext): Promise<void> {
-  if (ctx.quarantined.has(key)) return;
-  const raw = await kv.getRaw(key);
-  if (raw === null) return;
-  const ts = ctx.now();
-  let target = `${QUARANTINE}${key}`;
-  if ((await kv.getRaw(target)) !== null) target = `${target}#${ts}`;
-  await kv.set(target, JSON.stringify({ data: { key, quarantinedAt: ts, raw }, updatedAt: ts }));
-  ctx.quarantined.add(key);
-}
-
-/** Edits the `data` of a stored envelope in place (keeping `updatedAt`). */
-async function mutate(
-  kv: RawKV,
+/** Copies the raw settings value to `quarantine/<key>` (suffixed with a timestamp if taken). */
+export async function quarantineSetting(
+  repo: NovelRepository,
   key: string,
-  edit: (data: Record<string, unknown>) => void,
+  now: number,
 ): Promise<void> {
-  const raw = await kv.getRaw(key);
+  const raw = await repo.db.getSetting(key);
   if (raw === null) return;
-  const e = parseEntry(key, raw);
-  if (e.corrupt || !isRecord(e.data)) return;
-  const envelope = JSON.parse(raw) as { data: Record<string, unknown> };
-  edit(envelope.data);
-  await kv.set(key, JSON.stringify(envelope));
+  let target = `${QUARANTINE}${key}`;
+  if ((await repo.db.getSetting(target)) !== null) target = `${target}#${now}`;
+  await repo.db.setSetting(
+    target,
+    JSON.stringify({ data: { key, quarantinedAt: now, raw }, updatedAt: now }),
+  );
 }
 
-const listOf = (data: Record<string, unknown>, field: string): string[] =>
-  Array.isArray(data[field])
-    ? (data[field] as unknown[]).filter((x): x is string => typeof x === 'string')
-    : [];
-
-/** The key of the list an orphan season / chapter should be re-attached to. */
-function parentOf(key: string): { key: string; field: string } | null {
-  const [kind, a, b] = key.split('/');
-  if (kind === 'season' && a) return { key: `novel/${a}`, field: 'seasons' };
-  if (kind === 'chapter' && a && b) return { key: `season/${a}/${b}`, field: 'chapters' };
-  return null;
+async function clearUri(repo: NovelRepository, issue: Issue): Promise<boolean> {
+  const { db } = repo;
+  if (issue.key.startsWith('media/')) {
+    await db.deleteMediaAssets([issue.key.slice('media/'.length)]);
+    return true;
+  }
+  if (issue.key.startsWith('node/')) {
+    const node = await db.getNode(issue.key.slice('node/'.length));
+    if (node) await db.putNodes([{ node: { ...node, coverAssetId: null } }]);
+    return true;
+  }
+  const key = settingKeyOf(issue.key);
+  const raw = key === CUSTOM_FONTS_KEY ? await db.getSetting(key) : null;
+  if (raw === null) return false;
+  const env = JSON.parse(raw) as { data: unknown };
+  if (!Array.isArray(env.data)) return false;
+  env.data = env.data.filter((f) => !(isRecord(f) && f.id === issue.ref));
+  await db.setSetting(key, JSON.stringify(env));
+  return true;
 }
 
-export async function repairIssue(
-  kv: RawKV,
-  issue: Issue,
-  opts: ScanOptions = {},
-  ctx: RepairContext = newContext(opts),
-): Promise<boolean> {
-  const { key, ref } = issue;
+async function apply(repo: NovelRepository, issue: Issue, now: number): Promise<boolean> {
   switch (issue.repair) {
-    case 'quarantine-remove':
-    case 'remove-sidecar':
-      await quarantineKey(kv, key, ctx);
-      await kv.remove(key);
+    case 'rebuild-index':
+      await repo.db.rebuildSearchIndex();
       return true;
-    case 'drop-link':
-      await quarantineKey(kv, key, ctx);
-      await mutate(kv, key, (d) => {
-        const field = key.startsWith('novel/') ? 'seasons' : 'chapters';
-        d[field] = listOf(d, field).filter((id) => id !== ref);
-      });
-      return true;
-    case 'attach': {
-      const parent = parentOf(key);
-      if (!parent || !ref) return false;
-      await quarantineKey(kv, parent.key, ctx);
-      await mutate(kv, parent.key, (d) => {
-        const list = listOf(d, parent.field);
-        if (!list.includes(ref)) d[parent.field] = [...list, ref];
-      });
+    case 'remove-orphans': {
+      const t = await repo.db.exportTables();
+      const ids = new Set(t.nodes.map((n) => n.id));
+      await repo.db.deleteGrowthLogs(
+        t.growthLogs.filter((g) => !ids.has(g.nodeId)).map((g) => g.id),
+      );
       return true;
     }
-    case 'move-root':
-      await quarantineKey(kv, key, ctx);
-      await mutate(kv, key, (d) => {
-        d.parentFolderId = null;
-      });
+    case 'quarantine-remove':
+    case 'remove-sidecar': {
+      const key = settingKeyOf(issue.key);
+      await quarantineSetting(repo, key, now);
+      await repo.db.deleteSetting(key);
       return true;
+    }
     case 'clear-uri':
-      await quarantineKey(kv, key, ctx);
-      if (key === 'prefs/custom-fonts') {
-        const raw = await kv.getRaw(key);
-        const env = raw ? (JSON.parse(raw) as { data: unknown }) : null;
-        if (env && Array.isArray(env.data)) {
-          env.data = env.data.filter((f) => !(isRecord(f) && f.id === ref));
-          await kv.set(key, JSON.stringify(env));
-        }
-      } else {
-        await mutate(kv, key, (d) => {
-          delete d.coverUri;
-        });
-      }
-      return true;
+      return clearUri(repo, issue);
     default:
       return false;
   }
 }
 
-/**
- * Repairs everything repairable, rescanning between passes (fixing one link can reveal the next,
- * e.g. a removed chapter leaving a dangling list entry). Returns how many repairs ran.
- */
-export async function repairAll(kv: RawKV, opts: ScanOptions = {}): Promise<number> {
-  const ctx = newContext(opts);
+export async function repairIssue(
+  repo: NovelRepository,
+  issue: Issue,
+  opts: ScanOptions = {},
+): Promise<boolean> {
+  const ok = await apply(repo, issue, (opts.now ?? Date.now)());
+  if (ok) repo.notifyChanged();
+  return ok;
+}
+
+/** Repairs everything repairable, rescanning between passes. Returns how many repairs ran. */
+export async function repairAll(repo: NovelRepository, opts: ScanOptions = {}): Promise<number> {
   let count = 0;
-  for (let pass = 0; pass < 6; pass++) {
-    const todo = (await scanWorkspace(kv, opts)).filter((i) => i.repair);
+  for (let pass = 0; pass < 4; pass++) {
+    const todo = (await scanWorkspace(repo, opts)).filter((i) => i.repair);
     if (todo.length === 0) break;
-    for (const issue of todo) if (await repairIssue(kv, issue, opts, ctx)) count++;
+    for (const issue of todo) if (await repairIssue(repo, issue, opts)) count++;
   }
   return count;
 }

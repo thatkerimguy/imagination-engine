@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { View } from 'react-native';
 import {
   formatReport,
-  kvFromAdapter,
   repairAll,
   repairIssue,
   scanWorkspaceFull,
@@ -19,7 +18,6 @@ import { buildRedactedDiagnosticReport } from '../diagnostics/redact-report.ts';
 import { deliverText } from '../export/deliver.ts';
 import { fileExists } from '../diagnostics/file-exists.ts';
 import { shareText } from '../security/share-text.ts';
-import { createDefaultAdapter } from '../storage/adapter';
 import { useRepository } from '../store/context.tsx';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
@@ -30,7 +28,6 @@ import { Txt } from '../ui/Txt.tsx';
 export default function DoctorScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
-  const kv = useMemo(() => kvFromAdapter(createDefaultAdapter()), []);
   const opts = useMemo<ScanOptions>(() => ({ fileExists }), []);
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,38 +35,34 @@ export default function DoctorScreen(): ReactNode {
   const scan = useCallback(async () => {
     setBusy(true);
     try {
-      setReport(await scanWorkspaceFull(kv, opts));
+      setReport(await scanWorkspaceFull(repo, opts));
     } finally {
       setBusy(false);
     }
-  }, [kv, opts]);
+  }, [repo, opts]);
   useEffect(() => {
     void scan();
   }, [scan]);
 
   const repairOne = async (issue: Issue): Promise<void> => {
-    await repairIssue(kv, issue, opts);
-    repo.clearCache();
-    repo.notifyChanged();
+    await repairIssue(repo, issue, opts);
     await scan();
   };
   const fixAll = async (): Promise<void> => {
     const ok = await confirm({
       title: 'Repair all',
       message:
-        'Damaged data is copied to a quarantine area first, then links are fixed. Nothing is deleted without a backup copy.',
+        'Damaged data is copied to a quarantine area first, then fixed. Nothing is deleted without a backup copy.',
       confirmLabel: 'Repair all',
     });
     if (!ok) return;
-    await repairAll(kv, opts);
-    repo.clearCache();
-    repo.notifyChanged();
+    await repairAll(repo, opts);
     await scan();
   };
 
   const exportReport = async (): Promise<void> => {
     if (!report) return;
-    const input = await collectDiagnosticInput(repo, kv, report.issues, report.scanned);
+    const input = await collectDiagnosticInput(repo, report.issues, report.scanned);
     const name = `kinetic-diagnostics-${new Date(input.now).toISOString().slice(0, 10)}.txt`;
     await deliverText(name, buildRedactedDiagnosticReport(input), 'text/plain').catch(
       () => undefined,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { NovelRepository } from '../store/repository.ts';
 import { DEFAULT_SETTINGS, loadSettings, previewUrl, saveSettings } from './app-settings.ts';
 
@@ -29,7 +29,7 @@ describe('previewUrl', () => {
 
 describe('settings storage', () => {
   it('loadSettings returns defaults, then stored values', async () => {
-    const repo = new NovelRepository(createMemoryAdapter());
+    const repo = new NovelRepository(createMemoryDatabase());
     expect(await loadSettings(repo)).toEqual(DEFAULT_SETTINGS);
     await saveSettings(repo, { readerUrl: 'https://r.test/' });
     expect(await loadSettings(repo)).toEqual({ ...DEFAULT_SETTINGS, readerUrl: 'https://r.test/' });
@@ -38,14 +38,14 @@ describe('settings storage', () => {
 
 describe('language setting', () => {
   it('defaults to system and persists a valid choice', async () => {
-    const repo = new NovelRepository(createMemoryAdapter());
+    const repo = new NovelRepository(createMemoryDatabase());
     expect((await loadSettings(repo)).language).toBe('system');
     await saveSettings(repo, { language: 'es' });
     expect((await loadSettings(repo)).language).toBe('es');
   });
 
   it('rejects an unknown stored language', async () => {
-    const repo = new NovelRepository(createMemoryAdapter());
+    const repo = new NovelRepository(createMemoryDatabase());
     await saveSettings(repo, { language: 'xx' as never });
     expect((await loadSettings(repo)).language).toBe('system');
   });

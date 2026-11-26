@@ -1,4 +1,5 @@
 // Shared fixtures for the writer QA packs (block ids, rich prose, a synthetic Growth history).
+import { enableQa, initSetting } from './writer-v2.mjs';
 export const ID = {
   dialogue: '01M7WD7TG4T9804M170B4T81MM',
   chat: '01M7WD7TG3C1Z266E87HFD27KR',
@@ -32,9 +33,7 @@ export const GROWTH_SEED = (() => {
  * DIRECTIVE-06: keeps the first-run Welcome tour out of every regression gate (each Playwright
  * context is a fresh workspace). The Dir-06 pass shoots the tour in its own clean context.
  */
-export const skipOnboarding = (target) =>
-  target.addInitScript(() => {
-    const key = 'kn-writer:setting/onboarding';
-    if (!localStorage.getItem(key))
-      localStorage.setItem(key, JSON.stringify({ data: { dismissedAt: 1 }, updatedAt: 1 }));
-  });
+export async function skipOnboarding(target) {
+  await enableQa(target);
+  await initSetting(target, 'setting/onboarding', { dismissedAt: 1 });
+}

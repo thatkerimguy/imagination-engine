@@ -13,8 +13,9 @@ import { handleRequest } from '../../../publish-api/src/worker.ts';
 import { createMemoryStore, type ObjectStore } from '../../../publish-api/src/store.ts';
 import { packWorkspace } from '../backup/archive.ts';
 import { unzipFiles } from '../export/zip.ts';
-import { createMemoryAdapter } from '../storage/memory.ts';
+import { createMemoryDatabase } from '../db/memory-driver.ts';
 import { updateItemMeta } from '../store/item-meta.ts';
+import { chapterNode } from '../store/node-mapping.ts';
 import { NovelRepository } from '../store/repository.ts';
 import {
   inspectNovelForPublish,
@@ -35,13 +36,17 @@ import {
 const API = 'https://api.example.test';
 const config = { apiUrl: API, readerUrl: 'https://read.example.test' };
 
+/** A chapter row written raw (repo.saveChapter would sanitize first, defeating the tests). */
+const rawRow = (c: ChapterDocument, novelId: string, i: number) =>
+  chapterNode(c, novelId, null, i, '2026-01-01T00:00:00.000Z');
+
 const serverFetch =
   (store: ObjectStore, token = 'T'): FetchLike =>
   (url, init) =>
     handleRequest(new Request(url, init), { store, token });
 
 async function seed() {
-  const adapter = createMemoryAdapter();
+  const adapter = createMemoryDatabase();
   const repo = new NovelRepository(adapter, () => 5);
   const novel = await repo.createNovel({ title: 'Tide', author: 'Me', sectionLabel: 'Season' });
   const season = (await repo.listSeasons(novel.id))[0]!;
@@ -75,12 +80,8 @@ async function seed() {
     make('unl-two', 'unlisted', 'Hidden'),
     make('drf-three', 'draft', 'Wip'),
   ];
-  // Write raw (repo.saveChapter would sanitize first, defeating the test).
-  for (const c of chapters) await repo.docs.write(`chapter/${novel.id}/${season.id}/${c.id}`, c);
-  await repo.docs.write(`season/${novel.id}/${season.id}`, {
-    ...season,
-    chapters: chapters.map((c) => c.id),
-  });
+  await adapter.deleteNodes([base.id]);
+  await adapter.putNodes(chapters.map((c, i) => rawRow(c, novel.id, i)));
   return { adapter, repo, novelId: novel.id, seasonId: season.id };
 }
 
@@ -102,17 +103,15 @@ describe('inspectNovelForPublish', () => {
   });
 
   it('warns when everything is a draft or nothing is published', async () => {
-    const { repo, novelId } = await seed();
+    const { adapter, repo, novelId } = await seed();
     const all = await repo.exportNovel(novelId);
     const s = all.seasons[0]!;
-    for (const c of s.chapters) {
-      await repo.docs.write(`chapter/${novelId}/${s.season.id}/${c.id}`, { ...c, status: 'draft' });
-    }
+    await adapter.putNodes(s.chapters.map((c, i) => rawRow({ ...c, status: 'draft' }, novelId, i)));
     expect((await inspectNovelForPublish(repo, novelId)).warnings[0]).toMatch(
       /All chapters are drafts/,
     );
     const unl = s.chapters[1]!;
-    await repo.docs.write(`chapter/${novelId}/${s.season.id}/${unl.id}`, unl);
+    await adapter.putNodes([rawRow(unl, novelId, 1)]);
     expect((await inspectNovelForPublish(repo, novelId)).warnings[0]).toMatch(
       /No published chapters/,
     );
@@ -216,11 +215,12 @@ describe('settings and links', () => {
     const { adapter, repo } = await seed();
     await savePublishConfig(repo, { apiUrl: ` ${API}/ `, readerUrl: '' });
     await savePublishToken(repo, ' secret-token ');
-    expect(await adapter.get('setting/publish-secret')).not.toBeNull();
-    const files = await unzipFiles(await packWorkspace(adapter));
-    const names = Object.keys(files);
-    expect(names.some((n) => n.includes('setting/publish-secret'))).toBe(false);
-    expect(names.some((n) => n.endsWith('kv/setting/publish'))).toBe(true);
+    expect(await adapter.getSetting('setting/publish-secret')).not.toBeNull();
+    const files = await unzipFiles(await packWorkspace(repo));
+    const settings = new TextDecoder().decode(files['tables/settings.json']);
+    expect(settings).not.toContain('setting/publish-secret');
+    expect(settings).not.toContain('secret-token');
+    expect(settings).toContain('"setting/publish"');
   });
 
   it('normalizes URLs', async () => {

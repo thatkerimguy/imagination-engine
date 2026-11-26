@@ -6,6 +6,7 @@ import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FolioNavRail } from '../components/FolioNavRail.tsx';
 import { FolioTabBar } from '../components/FolioTabBar.tsx';
+import { useCrashReporting } from '../observability/reporter.ts';
 import { LockGate } from '../security/LockGate.tsx';
 import { RepositoryProvider } from '../store/context.tsx';
 import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
@@ -47,6 +48,7 @@ export default function RootLayout(): ReactNode {
 function ThemedStack(): ReactNode {
   const { dark, colors } = useTheme();
   useNavigationBarStyle(!dark);
+  useCrashReporting();
   const rail = usesRail(useLayoutClass());
   const reduced = useReduceMotion();
   // The Stack keeps the same tree position in every layout class, so folding, unfolding or
@@ -91,6 +93,7 @@ function ThemedStack(): ReactNode {
           <Stack.Screen name="compile-folder" options={{ title: 'Book compiler' }} />
           <Stack.Screen name="doctor" options={{ title: 'Document Doctor' }} />
           <Stack.Screen name="trash" options={{ title: 'Trash' }} />
+          <Stack.Screen name="help" options={{ title: 'Help & Legal' }} />
           <Stack.Screen name="lock" options={{ title: 'Master Lock' }} />
           <Stack.Screen name="open" options={{ title: '' }} />
         </Stack>

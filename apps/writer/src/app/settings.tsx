@@ -22,6 +22,7 @@ import { Field } from '../ui/Field.tsx';
 import { ListRow, Page, SectionLabel } from '../ui/Page.tsx';
 import { BackupSection } from '../backup/BackupSection.tsx';
 import { PublishSettingsCard } from '../publish/PublishSettingsCard.tsx';
+import { applyCrashReporting } from '../observability/reporter.ts';
 import { routes } from '../routes.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
@@ -40,12 +41,14 @@ export default function AppSettingsScreen(): ReactNode {
   const [readerUrl, setReaderUrl] = useState(DEFAULT_SETTINGS.readerUrl);
   const [mode, setMode] = useState<PreviewMode>(DEFAULT_SETTINGS.previewMode);
   const [backup, setBackup] = useState<BackupSettings | null>(null);
+  const [crashOn, setCrashOn] = useState(false);
   useEffect(() => {
     let live = true;
     void Promise.all([loadSettings(repo), loadBackupSettings(repo)]).then(([s, b]) => {
       if (!live) return;
       setMode(s.previewMode);
       setReaderUrl(s.readerUrl);
+      setCrashOn(s.crashReportingEnabled);
       setBackup(b);
     });
     return () => {
@@ -59,6 +62,10 @@ export default function AppSettingsScreen(): ReactNode {
   const toggleHaptics = (on: boolean): void => {
     setHapticsEnabled(on);
     updatePrefs({ hapticsEnabled: on });
+  };
+  const toggleCrash = (on: boolean): void => {
+    setCrashOn(on);
+    void saveSettings(repo, { crashReportingEnabled: on }).then(() => applyCrashReporting(on));
   };
   const valid = mode === 'offline' || previewUrl(readerUrl) !== null;
   const save = async (): Promise<void> => {
@@ -165,7 +172,6 @@ export default function AppSettingsScreen(): ReactNode {
           icon="lock"
           title="Master Lock"
           subtitle="PIN, biometric unlock and recovery code"
-          last
           testID="open-lock"
           onPress={() => router.push(routes.lock)}
         />
@@ -173,9 +179,30 @@ export default function AppSettingsScreen(): ReactNode {
           icon="activity"
           title="Document Doctor"
           subtitle="Scan for damaged or orphaned entries"
-          last
           testID="open-doctor"
           onPress={() => router.push(routes.doctor)}
+        />
+        <ListRow
+          icon="shield"
+          title="Anonymous crash reports"
+          subtitle="Off by default. Sends crash stack traces only—never your writing, titles, or notes."
+          testID="settings-crash-row"
+          trailing={
+            <Toggle
+              value={crashOn}
+              onValueChange={toggleCrash}
+              accessibilityLabel="Anonymous crash reports"
+              testID="settings-crash-reports"
+            />
+          }
+        />
+        <ListRow
+          icon="help-circle"
+          title="Help & Legal"
+          subtitle="Gimmick guide, shortcuts, backups, licenses and privacy"
+          last
+          testID="open-help"
+          onPress={() => router.push(routes.help)}
         />
       </CardGroup>
       <SectionLabel>Demo</SectionLabel>

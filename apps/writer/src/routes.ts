@@ -15,6 +15,8 @@ export const routes = {
     `/folders/note/${docId}${folderId ? `?${q({ folder: folderId })}` : ''}`,
   search: '/search',
   doctor: '/doctor',
+  /** Offline Help & Legal center (Settings → Privacy & integrity). */
+  help: '/help',
   /** 30-day Trash (Settings → Backup & Restore). */
   trash: '/trash',
   lock: '/lock',
@@ -84,7 +86,8 @@ export function parentHref(
     const [n, s, c] = [one('novel'), one('season'), one('chapter')];
     return n && s && c ? routes.chapter(n, s, c) : routes.shelf;
   }
-  if (['appearance', 'doctor', 'lock', 'trash'].includes(parts[0] ?? '')) return routes.appSettings;
+  if (['appearance', 'doctor', 'help', 'lock', 'trash'].includes(parts[0] ?? ''))
+    return routes.appSettings;
   if (parts[0] === 'search') return null;
   if (parts[0] === 'folders') {
     if (parts.length === 1) return null;

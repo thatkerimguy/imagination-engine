@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { shareJson } from '../export/share-json';
 import { RecentStrip } from '../components/RecentStrip.tsx';
 import { NovelCard } from './NovelCard.tsx';
+import { OnboardingLauncher } from '../onboarding/OnboardingLauncher.tsx';
 import { routes } from '../routes.ts';
 import { DEMO_NOVEL_ID, loadDemoNovel } from '../store/demo.ts';
 import { useRepoQuery, useRepository } from '../store/context.tsx';
@@ -67,6 +68,7 @@ export function LibraryView(): ReactNode {
   const empty = novels?.length === 0;
   return (
     <Page wide>
+      <OnboardingLauncher novelIds={novels ? novels.map((n) => n.id) : null} />
       <ScreenOptions
         options={{
           title: '',

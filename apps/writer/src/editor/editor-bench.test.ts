@@ -1,8 +1,10 @@
-// Deterministic perf gate: a 100-block (~4,500 word) chapter must analyse, parse and index fast.
-import type { Block } from '@kn/core';
+// Deterministic perf gates: a 100-block (~4,500 word) chapter must analyse, parse and index fast,
+// and a 10,000-word chapter keystroke (edit + live metrics) must fit well inside one frame.
+import type { Block, ChapterDocument } from '@kn/core';
 import { describe, expect, it } from 'vitest';
 import { analyzeDocument } from '../analysis/realtime.ts';
 import { buildSearchIndex } from '../search/search-index.ts';
+import { replaceBlock } from '../store/chapter-ops.ts';
 import { inlineRuns } from './inline-markup.ts';
 
 const BUDGET_MS = 50;
@@ -71,5 +73,53 @@ describe('editor bench: 100 blocks / ~4,500 words', () => {
       meta: new Map(),
     };
     expect(time(() => buildSearchIndex(src))).toBeLessThan(BUDGET_MS);
+  });
+});
+
+// DIRECTIVE-06 D3: a 10,000-word / 250-block chapter. One keystroke = replace one block + the
+// live-metrics recompute (per-block stats cache: only the edited block is re-tokenised).
+const FRAME_MS = 16;
+
+function longChapter(): ChapterDocument {
+  let w = 0;
+  const sentence = (n: number): string => {
+    const out: string[] = [];
+    for (let i = 0; i < n; i++) out.push(WORDS[w++ % WORDS.length] ?? 'the');
+    return `${out.join(' ')}.`;
+  };
+  const blocks: Block[] = [];
+  for (let i = 0; i < 250; i++) {
+    const text = `${sentence(20)} ${sentence(12)} ${sentence(8)}`; // 40 words
+    blocks.push(
+      i % 5 === 4
+        ? { id: `l${i}`, kind: 'dialogue', speaker: 'Mara', text }
+        : { id: `l${i}`, kind: 'prose', text },
+    );
+  }
+  return { id: 'long', title: 'Long', blocks } as unknown as ChapterDocument;
+}
+
+describe('editor bench: 250 blocks / 10,000 words', () => {
+  const doc = longChapter();
+
+  it('has the expected size', () => {
+    expect(doc.blocks).toHaveLength(250);
+    expect(analyzeDocument(doc.blocks).words).toBeGreaterThanOrEqual(10_000);
+  });
+
+  it(`single-block edit + live metrics update < ${FRAME_MS} ms`, () => {
+    let current = doc;
+    let typed = 0;
+    const keystroke = (): number => {
+      const target = current.blocks[125] as Extract<Block, { kind: 'prose' }>;
+      current = replaceBlock(current, { ...target, text: `${target.text} k${typed++}` });
+      return analyzeDocument(current.blocks).words;
+    };
+    const ms = time(keystroke);
+    expect(ms).toBeLessThan(FRAME_MS);
+    // Incremental counts stay exact: the same as a cold analysis of fresh block objects.
+    const cold = analyzeDocument(current.blocks.map((b) => ({ ...b })));
+    expect(analyzeDocument(current.blocks)).toEqual(cold);
+    console.info(`[bench] 10k-word keystroke: ${ms.toFixed(2)} ms`);
   });
 });

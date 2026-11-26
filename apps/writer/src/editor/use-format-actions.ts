@@ -144,6 +144,12 @@ export function useFormatActions(p: FormatActionsInput) {
     align: style.align ?? p.defaultAlign,
     textSelected: isText(block),
     onSelectionChange,
+    selection,
+    /** Moves the caret of `blockId` (e.g. after an `@mention` insert). */
+    forceSelection: (blockId: string, sel: Selection): void => {
+      setSelection({ blockId, sel });
+      setForced({ blockId, sel });
+    },
     forcedSelection: (blockId: string): Selection | undefined =>
       forced?.blockId === blockId ? forced.sel : undefined,
     colorFor,

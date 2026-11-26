@@ -6,3 +6,8 @@ packages:
 # Short node_modules/.pnpm folder names: Android native builds (CMake/ninja) on Windows fail on
 # source paths over 260 characters, and React Native codegen nests deep folders under them.
 virtualStoreDirMaxLength: 30
+
+# @sentry/cli's postinstall only downloads the source-map upload binary. Local and CI builds
+# never upload source maps unless SENTRY_AUTH_TOKEN is set, so the download is skipped.
+allowBuilds:
+  '@sentry/cli': false

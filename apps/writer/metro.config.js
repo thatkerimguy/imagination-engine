@@ -6,7 +6,12 @@ const { getDefaultConfig } = require('expo/metro-config');
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, '../..');
 
-const config = getDefaultConfig(projectRoot);
+// Sentry debug-id serializer only for launch CI builds that upload source maps (see
+// plugins/with-sentry-optional.js); local builds keep Expo's stock serializer.
+const { shouldUploadSourceMaps } = require('./plugins/with-sentry-optional');
+const config = shouldUploadSourceMaps()
+  ? require('@sentry/react-native/metro').getSentryExpoConfig(projectRoot)
+  : getDefaultConfig(projectRoot);
 
 config.watchFolders = [workspaceRoot];
 config.resolver.nodeModulesPaths = [

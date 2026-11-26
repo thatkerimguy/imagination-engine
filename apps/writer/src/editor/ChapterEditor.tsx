@@ -7,7 +7,6 @@ import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { handleBackPress } from '../ui/back-layers.ts';
-import { EmptyState } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { useWriterPrefs } from '../ui/theme.tsx';
 import { useBackIntercept } from '../ui/use-back-intercept.ts';
@@ -15,8 +14,9 @@ import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { useToolbarCollapse } from '../ui/use-toolbar-collapse.ts';
 import { useEditorTypography } from '../ui/typography.ts';
 import { FOCUS_BOTTOM_PAD, useStyles } from './chapter-editor-styles.ts';
-import { BlockView } from './BlockView.tsx';
+import { ChapterBlocks } from './ChapterBlocks.tsx';
 import { chapterMenu, ColorPopover, EditorTopBar } from './EditorChrome.tsx';
+import { EditorQol } from './EditorQol.tsx';
 import { EditorSheets, type EditorSheet } from './EditorSheets.tsx';
 import { FindReplaceBar } from './FindReplaceBar.tsx';
 import { FormattingToolbar } from './FormattingToolbar.tsx';
@@ -30,6 +30,7 @@ import { useFormatActions } from './use-format-actions.ts';
 import { useKeyboardDock } from './use-keyboard-dock.ts';
 import { useLiveMetrics } from './use-live-metrics.ts';
 import { useScrolledFlag } from './use-scrolled-flag.ts';
+import { useStoryBible } from './use-story-bible.ts';
 
 export interface ChapterEditorProps {
   chapter: ChapterDocument;
@@ -69,12 +70,16 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const cls = useLayoutClass();
   const [refOpen, setRefOpen] = useState(false);
+  const [reading, setReading] = useState(false);
+  const bible = useStoryBible(f, chapter.blocks, a.selectedId, draft.update);
   const pane = refOpen && cls === 'expanded';
   const metrics = useLiveMetrics(chapter.blocks);
   const dock = useKeyboardDock();
   const layers = [
     { open: f.colorFor !== null, close: f.closeColor },
     { open: findOpen, close: () => setFindOpen(false) },
+    { open: bible.visible, close: bible.close },
+    { open: reading, close: () => setReading(false) },
     { open: pane, close: () => setRefOpen(false) },
     { open: focusMode, close: () => setFocusMode(false) },
   ];
@@ -114,6 +119,8 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             focus: () => setFocusMode(true),
             exportJson: () => void shareJson(`${chapter.id}.json`, chapter),
             trash: p.onTrash,
+            readAloud: () => setReading(true),
+            storyBible: bible.open,
           })}
         />
       ) : null}
@@ -125,6 +132,15 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
           onToggleCollapsed={toggleRibbon}
           onOpenAnalysis={openAnalysis}
           onCustomize={openMetrics}
+        />
+      ) : null}
+      {chrome ? (
+        <EditorQol
+          blocks={chapter.blocks}
+          reading={reading}
+          onStopReading={() => setReading(false)}
+          onActiveBlock={(i) => chapter.blocks[i] && h.jump(chapter.blocks[i].id)}
+          bible={bible}
         />
       ) : null}
       {findOpen && chrome ? (
@@ -160,35 +176,17 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             >
               {chapter.title}
             </Txt>
-            {chapter.blocks.length === 0 ? (
-              <EmptyState
-                icon="edit-3"
-                title="A blank page"
-                body="Use the toolbar below to add prose, dialogue, a scene break or a gimmick."
-              />
-            ) : null}
-            {chapter.blocks.map((block) => (
-              <View key={block.id} onLayout={(e) => h.onLayout(block.id, e.nativeEvent.layout.y)}>
-                <BlockView
-                  block={block}
-                  selected={a.selectedId === block.id}
-                  autoFocus={a.focusId === block.id}
-                  moduleEnabled={
-                    block.kind !== 'module' || p.enabledModules.includes(block.moduleId)
-                  }
-                  blockStyle={draft.styles[block.id]}
-                  samsungSafeIme={prefs.samsungSafeIme}
-                  selection={f.forcedSelection(block.id)}
-                  onSelectionChange={f.onSelectionChange}
-                  onSelect={h.onSelect}
-                  onChange={h.onChange}
-                  onOpenGimmick={h.onOpenGimmick}
-                  onToggleBeat={h.onToggleBeat}
-                  onMove={h.onMove}
-                  onDelete={h.onDelete}
-                />
-              </View>
-            ))}
+            <ChapterBlocks
+              {...h}
+              blocks={chapter.blocks}
+              selectedId={a.selectedId}
+              focusId={a.focusId}
+              enabledModules={p.enabledModules}
+              styles={draft.styles}
+              samsungSafeIme={prefs.samsungSafeIme}
+              forcedSelection={f.forcedSelection}
+              onSelectionChange={f.onSelectionChange}
+            />
             <View style={s.footer}>
               {focusMode ? null : (
                 <ActionButton

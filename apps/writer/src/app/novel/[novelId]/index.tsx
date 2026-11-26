@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ItemMetaSheet } from '../../../components/ItemMetaSheet.tsx';
 import { pickAndImport } from '../../../import/pick-import.ts';
+import { TeaserSheet } from '../../../teaser/TeaserSheet.tsx';
 import { PublishSheet } from '../../../publish/PublishSheet.tsx';
 import { PopoverMenu } from '../../../ui/PopoverMenu.tsx';
 import { View } from 'react-native';
@@ -36,6 +37,7 @@ export default function OutlineScreen(): ReactNode {
   const [saved, setSaved] = useState<string | null>(null);
   const [metaOpen, setMetaOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [teaserOpen, setTeaserOpen] = useState(false);
   const confirm = useConfirm();
   const trash = async (title: string, target: TrashTarget): Promise<void> => {
     const ok = await confirm({
@@ -112,6 +114,12 @@ export default function OutlineScreen(): ReactNode {
                     icon: 'download',
                     onPress: () => void importChapter(),
                     testID: 'outline-import',
+                  },
+                  {
+                    label: 'Create 9:16 teaser',
+                    icon: 'smartphone',
+                    onPress: () => setTeaserOpen(true),
+                    testID: 'menu-create-teaser',
                   },
                   {
                     label: 'Tags & Color',
@@ -216,6 +224,7 @@ export default function OutlineScreen(): ReactNode {
           onClose={() => setMetaOpen(false)}
         />
       ) : null}
+      <TeaserSheet visible={teaserOpen} novelId={novelId} onClose={() => setTeaserOpen(false)} />
       <PublishSheet visible={publishOpen} novelId={novelId} onClose={() => setPublishOpen(false)} />
     </Page>
   );

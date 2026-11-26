@@ -40,6 +40,13 @@ export const TILES: readonly Tile[] = [
   },
   { format: 'md', label: 'Markdown', hint: '.md text', icon: 'hash', testID: 'export-md' },
   { format: 'html', label: 'HTML', hint: 'Standalone page', icon: 'code', testID: 'export-html' },
+  {
+    format: 'royalroad',
+    label: 'Royal Road',
+    hint: 'Royal Road HTML · Ready to paste',
+    icon: 'share-2',
+    testID: 'export-royalroad',
+  },
   { format: 'txt', label: 'TXT', hint: 'Plain text', icon: 'align-left', testID: 'export-txt' },
   {
     format: 'knbook',
@@ -62,40 +69,56 @@ export function ExportGrid(p: {
   /** Formats unavailable for this source (e.g. `.knbook` for a folder). */
   disabled?: readonly ExportFormat[];
   onExport(format: ExportFormat): void;
+  onCopyRoyalRoad?(): void;
 }): ReactNode {
   const { colors } = useTheme();
   return (
-    <View style={[styles.grid, { borderTopColor: colors.hairline }]}>
-      {TILES.map((t, i) => {
-        const off = p.busy !== null || p.disabled?.includes(t.format) === true;
-        return (
-          <Press
-            key={t.format}
-            accessibilityRole="button"
-            accessibilityLabel={`Export ${t.label}`}
-            accessibilityState={{ busy: p.busy === t.format, disabled: off }}
-            disabled={off}
-            onPress={() => p.onExport(t.format)}
-            testID={t.testID}
-            style={[
-              styles.tile,
-              { borderBottomColor: colors.hairline, borderRightColor: colors.hairline },
-              i % 2 === 0 ? styles.ruled : null,
-            ]}
-          >
-            <Glyph name={p.busy === t.format ? 'loader' : t.icon} size={20} color="ink" />
-            <View style={styles.text}>
-              <Txt variant="bodyStrong" numberOfLines={1}>
-                {t.label}
-              </Txt>
-              <Txt variant="caption" color="inkMuted" numberOfLines={1}>
-                {p.busy === t.format ? 'Preparing…' : t.hint}
-              </Txt>
-            </View>
-          </Press>
-        );
-      })}
-    </View>
+    <>
+      <View style={[styles.grid, { borderTopColor: colors.hairline }]}>
+        {TILES.map((t, i) => {
+          const off = p.busy !== null || p.disabled?.includes(t.format) === true;
+          return (
+            <Press
+              key={t.format}
+              accessibilityRole="button"
+              accessibilityLabel={`Export ${t.label}`}
+              accessibilityState={{ busy: p.busy === t.format, disabled: off }}
+              disabled={off}
+              onPress={() => p.onExport(t.format)}
+              testID={t.testID}
+              style={[
+                styles.tile,
+                { borderBottomColor: colors.hairline, borderRightColor: colors.hairline },
+                i % 2 === 0 ? styles.ruled : null,
+              ]}
+            >
+              <Glyph name={p.busy === t.format ? 'loader' : t.icon} size={20} color="ink" />
+              <View style={styles.text}>
+                <Txt variant="bodyStrong" numberOfLines={1}>
+                  {t.label}
+                </Txt>
+                <Txt variant="caption" color="inkMuted" numberOfLines={1}>
+                  {p.busy === t.format ? 'Preparing…' : t.hint}
+                </Txt>
+              </View>
+            </Press>
+          );
+        })}
+      </View>
+      {p.onCopyRoyalRoad ? (
+        <Press
+          accessibilityRole="button"
+          accessibilityLabel="Copy Royal Road HTML"
+          disabled={p.busy !== null}
+          onPress={p.onCopyRoyalRoad}
+          testID="export-royalroad-copy"
+          style={[styles.copy, { borderBottomColor: colors.hairline }]}
+        >
+          <Glyph name="copy" size={20} color="ink" />
+          <Txt variant="bodyStrong">Copy Royal Road HTML</Txt>
+        </Press>
+      ) : null}
+    </>
   );
 }
 
@@ -109,6 +132,14 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,
+    borderBottomWidth: 1,
+  },
+  copy: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.sm,
     borderBottomWidth: 1,
   },
   ruled: { borderRightWidth: 1 },

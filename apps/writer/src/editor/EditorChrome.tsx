@@ -123,7 +123,8 @@ type MenuAction =
   | 'exportJson'
   | 'trash'
   | 'readAloud'
-  | 'storyBible';
+  | 'storyBible'
+  | 'teaser';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'analysis', label: 'Text Analysis', icon: 'bar-chart-2', testID: 'menu-analysis' },
@@ -132,6 +133,12 @@ const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'outline', label: 'Outline', icon: 'list', testID: 'menu-outline' },
   { action: 'readAloud', label: 'Read aloud', icon: 'volume-2', testID: 'menu-read-aloud' },
   { action: 'storyBible', label: 'Story Bible', icon: 'book-open', testID: 'menu-story-bible' },
+  {
+    action: 'teaser',
+    label: 'Create 9:16 teaser',
+    icon: 'smartphone',
+    testID: 'menu-create-teaser',
+  },
   { action: 'versions', label: 'Version History', icon: 'clock', testID: 'menu-versions' },
   { action: 'focus', label: 'Focus Mode', icon: 'maximize', testID: 'menu-focus' },
   { action: 'layout', label: 'Appearance & Layout', icon: 'sliders', testID: 'menu-layout' },
@@ -148,7 +155,7 @@ const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
 ];
 
 /** Items only some editors offer (the Chapter Editor's Read aloud / Story Bible). */
-type OptionalAction = 'readAloud' | 'storyBible';
+type OptionalAction = 'readAloud' | 'storyBible' | 'teaser';
 type MenuHandlers = Record<Exclude<MenuAction, OptionalAction>, () => void> &
   Partial<Record<OptionalAction, () => void>>;
 

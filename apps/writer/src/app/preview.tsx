@@ -4,17 +4,19 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { OsReducedPill } from '../preview/OsReducedPill.tsx';
+import { PreviewStatusNote } from '../preview/PreviewStatusNote.tsx';
 import { PreviewBanner } from '../preview/PreviewBanner.tsx';
 import { PreviewFrame } from '../preview/PreviewFrame';
 import type { PreviewFrameHandle } from '../preview/frame-types.ts';
 import {
   a11yMessage,
   lifecycleMessage,
-  PREVIEW_TIERS,
+  recordMessage,
   type PreviewTier,
   type ReaderMessage,
 } from '../preview/protocol.ts';
+import { RecordWrap } from '../preview/RecordStage.tsx';
+import { TIER_SEGMENTS } from '../preview/tier-segments.ts';
 import { useForeground, useReduceMotion } from '../preview/use-host-signals.ts';
 import { useNativeShake } from '../preview/use-native-shake.ts';
 import { usePreviewPayload } from '../preview/use-preview-payload.ts';
@@ -23,26 +25,14 @@ import { saveSettings } from '../settings/app-settings.ts';
 import { routes } from '../routes.ts';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { EmptyState } from '../ui/Page.tsx';
-import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
+import { SegmentControl } from '../ui/SegmentControl.tsx';
 import { THEATER_BG, THEATER_THEME } from '../ui/theater.ts';
 import { useNavigationBarStyle } from '../ui/system-bars.ts';
 import { space } from '../ui/tokens.ts';
-import { Txt } from '../ui/Txt.tsx';
-import { makeStyles, ThemeOverride, useTheme } from '../ui/theme.tsx';
+import { makeStyles, ThemeOverride } from '../ui/theme.tsx';
 
 type Status = 'connecting' | 'live' | 'unreachable' | 'rejected';
 const READY_TIMEOUT_MS = 8000;
-const TIER_LABEL: Record<PreviewTier, string> = {
-  auto: 'Auto',
-  high: 'High',
-  lite: 'Lite',
-  reduced: 'Reduced',
-};
-const TIER_SEGMENTS: readonly SegmentOption<PreviewTier>[] = PREVIEW_TIERS.map((t) => ({
-  value: t,
-  label: TIER_LABEL[t],
-  testID: `preview-tier-${t}`,
-}));
 
 // Rendered under THEATER_THEME, so `t` is the fixed dark surround on Day themes too.
 const useStyles = makeStyles((t) => ({
@@ -54,8 +44,6 @@ const useStyles = makeStyles((t) => ({
     borderBottomWidth: 1,
     borderColor: t.colors.hairline,
   },
-  note: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
 }));
 
 /** The dark theater surround applies to the header, tier bar and status line alike. */
@@ -75,17 +63,21 @@ function PreviewBody(): ReactNode {
     season: string;
     chapter: string;
     block?: string;
+    /** `9x16`: Record Mode (RecordStage). */
+    record?: string;
   }>();
   const repo = useRepository();
   const { data, loading, reload } = usePreviewPayload(p.novel, p.season, p.chapter, p.block);
   const styles = useStyles();
-  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const frame = useRef<PreviewFrameHandle>(null);
   const [tier, setTier] = useState<PreviewTier>('auto');
   const [session, setSession] = useState(0);
   const [status, setStatus] = useState<Status>('connecting');
   const [detail, setDetail] = useState('');
+  const recording = p.record === '9x16';
+  const [chrome, setChrome] = useState(true);
+  const showChrome = !recording || chrome;
   const payload = data?.ok ? data.payload : null;
   const foreground = useForeground();
   const reducedMotion = useReduceMotion();
@@ -116,6 +108,7 @@ function PreviewBody(): ReactNode {
       // Also the replay path after a renderer crash remount (see PreviewFrame / recovery.ts).
       frame.current?.send(a11yMessage(reducedMotion));
       frame.current?.send(lifecycleMessage(foreground));
+      if (recording) frame.current?.send(recordMessage(true));
       send(tier);
     } else if (msg.type === 'kn-preview-position') position.current = msg.blockId;
     else if (msg.type === 'kn-preview-rendered') setStatus('live');
@@ -140,6 +133,7 @@ function PreviewBody(): ReactNode {
   const header = (
     <Stack.Screen
       options={{
+        headerShown: showChrome,
         headerStyle: { backgroundColor: THEATER_BG },
         headerRight: () => (
           <IconBtn
@@ -191,33 +185,24 @@ function PreviewBody(): ReactNode {
     // Edge-to-edge: keep the reader WebView above the gesture / 3-button navigation bar.
     <View style={[styles.screen, { paddingBottom: insets.bottom }]} testID="preview-screen">
       {header}
-      <View style={styles.toolbar}>
-        <SegmentControl<PreviewTier>
-          options={TIER_SEGMENTS}
-          value={tier}
-          onChange={pickTier}
-          accessibilityLabel="Quality tier"
-          testID="preview-tier"
-        />
-        <View style={styles.note}>
-          <View
-            style={[
-              styles.dot,
-              { backgroundColor: status === 'live' ? colors.success : colors.inkMuted },
-            ]}
+      <StatusBar style="light" hidden={!showChrome} />
+      {showChrome ? (
+        <View style={styles.toolbar}>
+          <SegmentControl<PreviewTier>
+            options={TIER_SEGMENTS}
+            value={tier}
+            onChange={pickTier}
+            accessibilityLabel="Quality tier"
+            testID="preview-tier"
           />
-          <Txt variant="caption" color="inkMuted" testID="preview-mode-note">
-            {status === 'live'
-              ? `Live · ${offline ? 'Built-in offline reader' : 'Custom reader'} · ${
-                  fromLiveDraft ? 'draft' : 'saved chapter'
-                }`
-              : status === 'connecting'
-                ? 'Connecting…'
-                : 'Not connected'}
-          </Txt>
-          {reducedMotion ? <OsReducedPill /> : null}
+          <PreviewStatusNote
+            status={status}
+            offline={offline}
+            fromLiveDraft={fromLiveDraft}
+            reducedMotion={reducedMotion}
+          />
         </View>
-      </View>
+      ) : null}
       {banner ? (
         <PreviewBanner
           title={banner.title}
@@ -229,16 +214,18 @@ function PreviewBody(): ReactNode {
         />
       ) : null}
       {html || url ? (
-        <PreviewFrame
-          key={`${session}:${html ? 'offline' : url}`}
-          ref={frame}
-          {...(html ? { html } : url ? { url } : {})}
-          onMessage={onMessage}
-          onLoadError={(d) => {
-            setDetail(d);
-            setStatus('unreachable');
-          }}
-        />
+        <RecordWrap recording={recording} chrome={chrome} onChrome={setChrome}>
+          <PreviewFrame
+            key={`${session}:${html ? 'offline' : url}`}
+            ref={frame}
+            {...(html ? { html } : url ? { url } : {})}
+            onMessage={onMessage}
+            onLoadError={(d) => {
+              setDetail(d);
+              setStatus('unreachable');
+            }}
+          />
+        </RecordWrap>
       ) : null}
     </View>
   );

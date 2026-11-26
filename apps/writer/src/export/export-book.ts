@@ -12,6 +12,7 @@ import { buildDocx, DOCX_MIME } from './docx.ts';
 import { buildEpub, EPUB_MIME, type EpubExtra } from './epub.ts';
 import { toHtml } from './html.ts';
 import { toMarkdown } from './markdown.ts';
+import { buildRoyalRoadHtml } from './royal-road.ts';
 import { exportPdf, printBook } from './pdf.ts';
 import { toTxt } from './txt.ts';
 import { isCoverSkip } from '../publish/cover-data.ts';
@@ -60,6 +61,8 @@ async function exportFile(
       return deliverText(filename, toMarkdown(book, opts), 'text/markdown');
     case 'html':
       return deliverText(filename, toHtml(book, opts), 'text/html');
+    case 'royalroad':
+      return deliverText(filename, buildRoyalRoadHtml(book, opts), 'text/html');
     case 'txt':
       return deliverText(filename, toTxt(book, opts), 'text/plain');
     default: {
@@ -76,7 +79,8 @@ export async function exportBook(
   opts: ExportOptions,
   ctx?: ExportContext,
 ): Promise<ExportOutcome> {
-  const filename = `${fileStem(book.title)}.${format === 'print' ? 'pdf' : format}`;
+  const ext = format === 'print' ? 'pdf' : format === 'royalroad' ? 'html' : format;
+  const filename = `${fileStem(book.title)}.${ext}`;
   if (format === 'print') {
     await printBook(book, opts);
     return { status: 'printed', filename };

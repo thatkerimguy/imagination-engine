@@ -1,14 +1,16 @@
 import type { NativeStackHeaderProps } from 'expo-router/native-stack';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FolioNavRail } from '../components/FolioNavRail.tsx';
 import { FolioTabBar } from '../components/FolioTabBar.tsx';
 import { useCrashReporting } from '../observability/reporter.ts';
 import { LockGate } from '../security/LockGate.tsx';
-import { RepositoryProvider } from '../store/context.tsx';
+import { I18nProvider, useI18n } from '../i18n/I18nProvider.tsx';
+import { recordActiveDayAsync } from '../settings/review-request';
+import { RepositoryProvider, useRepository } from '../store/context.tsx';
 import { ConfirmProvider } from '../ui/ConfirmDialog.tsx';
 import { ThemeProvider, useTheme } from '../ui/theme.tsx';
 import { THEATER_BG } from '../ui/theater.ts';
@@ -33,13 +35,15 @@ export default function RootLayout(): ReactNode {
   return (
     <SafeAreaProvider>
       <RepositoryProvider>
-        <ThemeProvider>
-          <ConfirmProvider>
-            <LockGate>
-              <ThemedStack />
-            </LockGate>
-          </ConfirmProvider>
-        </ThemeProvider>
+        <I18nProvider>
+          <ThemeProvider>
+            <ConfirmProvider>
+              <LockGate>
+                <ThemedStack />
+              </LockGate>
+            </ConfirmProvider>
+          </ThemeProvider>
+        </I18nProvider>
       </RepositoryProvider>
     </SafeAreaProvider>
   );
@@ -49,6 +53,11 @@ function ThemedStack(): ReactNode {
   const { dark, colors } = useTheme();
   useNavigationBarStyle(!dark);
   useCrashReporting();
+  const { t } = useI18n();
+  const repo = useRepository();
+  useEffect(() => {
+    void recordActiveDayAsync(repo);
+  }, [repo]);
   const rail = usesRail(useLayoutClass());
   const reduced = useReduceMotion();
   // The Stack keeps the same tree position in every layout class, so folding, unfolding or
@@ -66,9 +75,9 @@ function ThemedStack(): ReactNode {
           }}
         >
           {/* Root tab shell: tabs switch inside RootTabsPager, never by a stack push. */}
-          <Stack.Screen name="index" options={{ title: 'Library', animation: 'none' }} />
-          <Stack.Screen name="new-novel" options={{ title: 'New novel' }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="index" options={{ title: t('tab.library'), animation: 'none' }} />
+          <Stack.Screen name="new-novel" options={{ title: t('nav.newNovel') }} />
+          <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
           <Stack.Screen name="novel/[novelId]/index" options={{ title: '' }} />
           <Stack.Screen name="novel/[novelId]/settings" options={{ title: 'Novel settings' }} />
           <Stack.Screen
@@ -78,12 +87,12 @@ function ThemedStack(): ReactNode {
           <Stack.Screen
             name="preview"
             options={{
-              title: 'Preview',
+              title: t('nav.preview'),
               animation: reduced ? 'none' : 'fade',
               contentStyle: { backgroundColor: THEATER_BG },
             }}
           />
-          <Stack.Screen name="appearance" options={{ title: 'Appearance & fonts' }} />
+          <Stack.Screen name="appearance" options={{ title: t('nav.appearance') }} />
           <Stack.Screen name="growth" options={{ title: 'Growth' }} />
           <Stack.Screen name="folders/index" options={{ title: '', animation: 'none' }} />
           <Stack.Screen name="folders/[folderId]" options={{ title: '' }} />
@@ -92,8 +101,8 @@ function ThemedStack(): ReactNode {
           <Stack.Screen name="novel/[novelId]/compile" options={{ title: 'Book compiler' }} />
           <Stack.Screen name="compile-folder" options={{ title: 'Book compiler' }} />
           <Stack.Screen name="doctor" options={{ title: 'Document Doctor' }} />
-          <Stack.Screen name="trash" options={{ title: 'Trash' }} />
-          <Stack.Screen name="help" options={{ title: 'Help & Legal' }} />
+          <Stack.Screen name="trash" options={{ title: t('nav.trash') }} />
+          <Stack.Screen name="help" options={{ title: t('nav.help') }} />
           <Stack.Screen name="lock" options={{ title: 'Master Lock' }} />
           <Stack.Screen name="open" options={{ title: '' }} />
         </Stack>

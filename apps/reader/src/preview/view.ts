@@ -63,6 +63,7 @@ export function startPreview(v: ViewContext): void {
   addEventListener('message', (event: MessageEvent<unknown>) => {
     const control = parseHostControl(event.data);
     if (control?.type === 'lifecycle') return dispatchLifecycle(control.state === 'active');
+    if (control?.type === 'record') return setRecordMode(control.on);
     if (control?.type === 'a11y') {
       const changed = control.reducedMotion !== reducedMotion;
       reducedMotion = control.reducedMotion;
@@ -91,4 +92,21 @@ export function startPreview(v: ViewContext): void {
   });
 
   postToHost({ type: 'kn-preview-ready' });
+}
+
+const RECORD_CSS =
+  'html[data-record] .kn-bar{display:none}html[data-record]{scrollbar-width:none}' +
+  'html[data-record]::-webkit-scrollbar{display:none}';
+
+/** 9:16 Record Mode (writer `record=9x16`): no top bar, no scrollbar, just the chapter. */
+function setRecordMode(on: boolean): void {
+  const root = document.documentElement;
+  if (!on) {
+    delete root.dataset.record;
+    return;
+  }
+  root.dataset.record = '9x16';
+  if (!document.getElementById('kn-record-css')) {
+    document.head.append(h('style', { id: 'kn-record-css' }, RECORD_CSS));
+  }
 }

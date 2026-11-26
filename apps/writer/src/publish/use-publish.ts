@@ -1,4 +1,5 @@
 // State for the publish sheet: config, plan, status, and the publish / unpublish actions.
+import { maybeRequestReview } from '../settings/review-request';
 import { useCallback, useEffect, useState } from 'react';
 import { useRepository } from '../store/context.tsx';
 import {
@@ -92,6 +93,7 @@ export function usePublish(
         return false;
       }
       setPublished(result.plan.title);
+      void maybeRequestReview(repo, 'publish');
       await refresh();
       return true;
     } catch (e) {

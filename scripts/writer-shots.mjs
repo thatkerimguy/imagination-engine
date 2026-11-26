@@ -17,7 +17,7 @@ import { workspacePass } from './writer-shots-workspace.mjs';
 import { phase4aPass } from './writer-shots-4a.mjs';
 import { dir05Pass } from './writer-shots-dir05.mjs';
 import { dir06aPass } from './writer-shots-dir06a.mjs';
-import { dir06Pass } from './writer-shots-dir06.mjs';
+import { dir07Pass } from './writer-shots-dir07.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -218,11 +218,11 @@ try {
   // 2E's five shots are regression now; the pack root holds only the current (2F) four.
   await phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor });
   await phase2fPass(page, { WRITER, tid, shotsAt, ok, fail, editor });
-  // 04A / 05 / 06A packs are regression now; the pack root holds only the Directive 06 four.
+  // 04A / 05 / 06A / 06 packs are regression now; the pack root holds only the Directive 07 four.
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir05Pass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir06aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail });
-  await dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor });
+  await dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, editor });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

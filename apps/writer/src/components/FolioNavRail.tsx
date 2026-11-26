@@ -10,6 +10,7 @@ import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { Press } from '../ui/Press.tsx';
 import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { useTheme } from '../ui/theme.tsx';
 import { tabNavigate, useActiveTab } from './FolioTabBar.tsx';
 
@@ -19,6 +20,7 @@ export function FolioNavRail(): ReactNode {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useI18n();
   const active = useActiveTab(pathname);
   if (!active) return null;
   return (
@@ -50,7 +52,7 @@ export function FolioNavRail(): ReactNode {
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             aria-selected={on}
-            accessibilityLabel={tab.label}
+            accessibilityLabel={t(`tab.${tab.key}`)}
             wash={null}
             testID={`rail-${tab.key}`}
           >
@@ -58,7 +60,7 @@ export function FolioNavRail(): ReactNode {
               <Glyph name={tab.icon as GlyphName} size={22} color={tint} />
             </View>
             <Txt variant="meta" color={tint} style={[styles.label, on && styles.on]}>
-              {tab.label}
+              {t(`tab.${tab.key}`)}
             </Txt>
           </Press>
         );

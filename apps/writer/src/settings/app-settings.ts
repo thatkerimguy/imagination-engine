@@ -1,6 +1,7 @@
 // Device-level writer settings (not part of any novel).
 import type { NovelRepository } from '../store/repository.ts';
 import { keys } from '../store/documents.ts';
+import { LANGUAGE_SETTINGS, type LanguageSetting } from '../i18n/i18n.ts';
 
 export type Appearance = 'dark' | 'light' | 'system';
 export const APPEARANCES: readonly Appearance[] = ['dark', 'light', 'system'];
@@ -18,6 +19,8 @@ export interface AppSettings {
   readerUrl: string;
   /** Opt-in anonymous crash reports (stack traces only, scrubbed). Off by default. */
   crashReportingEnabled: boolean;
+  /** Writer interface language; 'system' follows the device. */
+  language: LanguageSetting;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -25,6 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   previewMode: 'offline',
   readerUrl: 'http://127.0.0.1:5173/',
   crashReportingEnabled: false,
+  language: 'system',
 };
 
 export async function loadSettings(repo: NovelRepository): Promise<AppSettings> {
@@ -34,6 +38,7 @@ export async function loadSettings(repo: NovelRepository): Promise<AppSettings> 
   if (!PREVIEW_MODES.includes(merged.previewMode))
     merged.previewMode = DEFAULT_SETTINGS.previewMode;
   merged.crashReportingEnabled = merged.crashReportingEnabled === true;
+  if (!LANGUAGE_SETTINGS.includes(merged.language)) merged.language = DEFAULT_SETTINGS.language;
   return merged;
 }
 

@@ -75,6 +75,9 @@ describe('parseHostControl', () => {
   it('rejects malformed control messages and chapter loads', () => {
     expect(parseHostControl({ type: 'lifecycle', state: 'paused' })).toBeNull();
     expect(parseHostControl({ type: 'a11y', reducedMotion: 'yes' })).toBeNull();
+    expect(parseHostControl({ type: 'record', on: true })).toEqual({ type: 'record', on: true });
+    expect(parseHostControl('{"type":"record","on":false}')).toEqual({ type: 'record', on: false });
+    expect(parseHostControl({ type: 'record', on: 'yes' })).toBeNull();
     expect(parseHostControl(load())).toBeNull();
     expect(parseHostControl('{nope')).toBeNull();
     expect(parseHostControl(null)).toBeNull();

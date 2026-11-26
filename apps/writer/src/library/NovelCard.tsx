@@ -8,6 +8,7 @@ import { PopoverMenu, type MenuItem } from '../ui/PopoverMenu.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { countLabel, relativeTime } from './relative-time.ts';
 
 export function NovelCard({
@@ -24,21 +25,22 @@ export function NovelCard({
   onDelete(): void;
 }): ReactNode {
   const { colors } = useTheme();
+  const { t, locale, formatNumber } = useI18n();
   const items: MenuItem[] = [
     {
-      label: 'Export JSON',
+      label: t('library.menu.export'),
       icon: 'share',
       onPress: onExport,
       testID: `novel-export-${novel.id}`,
     },
     {
-      label: 'Novel settings',
+      label: t('library.menu.settings'),
       icon: 'settings',
       onPress: onSettings,
       testID: `novel-settings-${novel.id}`,
     },
     {
-      label: 'Move to Trash',
+      label: t('library.menu.trash'),
       icon: 'trash-2',
       destructive: true,
       onPress: onDelete,
@@ -48,15 +50,15 @@ export function NovelCard({
   const meta = [
     countLabel(novel.seasonCount, novel.sectionLabel.toLowerCase()),
     countLabel(novel.chapterCount, 'chapter'),
-    `${novel.words.toLocaleString('en-US')} words`,
+    t('library.words', { n: formatNumber(novel.words) }),
   ].join(' · ');
-  const edited = `Edited ${relativeTime(novel.updatedAt)}`;
+  const edited = t('library.edited', { when: relativeTime(novel.updatedAt, Date.now(), locale) });
   return (
     <View style={[styles.row, { borderColor: colors.hairline }]}>
       <Press
         onPress={onOpen}
         accessibilityRole="button"
-        accessibilityLabel={`Open ${novel.title}`}
+        accessibilityLabel={t('library.openNovel', { title: novel.title })}
         testID={`novel-card-${novel.id}`}
         style={styles.body}
       >

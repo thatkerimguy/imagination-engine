@@ -13,6 +13,7 @@
 //  4. Auto Backup / device-transfer exclusions (DIRECTIVE-02): see android-backup-rules.js.
 //  5. Nav-bar icon appearance + hardware-keyboard shortcuts (DIRECTIVE-03): see android-input.js.
 //  6. Verified App Links, `autoVerify` intent filter (DIRECTIVE-04): see android-app-links.js.
+//  7. Home-screen writing widget, Master Lock-redacted (DIRECTIVE-07): see android-widget.js.
 const fs = require('fs');
 const path = require('path');
 const {
@@ -23,6 +24,7 @@ const {
 const withBackupRules = require('./android-backup-rules');
 const withAndroidInput = require('./android-input');
 const withAppLinks = require('./android-app-links');
+const withAndroidWidget = require('./android-widget');
 
 const MARK = '// kn-android-release';
 const DEBUG_ONLY = ['android.permission.SYSTEM_ALERT_WINDOW'];
@@ -102,9 +104,11 @@ function withReleaseOverlay(config) {
 }
 
 module.exports = function withAndroidRelease(config) {
-  return withAppLinks(
-    withAndroidInput(
-      withBackupRules(withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)))),
+  return withAndroidWidget(
+    withAppLinks(
+      withAndroidInput(
+        withBackupRules(withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)))),
+      ),
     ),
   );
 };

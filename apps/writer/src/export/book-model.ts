@@ -36,7 +36,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   gimmickMode: 'transcript',
 };
 
-export type ExportFormat = 'docx' | 'epub' | 'pdf' | 'md' | 'html' | 'txt' | 'knbook' | 'print';
+export type ExportFormat = 'docx' | 'epub' | 'pdf' | 'md' | 'html' | 'royalroad' | 'txt' | 'knbook' | 'print';
 
 /** A filesystem-safe file stem from a title. */
 export function fileStem(title: string): string {

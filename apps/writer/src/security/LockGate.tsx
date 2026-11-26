@@ -17,6 +17,7 @@ import { LockPrompt } from './LockPrompt.tsx';
 import { hideInRecentsSetting, PRIVACY_TAG, shouldBlockScreenCapture } from './screen-privacy.ts';
 import { useLockConfig } from './useLockConfig.ts';
 import { useScreenPrivacy } from './use-screen-privacy.ts';
+import { syncWidget } from '../widget/widget-sync.ts';
 
 const useMasterUnlocked = (): boolean =>
   useSyncExternalStore(unlockSession.subscribe, unlockSession.isMasterUnlocked);
@@ -26,6 +27,12 @@ export function LockGate({ children }: { children: ReactNode }): ReactNode {
   const { colors } = useTheme();
   const { config, reload } = useLockConfig();
   const unlocked = useMasterUnlocked();
+  const repo = useRepository();
+
+  // Home-screen widget: refresh on workspace open and on every lock change (redacts when locked).
+  useEffect(() => {
+    if (config !== undefined) void syncWidget(repo);
+  }, [config, repo]);
 
   useEffect(() => {
     if (config === null || config?.enabled === false) unlockSession.setMasterUnlocked(true);

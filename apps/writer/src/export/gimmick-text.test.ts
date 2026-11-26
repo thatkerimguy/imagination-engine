@@ -41,6 +41,15 @@ describe('gimmickLines for gimmick pack 1', () => {
     ).toBe(`${name} snaps shut.`);
   });
 
+  it('prints the LitRPG system box as a header line plus its status lines', () => {
+    expect(gimmickLines(block('litrpg-system-box'), 'transcript')).toEqual([
+      { text: '[SYSTEM NOTIFICATION] Class Evolution Unlocked' },
+      { text: 'STR +3' },
+      { text: 'Perception +2' },
+      { text: 'New Skill: Iron Nerves (Lv. 1)' },
+    ]);
+  });
+
   it('summaries are one bracketed line from the card; omit prints nothing', () => {
     for (const id of ['pt-gaslight-edit', 'gits-ghost-whisper', 'bl-lighter-flick']) {
       const [line, ...rest] = gimmickLines(block(id), 'summary');

@@ -89,11 +89,20 @@ function actionLine(props: Props, name: string): CueLine | null {
   return verb ? { text: `${name} ${verb}.`, italic: true } : null;
 }
 
+/** LitRPG system box: a header line, then each status line (its `lines` are not dialogue). */
+function systemBoxLines(props: Props): CueLine[] | null {
+  if (!Array.isArray(props.lines) || !isStr(props.title)) return null;
+  const head = [props.header, props.title].filter(isStr).join(' ');
+  return [{ text: head }, ...props.lines.filter(isStr).map((text) => ({ text: text.trim() }))];
+}
+
 /** The lines a module block contributes under `mode`. */
 export function gimmickLines(block: ModuleBlock, mode: GimmickMode): CueLine[] {
   if (mode === 'omit') return [];
   const { name, detail } = summary(block);
   if (mode === 'summary') return [{ text: `[${name}: ${detail}]` }];
+  const system = block.moduleId === 'litrpg-system-box' ? systemBoxLines(block.props) : null;
+  if (system) return system;
   const messages = messageLines(block.props, name);
   if (messages.length) return messages;
   const pair = pairLines(block.props);

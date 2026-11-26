@@ -1,6 +1,11 @@
 {
   "name": "kinetic-novel-platform",
   "private": true,
+  "enriched-markdown": {
+    "enableCodeHighlight": false,
+    "enableMath": false,
+    "enableVideo": false
+  },
   "type": "module",
   "packageManager": "pnpm@12.18.0",
   "engines": {

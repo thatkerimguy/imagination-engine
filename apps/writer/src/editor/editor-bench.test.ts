@@ -6,6 +6,7 @@ import { analyzeDocument } from '../analysis/realtime.ts';
 import { buildSearchIndex } from '../search/search-index.ts';
 import { replaceBlock } from '../store/chapter-ops.ts';
 import { inlineRuns } from './inline-markup.ts';
+import { applyRunEdit, blocksToSegments } from './prose-runs.ts';
 
 const BUDGET_MS = 50;
 const WORDS = (
@@ -121,5 +122,23 @@ describe('editor bench: 250 blocks / 10,000 words', () => {
     const cold = analyzeDocument(current.blocks.map((b) => ({ ...b })));
     expect(analyzeDocument(current.blocks)).toEqual(cold);
     console.info(`[bench] 10k-word keystroke: ${ms.toFixed(2)} ms`);
+  });
+});
+
+// OVERHAUL-02: one keystroke in a continuous prose run = rebuild that run's blocks + regroup the
+// whole 10,000-word chapter into segments (what UnifiedBlocks does per render).
+describe('unified editor bench: 10,000-word prose-run keystroke', () => {
+  const doc = longChapter();
+  it(`run edit + re-segmentation < ${FRAME_MS} ms`, () => {
+    const segs = blocksToSegments(doc.blocks, { includeCues: true });
+    const run = segs.find((s) => s.kind === 'prose-run' && s.blockIds.length > 1);
+    if (!run || run.kind !== 'prose-run') throw new Error('no run');
+    let n = 0;
+    const ms = time(() => {
+      const next = applyRunEdit(doc.blocks, run, `${run.markdown}${'x'.repeat(++n)}`);
+      return blocksToSegments(next, { includeCues: true }).length;
+    });
+    console.info(`[bench] unified run keystroke: ${ms.toFixed(3)} ms`);
+    expect(ms).toBeLessThan(FRAME_MS);
   });
 });

@@ -32,6 +32,7 @@ export default function ChapterEditorScreen(): ReactNode {
   const { colors } = useTheme();
   const draft = useChapterDraft(novelId, seasonId, chapterId);
   const novel = useRepoQuery(`novel:${novelId}`, (repo) => repo.getNovel(novelId));
+  const mode = useRepoQuery(`mode:${novelId}`, (repo) => repo.getWorkspaceMode(novelId));
   const { chapter, flush } = draft;
   const from = { novel: novelId, season: seasonId, chapter: chapterId };
 
@@ -81,6 +82,7 @@ export default function ChapterEditorScreen(): ReactNode {
           chapter={chapter}
           draft={draft}
           enabledModules={novel.data.enabledModules}
+          mode={mode.data ?? 'prose'}
           onBack={back}
           onPreview={(id) => void preview(id)}
           onGrowth={() => router.push(routes.growth(`chapter:${chapterId}`, from))}

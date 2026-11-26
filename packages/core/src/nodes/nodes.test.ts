@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   computeTodayWords,
   countWords,
+  extractAllNodeLinks,
   extractMentionTargets,
+  extractWikilinkTargets,
+  findWikilinks,
+  renderWikilinks,
   extractPlainText,
   isDescendant,
   NODE_KINDS,
@@ -124,5 +128,52 @@ describe('computeTodayWords', () => {
   it('ignores future days and nodes with nothing today', () => {
     const logs = [log('c1', '2026-11-25', 10), log('c1', '2026-11-27', 99)];
     expect(computeTodayWords(logs, '2026-11-26')).toBe(0);
+  });
+});
+
+describe('wikilinks + mentions (extractAllNodeLinks)', () => {
+  const nodes = [
+    { id: 'harbour', title: 'Harbour District' },
+    { id: 'harb', title: 'Harbour' },
+    { id: 'lantern', title: 'Lantern Room' },
+    { id: 'snake', title: 'Snake Eyes' },
+  ];
+  it('resolves [[Title]] case-insensitively to the exact title', () => {
+    expect(extractWikilinkTargets('Down to the [[harbour district]].', nodes)).toEqual(['harbour']);
+    expect(extractWikilinkTargets('[[Harbour Dist]] is not a title', nodes)).toEqual([]);
+  });
+  it('resolves [[Title|Alias]] by title and renders the alias', () => {
+    const text = 'Meet me on [[Harbour District|the quays]].';
+    expect(extractAllNodeLinks(text, nodes)).toEqual([
+      { targetId: 'harbour', relation: 'reference' },
+    ]);
+    expect(findWikilinks(text)).toEqual([
+      { title: 'Harbour District', alias: 'the quays', start: 11, end: 41 },
+    ]);
+    expect(renderWikilinks(text)).toBe('Meet me on the quays.');
+    expect(renderWikilinks('[[Lantern Room]] and [[ ]]')).toBe('Lantern Room and [[ ]]');
+  });
+  it('resolves @Title mentions, longest match wins', () => {
+    const found = extractAllNodeLinks('Up in the @Lantern Room, near @Harbour District', nodes);
+    expect(found.filter((l) => l.targetId === 'harb')).toEqual([]);
+    expect(found).toHaveLength(2);
+    expect(found).toEqual(
+      expect.arrayContaining([
+        { targetId: 'lantern', relation: 'mention' },
+        { targetId: 'harbour', relation: 'mention' },
+      ]),
+    );
+  });
+  it('mixes both forms, dedupes targets and ignores emails', () => {
+    const text =
+      '[[Snake Eyes]] at @harbour district, mail me@harbour.com, again [[snake eyes]] @Snake Eyes';
+    expect(extractAllNodeLinks(text, nodes)).toEqual([
+      { targetId: 'snake', relation: 'reference' },
+      { targetId: 'harbour', relation: 'mention' },
+    ]);
+    expect(extractAllNodeLinks('write to a@Harbour.org', nodes)).toEqual([]);
+  });
+  it('never reads a wikilink body as a mention', () => {
+    expect(extractAllNodeLinks('[[@Harbour]]', nodes)).toEqual([]);
   });
 });

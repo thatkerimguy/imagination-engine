@@ -1,7 +1,8 @@
 // Shared write helpers for the node repository: sibling positions, @mention links, and the
 // chapter write (row + body + links) with its day-0 growth baseline for brand-new chapters.
 import {
-  extractMentionTargets,
+  extractAllNodeLinks,
+  type Block,
   type ChapterDocument,
   type NodeLinkRecord,
   type NodeRecord,
@@ -9,11 +10,13 @@ import {
 import type { DatabasePort, NodeWrite } from '../db/port.ts';
 import { countsOf } from './growth-logger.ts';
 import { recordBaseline } from './growth-store.ts';
-import { chapterNode } from './node-mapping.ts';
+import { chapterNode, plainTextOf } from './node-mapping.ts';
 import type { NovelRepository } from './repository.ts';
 
 /** Story-bible kinds an `@Title` mention can point at. */
 export const MENTION_KINDS = ['note', 'character', 'location', 'lore'] as const;
+/** Everything an `@Title` or `[[Title]]` link resolves against (chapters too). */
+export const LINK_TARGET_KINDS = [...MENTION_KINDS, 'chapter'] as const;
 
 /** One past the highest sibling position (trashed siblings included, so restores never clash). */
 export async function nextPosition(db: DatabasePort, parentId: string | null): Promise<number> {
@@ -21,7 +24,10 @@ export async function nextPosition(db: DatabasePort, parentId: string | null): P
   return siblings.reduce((max, n) => Math.max(max, n.position + 1), 0);
 }
 
-/** Outgoing `mention` links for `@Title` references in `plain` to active story-bible nodes. */
+/**
+ * Outgoing links in `plain`: `[[Title]]` / `[[Title|Alias]]` (`reference`) and `@Title`
+ * (`mention`) to active story-bible nodes and chapters. Trashed nodes never resolve.
+ */
 export async function mentionLinks(
   db: DatabasePort,
   sourceId: string,
@@ -29,14 +35,14 @@ export async function mentionLinks(
   now: string,
   extra: readonly Pick<NodeRecord, 'id' | 'title'>[] = [],
 ): Promise<NodeLinkRecord[]> {
-  if (!plain.includes('@')) return [];
-  const candidates = [...(await db.listNodes({ kinds: MENTION_KINDS })), ...extra].filter(
+  if (!plain.includes('@') && !plain.includes('[[')) return [];
+  const candidates = [...(await db.listNodes({ kinds: LINK_TARGET_KINDS })), ...extra].filter(
     (n) => n.id !== sourceId,
   );
-  return extractMentionTargets(plain, candidates).map((targetId) => ({
+  return extractAllNodeLinks(plain, candidates).map(({ targetId, relation }) => ({
     sourceId,
     targetId,
-    relation: 'mention',
+    relation,
     createdAt: now,
   }));
 }
@@ -51,6 +57,8 @@ export async function chapterWrite(
   repo: NovelRepository,
   novelId: string,
   chapter: ChapterDocument,
+  /** Writer source blocks to read links from (stored text has wikilinks rendered away). */
+  linkBlocks?: readonly Block[],
 ): Promise<PendingWrite> {
   const existing = await repo.db.getNode(chapter.id);
   if (existing && existing.kind !== 'chapter')
@@ -59,7 +67,12 @@ export async function chapterWrite(
   const position = sameParent ? existing.position : await nextPosition(repo.db, chapter.seasonId);
   const now = repo.nowIso();
   const { node, body } = chapterNode(chapter, novelId, existing, position, now);
-  const links = await mentionLinks(repo.db, node.id, body.plainText, now);
+  const links = await mentionLinks(
+    repo.db,
+    node.id,
+    linkBlocks ? plainTextOf(linkBlocks) : body.plainText,
+    now,
+  );
   return {
     entry: { node, body, links },
     afterCommit: async () => {

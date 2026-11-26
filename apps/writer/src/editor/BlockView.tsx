@@ -47,7 +47,8 @@ function Body(p: BlockViewProps): ReactNode {
       return (
         <ProseBlockEditor
           block={block}
-          autoFocus={p.autoFocus}
+          // Single tap: the tap that selects a block also focuses its input.
+          autoFocus={p.autoFocus || p.selected}
           {...rich}
           onChange={p.onChange}
           onSelect={select}
@@ -57,7 +58,8 @@ function Body(p: BlockViewProps): ReactNode {
       return (
         <DialogueBlockEditor
           block={block}
-          autoFocus={p.autoFocus}
+          // Single tap: the tap that selects a block also focuses its input.
+          autoFocus={p.autoFocus || p.selected}
           {...rich}
           onChange={p.onChange}
           onSelect={select}

@@ -1,32 +1,42 @@
-// Story bible: `@Note title` mentions in the chapter editor. Pure helpers (no react-native).
+// Story bible: `@Title` mentions and `[[Title]]` wikilinks in the chapter editor. Pure helpers (no react-native).
 import type { Block } from '@kn/core';
+import type { StoryKind } from '../notes/kind-meta.ts';
 import { stripInlineMarkup } from './inline-markup.ts';
 
 export interface MentionNote {
   id: string;
   title: string;
   folderPath?: string;
+  kind?: StoryKind;
 }
 
 export interface ActiveMention {
+  /** `@` for an `@query`, `[[` for an unfinished `[[query` wikilink. */
+  trigger: '@' | '[[';
   query: string;
   start: number;
   end: number;
 }
 
+const QUERY = /^[\p{L}\p{N}_'’-]*(?: [\p{L}\p{N}_'’-]+)*$/u;
+
 /**
- * An `@query` token ending at `cursor`. The `@` must start the text or follow whitespace or an
- * opening bracket/quote (so `a@b.com` never triggers). The query is word characters plus single
- * inner spaces, so multi-word titles can be typed (`@Old Mill`); a double space ends it.
+ * An `@query` or unfinished `[[query` token ending at `cursor` (the nearer trigger wins). The `@`
+ * must start the text or follow whitespace or an opening bracket/quote (so `a@b.com` never
+ * triggers); `[[` triggers anywhere until a `]]` closes it. The query is word characters plus
+ * single inner spaces, so multi-word titles can be typed; a double space ends it.
  */
 export function activeMention(text: string, cursor: number): ActiveMention | null {
   const head = text.slice(0, cursor);
   const at = head.lastIndexOf('@');
-  if (at < 0) return null;
-  if (at > 0 && !/[\s([{"'“‘—-]/.test(head[at - 1]!)) return null;
-  const query = head.slice(at + 1);
-  if (!/^[\p{L}\p{N}_'’-]*(?: [\p{L}\p{N}_'’-]+)*$/u.test(query) || query.length > 40) return null;
-  return { query, start: at, end: cursor };
+  const wiki = head.lastIndexOf('[[');
+  const useWiki = wiki >= 0 && wiki + 1 >= at;
+  const start = useWiki ? wiki : at;
+  if (start < 0) return null;
+  if (!useWiki && start > 0 && !/[\s([{"'“‘—-]/.test(head[start - 1]!)) return null;
+  const query = head.slice(start + (useWiki ? 2 : 1));
+  if (!QUERY.test(query) || query.length > 40) return null;
+  return { trigger: useWiki ? '[[' : '@', query, start, end: cursor };
 }
 
 /** Case-insensitive title match; prefix matches first, then substring, each A-Z. */
@@ -83,14 +93,19 @@ export function extractMentions(blocks: readonly Block[], noteTitles: readonly s
   return found.sort((a, b) => a.at - b.at).map((f) => f.title);
 }
 
-/** Replaces the active `@token` with `@Title ` and returns the new text and cursor. */
+/**
+ * Replaces the active token with `[[Title]]` (wikilink trigger) or `@Title ` and returns the new
+ * text and cursor. A `]]` already after the caret is reused.
+ */
 export function insertMention(
   text: string,
   mention: ActiveMention,
   title: string,
 ): { text: string; cursor: number } {
-  const insert = `@${title} `;
-  const after = text.slice(mention.end).replace(/^ /, '');
+  const wiki = mention.trigger === '[[';
+  const insert = wiki ? `[[${title}]]` : `@${title} `;
+  const rest = text.slice(mention.end);
+  const after = wiki ? rest.replace(/^\]\]/, '') : rest.replace(/^ /, '');
   return {
     text: text.slice(0, mention.start) + insert + after,
     cursor: mention.start + insert.length,

@@ -38,11 +38,14 @@ export interface TeaserSheetProps {
   novelId?: string;
   /** The open chapter; the Outline omits it and the first quotable chapter is used. */
   chapter?: ChapterDocument;
+  /** Show the 9:16 Record Frame / gimmick controls (Interactive Studio). Default true. */
+  recordMode?: boolean;
   onClose(): void;
 }
 
 export function TeaserSheet(p: TeaserSheetProps): ReactNode {
   const { t } = useI18n();
+  const recordMode = p.recordMode ?? true;
   const { colors } = useTheme();
   const repo = useRepository();
   const { width } = useWindowDimensions();
@@ -76,7 +79,9 @@ export function TeaserSheet(p: TeaserSheetProps): ReactNode {
     accent: source?.accent ?? colors.accent,
     preset,
     showCover,
-    ...(chapter && gimmickBadge(chapter.blocks) ? { badge: gimmickBadge(chapter.blocks)! } : {}),
+    ...(recordMode && chapter && gimmickBadge(chapter.blocks)
+      ? { badge: gimmickBadge(chapter.blocks)! }
+      : {}),
     ...(source?.coverUri ? { coverUri: source.coverUri } : {}),
   };
   const options: readonly SegmentOption<TeaserPresetId>[] = TEASER_PRESETS.map((x) => ({
@@ -187,17 +192,21 @@ export function TeaserSheet(p: TeaserSheetProps): ReactNode {
           onPress={() => void doExport()}
           testID="teaser-export-png"
         />
-        <ActionButton
-          variant="secondary"
-          icon="video"
-          label={t('teaser.recordFrame')}
-          disabled={!chapter}
-          onPress={recordFrame}
-          testID="teaser-record-frame"
-        />
-        <Txt variant="meta" color="inkMuted">
-          {t('teaser.recordHint')}
-        </Txt>
+        {recordMode ? (
+          <>
+            <ActionButton
+              variant="secondary"
+              icon="video"
+              label={t('teaser.recordFrame')}
+              disabled={!chapter}
+              onPress={recordFrame}
+              testID="teaser-record-frame"
+            />
+            <Txt variant="meta" color="inkMuted">
+              {t('teaser.recordHint')}
+            </Txt>
+          </>
+        ) : null}
       </View>
     </Sheet>
   );

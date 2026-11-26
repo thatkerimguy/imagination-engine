@@ -12,6 +12,7 @@ import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { radius, space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
+import { KIND_META } from './kind-meta.ts';
 import type { NoteItem } from './use-notes-data.ts';
 
 export function itemMetaLine(item: NoteItem): string {
@@ -46,7 +47,7 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
       />
       <Press
         accessibilityRole="button"
-        accessibilityLabel={`${item.kind === 'folder' ? 'Folder' : 'Note'} ${item.title}`}
+        accessibilityLabel={`${item.kind === 'folder' ? 'Folder' : KIND_META[item.storyKind ?? 'note'].label} ${item.title}`}
         onPress={onOpen}
         style={styles.body}
         testID={`${prefix}-open-${item.id}`}
@@ -55,7 +56,7 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
           <CoverImage uri={meta.coverUri} style={styles.cover} />
         ) : (
           <Glyph
-            name={item.kind === 'folder' ? 'folder' : 'file-text'}
+            name={item.kind === 'folder' ? 'folder' : KIND_META[item.storyKind ?? 'note'].icon}
             size={18}
             color="inkMuted"
           />
@@ -67,6 +68,14 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
             </Txt>
             {meta?.pinned ? <Glyph name="bookmark" size={12} color="inkMuted" /> : null}
             {meta?.locked ? <Glyph name="lock" size={12} color="inkMuted" /> : null}
+            {item.storyKind && item.storyKind !== 'note' ? (
+              <View style={styles.pill} testID={`kind-pill-${item.id}`}>
+                <Glyph name={KIND_META[item.storyKind].icon} size={10} color="inkMuted" />
+                <Txt variant="caption" color="inkMuted">
+                  {KIND_META[item.storyKind].label}
+                </Txt>
+              </View>
+            ) : null}
           </View>
           <Txt variant="meta" color="inkMuted" numberOfLines={1}>
             {redacted ? 'Locked' : itemMetaLine(item)}
@@ -103,4 +112,5 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.xxs },
   title: { flexShrink: 1 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: space.xxs },
 });

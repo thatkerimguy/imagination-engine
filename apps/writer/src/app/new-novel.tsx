@@ -1,5 +1,5 @@
 // New novel form: title and author are required; the book starts with one season and chapter.
-import type { SectionLabel } from '@kn/core';
+import type { SectionLabel, WorkspaceMode } from '@kn/core';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { SECTION_LABELS } from '../library/section-labels.ts';
@@ -10,6 +10,7 @@ import { Field } from '../ui/Field.tsx';
 import { Page, SectionLabel as Label } from '../ui/Page.tsx';
 import { SegmentControl, type SegmentOption } from '../ui/SegmentControl.tsx';
 import { Txt } from '../ui/Txt.tsx';
+import { ModePicker } from '../workspace/ModePicker.tsx';
 
 const OPTIONS: readonly SegmentOption<SectionLabel>[] = SECTION_LABELS.map((l) => ({
   value: l,
@@ -22,12 +23,19 @@ export default function NewNovelScreen(): ReactNode {
   const [subtitle, setSubtitle] = useState('');
   const [author, setAuthor] = useState('');
   const [label, setLabel] = useState<SectionLabel>('Season');
+  const [mode, setMode] = useState<WorkspaceMode>('prose');
   const [error, setError] = useState<string | null>(null);
   const valid = title.trim().length > 0 && author.trim().length > 0;
 
   const create = async (): Promise<void> => {
     try {
-      const novel = await repo.createNovel({ title, subtitle, author, sectionLabel: label });
+      const novel = await repo.createNovel({
+        title,
+        subtitle,
+        author,
+        sectionLabel: label,
+        workspaceMode: mode,
+      });
       router.replace(routes.outline(novel.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create the novel.');
@@ -52,6 +60,8 @@ export default function NewNovelScreen(): ReactNode {
         accessibilityLabel="Section name"
         testID="section-label"
       />
+      <Label>Workspace</Label>
+      <ModePicker value={mode} onChange={setMode} testID="new-novel-mode" />
       {error ? (
         <Txt variant="body" color="danger">
           {error}

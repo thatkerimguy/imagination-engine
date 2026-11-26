@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useKeyboardDock } from '../editor/use-keyboard-dock.ts';
+import { useKeyboardLift } from './use-keyboard-lift.ts';
 import { IconBtn } from './IconBtn.tsx';
 import { Txt } from './Txt.tsx';
 import { radius, space, withAlpha } from './tokens.ts';
@@ -48,7 +48,7 @@ function SheetBody(p: SheetProps): ReactNode {
   const s = useStyles();
   // Edge-to-edge: pad above the gesture / 3-button nav bar, but not while the keyboard covers it.
   // Android lifts by whatever the (possibly non-resizing) window did not absorb; iOS uses padding.
-  const dock = useKeyboardDock();
+  const dock = useKeyboardLift();
   const lift = Platform.OS === 'android' ? dock.keyboardOffset : 0;
   const bottom = dock.keyboardOpen ? space.sm : Math.max(insets.bottom, space.sm);
   return (

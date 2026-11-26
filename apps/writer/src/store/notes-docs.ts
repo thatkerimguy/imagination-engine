@@ -1,6 +1,7 @@
-// Notes workspace documents (`note` nodes): source text with writer markup in `node_bodies`;
+// Notes workspace documents (`note`, `character`, `location` and `lore` nodes): source text with writer markup in `node_bodies`;
 // every save refreshes the search text and the note's @mention links.
 import type { NodeRecord } from '@kn/core';
+import type { StoryKind } from '../notes/kind-meta.ts';
 import { NotFoundError } from './errors.ts';
 import { newSlugId } from './ids.ts';
 import { plainTextOf } from './node-mapping.ts';
@@ -36,7 +37,7 @@ async function writeDoc(repo: NovelRepository, d: DocRecord, position: number, c
   const plainText = plainTextOf(d.blocks);
   const node: NodeRecord = {
     ...folderNode(d.id, d.parentFolderId, d.title, position, createdAt),
-    kind: 'note',
+    kind: d.kind,
     coverAssetId: prev?.coverAssetId ?? null,
     locked: prev?.locked ?? false,
     deletedAt: prev?.deletedAt ?? null,
@@ -59,13 +60,14 @@ async function writeDoc(repo: NovelRepository, d: DocRecord, position: number, c
 export async function createDoc(
   repo: NovelRepository,
   parentFolderId: string | null,
-  init: { title?: string; blocks?: NoteBlock[] } = {},
+  init: { title?: string; blocks?: NoteBlock[]; kind?: StoryKind } = {},
   now = Date.now(),
 ): Promise<DocRecord> {
   const blocks = init.blocks ?? [];
   const named = init.title?.trim() ?? '';
   const doc: DocRecord = {
     id: newSlugId(),
+    kind: init.kind ?? 'note',
     parentFolderId,
     title: named || fallbackTitle(blocks),
     ...(named ? {} : { autoTitle: true }),
@@ -97,6 +99,7 @@ export async function saveDoc(
     patch.parentFolderId !== undefined ? patch.parentFolderId : d.parentFolderId;
   const next: DocRecord = {
     id: d.id,
+    kind: d.kind,
     parentFolderId,
     createdAt: d.createdAt,
     blocks,

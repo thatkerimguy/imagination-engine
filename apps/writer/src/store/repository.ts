@@ -224,7 +224,7 @@ export class NovelRepository {
     const season = await this.kindNode(chapter.seasonId, 'season');
     if (!season || season.parentId !== novelId)
       throw new NotFoundError(`Season ${chapter.seasonId}`);
-    const write = await chapterWrite(this, novelId, chapter);
+    const write = await chapterWrite(this, novelId, chapter, draft.blocks);
     await this.db.putNodes([write.entry]);
     await write.afterCommit();
     this.changed();

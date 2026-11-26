@@ -169,6 +169,7 @@ export function NoteEditor(p: NoteEditorProps): ReactNode {
             placeholder={draft.autoTitle}
             accessibilityLabel={`Title: ${shownTitle}`}
             returnKeyType="done"
+            disableFullscreenUI
             testID="note-title"
           />
           {blocks.length === 0 ? (

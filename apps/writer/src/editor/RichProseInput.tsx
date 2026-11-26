@@ -87,6 +87,8 @@ export function RichProseInput(p: RichProseInputProps): ReactNode {
   return (
     <GrowingTextInput
       {...ime}
+      // Android landscape: keep typing in the live Folio layout, never the fullscreen extract box.
+      disableFullscreenUI
       minHeight={typo.lineHeight}
       autoFocus={p.autoFocus ?? true}
       value={p.text}

@@ -69,6 +69,16 @@ export function matchShortcut(input: KeyInput, mac: boolean): ShortcutAction | n
   return null;
 }
 
+/** A native "knShortcut" event as a KeyInput (`ctrl` defaults to true for older payloads). */
+export function nativeKeyInput(e: {
+  key?: unknown;
+  ctrl?: unknown;
+  shift?: unknown;
+}): KeyInput | null {
+  if (typeof e.key !== 'string') return null;
+  return { key: e.key, ctrl: e.ctrl !== false, meta: false, shift: e.shift === true, alt: false };
+}
+
 /** True for Apple desktop platform strings (MacIntel, macOS, ...); false for iPhone/undefined. */
 export function isMacPlatform(platform: string | undefined): boolean {
   return platform !== undefined && /^(mac|darwin)/i.test(platform.trim());

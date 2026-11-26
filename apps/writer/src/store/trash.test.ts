@@ -12,6 +12,7 @@ import { inspectNovelForPublish } from '../publish/publish-client.ts';
 import { loadSearchSources } from '../search/search-sources.ts';
 import { createMemoryAdapter } from '../storage/memory.ts';
 import { createDoc, createFolder, getDoc, listAllDocs, listChildren } from './folders.ts';
+import { recordGrowth } from './growth-store.ts';
 import { updateItemMeta } from './item-meta.ts';
 import { addChapter, addSeason } from './outline.ts';
 import { NovelRepository } from './repository.ts';
@@ -154,6 +155,35 @@ describe('30-day Trash', () => {
     expect((await scanWorkspace(kvFromAdapter(adapter))).map((i) => i.id)).toEqual([
       'orphan-sidecar:trash/ghost',
     ]);
+  });
+});
+
+describe('Gate 2 E4: Empty Trash leaves no sidecars', () => {
+  it('purges growth, versions and meta for a deleted note so Doctor reports 0 findings', async () => {
+    const { adapter, repo } = await setup();
+    const note = await createDoc(repo, null, { title: 'Scratch' });
+    await recordGrowth(
+      repo,
+      `doc:${note.id}`,
+      { chars: 5, words: 1, sentences: 1, paragraphs: 1 },
+      { force: true },
+    );
+    await updateItemMeta(repo, note.id, { tags: ['x'] });
+    await moveToTrash(repo, { kind: 'doc', id: note.id }, T0);
+    await emptyTrash(repo);
+    expect(await adapter.keys(`growth/doc:${note.id}`)).toEqual([]);
+    expect(await scanWorkspace(kvFromAdapter(adapter))).toEqual([]);
+  });
+
+  it('purges chapter and novel growth when a whole book is deleted forever', async () => {
+    const { adapter, repo, n, c1 } = await setup();
+    const counts = { chars: 5, words: 1, sentences: 1, paragraphs: 1 };
+    await recordGrowth(repo, `chapter:${c1}`, counts, { force: true });
+    await recordGrowth(repo, `novel:${n}`, counts, { force: true });
+    await moveToTrash(repo, { kind: 'novel', novelId: n }, T0);
+    await permanentlyDeleteItem(repo, n);
+    expect(await adapter.keys('growth/')).toEqual([]);
+    expect(await scanWorkspace(kvFromAdapter(adapter))).toEqual([]);
   });
 });
 

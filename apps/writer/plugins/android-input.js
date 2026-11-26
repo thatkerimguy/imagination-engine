@@ -4,7 +4,8 @@
 //     a light theme; no deprecated nav-bar colours) and `setShortcutCapture` (the Chapter Editor
 //     opts in to hardware-keyboard shortcuts while it is mounted).
 //  2. MainActivity.dispatchKeyEvent: Ctrl+<key> presses from a hardware keyboard are emitted to JS
-//     as "knShortcut" device events while capture is on (Meta stays with the system).
+//     as "knShortcut" device events while capture is on (Meta stays with the system). Plain
+//     Escape (KEYCODE_ESCAPE, DIRECTIVE-06) is forwarded too, with `ctrl: false`.
 //  3. MainActivity.onProvideKeyboardShortcuts (API 24+): Meta+/ lists the editor shortcuts in
 //     Android's Keyboard Shortcuts Helper.
 const fs = require('fs');
@@ -28,6 +29,8 @@ const HELPER_SHORTCUTS = [
 ];
 
 const CAPTURED = ['B', 'I', 'U', 'Z', 'Y', 'F', 'S', 'P'];
+/** The JS `KeyInput.key` emitted for a plain hardware Escape press. */
+const ESCAPE_KEY = 'Escape';
 
 const helperRows = HELPER_SHORTCUTS.map(
   (s) =>
@@ -65,13 +68,23 @@ ${CAPTURED.map((k) => `      KeyEvent.KEYCODE_${k} -> "${k.toLowerCase()}"`).joi
     /** True when the key press was handed to JS (and must not reach the focused view). */
     fun dispatch(event: KeyEvent): Boolean {
       if (!capture || event.action != KeyEvent.ACTION_DOWN || event.repeatCount != 0) return false
+      if (event.keyCode == KeyEvent.KEYCODE_ESCAPE) {
+        // Plain Escape closes the top panel (sheet -> popover -> Find), like web/iPad.
+        if (event.isCtrlPressed || event.isMetaPressed || event.isAltPressed || event.isShiftPressed) return false
+        return emit("${ESCAPE_KEY}", ctrl = false, shift = false)
+      }
       if (!event.isCtrlPressed || event.isMetaPressed || event.isAltPressed) return false
       val key = keyName(event.keyCode) ?: return false
+      return emit(key, ctrl = true, shift = event.isShiftPressed)
+    }
+
+    private fun emit(key: String, ctrl: Boolean, shift: Boolean): Boolean {
       val rc = ctxRef?.get() ?: return false
       if (!rc.hasActiveReactInstance()) return false
       val payload = Arguments.createMap().apply {
         putString("key", key)
-        putBoolean("shift", event.isShiftPressed)
+        putBoolean("ctrl", ctrl)
+        putBoolean("shift", shift)
       }
       rc.emitDeviceEvent("knShortcut", payload)
       return true
@@ -197,3 +210,5 @@ module.exports = function withAndroidInput(config) {
   return withInputSources(withInputPackage(withInputActivity(config)));
 };
 module.exports.HELPER_SHORTCUTS = HELPER_SHORTCUTS;
+module.exports.ESCAPE_KEY = ESCAPE_KEY;
+module.exports.moduleKt = moduleKt;

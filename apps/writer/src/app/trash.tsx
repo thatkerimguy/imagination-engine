@@ -83,7 +83,8 @@ export default function TrashScreen(): ReactNode {
             has ? (
               <ActionButton
                 compact
-                variant="ghost"
+                variant="danger"
+                icon="trash-2"
                 label="Empty trash"
                 disabled={busy}
                 onPress={() => void empty()}

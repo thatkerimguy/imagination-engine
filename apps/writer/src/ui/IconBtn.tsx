@@ -1,4 +1,4 @@
-// Folio icon button: 44dp box + hitSlop to a 48dp touch target, 20px Feather glyph, quiet tint on press, optional
+// Folio icon button: 44dp box + hitSlop to a 48dp touch target, 20px Feather glyph, circular clipped tint on press, optional
 // active accent state. No fills, no pills.
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
@@ -6,7 +6,8 @@ import { Glyph, type GlyphName } from './Glyph.tsx';
 import { hitSlopFor } from './a11y.ts';
 import { Press } from './Press.tsx';
 import type { InkRole } from './Txt.tsx';
-import { radius, TOUCH } from './tokens.ts';
+import { circleBox } from './press-shape.ts';
+import { TOUCH } from './tokens.ts';
 import { useTheme } from './theme.tsx';
 
 export interface IconBtnProps {
@@ -41,7 +42,7 @@ export function IconBtn(p: IconBtnProps): ReactNode {
       hitSlop={hitSlopFor(box)}
       style={[
         styles.base,
-        { width: box, height: box },
+        circleBox(box),
         p.active ? { backgroundColor: colors.surfaceTint } : null,
       ]}
     >
@@ -51,5 +52,5 @@ export function IconBtn(p: IconBtnProps): ReactNode {
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  base: { alignItems: 'center', justifyContent: 'center' },
 });

@@ -163,7 +163,7 @@ export function PublishSettingsCard(): ReactNode {
             {...urlProps}
           />
         </View>
-        {/* Inset on both sides so the wifi glyph and "Connected" sit 12px inside the highlight. */}
+        {/* Edge-to-edge pressable (clipped by the card); padding lives inside the highlighted surface. */}
         <Press
           accessibilityRole="button"
           accessibilityLabel="Test connection"
@@ -184,17 +184,18 @@ export function PublishSettingsCard(): ReactNode {
 
 const styles = StyleSheet.create({
   root: { gap: space.md },
-  fields: { gap: space.md, paddingVertical: space.sm },
+  fields: { gap: space.md, paddingVertical: space.sm, paddingHorizontal: space.md },
   tokenRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.xs },
   grow: { flex: 1 },
-  // Same 12px inset on both ends of the press highlight: wifi glyph left, status / chevron right.
+  // Full-bleed inside the clipped card; same inset on both ends: wifi glyph left, status / chevron right.
   testRow: {
     minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     paddingVertical: space.sm,
-    paddingHorizontal: space.sm,
+    paddingHorizontal: space.md,
+    overflow: 'hidden',
   },
   status: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.sm },
 });

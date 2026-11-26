@@ -20,7 +20,6 @@
       "allowBackup": false,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.VIBRATE"],
-      "predictiveBackGestureEnabled": true,
       "blockedPermissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",

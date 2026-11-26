@@ -1,17 +1,17 @@
 // Folio navigation rail (Medium / Expanded windows, >= 600 dp): the bottom tab bar's Library ·
 // Notes · Search destinations as a quiet vertical rail on the left, 80 dp wide with a hairline
-// edge, respecting the top / left / bottom insets. Same routing as FolioTabBar (tabNavigate).
+// edge, respecting the top / left / bottom insets. Same routing as FolioTabBar (tabNavigate → RootTabsPager).
 import { usePathname } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_ROOTS, tabForPath } from '../routes.ts';
+import { routes, TAB_ROOTS } from '../routes.ts';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
 import { Press } from '../ui/Press.tsx';
 import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { useTheme } from '../ui/theme.tsx';
-import { tabNavigate } from './FolioTabBar.tsx';
+import { tabNavigate, useActiveTab } from './FolioTabBar.tsx';
 
 export const NAV_RAIL_WIDTH = 80;
 
@@ -19,7 +19,7 @@ export function FolioNavRail(): ReactNode {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const active = tabForPath(pathname);
+  const active = useActiveTab(pathname);
   if (!active) return null;
   return (
     <View
@@ -45,10 +45,11 @@ export function FolioNavRail(): ReactNode {
             key={tab.key}
             style={styles.item}
             onPress={() =>
-              on && tab.key !== 'notes' ? undefined : tabNavigate(active, tab.key, tab.href)
+              on && pathname === routes.shelf ? undefined : tabNavigate(tab.key, pathname)
             }
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
+            aria-selected={on}
             accessibilityLabel={tab.label}
             wash={null}
             testID={`rail-${tab.key}`}

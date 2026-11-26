@@ -178,7 +178,7 @@ export function MatchPhoneThemeCard({ currentId }: { currentId: ThemeId }): Reac
         }
       />
       {on ? (
-        <View style={{ paddingVertical: space.sm }}>
+        <View style={{ paddingVertical: space.sm, paddingHorizontal: space.md }}>
           <SegmentControl<WriterPrefs['materialYouStyle']>
             options={STYLE_OPTIONS}
             value={p.materialYouStyle}

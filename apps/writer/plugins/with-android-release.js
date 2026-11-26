@@ -5,8 +5,11 @@
 //  2. SYSTEM_ALERT_WINDOW stays debug/dev-client only: dropped from the main manifest (the RN
 //     template keeps its own copy in src/debug) and removed again by a release overlay manifest,
 //     together with MANAGE_EXTERNAL_STORAGE / CAMERA / RECORD_AUDIO, whatever a library declares.
-//  3. Predictive back (Android 16): `android:enableOnBackInvokedCallback="true"`, mirroring
-//     `expo.android.predictiveBackGestureEnabled` so a template change cannot silently opt out.
+//  3. Back gesture (DIRECTIVE-06A, RN #58407): `android:enableOnBackInvokedCallback` is stripped
+//     entirely. "true" routes API 33-35 edge swipes through OnBackInvokedDispatcher while
+//     ReactActivity only registers its OnBackPressedCallback on SDK_INT >= 36, so the app
+//     finish()es on every back swipe. Omitted, API 33-35 keep legacy onBackPressed() and
+//     targetSdk 36 turns predictive back on natively for Android 16+.
 //  4. Auto Backup / device-transfer exclusions (DIRECTIVE-02): see android-backup-rules.js.
 //  5. Nav-bar icon appearance + hardware-keyboard shortcuts (DIRECTIVE-03): see android-input.js.
 //  6. Verified App Links, `autoVerify` intent filter (DIRECTIVE-04): see android-app-links.js.
@@ -71,9 +74,19 @@ function withReleaseManifestPolicy(config) {
     );
     const app = manifest.application && manifest.application[0];
     if (!app) throw new Error('with-android-release: <application> not found');
-    app.$['android:enableOnBackInvokedCallback'] = 'true';
+    stripBackInvokedCallback(manifest);
     return cfg;
   });
+}
+
+const BACK_ATTR = 'android:enableOnBackInvokedCallback';
+
+/** Removes the back-dispatch opt-in/out from <application> and every <activity> (mutates). */
+function stripBackInvokedCallback(manifest) {
+  const app = manifest.application && manifest.application[0];
+  const nodes = app ? [app, ...(app.activity || [])] : [];
+  for (const n of nodes) if (n.$) delete n.$['android:enableOnBackInvokedCallback'];
+  return manifest;
 }
 
 function withReleaseOverlay(config) {
@@ -96,3 +109,5 @@ module.exports = function withAndroidRelease(config) {
   );
 };
 module.exports.RELEASE_REMOVED = RELEASE_REMOVED;
+module.exports.stripBackInvokedCallback = stripBackInvokedCallback;
+module.exports.BACK_ATTR = BACK_ATTR;

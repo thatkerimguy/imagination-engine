@@ -2,7 +2,7 @@
 // focused with the app in the foreground, and the OS "Remove animations" / Reduce Motion state.
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, AppState } from 'react-native';
+import { AppState } from 'react-native';
 
 /** True only while this screen is focused AND the app is `active` (not background/inactive). */
 export function useForeground(): boolean {
@@ -24,19 +24,4 @@ export function useForeground(): boolean {
   return focused && active;
 }
 
-/** Android "Remove animations" / iOS Reduce Motion, kept current while mounted. */
-export function useReduceMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    let live = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((on) => live && setReduced(on))
-      .catch(() => undefined);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
-    return () => {
-      live = false;
-      sub.remove();
-    };
-  }, []);
-  return reduced;
-}
+export { useReduceMotion } from '../ui/use-reduce-motion.ts';

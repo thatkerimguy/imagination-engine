@@ -16,6 +16,7 @@ import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './wri
 import { workspacePass } from './writer-shots-workspace.mjs';
 import { phase4aPass } from './writer-shots-4a.mjs';
 import { dir05Pass } from './writer-shots-dir05.mjs';
+import { dir06aPass } from './writer-shots-dir06a.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -219,6 +220,8 @@ try {
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   // Directive 05: EPUB card + download, Backup & Restore, Trash (pack root).
   await dir05Pass(page, { WRITER, packAt, tid, ok, fail, editor });
+  // Directive 06A: clipped settings highlights + swipeable root tab pager (pack root).
+  await dir06aPass(page, { WRITER, packAt, tid, ok, fail });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

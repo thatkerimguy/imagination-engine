@@ -92,8 +92,11 @@ if ($WithAndroidStudio -and -not (Test-Path "$env:ProgramFiles\Android\Android S
   Write-Host 'Installing Android Studio via winget...'
   & winget install --id Google.AndroidStudio -e --silent --accept-source-agreements --accept-package-agreements
 }
-if (-not (Test-Path $SdkManager)) {
-  if (-not $InstallTools) { Fail "Android SDK command-line tools not found under $Sdk. Re-run with -InstallTools." }
+$missing = $SdkPackages | Where-Object { -not (Test-Path (Join-Path $Sdk ($_ -replace ';', '\'))) }
+# sdkmanager is only needed to install missing packages (Android Studio's cmdline-tools 19+ may
+# ship without sdkmanager.bat; a complete SDK must not be overwritten just to satisfy this check).
+if ($missing -and -not (Test-Path $SdkManager)) {
+  if (-not $InstallTools) { Fail "Missing SDK packages ($($missing -join ', ')) and no sdkmanager under $Sdk. Re-run with -InstallTools." }
   Write-Host "Installing Android command-line tools into $Sdk ..."
   $zip = Join-Path $env:TEMP 'android-cmdline-tools.zip'
   $tmp = Join-Path $env:TEMP 'android-cmdline-tools'

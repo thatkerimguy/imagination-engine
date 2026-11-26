@@ -8,7 +8,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
   Dimensions,
-  Easing,
   Keyboard,
   PanResponder,
   Platform,
@@ -45,11 +44,14 @@ const SEARCH = 2;
 /** Neighbouring tabs mount this long after the first idle, so the first swipe never hitches. */
 const WARM_MS = 1200;
 
-const PAGES: readonly (() => ReactNode)[] = [
-  () => <LibraryView />,
-  () => <NotesWorkspace folderId={null} />,
-  () => <SearchView />,
+// Created once: React reuses identical elements, so switching tabs never re-renders the pages.
+const PAGES: readonly ReactNode[] = [
+  <LibraryView key="library" />,
+  <NotesWorkspace key="notes" folderId={null} />,
+  <SearchView key="search" />,
 ];
+/** Stiff, critically damped spring: carries the release velocity, never overshoots. */
+const SPRING = { stiffness: 320, damping: 36, mass: 1, overshootClamping: true } as const;
 
 export function RootTabsPager(): ReactNode {
   const { colors } = useTheme();
@@ -65,15 +67,19 @@ export function RootTabsPager(): ReactNode {
   const mount = (...ids: number[]): void =>
     setMounted((m) => (ids.every((i) => m.has(i)) ? m : new Set([...m, ...ids])));
 
-  const settle = (target: number, instant: boolean): void => {
+  // The tab a running settle is heading for, so the index effect never restarts it.
+  const heading = useRef(index);
+  /** `velocity` in dp/ms (PanResponder's vx); 0 for taps. */
+  const settle = (target: number, instant: boolean, velocity = 0): void => {
     const toValue = -target * live.current.width;
+    heading.current = target;
     x.stopAnimation();
     if (instant) x.setValue(toValue);
     else
-      Animated.timing(x, {
+      Animated.spring(x, {
         toValue,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
+        velocity: velocity * 1000,
+        ...SPRING,
         useNativeDriver: NATIVE,
       }).start();
   };
@@ -85,7 +91,9 @@ export function RootTabsPager(): ReactNode {
     const left = prev.current.index;
     prev.current = { index, width };
     mount(index);
-    settle(index, resized || rail || reduced);
+    // A swipe release already started this settle (before the re-render); do not restart it.
+    if (resized || heading.current !== index || left === index)
+      settle(index, resized || rail || reduced);
     if (left === index) return;
     resetHeaderScrolled();
     if (left === SEARCH) Keyboard.dismiss();
@@ -130,8 +138,9 @@ export function RootTabsPager(): ReactNode {
         onPanResponderRelease: (_, g) => {
           const { index: i, width: w, reduced: r } = live.current;
           const target = snapTarget(i, g.dx, g.vx, w);
-          if (target === i) settle(i, r);
-          else setRootTab(target);
+          // Animate first, then commit: the spring is on the UI thread before React re-renders.
+          settle(target, r, g.vx);
+          if (target !== i) setRootTab(target);
         },
         onPanResponderTerminate: () => settle(live.current.index, live.current.reduced),
         onPanResponderTerminationRequest: () => false,
@@ -151,7 +160,7 @@ export function RootTabsPager(): ReactNode {
       <Animated.View
         style={[styles.row, { width: width * TAB_COUNT, transform: [{ translateX: x }] }]}
       >
-        {PAGES.map((render, i) => {
+        {PAGES.map((page, i) => {
           const active = i === index;
           return (
             <View
@@ -163,7 +172,7 @@ export function RootTabsPager(): ReactNode {
               testID={`root-page-${i}`}
             >
               <PageActiveContext.Provider value={active}>
-                {mounted.has(i) ? render() : null}
+                {mounted.has(i) ? page : null}
               </PageActiveContext.Provider>
             </View>
           );

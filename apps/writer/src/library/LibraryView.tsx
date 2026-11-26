@@ -19,10 +19,12 @@ import { gridColumns } from '../ui/layout-class.ts';
 import { useLayoutClass } from '../ui/use-layout-class.ts';
 import { EmptyState, Page } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { space } from '../ui/tokens.ts';
 
 export function LibraryView(): ReactNode {
   const repo = useRepository();
+  const { t } = useI18n();
   const confirm = useConfirm();
   const { data: novels, error } = useRepoQuery('shelf', (r) => r.listNovels());
   const columns = gridColumns(useLayoutClass());
@@ -30,9 +32,9 @@ export function LibraryView(): ReactNode {
   const remove = async (id: string, title: string): Promise<void> => {
     if (
       await confirm({
-        title: `Move “${title}” to Trash?`,
-        message: `Its seasons and chapters go with it. ${TRASH_HINT}`,
-        confirmLabel: 'Move to Trash',
+        title: t('library.trash.title', { title }),
+        message: t('library.trash.message', { hint: TRASH_HINT }),
+        confirmLabel: t('library.trash.confirm'),
       })
     )
       await moveToTrash(repo, { kind: 'novel', novelId: id });
@@ -44,9 +46,13 @@ export function LibraryView(): ReactNode {
     try {
       const filename = `${id}.json`;
       const result = await shareJson(filename, await repo.exportNovel(id));
-      if (result === 'saved') setNote({ text: `Saved ${filename}`, error: false });
+      if (result === 'saved')
+        setNote({ text: t('library.saved', { name: filename }), error: false });
     } catch (err) {
-      setNote({ text: err instanceof Error ? err.message : 'Export failed.', error: true });
+      setNote({
+        text: err instanceof Error ? err.message : t('library.exportFailed'),
+        error: true,
+      });
     }
   };
 
@@ -55,9 +61,9 @@ export function LibraryView(): ReactNode {
     if (
       exists &&
       !(await confirm({
-        title: 'Load demo',
-        message: 'Reset the demo to its original state?',
-        confirmLabel: 'Reset',
+        title: t('library.demo.title'),
+        message: t('library.demo.message'),
+        confirmLabel: t('common.reset'),
         destructive: true,
       }))
     )
@@ -76,13 +82,13 @@ export function LibraryView(): ReactNode {
             <View style={{ flexDirection: 'row' }}>
               <IconBtn
                 icon="plus"
-                accessibilityLabel="New novel"
+                accessibilityLabel={t('library.newNovel')}
                 onPress={() => router.push(routes.newNovel)}
                 testID="new-novel"
               />
               <IconBtn
                 icon="settings"
-                accessibilityLabel="Settings"
+                accessibilityLabel={t('nav.settings')}
                 onPress={() => router.push(routes.appSettings)}
                 testID="open-settings"
               />
@@ -91,7 +97,7 @@ export function LibraryView(): ReactNode {
         }}
       />
       <Txt variant="display" accessibilityRole="header" style={{ paddingTop: space.xs }}>
-        Library
+        {t('library.title')}
       </Txt>
       <RecentStrip />
       {note ? (
@@ -106,20 +112,23 @@ export function LibraryView(): ReactNode {
       ) : null}
       {error ? (
         <Txt variant="body" color="danger">
-          Could not load your books.
+          {t('library.loadError')}
         </Txt>
       ) : null}
       {empty ? (
         <EmptyState
           icon="book-open"
-          title="No novels yet"
-          body="Start a new one, or load the demo to look around."
+          title={t('library.empty.title')}
+          body={t('library.empty.body')}
           action={
             <View style={{ gap: space.xs, alignItems: 'center', paddingTop: space.sm }}>
-              <ActionButton label="Create a novel" onPress={() => router.push(routes.newNovel)} />
+              <ActionButton
+                label={t('library.create')}
+                onPress={() => router.push(routes.newNovel)}
+              />
               <ActionButton
                 variant="secondary"
-                label="Load Chrome Tide demo"
+                label={t('library.loadDemo')}
                 onPress={() => void loadDemo()}
                 testID="load-demo"
               />

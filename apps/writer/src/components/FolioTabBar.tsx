@@ -13,6 +13,7 @@ import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { usesRail } from '../ui/layout-class.ts';
 import { useLayoutClass } from '../ui/use-layout-class.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { useTheme } from '../ui/theme.tsx';
 import { setRootTab, tabIndexOf, tabKeyAt, useRootTab } from './root-tab.ts';
 
@@ -38,6 +39,7 @@ export function FolioTabBar(): ReactNode {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useI18n();
   const active = useActiveTab(pathname);
   const rail = usesRail(useLayoutClass());
   if (!active || rail) return null;
@@ -67,13 +69,13 @@ export function FolioTabBar(): ReactNode {
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             aria-selected={on}
-            accessibilityLabel={tab.label}
+            accessibilityLabel={t(`tab.${tab.key}`)}
             wash={null}
             testID={`tab-${tab.key}`}
           >
             <Glyph name={tab.icon as GlyphName} size={20} color={tint} />
             <Txt variant="meta" color={tint} style={[styles.label, on && styles.on]}>
-              {tab.label}
+              {t(`tab.${tab.key}`)}
             </Txt>
           </Press>
         );

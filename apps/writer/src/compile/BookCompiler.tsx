@@ -28,7 +28,8 @@ const GIMMICK_HINT: Record<GimmickMode, string> = {
 };
 
 export function BookCompiler({ source }: { source: CompileSource }): ReactNode {
-  const { state, toggleRow, moveRow, setOpt, changeCover, run } = useCompiler(source);
+  const { state, toggleRow, moveRow, setOpt, changeCover, run, copyRoyalRoad } =
+    useCompiler(source);
   if (state.loading) return null;
   if (state.missing) return <EmptyState icon="alert-circle" title="This item could not be found" />;
   const { opts } = state;
@@ -94,6 +95,7 @@ export function BookCompiler({ source }: { source: CompileSource }): ReactNode {
         busy={state.busy}
         disabled={source.kind === 'folder' ? ['knbook'] : []}
         onExport={(f) => void run(f)}
+        onCopyRoyalRoad={() => void copyRoyalRoad()}
       />
       {state.notice ? (
         <Txt

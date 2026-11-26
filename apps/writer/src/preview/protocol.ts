@@ -27,7 +27,16 @@ export interface PreviewA11yMessage {
   reducedMotion: boolean;
 }
 
-export type PreviewHostMessage = PreviewLoadMessage | PreviewLifecycleMessage | PreviewA11yMessage;
+/** 9:16 Record Mode: the reader hides its own top bar so only the chapter is captured. */
+export interface PreviewRecordMessage {
+  type: 'record';
+  on: boolean;
+}
+
+export type PreviewHostMessage =
+  PreviewLoadMessage | PreviewLifecycleMessage | PreviewA11yMessage | PreviewRecordMessage;
+
+export const recordMessage = (on: boolean): PreviewRecordMessage => ({ type: 'record', on });
 
 export const lifecycleMessage = (active: boolean): PreviewLifecycleMessage => ({
   type: 'lifecycle',

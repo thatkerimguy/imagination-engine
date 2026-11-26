@@ -1,4 +1,6 @@
 // State + actions behind the Book Compiler screen.
+import { maybeRequestReview } from '../settings/review-request';
+import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useState } from 'react';
 import {
   DEFAULT_EXPORT_OPTIONS,
@@ -6,6 +8,7 @@ import {
   type ExportOptions,
 } from '../export/book-model.ts';
 import { compileFolder, compileNovel, exportBook } from '../export/compile-book.ts';
+import { buildRoyalRoadHtml } from '../export/royal-road.ts';
 import { listFolderNotes, listNovelEntries, type CompileEntry } from '../export/compile-source.ts';
 import { pickCoverImage } from '../media/pick-cover';
 import { getFolder } from '../store/folders.ts';
@@ -131,7 +134,10 @@ export function useCompiler(source: CompileSource) {
         repo,
         ...(source.kind === 'novel' ? { novelId: source.novelId } : {}),
       });
-      if (out.status === 'saved') patch({ notice: `Saved ${out.filename}` });
+      if (out.status === 'saved') {
+        patch({ notice: `Saved ${out.filename}` });
+        void maybeRequestReview(repo, 'export');
+      }
     } catch (err) {
       patch({ error: message(err) });
     } finally {
@@ -139,5 +145,23 @@ export function useCompiler(source: CompileSource) {
     }
   };
 
-  return { state, toggleRow, moveRow, setOpt, changeCover, run };
+  const copyRoyalRoad = async (): Promise<void> => {
+    const order = state.rows.filter((r) => r.included).map((r) => r.id);
+    if (order.length === 0) return patch({ error: 'Select at least one chapter to export.' });
+    patch({ busy: 'royalroad', error: null, notice: null });
+    try {
+      const book =
+        source.kind === 'novel'
+          ? await compileNovel(repo, source.novelId, { order })
+          : await compileFolder(repo, source.folderId, { order });
+      await Clipboard.setStringAsync(buildRoyalRoadHtml(book, state.opts));
+      patch({ notice: 'Royal Road HTML copied to the clipboard' });
+    } catch (err) {
+      patch({ error: message(err) });
+    } finally {
+      patch({ busy: null });
+    }
+  };
+
+  return { state, toggleRow, moveRow, setOpt, changeCover, run, copyRoyalRoad };
 }

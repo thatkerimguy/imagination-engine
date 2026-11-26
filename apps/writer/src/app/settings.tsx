@@ -24,17 +24,19 @@ import { BackupSection } from '../backup/BackupSection.tsx';
 import { PublishSettingsCard } from '../publish/PublishSettingsCard.tsx';
 import { applyCrashReporting } from '../observability/reporter.ts';
 import { routes } from '../routes.ts';
+import { LanguageRow } from '../i18n/LanguageRow.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme, useWriterPrefs } from '../ui/theme.tsx';
 
-const MODE_SEGMENTS: readonly SegmentOption<PreviewMode>[] = [
-  { value: 'offline', label: 'Built-in (Offline)', testID: 'settings-preview-offline' },
-  { value: 'custom-url', label: 'Custom URL', testID: 'settings-preview-custom' },
-];
-
 export default function AppSettingsScreen(): ReactNode {
   const repo = useRepository();
+  const { t } = useI18n();
+  const modeSegments: readonly SegmentOption<PreviewMode>[] = [
+    { value: 'offline', label: t('settings.previewBuiltIn'), testID: 'settings-preview-offline' },
+    { value: 'custom-url', label: t('settings.previewCustom'), testID: 'settings-preview-custom' },
+  ];
   const confirm = useConfirm();
   const theme = useTheme();
   const [prefs, updatePrefs] = useWriterPrefs();
@@ -74,32 +76,33 @@ export default function AppSettingsScreen(): ReactNode {
   };
   const resetDemo = async (): Promise<void> => {
     const ok = await confirm({
-      title: 'Reset demo novel',
-      message: 'Reset the demo novel to its original state?',
-      confirmLabel: 'Reset',
+      title: t('settings.resetDemo'),
+      message: t('settings.resetDemoMessage'),
+      confirmLabel: t('common.reset'),
       destructive: true,
     });
     if (ok) await loadDemoNovel(repo);
   };
   return (
     <Page>
-      <SectionLabel>Appearance</SectionLabel>
+      <SectionLabel>{t('settings.appearance')}</SectionLabel>
       <CardGroup testID="card-appearance">
         <ListRow
           icon="type"
-          title="Appearance & fonts"
-          subtitle="Fonts, size, margins and editor layout"
+          title={t('settings.appearanceRow')}
+          subtitle={t('settings.appearanceSub')}
           detail={theme.label}
           last
           testID="open-appearance"
           onPress={() => router.push(routes.appearance)}
         />
       </CardGroup>
-      <SectionLabel>Live preview</SectionLabel>
+      <LanguageRow />
+      <SectionLabel>{t('settings.livePreview')}</SectionLabel>
       <CardGroup testID="card-preview">
         <View style={{ gap: space.sm, padding: space.md }}>
           <SegmentControl<PreviewMode>
-            options={MODE_SEGMENTS}
+            options={modeSegments}
             value={mode}
             onChange={pickMode}
             accessibilityLabel="Live preview source"
@@ -139,12 +142,12 @@ export default function AppSettingsScreen(): ReactNode {
           )}
         </View>
       </CardGroup>
-      <SectionLabel>Haptics</SectionLabel>
+      <SectionLabel>{t('settings.haptics')}</SectionLabel>
       <CardGroup testID="card-haptics">
         <ListRow
           icon="smartphone"
-          title="Haptics"
-          subtitle="Subtle taps on buttons and toggles"
+          title={t('settings.haptics')}
+          subtitle={t('settings.hapticsSub')}
           last
           testID="settings-haptics-row"
           trailing={
@@ -158,7 +161,7 @@ export default function AppSettingsScreen(): ReactNode {
         />
         <ListRow
           icon="zap"
-          title="Test vibration"
+          title={t('settings.testVibration')}
           last
           testID="settings-haptics-test"
           onPress={() => void hapticTestSequence()}
@@ -166,25 +169,25 @@ export default function AppSettingsScreen(): ReactNode {
       </CardGroup>
       <BackupSection settings={backup} />
       <PublishSettingsCard />
-      <SectionLabel>Privacy & integrity</SectionLabel>
+      <SectionLabel>{t('settings.privacy')}</SectionLabel>
       <CardGroup testID="card-privacy">
         <ListRow
           icon="lock"
-          title="Master Lock"
-          subtitle="PIN, biometric unlock and recovery code"
+          title={t('settings.lock')}
+          subtitle={t('settings.lockSub')}
           testID="open-lock"
           onPress={() => router.push(routes.lock)}
         />
         <ListRow
           icon="activity"
-          title="Document Doctor"
-          subtitle="Scan for damaged or orphaned entries"
+          title={t('settings.doctor')}
+          subtitle={t('settings.doctorSub')}
           testID="open-doctor"
           onPress={() => router.push(routes.doctor)}
         />
         <ListRow
           icon="shield"
-          title="Anonymous crash reports"
+          title={t('settings.crash')}
           subtitle="Off by default. Sends crash stack traces only—never your writing, titles, or notes."
           subtitleLines={3}
           testID="settings-crash-row"
@@ -199,19 +202,19 @@ export default function AppSettingsScreen(): ReactNode {
         />
         <ListRow
           icon="help-circle"
-          title="Help & Legal"
-          subtitle="Gimmick guide, shortcuts, backups, licenses and privacy"
+          title={t('settings.helpRow')}
+          subtitle={t('settings.helpSub')}
           last
           testID="open-help"
           onPress={() => router.push(routes.help)}
         />
       </CardGroup>
-      <SectionLabel>Demo</SectionLabel>
+      <SectionLabel>{t('settings.demo')}</SectionLabel>
       <CardGroup testID="card-demo">
         <ListRow
           icon="rotate-ccw"
-          title="Reset demo novel"
-          subtitle="Restore Chrome Tide to its original state"
+          title={t('settings.resetDemo')}
+          subtitle={t('settings.resetDemoSub')}
           destructive
           last
           testID="reset-demo"

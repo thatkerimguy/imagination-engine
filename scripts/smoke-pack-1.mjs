@@ -108,6 +108,19 @@ async function lighter(page, BASE, { ok, fail }) {
   return [panel];
 }
 
+async function systemBox(page, BASE, { ok, fail }) {
+  for (const tier of ['high', 'lite', 'reduced']) {
+    await page.goto(sandbox(BASE, 'litrpg-system-box', tier));
+    const box = page.locator(`[data-kn-tier="${tier}"][data-kn-variant]`);
+    await box.waitFor({ timeout: 10000 });
+    const text = (await box.textContent()) ?? '';
+    const lines = await box.locator('li').count();
+    if (text.includes('Class Evolution Unlocked') && lines === 3)
+      ok(`litrpg-system-box renders title + ${lines} lines on ${tier}`);
+    else fail(`litrpg-system-box on ${tier}: “${text.slice(0, 60)}” (${lines} lines)`);
+  }
+}
+
 async function stress(page, BASE, id, { ok, fail }) {
   const stats = page.locator('.sb-stats');
   for (const tier of ['high', 'lite', 'reduced']) {
@@ -159,7 +172,13 @@ export async function pack1Pass(newPage, BASE, { ok, fail, shotsAt }) {
     ...(await ghost(page, BASE, { ok, fail })),
     ...(await lighter(page, BASE, { ok, fail })),
   ];
-  for (const id of ['pt-gaslight-edit', 'gits-ghost-whisper', 'bl-lighter-flick'])
+  await systemBox(page, BASE, { ok, fail });
+  for (const id of [
+    'pt-gaslight-edit',
+    'gits-ghost-whisper',
+    'bl-lighter-flick',
+    'litrpg-system-box',
+  ])
     await stress(page, BASE, id, { ok, fail });
   await page.close();
   if (shotsAt) await composite(newPage, panels, shotsAt);

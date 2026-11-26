@@ -2,6 +2,7 @@
 import type { ChapterDocument } from '@kn/core';
 import { useCallback, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
+import { TeaserSheet } from '../teaser/TeaserSheet.tsx';
 import { shareJson } from '../export/share-json';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +46,6 @@ export interface ChapterEditorProps {
   /** Scrolls to and selects this block once laid out (Search deep links). */
   initialBlockId?: string;
 }
-
 export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const { chapter, draft } = p;
   const s = useStyles();
@@ -71,6 +71,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
   const cls = useLayoutClass();
   const [refOpen, setRefOpen] = useState(false);
   const [reading, setReading] = useState(false);
+  const [teaserOpen, setTeaserOpen] = useState(false);
   const bible = useStoryBible(f, chapter.blocks, a.selectedId, draft.update);
   const pane = refOpen && cls === 'expanded';
   const metrics = useLiveMetrics(chapter.blocks);
@@ -121,6 +122,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
             trash: p.onTrash,
             readAloud: () => setReading(true),
             storyBible: bible.open,
+            teaser: () => setTeaserOpen(true),
           })}
         />
       ) : null}
@@ -228,7 +230,7 @@ export function ChapterEditor(p: ChapterEditorProps): ReactNode {
         ) : null}
       </View>
       {focusMode ? <FocusExitPill onExit={() => setFocusMode(false)} /> : null}
-
+      <TeaserSheet visible={teaserOpen} chapter={chapter} onClose={() => setTeaserOpen(false)} />
       <EditorSheets
         sheet={sheet}
         setSheet={setSheet}

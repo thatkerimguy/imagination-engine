@@ -3,6 +3,7 @@ import * as lighter from '@kn/module-bl-lighter-flick';
 import * as ambient from '@kn/module-core-ambient-bed';
 import * as chat from '@kn/module-gits-cyberbrain-chat';
 import * as whisper from '@kn/module-gits-ghost-whisper';
+import * as system from '@kn/module-litrpg-system-box';
 import * as gaslight from '@kn/module-pt-gaslight-edit';
 import { describe, expect, it } from 'vitest';
 import { enabledWriterModules, getWriterModule, writerModules } from './registry.ts';
@@ -14,10 +15,11 @@ const formatters: Record<string, (p: never) => unknown> = {
   [gaslight.meta.id]: gaslight.formatCardSummary,
   [whisper.meta.id]: whisper.formatCardSummary,
   [lighter.meta.id]: lighter.formatCardSummary,
+  [system.meta.id]: system.formatCardSummary,
 };
 
 describe('writer module registry', () => {
-  it('contains exactly the six modules', () => {
+  it('contains exactly the seven modules', () => {
     expect(writerModules.map((m) => m.meta.id).sort()).toEqual(
       [
         'bl-dice-3d',
@@ -25,6 +27,7 @@ describe('writer module registry', () => {
         'core-ambient-bed',
         'gits-cyberbrain-chat',
         'gits-ghost-whisper',
+        'litrpg-system-box',
         'pt-gaslight-edit',
       ].sort(),
     );

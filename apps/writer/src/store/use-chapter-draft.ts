@@ -25,6 +25,7 @@ import { useRepository } from './context.tsx';
 import { logChapterGrowth } from './growth-logger.ts';
 import { clearLiveDraft, draftKey, setLiveDraft } from './live-drafts.ts';
 import { recordAutoCheckpoint } from './versions.ts';
+import { syncWidget } from '../widget/widget-sync.ts';
 
 export interface DraftState {
   chapter: ChapterDocument;
@@ -75,7 +76,9 @@ export function useChapterDraft(
         const result = await repo.saveChapter(novelId, draft.chapter);
         await saveChapterStyles(repo, chapterId, captureRawText(draft.chapter, draft.styles));
         if (live) setSkipped(result.skipped);
-        void logChapterGrowth(repo, novelId, draft.chapter);
+        void logChapterGrowth(repo, novelId, draft.chapter).then(() =>
+          syncWidget(repo, { novelId, seasonId: draft.chapter.seasonId, chapterId }),
+        );
         // Version history: at most one automatic checkpoint per 5 minutes of active editing.
         void recordAutoCheckpoint(repo, `chapter:${chapterId}`, draft.chapter.blocks);
       },

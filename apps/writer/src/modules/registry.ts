@@ -13,6 +13,7 @@ import * as ambient from '@kn/module-core-ambient-bed';
 import * as chat from '@kn/module-gits-cyberbrain-chat';
 import * as whisper from '@kn/module-gits-ghost-whisper';
 import * as gaslight from '@kn/module-pt-gaslight-edit';
+import * as system from '@kn/module-litrpg-system-box';
 
 type Props = Record<string, unknown>;
 
@@ -56,6 +57,7 @@ export const writerModules: readonly WriterModule[] = [
   register(gaslight.schema, gaslight.formatCardSummary),
   register(whisper.schema, whisper.formatCardSummary),
   register(lighter.schema, lighter.formatCardSummary),
+  register(system.schema, system.formatCardSummary),
 ];
 
 const byId = new Map(writerModules.map((m) => [m.meta.id, m]));

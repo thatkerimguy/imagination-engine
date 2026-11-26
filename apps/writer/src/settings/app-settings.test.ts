@@ -35,3 +35,18 @@ describe('settings storage', () => {
     expect(await loadSettings(repo)).toEqual({ ...DEFAULT_SETTINGS, readerUrl: 'https://r.test/' });
   });
 });
+
+describe('language setting', () => {
+  it('defaults to system and persists a valid choice', async () => {
+    const repo = new NovelRepository(createMemoryAdapter());
+    expect((await loadSettings(repo)).language).toBe('system');
+    await saveSettings(repo, { language: 'es' });
+    expect((await loadSettings(repo)).language).toBe('es');
+  });
+
+  it('rejects an unknown stored language', async () => {
+    const repo = new NovelRepository(createMemoryAdapter());
+    await saveSettings(repo, { language: 'xx' as never });
+    expect((await loadSettings(repo)).language).toBe('system');
+  });
+});

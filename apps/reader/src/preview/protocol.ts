@@ -27,7 +27,10 @@ export type HostMessage =
 
 /** Host → reader control messages that are not chapter loads. */
 export type HostControl =
-  { type: 'lifecycle'; state: 'active' | 'background' } | { type: 'a11y'; reducedMotion: boolean };
+  | { type: 'lifecycle'; state: 'active' | 'background' }
+  | { type: 'a11y'; reducedMotion: boolean }
+  /** 9:16 Record Mode: hide the reader's own chrome so only the chapter is captured. */
+  | { type: 'record'; on: boolean };
 
 function decode(raw: unknown): Record<string, unknown> | null {
   let data = raw;
@@ -41,7 +44,7 @@ function decode(raw: unknown): Record<string, unknown> | null {
   return data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
 }
 
-/** Returns null for anything that is not a well-formed lifecycle / a11y message. */
+/** Returns null for anything that is not a well-formed lifecycle / a11y / record message. */
 export function parseHostControl(raw: unknown): HostControl | null {
   const msg = decode(raw);
   if (!msg) return null;
@@ -49,6 +52,7 @@ export function parseHostControl(raw: unknown): HostControl | null {
     return { type: 'lifecycle', state: msg.state };
   if (msg.type === 'a11y' && typeof msg.reducedMotion === 'boolean')
     return { type: 'a11y', reducedMotion: msg.reducedMotion };
+  if (msg.type === 'record' && typeof msg.on === 'boolean') return { type: 'record', on: msg.on };
   return null;
 }
 

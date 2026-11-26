@@ -24,16 +24,19 @@ import { useRepository } from '../store/context.tsx';
 import { CardGroup } from '../ui/CardGroup.tsx';
 import { ListRow, Page, SectionLabel } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
+import type { StringKey } from '../i18n/i18n.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { space } from '../ui/tokens.ts';
 
-const LEGAL_ROWS: readonly { page: LegalPage; title: string }[] = [
-  { page: 'terms', title: 'Terms of service' },
-  { page: 'privacy', title: 'Privacy policy' },
-  { page: 'takedown', title: 'Takedown requests' },
+const LEGAL_ROWS: readonly { page: LegalPage; title: StringKey }[] = [
+  { page: 'terms', title: 'help.terms' },
+  { page: 'privacy', title: 'help.privacy' },
+  { page: 'takedown', title: 'help.takedown' },
 ];
 
 export default function HelpScreen(): ReactNode {
   const repo = useRepository();
+  const { t } = useI18n();
   const router = useRouter();
   const [apiUrl, setApiUrl] = useState('');
   const [shortcuts, setShortcuts] = useState(false);
@@ -55,18 +58,18 @@ export default function HelpScreen(): ReactNode {
 
   return (
     <Page testID="help-screen">
-      <Stack.Screen options={{ title: 'Help & Legal' }} />
+      <Stack.Screen options={{ title: t('nav.help') }} />
       <View style={{ gap: space.xl }}>
         <GimmickGuideSection />
         <FormattingSection onOpenShortcuts={() => setShortcuts(true)} onReplayTour={replay} />
         <BackupSection />
         <WhatsNewSection />
         <View style={{ gap: space.xs }}>
-          <SectionLabel>Licenses</SectionLabel>
+          <SectionLabel>{t('help.licenses')}</SectionLabel>
           <CardGroup>
             <ListRow
               icon="award"
-              title="Open-source & font licenses"
+              title={t('help.licensesRow')}
               onPress={() => setLicenses(true)}
               last
               testID="help-licenses"
@@ -74,7 +77,7 @@ export default function HelpScreen(): ReactNode {
           </CardGroup>
         </View>
         <View style={{ gap: space.xs }}>
-          <SectionLabel>Legal & diagnostics</SectionLabel>
+          <SectionLabel>{t('help.legal')}</SectionLabel>
           <Txt variant="meta" color="inkSecondary">
             {PRIVACY_SUMMARY}
           </Txt>
@@ -88,8 +91,8 @@ export default function HelpScreen(): ReactNode {
                 <ListRow
                   key={r.page}
                   icon="external-link"
-                  title={r.title}
-                  detail={url ? undefined : 'Set a Publish API URL in Settings'}
+                  title={t(r.title)}
+                  detail={url ? undefined : t('help.needsApiUrl')}
                   onPress={url ? () => void Linking.openURL(url) : undefined}
                   testID={`help-legal-${r.page}`}
                 />
@@ -97,7 +100,7 @@ export default function HelpScreen(): ReactNode {
             })}
             <ListRow
               icon="activity"
-              title="Document Doctor"
+              title={t('help.doctor')}
               onPress={() => router.push(routes.doctor)}
               last
               testID="help-open-doctor"

@@ -1,6 +1,6 @@
 // Directive 06 writer shots (phone, run last by writer-shots.mjs; pack root):
 //   01 skippable 3-step Welcome micro-tour (fresh workspace),
-//   02 offline Help & Legal center (6-module Gimmick Guide · shortcuts/backup · legal/licenses),
+//   02 offline Help & Legal center (7-module Gimmick Guide · shortcuts/backup · legal/licenses),
 //   03 Chapter Editor with the Read-Aloud bar + @mention Story Bible popover | peek card,
 //   04 Trash with danger-red Delete forever / Empty trash | Settings › Privacy & integrity
 //      (Anonymous crash reports off by default + Help & Legal row).
@@ -85,7 +85,7 @@ export async function dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   await tid('open-help').click();
   await tid('help-screen').waitFor({ timeout: 15000 });
   const modules = await page.locator('[data-testid^="help-module-"]').count();
-  if (modules === 6) ok('Gimmick Guide lists all 6 registry modules');
+  if (modules === 7) ok('Gimmick Guide lists all 7 registry modules');
   else fail(`Gimmick Guide lists ${modules} modules`);
   for (const id of ['help-open-shortcuts', 'help-replay-tour', 'help-licenses', 'help-open-doctor'])
     if ((await tid(id).count()) !== 1) fail(`Help is missing ${id}`);

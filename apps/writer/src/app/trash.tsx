@@ -18,10 +18,12 @@ import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { EmptyState, Page } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { space } from '../ui/tokens.ts';
 
 export default function TrashScreen(): ReactNode {
   const repo = useRepository();
+  const { t, formatNumber } = useI18n();
   const confirm = useConfirm();
   const { data: items } = useRepoQuery('trash', (r) => listTrashedItems(r));
   const [busy, setBusy] = useState(false);
@@ -33,7 +35,10 @@ export default function TrashScreen(): ReactNode {
     try {
       setNote({ text: await job(), error: false });
     } catch (err) {
-      setNote({ text: err instanceof Error ? err.message : 'Something went wrong.', error: true });
+      setNote({
+        text: err instanceof Error ? err.message : t('common.somethingWrong'),
+        error: true,
+      });
     } finally {
       setBusy(false);
     }
@@ -42,35 +47,37 @@ export default function TrashScreen(): ReactNode {
   const restore = (item: TrashListItem): Promise<void> =>
     run(async () => {
       await restoreTrashedItem(repo, item.id);
-      return `Restored “${item.title}”.`;
+      return t('trash.restored', { title: item.title });
     });
 
   const deleteForever = async (item: TrashListItem): Promise<void> => {
     const ok = await confirm({
-      title: `Delete “${item.title}” forever?`,
-      message: 'This cannot be undone. Everything inside it is deleted too.',
-      confirmLabel: 'Delete forever',
+      title: t('trash.deleteTitle', { title: item.title }),
+      message: t('trash.deleteMessage'),
+      confirmLabel: t('trash.deleteConfirm'),
       destructive: true,
     });
     if (ok)
       await run(async () => {
         await deleteCoverFiles(await permanentlyDeleteItem(repo, item.id));
-        return `Deleted “${item.title}”.`;
+        return t('trash.deleted', { title: item.title });
       });
   };
 
   const empty = async (): Promise<void> => {
     const n = items?.length ?? 0;
     const ok = await confirm({
-      title: 'Empty trash?',
-      message: `${n} ${n === 1 ? 'item is' : 'items are'} deleted forever. This cannot be undone.`,
-      confirmLabel: 'Empty trash',
+      title: t('trash.emptyTitle'),
+      message: t(n === 1 ? 'trash.emptyMessage.one' : 'trash.emptyMessage.other', {
+        n: formatNumber(n),
+      }),
+      confirmLabel: t('trash.emptyAction'),
       destructive: true,
     });
     if (ok)
       await run(async () => {
         await deleteCoverFiles(await emptyTrash(repo));
-        return 'Trash emptied.';
+        return t('trash.emptied');
       });
   };
 
@@ -85,7 +92,7 @@ export default function TrashScreen(): ReactNode {
                 compact
                 variant="danger"
                 icon="trash-2"
-                label="Empty trash"
+                label={t('trash.emptyAction')}
                 disabled={busy}
                 onPress={() => void empty()}
                 testID="trash-empty"
@@ -94,7 +101,7 @@ export default function TrashScreen(): ReactNode {
         }}
       />
       <Txt variant="meta" color="inkSecondary" testID="trash-summary">
-        {`Items are deleted for good ${TRASH_RETENTION_DAYS} days after you move them here.`}
+        {t('trash.summary', { days: formatNumber(TRASH_RETENTION_DAYS) })}
       </Txt>
       {note ? (
         <Txt
@@ -107,7 +114,7 @@ export default function TrashScreen(): ReactNode {
         </Txt>
       ) : null}
       {items && !has ? (
-        <EmptyState icon="trash-2" title="Trash is empty" body="Deleted items appear here." />
+        <EmptyState icon="trash-2" title={t('trash.empty.title')} body={t('trash.empty.body')} />
       ) : null}
       <View style={{ gap: space.xxs }}>
         {items?.map((item) => (

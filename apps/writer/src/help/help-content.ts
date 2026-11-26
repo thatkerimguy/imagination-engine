@@ -16,6 +16,11 @@ export const GENRE_LABEL: Record<ModuleGenre, string> = {
   'psych-thriller': 'Psychological thriller',
 };
 
+/** Writer-side label/icon for modules whose genre is not in core's frozen union. */
+export const MODULE_GENRE_OVERRIDE: Readonly<Record<string, { label: string; icon: GlyphName }>> = {
+  'litrpg-system-box': { label: 'LitRPG / Progression', icon: 'terminal' },
+};
+
 export const LAYER_TRIGGER: Record<ModuleLayer, string> = {
   backdrop: 'Plays behind the prose from its cue card onward.',
   inline: 'Appears inline in the text; readers tap or scroll to it.',

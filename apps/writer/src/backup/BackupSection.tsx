@@ -1,6 +1,7 @@
 // Settings section: freshness badge, back up now, external (SAF) folder, restore, auto-backup
 // interval, the device-transfer note and the Trash entry.
 // Drop into the settings screen as `<BackupSection settings={…} />` (loaded by the parent).
+import { maybeRequestReview } from '../settings/review-request';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -72,6 +73,7 @@ export function BackupSection({
   const backUp = (): Promise<void> =>
     guard(async () => {
       const result = await manualBackup(repo);
+      if (result === 'mirrored' || result === 'saved') void maybeRequestReview(repo, 'backup');
       if (result === 'mirrored')
         return `Backed up to ${settings?.safFolderLabel ?? 'your folder'}.`;
       return result === 'saved' ? 'Backup saved.' : null;

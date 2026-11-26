@@ -177,11 +177,14 @@ async function footprint(repo: NovelRepository, r: TrashRecord) {
   return { ids: [...new Set(ids)], dataKeys };
 }
 
-const sidecarKeysOf = (id: string): string[] => [
+const SIDECAR_KINDS = ['chapter', 'novel', 'doc', 'folder'] as const;
+
+/** Every per-item sidecar an id can own (meta, styles, publish status, versions, growth, trash). */
+export const sidecarKeysOf = (id: string): string[] => [
   itemMetaKey(id),
   `meta/chapter-styles/${id}`,
-  `versions/chapter:${id}`,
-  `versions/doc:${id}`,
+  `meta/publish/${id}`,
+  ...SIDECAR_KINDS.flatMap((k) => [`versions/${k}:${id}`, `growth/${k}:${id}`]),
   trashKey(id),
 ];
 

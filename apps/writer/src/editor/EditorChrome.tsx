@@ -121,13 +121,17 @@ type MenuAction =
   | 'publish'
   | 'shortcuts'
   | 'exportJson'
-  | 'trash';
+  | 'trash'
+  | 'readAloud'
+  | 'storyBible';
 
 const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   { action: 'analysis', label: 'Text Analysis', icon: 'bar-chart-2', testID: 'menu-analysis' },
   { action: 'growth', label: 'Growth', icon: 'trending-up', testID: 'menu-growth' },
   { action: 'find', label: 'Find & Replace', icon: 'search', testID: 'menu-find' },
   { action: 'outline', label: 'Outline', icon: 'list', testID: 'menu-outline' },
+  { action: 'readAloud', label: 'Read aloud', icon: 'volume-2', testID: 'menu-read-aloud' },
+  { action: 'storyBible', label: 'Story Bible', icon: 'book-open', testID: 'menu-story-bible' },
   { action: 'versions', label: 'Version History', icon: 'clock', testID: 'menu-versions' },
   { action: 'focus', label: 'Focus Mode', icon: 'maximize', testID: 'menu-focus' },
   { action: 'layout', label: 'Appearance & Layout', icon: 'sliders', testID: 'menu-layout' },
@@ -143,9 +147,17 @@ const MENU: readonly (Omit<MenuItem, 'onPress'> & { action: MenuAction })[] = [
   },
 ];
 
-/** The editor's ⋯ menu items, bound to handlers. */
-export function editorMenu(on: Record<MenuAction, () => void>): MenuItem[] {
-  return MENU.map(({ action, ...item }) => ({ ...item, onPress: on[action] }));
+/** Items only some editors offer (the Chapter Editor's Read aloud / Story Bible). */
+type OptionalAction = 'readAloud' | 'storyBible';
+type MenuHandlers = Record<Exclude<MenuAction, OptionalAction>, () => void> &
+  Partial<Record<OptionalAction, () => void>>;
+
+/** The editor's ⋯ menu items, bound to handlers (optional items without a handler are left out). */
+export function editorMenu(on: MenuHandlers): MenuItem[] {
+  return MENU.flatMap(({ action, ...item }) => {
+    const onPress = on[action];
+    return onPress ? [{ ...item, onPress }] : [];
+  });
 }
 
 type SheetAction = 'analysis' | 'outline' | 'versions' | 'layout' | 'publish' | 'shortcuts';
@@ -153,7 +165,7 @@ type SheetAction = 'analysis' | 'outline' | 'versions' | 'layout' | 'publish' | 
 /** editorMenu with every sheet-opening item routed to `openSheet`. */
 export function chapterMenu(
   openSheet: (sheet: SheetAction) => void,
-  on: Record<Exclude<MenuAction, SheetAction>, () => void>,
+  on: Omit<MenuHandlers, SheetAction>,
 ): MenuItem[] {
   const sheet = (s: SheetAction) => () => openSheet(s);
   return editorMenu({

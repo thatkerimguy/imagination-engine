@@ -27,3 +27,14 @@ export const GROWTH_SEED = (() => {
   }
   return JSON.stringify({ data: { points }, updatedAt: now });
 })();
+
+/**
+ * DIRECTIVE-06: keeps the first-run Welcome tour out of every regression gate (each Playwright
+ * context is a fresh workspace). The Dir-06 pass shoots the tour in its own clean context.
+ */
+export const skipOnboarding = (target) =>
+  target.addInitScript(() => {
+    const key = 'kn-writer:setting/onboarding';
+    if (!localStorage.getItem(key))
+      localStorage.setItem(key, JSON.stringify({ data: { dismissedAt: 1 }, updatedAt: 1 }));
+  });

@@ -1,5 +1,6 @@
 // Repository-level wrappers: backup archives need the raw key-value adapter, which the
 // DocumentStore keeps private; this is the one place that reaches for it.
+import { coverArchiveMedia } from '../media/cover-archive.ts';
 import type { StorageAdapter } from '../storage/types.ts';
 import type { NovelRepository } from '../store/repository.ts';
 import {
@@ -23,7 +24,7 @@ export const exportNovelArchive = (repo: NovelRepository, novelId: string): Prom
   packNovel(rawAdapter(repo), novelId);
 
 export const exportWorkspaceArchive = (repo: NovelRepository): Promise<Uint8Array> =>
-  packWorkspace(rawAdapter(repo));
+  packWorkspace(rawAdapter(repo), Date.now(), coverArchiveMedia);
 
 /** Validates an archive without writing and reports what it is (for a confirm dialog). */
 export async function peekArchive(bytes: Uint8Array): Promise<ArchiveManifest> {
@@ -40,7 +41,7 @@ export async function restoreArchive(
     throw new Error('Chapter files are added from a book: open it and choose Import.');
   const summary =
     kind === 'workspace'
-      ? await restoreWorkspace(rawAdapter(repo), bytes)
+      ? await restoreWorkspace(rawAdapter(repo), bytes, coverArchiveMedia)
       : await restoreNovel(rawAdapter(repo), bytes);
   repo.notifyChanged();
   return summary;

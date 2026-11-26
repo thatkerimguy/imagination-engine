@@ -16,12 +16,15 @@ export interface AppSettings {
   previewMode: PreviewMode;
   /** Base URL of an apps/reader server (dev Vite, LAN, or deployed). `?preview=1` is added. */
   readerUrl: string;
+  /** Opt-in anonymous crash reports (stack traces only, scrubbed). Off by default. */
+  crashReportingEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   appearance: 'dark',
   previewMode: 'offline',
   readerUrl: 'http://127.0.0.1:5173/',
+  crashReportingEnabled: false,
 };
 
 export async function loadSettings(repo: NovelRepository): Promise<AppSettings> {
@@ -30,6 +33,7 @@ export async function loadSettings(repo: NovelRepository): Promise<AppSettings> 
   if (!APPEARANCES.includes(merged.appearance)) merged.appearance = DEFAULT_SETTINGS.appearance;
   if (!PREVIEW_MODES.includes(merged.previewMode))
     merged.previewMode = DEFAULT_SETTINGS.previewMode;
+  merged.crashReportingEnabled = merged.crashReportingEnabled === true;
   return merged;
 }
 

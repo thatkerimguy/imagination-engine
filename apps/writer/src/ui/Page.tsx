@@ -104,6 +104,8 @@ export interface ListRowProps {
   title: string;
   /** Quiet second line. */
   subtitle?: string;
+  /** Subtitle line clamp (default 2). */
+  subtitleLines?: number;
   /** Right-aligned muted value (e.g. "Warm Sepia"). */
   detail?: string;
   /** Leading glyph. */
@@ -127,7 +129,7 @@ export function ListRow(p: ListRowProps): ReactNode {
           {p.title}
         </Txt>
         {p.subtitle ? (
-          <Txt variant="meta" color="inkSecondary" numberOfLines={2}>
+          <Txt variant="meta" color="inkSecondary" numberOfLines={p.subtitleLines ?? 2}>
             {p.subtitle}
           </Txt>
         ) : null}

@@ -1,8 +1,8 @@
 // Native hardware-keyboard bridge: MainActivity hands Ctrl+<key> presses to JS as "knShortcut"
-// device events while capture is on (plugins/android-input.js). Escape needs no bridge on
-// Android: the system maps it to Back, which the editor's back layers already handle.
+// device events while capture is on (plugins/android-input.js), plus plain Escape (ctrl: false),
+// which closes the top panel (sheet -> popover -> Find) exactly as on web / iPad.
 import { DeviceEventEmitter, NativeModules, Platform } from 'react-native';
-import type { KeyInput } from './shortcuts.ts';
+import { nativeKeyInput, type KeyInput } from './shortcuts.ts';
 
 interface KnInputNative {
   setShortcutCapture(enabled: boolean): void;
@@ -17,9 +17,9 @@ export function subscribeKeys(handler: (input: KeyInput, mac: boolean) => boolea
   native.setShortcutCapture(true);
   const sub = DeviceEventEmitter.addListener(
     'knShortcut',
-    (e: { key?: unknown; shift?: unknown }) => {
-      if (typeof e.key !== 'string') return;
-      handler({ key: e.key, ctrl: true, meta: false, shift: e.shift === true, alt: false }, false);
+    (e: { key?: unknown; ctrl?: unknown; shift?: unknown }) => {
+      const input = nativeKeyInput(e);
+      if (input) handler(input, false);
     },
   );
   return () => {

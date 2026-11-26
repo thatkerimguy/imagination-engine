@@ -13,7 +13,10 @@ import {
   type ScanOptions,
   type ScanReport,
 } from '../diagnostics/doctor.ts';
+import { collectDiagnosticInput } from '../diagnostics/diagnostic-input.ts';
 import { DoctorRow } from '../diagnostics/DoctorRow.tsx';
+import { buildRedactedDiagnosticReport } from '../diagnostics/redact-report.ts';
+import { deliverText } from '../export/deliver.ts';
 import { fileExists } from '../diagnostics/file-exists.ts';
 import { shareText } from '../security/share-text.ts';
 import { createDefaultAdapter } from '../storage/adapter';
@@ -64,6 +67,15 @@ export default function DoctorScreen(): ReactNode {
     await scan();
   };
 
+  const exportReport = async (): Promise<void> => {
+    if (!report) return;
+    const input = await collectDiagnosticInput(repo, kv, report.issues, report.scanned);
+    const name = `kinetic-diagnostics-${new Date(input.now).toISOString().slice(0, 10)}.txt`;
+    await deliverText(name, buildRedactedDiagnosticReport(input), 'text/plain').catch(
+      () => undefined,
+    );
+  };
+
   if (!report) return null;
   const { issues, scanned } = report;
   const fixable = issues.some((i) => i.repair);
@@ -89,6 +101,14 @@ export default function DoctorScreen(): ReactNode {
           label="Copy diagnostics"
           onPress={() => void shareText(formatReport(issues, scanned), 'Diagnostics')}
           testID="doctor-copy"
+        />
+        <ActionButton
+          variant="secondary"
+          compact
+          icon="download"
+          label="Export diagnostic report"
+          onPress={() => void exportReport()}
+          testID="doctor-export-report"
         />
         {fixable ? (
           <ActionButton

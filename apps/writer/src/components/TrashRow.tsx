@@ -64,7 +64,7 @@ export function TrashRow(p: {
         />
         <ActionButton
           compact
-          variant="ghost"
+          variant="danger"
           icon="trash-2"
           label="Delete forever"
           accessibilityLabel={`Delete ${item.title} forever`}

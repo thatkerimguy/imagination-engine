@@ -36,6 +36,7 @@ export function DialogueBlockEditor(
       <View style={styles.head}>
         <Dot color={tint} />
         <TextInput
+          disableFullscreenUI
           autoFocus={p.autoFocus}
           value={p.block.speaker}
           onFocus={p.onSelect}

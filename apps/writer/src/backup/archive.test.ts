@@ -1,9 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('expo-file-system', () => ({
+  File: class {
+    exists = false;
+  },
+}));
+
+import { kvFromAdapter, scanWorkspace } from '../diagnostics/doctor.ts';
 import { bytesOf, unzipFiles, zipFiles } from '../export/zip.ts';
 import { createMemoryAdapter } from '../storage/memory.ts';
 import type { StorageAdapter } from '../storage/types.ts';
 import { NovelRepository } from '../store/repository.ts';
+import { addChapter, addSeason } from '../store/outline.ts';
+import { moveToTrash } from '../store/trash.ts';
 import { restoreChapter } from './archive-chapter.ts';
+import { isSafeCoverName, MAX_COVER_BYTES, type CoverMedia } from './archive-covers.ts';
 import {
   packChapter,
   packNovel,
@@ -139,5 +150,84 @@ describe('knbook / knchap', () => {
     const chapters = await repo.listChapters(novel.id, season.id);
     expect(chapters.map((c) => c.id)).toEqual([chapter.id, id]);
     expect(await adapter.get(`meta/chapter-styles/${id}`)).not.toBeNull();
+  });
+});
+
+describe('Gate 2 E4: cover media in workspace backups', () => {
+  const memMedia = (dir: string, files: Map<string, Uint8Array>): CoverMedia => ({
+    read: async (uri) => files.get(uri) ?? null,
+    write: async (name, bytes) => {
+      files.set(`${dir}${name}`, bytes);
+      return `${dir}${name}`;
+    },
+  });
+
+  it('round-trips cover + thumbnail bytes and rewrites cover URIs to this device', async () => {
+    const { adapter, novel } = await seeded();
+    const oldUri = 'file:///old/phone/files/covers/abc123.jpg';
+    await adapter.set(
+      `meta/item/${novel.id}`,
+      JSON.stringify({ data: { coverUri: oldUri }, updatedAt: 1 }),
+    );
+    const source = new Map([
+      [oldUri, new Uint8Array([1, 2, 3])],
+      ['file:///old/phone/files/covers/abc123.thumb.jpg', new Uint8Array([4])],
+    ]);
+    const bytes = await packWorkspace(adapter, 1, memMedia('', source));
+    const names = Object.keys(await unzipFiles(bytes));
+    expect(names).toContain('covers/abc123.jpg');
+    expect(names).toContain('covers/abc123.thumb.jpg');
+
+    const target = createMemoryAdapter();
+    const written = new Map<string, Uint8Array>();
+    const newDir = 'file:///new/phone/files/covers/';
+    await restoreWorkspace(target, bytes, memMedia(newDir, written));
+    expect([...written.get(`${newDir}abc123.jpg`)!]).toEqual([1, 2, 3]);
+    expect([...written.get(`${newDir}abc123.thumb.jpg`)!]).toEqual([4]);
+    const meta = JSON.parse((await target.get(`meta/item/${novel.id}`))!) as {
+      data: { coverUri: string };
+    };
+    expect(meta.data.coverUri).toBe(`${newDir}abc123.jpg`);
+    expect(
+      await scanWorkspace(kvFromAdapter(target), { fileExists: async (u) => written.has(u) }),
+    ).toEqual([]);
+  });
+
+  it('rejects traversal, non-image and oversized cover entries', async () => {
+    const { adapter } = await seeded();
+    const base = await unzipFiles(await packWorkspace(adapter));
+    for (const bad of ['covers/../evil.jpg', 'covers/x.sh', 'covers/a/b.jpg', 'covers/.hidden.jpg'])
+      await expect(
+        restoreWorkspace(
+          createMemoryAdapter(),
+          await zipFiles({ ...base, [bad]: new Uint8Array([1]) }),
+        ),
+      ).rejects.toThrow(/cover/i);
+    const huge = new Uint8Array(MAX_COVER_BYTES + 1);
+    await expect(
+      restoreWorkspace(createMemoryAdapter(), await zipFiles({ ...base, 'covers/a.jpg': huge })),
+    ).rejects.toThrow(/too large/);
+    expect(isSafeCoverName('01m8ajx-a.thumb.jpg')).toBe(true);
+  });
+});
+
+describe('Gate 2: .knbook excludes trashed seasons and chapters', () => {
+  it('drops a trashed chapter and season from a single-book archive', async () => {
+    const { adapter, repo, novel, season, chapter } = await seeded();
+    const extra = await addChapter(repo, novel.id, season.id, 'Two');
+    const s2 = await addSeason(repo, novel.id, 'Later');
+    await moveToTrash(repo, {
+      kind: 'chapter',
+      novelId: novel.id,
+      seasonId: season.id,
+      chapterId: extra.id,
+    });
+    await moveToTrash(repo, { kind: 'season', novelId: novel.id, seasonId: s2.id });
+    const names = Object.keys(await unzipFiles(await packNovel(adapter, novel.id)));
+    expect(names.some((n) => n.includes(extra.id))).toBe(false);
+    expect(names.some((n) => n.includes(s2.id))).toBe(false);
+    expect(names).toContain(`kv/chapter/${novel.id}/${season.id}/${chapter.id}`);
+    const ws = Object.keys(await unzipFiles(await packWorkspace(adapter)));
+    expect(ws).toContain(`kv/trash/${extra.id}`);
   });
 });

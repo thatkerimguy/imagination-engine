@@ -178,3 +178,22 @@ describe('search regressions', () => {
     expect(search(idx, 'open text')[0]).toMatchObject({ id: 'dc', locked: false });
   });
 });
+
+describe('doc kinds in subtitles', () => {
+  it('shows the story kind and localized labels for character docs', () => {
+    const idx = buildSearchIndex({
+      novels: [{ id: 'n', title: 'Tide' }],
+      chapters: [],
+      folders: [{ id: 'f', title: 'Cast', parentFolderId: null }],
+      docs: [
+        { id: 'd', title: 'Mara', folderId: 'f', blocks: [], kind: 'character' },
+        { id: 'p', title: 'Plain', folderId: 'f', blocks: [] },
+      ],
+      meta: new Map(),
+    });
+    const [mara] = search(idx, 'mara');
+    expect(mara).toMatchObject({ docKind: 'character', subtitle: 'Character · Notes / Cast' });
+    expect(search(idx, 'plain')[0]?.subtitle).toBe('Notes / Cast');
+    expect(search(idx, 'tide')[0]?.subtitle).toBe('Book');
+  });
+});

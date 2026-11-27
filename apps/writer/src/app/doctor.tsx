@@ -21,6 +21,7 @@ import { shareText } from '../security/share-text.ts';
 import { useRepository } from '../store/context.tsx';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { EmptyState, Page, SectionLabel } from '../ui/Page.tsx';
 import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
@@ -28,6 +29,7 @@ import { Txt } from '../ui/Txt.tsx';
 export default function DoctorScreen(): ReactNode {
   const repo = useRepository();
   const confirm = useConfirm();
+  const { t } = useI18n();
   const opts = useMemo<ScanOptions>(() => ({ fileExists }), []);
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,10 +52,9 @@ export default function DoctorScreen(): ReactNode {
   };
   const fixAll = async (): Promise<void> => {
     const ok = await confirm({
-      title: 'Repair all',
-      message:
-        'Damaged data is copied to a quarantine area first, then fixed. Nothing is deleted without a backup copy.',
-      confirmLabel: 'Repair all',
+      title: t('doctor.repairAll'),
+      message: t('doctor.repairMsg'),
+      confirmLabel: t('doctor.repairAll'),
     });
     if (!ok) return;
     await repairAll(repo, opts);
@@ -82,7 +83,7 @@ export default function DoctorScreen(): ReactNode {
           variant="secondary"
           compact
           icon="refresh-cw"
-          label="Rescan"
+          label={t('doctor.rescan')}
           disabled={busy}
           onPress={() => void scan()}
           testID="doctor-scan"
@@ -91,7 +92,7 @@ export default function DoctorScreen(): ReactNode {
           variant="secondary"
           compact
           icon="copy"
-          label="Copy diagnostics"
+          label={t('doctor.copy')}
           onPress={() => void shareText(formatReport(issues, scanned), 'Diagnostics')}
           testID="doctor-copy"
         />
@@ -99,7 +100,7 @@ export default function DoctorScreen(): ReactNode {
           variant="secondary"
           compact
           icon="download"
-          label="Export diagnostic report"
+          label={t('doctor.export')}
           onPress={() => void exportReport()}
           testID="doctor-export-report"
         />
@@ -107,21 +108,17 @@ export default function DoctorScreen(): ReactNode {
           <ActionButton
             compact
             icon="tool"
-            label="Repair all"
+            label={t('doctor.repairAll')}
             onPress={() => void fixAll()}
             testID="doctor-repair-all"
           />
         ) : null}
       </View>
       {issues.length === 0 ? (
-        <EmptyState
-          icon="check-circle"
-          title="All clear"
-          body="No problems found in your library."
-        />
+        <EmptyState icon="check-circle" title={t('doctor.clear')} body={t('doctor.clearBody')} />
       ) : (
         <>
-          <SectionLabel>Findings</SectionLabel>
+          <SectionLabel>{t('doctor.findings')}</SectionLabel>
           <View>
             {issues.map((issue, i) => (
               <DoctorRow

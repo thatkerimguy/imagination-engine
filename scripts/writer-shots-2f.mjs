@@ -120,7 +120,7 @@ async function segmentCheck(page, { tid, ok, fail }, name, id, first, second) {
 async function controlGates(page, ctx, shot) {
   const { WRITER, tid, ok, fail } = ctx;
   const seen = await withConsole(page, async () => {
-    await page.goto(`${WRITER}settings`);
+    await page.goto(`${WRITER}settings-publishing`);
     await tid('settings-preview-mode').waitFor({ timeout: 15000 });
     await segmentCheck(
       page,
@@ -130,7 +130,7 @@ async function controlGates(page, ctx, shot) {
       'settings-preview-offline',
       'settings-preview-custom',
     );
-    await tid('settings-haptics').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await tid('settings-preview-mode').evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await page.waitForTimeout(300);
     await shot('03-settings-smooth-controls');
     await page.goto(`${WRITER}appearance`);

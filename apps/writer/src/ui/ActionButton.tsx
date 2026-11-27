@@ -8,6 +8,7 @@ import { Txt, type InkRole } from './Txt.tsx';
 import { clipped } from './press-shape.ts';
 import { radius, space, TOUCH } from './tokens.ts';
 import { useTheme } from './theme.tsx';
+import { hitSlopFor, MIN_TOUCH } from './a11y.ts';
 
 export type ActionVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -56,7 +57,7 @@ export function ActionButton(p: ActionButtonProps): ReactNode {
       disabled={p.disabled}
       onPress={p.onPress}
       testID={p.testID}
-      hitSlop={p.compact ? { top: 4, bottom: 4 } : undefined}
+      hitSlop={p.compact ? hitSlopFor(MIN_TOUCH, height) : undefined}
       wash={variant === 'primary' ? colors.borderStrong : undefined}
       style={[
         styles.base,

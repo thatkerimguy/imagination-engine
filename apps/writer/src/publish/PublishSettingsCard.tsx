@@ -1,6 +1,8 @@
 // Settings section: publish API URL, author token and public reader URL + a connection test.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import type { StringKey } from '../i18n/i18n.ts';
 import { useRepository } from '../store/context.tsx';
 import { CardGroup } from '../ui/CardGroup.tsx';
 import { Field } from '../ui/Field.tsx';
@@ -24,11 +26,11 @@ import {
 
 type Status = { tone: 'ok' | 'bad' | 'busy' | 'info'; text: string };
 
-const STATES: Record<string, Status> = {
-  ok: { tone: 'ok', text: 'Connected' },
-  unauthorized: { tone: 'bad', text: 'Invalid token' },
-  unreachable: { tone: 'bad', text: 'Could not reach server' },
-  misconfigured: { tone: 'bad', text: 'Server has no publish token set' },
+const STATES: Record<string, { tone: Status['tone']; key: StringKey }> = {
+  ok: { tone: 'ok', key: 'publish.status.ok' },
+  unauthorized: { tone: 'bad', key: 'publish.status.unauthorized' },
+  unreachable: { tone: 'bad', key: 'publish.status.unreachable' },
+  misconfigured: { tone: 'bad', key: 'publish.status.misconfigured' },
 };
 
 const urlProps = {
@@ -41,6 +43,7 @@ const urlProps = {
 export function PublishSettingsCard(): ReactNode {
   const repo = useRepository();
   const { colors } = useTheme();
+  const { t } = useI18n();
   const [apiUrl, setApiUrl] = useState('');
   const [readerUrl, setReaderUrl] = useState('');
   const [token, setToken] = useState('');
@@ -67,8 +70,8 @@ export function PublishSettingsCard(): ReactNode {
   const save = async (): Promise<boolean> => {
     if (!loaded.current) return false;
     const next: { api?: string; reader?: string } = {};
-    if (normalizeBaseUrl(apiUrl) === null) next.api = 'Enter a full http(s) address.';
-    if (normalizeBaseUrl(readerUrl) === null) next.reader = 'Enter a full http(s) address.';
+    if (normalizeBaseUrl(apiUrl) === null) next.api = t('publish.badUrl');
+    if (normalizeBaseUrl(readerUrl) === null) next.reader = t('publish.badUrl');
     setErrors(next);
     if (next.api || next.reader) return false;
     try {
@@ -78,7 +81,7 @@ export function PublishSettingsCard(): ReactNode {
       else await clearPublishToken(repo);
       return true;
     } catch (err) {
-      setErrors({ api: err instanceof Error ? err.message : 'Could not save.' });
+      setErrors({ api: err instanceof Error ? err.message : t('common.couldNotSave') });
       return false;
     }
   };
@@ -89,12 +92,15 @@ export function PublishSettingsCard(): ReactNode {
     const config = await loadPublishConfig(repo);
     const saved = await loadPublishToken(repo);
     if (!isPublishConfigured(config, saved)) {
-      setStatus({ tone: 'info', text: 'Add the API URL and token first.' });
+      setStatus({ tone: 'info', text: t('publish.needConfig') });
       return;
     }
-    setStatus({ tone: 'busy', text: 'Checking…' });
+    setStatus({ tone: 'busy', text: t('publish.checking') });
     const result = await verifyPublishConnection(config.apiUrl, saved);
-    setStatus(STATES[result.state] ?? { tone: 'bad', text: result.message });
+    const known = STATES[result.state];
+    setStatus(
+      known ? { tone: known.tone, text: t(known.key) } : { tone: 'bad', text: result.message },
+    );
   };
 
   const dot =
@@ -114,11 +120,11 @@ export function PublishSettingsCard(): ReactNode {
 
   return (
     <View style={styles.root}>
-      <SectionLabel>Publishing</SectionLabel>
+      <SectionLabel>{t('publish.section')}</SectionLabel>
       <CardGroup testID="card-publishing">
         <View style={styles.fields}>
           <Field
-            label="Publish API URL"
+            label={t('publish.apiUrl')}
             value={apiUrl}
             onChangeText={setApiUrl}
             onBlur={() => void save()}
@@ -131,7 +137,7 @@ export function PublishSettingsCard(): ReactNode {
           <View style={styles.tokenRow}>
             <View style={styles.grow}>
               <Field
-                label="Author token"
+                label={t('publish.token')}
                 value={token}
                 onChangeText={setToken}
                 onBlur={() => void save()}
@@ -145,19 +151,19 @@ export function PublishSettingsCard(): ReactNode {
             </View>
             <IconBtn
               icon={reveal ? 'eye-off' : 'eye'}
-              accessibilityLabel={reveal ? 'Hide token' : 'Show token'}
+              accessibilityLabel={reveal ? t('publish.hideToken') : t('publish.showToken')}
               onPress={() => setReveal((v) => !v)}
               testID="publish-token-reveal"
             />
           </View>
           <Field
-            label="Public reader URL"
+            label={t('publish.readerUrl')}
             value={readerUrl}
             onChangeText={setReaderUrl}
             onBlur={() => void save()}
             onSubmitEditing={() => void save()}
             placeholder="https://reader.example.com"
-            hint="Used to build the links you share."
+            hint={t('publish.readerUrlHint')}
             error={errors.reader}
             testID="publish-reader-url"
             {...urlProps}
@@ -166,14 +172,14 @@ export function PublishSettingsCard(): ReactNode {
         {/* Edge-to-edge pressable (clipped by the card); padding lives inside the highlighted surface. */}
         <Press
           accessibilityRole="button"
-          accessibilityLabel="Test connection"
+          accessibilityLabel={t('publish.test')}
           onPress={() => void test()}
           testID="publish-test"
           style={styles.testRow}
         >
           <Glyph name="wifi" size={18} color="ink" />
           <Txt variant="body" numberOfLines={1} style={styles.grow}>
-            Test connection
+            {t('publish.test')}
           </Txt>
           {trailing ?? <Glyph name="chevron-right" size={18} color="inkMuted" />}
         </Press>

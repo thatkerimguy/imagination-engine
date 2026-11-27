@@ -11,12 +11,28 @@ describe('hitSlopFor', () => {
     expect(hitSlopFor(44, 26)).toEqual({ top: 11, bottom: 11, left: 2, right: 2 });
     expect(hitSlopFor(32)).toEqual({ top: 8, bottom: 8, left: 8, right: 8 });
   });
+  it('compact 36 / 40 / 44 dp controls reach a >= 48 x 48 touch region', () => {
+    for (const box of [28, 32, 36, 40, 44]) {
+      const slop = hitSlopFor(box);
+      expect(box + (slop.left ?? 0) + (slop.right ?? 0)).toBeGreaterThanOrEqual(MIN_TOUCH);
+      expect(box + (slop.top ?? 0) + (slop.bottom ?? 0)).toBeGreaterThanOrEqual(MIN_TOUCH);
+    }
+    const wide = hitSlopFor(MIN_TOUCH, 36);
+    expect(36 + (wide.top ?? 0) + (wide.bottom ?? 0)).toBe(MIN_TOUCH);
+  });
   it('never returns negative slop for large boxes', () => {
     expect(hitSlopFor(60, 80)).toEqual({ top: 0, bottom: 0, left: 0, right: 0 });
   });
 });
 
 describe('static a11y regressions', () => {
+  it('compact controls grow to 48dp via hitSlopFor (OVERHAUL-02A audit)', () => {
+    expect(src('ui/ActionButton.tsx')).toContain('hitSlopFor(MIN_TOUCH, height)');
+    expect(src('editor/LayoutPrefsSheet.tsx')).toContain('hitSlopFor(MIN_TOUCH, 28)');
+    expect(src('notes/Breadcrumbs.tsx')).toContain('hitSlopFor(MIN_TOUCH, 32)');
+    expect(src('components/ItemMetaSheet.tsx')).toContain('hitSlopFor(MIN_TOUCH, 32)');
+    expect(src('notes/KindFilter.tsx')).toContain('hitSlop={PILL_SLOP}');
+  });
   it('IconBtn: labelled button with disabled state and 48dp slop', () => {
     const s = src('ui/IconBtn.tsx');
     expect(s).toContain('accessibilityRole="button"');

@@ -4,15 +4,17 @@ import { StyleSheet, View } from 'react-native';
 import { writerModules } from '../modules/registry.ts';
 import { CardGroup } from '../ui/CardGroup.tsx';
 import { Glyph } from '../ui/Glyph.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { SectionLabel } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { GENRE_ICON, GENRE_LABEL, LAYER_TRIGGER, MODULE_GENRE_OVERRIDE } from './help-content.ts';
 
 export function GimmickGuideSection(): ReactNode {
+  const { t } = useI18n();
   return (
     <View style={styles.section} testID="help-gimmick-guide">
-      <SectionLabel>Gimmick module guide</SectionLabel>
+      <SectionLabel>{t('help.gimmicks')}</SectionLabel>
       <CardGroup>
         {writerModules.map(({ meta }) => {
           const over = MODULE_GENRE_OVERRIDE[meta.id];

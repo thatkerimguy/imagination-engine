@@ -83,16 +83,26 @@ export function workspaceCapabilities(mode: EditorMode): Readonly<WorkspaceCapab
   return BY_MODE[mode];
 }
 
-/** Picker copy shared by New Novel and Book Settings. */
-export const MODE_CHOICES: readonly { mode: WorkspaceMode; label: string; hint: string }[] = [
+/** Picker copy shared by New Novel, Book Settings and Settings › Default workspace. */
+export const MODE_CHOICES: readonly {
+  mode: WorkspaceMode;
+  label: string;
+  hint: string;
+  labelKey: 'mode.prose' | 'mode.interactive';
+  hintKey: 'mode.proseHint' | 'mode.interactiveHint';
+}[] = [
   {
     mode: 'prose',
     label: 'Classic Novel',
     hint: 'Clean, distraction-free prose. Export anywhere.',
+    labelKey: 'mode.prose',
+    hintKey: 'mode.proseHint',
   },
   {
     mode: 'interactive',
     label: 'Interactive Studio',
     hint: 'Kinetic cues, Live Preview and 9:16 teasers.',
+    labelKey: 'mode.interactive',
+    hintKey: 'mode.interactiveHint',
   },
 ];

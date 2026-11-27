@@ -15,9 +15,9 @@ export const routes = {
     `/folders/note/${docId}${folderId ? `?${q({ folder: folderId })}` : ''}`,
   search: '/search',
   doctor: '/doctor',
-  /** Offline Help & Legal center (Settings → Privacy & integrity). */
+  /** Offline Help & Legal center (Settings → Privacy & About). */
   help: '/help',
-  /** 30-day Trash (Settings → Backup & Restore). */
+  /** 30-day Trash (Settings → Data & Backup). */
   trash: '/trash',
   lock: '/lock',
   /** Book compiler for a novel. */
@@ -26,6 +26,10 @@ export const routes = {
   compileFolder: (folderId: string) => `/compile-folder?${q({ folder: folderId })}`,
   newNovel: '/new-novel',
   appSettings: '/settings',
+  /** Settings → Data & Backup → Backups & External Folder. */
+  settingsBackup: '/settings-backup',
+  /** Settings → Publishing & Web → Web Publishing & API (+ Live Preview source). */
+  settingsPublishing: '/settings-publishing',
   appearance: '/appearance',
   /** Growth charts for a target (`chapter:<id>`, `novel:<id>`…); chapter ids give Back a parent. */
   growth: (target: string, from?: { novel: string; season: string; chapter: string }) =>
@@ -86,7 +90,17 @@ export function parentHref(
     const [n, s, c] = [one('novel'), one('season'), one('chapter')];
     return n && s && c ? routes.chapter(n, s, c) : routes.shelf;
   }
-  if (['appearance', 'doctor', 'help', 'lock', 'trash'].includes(parts[0] ?? ''))
+  if (
+    [
+      'appearance',
+      'doctor',
+      'help',
+      'lock',
+      'trash',
+      'settings-backup',
+      'settings-publishing',
+    ].includes(parts[0] ?? '')
+  )
     return routes.appSettings;
   if (parts[0] === 'search') return null;
   if (parts[0] === 'folders') {

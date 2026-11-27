@@ -6,6 +6,7 @@ import { folderHref, routes } from '../routes.ts';
 import type { FolderRecord } from '../store/folders.ts';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
+import { hitSlopFor, MIN_TOUCH } from '../ui/a11y.ts';
 
 export function Breadcrumbs({ crumbs }: { crumbs: readonly FolderRecord[] }): ReactNode {
   const go = (i: number): void => {
@@ -33,6 +34,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: readonly FolderRecord[] }): Re
                 accessibilityRole="button"
                 accessibilityLabel={`Go to ${c.title}`}
                 onPress={() => go(i)}
+                hitSlop={hitSlopFor(MIN_TOUCH, 32)}
                 style={{ minHeight: 32, justifyContent: 'center' }}
                 testID={`crumb-${c.id}`}
               >

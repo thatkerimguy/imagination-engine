@@ -1,6 +1,7 @@
 // The reorderable, include/exclude chapter list: hairline rows under group (season) labels.
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { Glyph } from '../ui/Glyph.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
 import { SectionLabel } from '../ui/Page.tsx';
@@ -16,17 +17,22 @@ export function ChapterRows(p: {
   onMove(id: string, delta: -1 | 1): void;
 }): ReactNode {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const included = p.rows.filter((r) => r.included).length;
   return (
     <View>
       <SectionLabel
-        trailing={<Txt variant="meta" color="inkMuted">{`${included} of ${p.rows.length}`}</Txt>}
+        trailing={
+          <Txt variant="meta" color="inkMuted">
+            {t('compile.ofCount', { n: included, total: p.rows.length })}
+          </Txt>
+        }
       >
-        Contents
+        {t('compile.contents')}
       </SectionLabel>
       {p.rows.length === 0 ? (
         <Txt variant="body" color="inkSecondary">
-          Nothing to compile yet.
+          {t('compile.nothing')}
         </Txt>
       ) : null}
       {p.rows.map((r, i) => {
@@ -44,7 +50,7 @@ export function ChapterRows(p: {
             >
               <Press
                 accessibilityRole="checkbox"
-                accessibilityLabel={`Include ${r.title}`}
+                accessibilityLabel={t('compile.include', { title: r.title })}
                 accessibilityState={{ checked: r.included }}
                 onPress={() => p.onToggle(r.id)}
                 style={styles.main}
@@ -66,7 +72,7 @@ export function ChapterRows(p: {
               </Press>
               <IconBtn
                 icon="chevron-up"
-                accessibilityLabel={`Move ${r.title} up`}
+                accessibilityLabel={t('compile.moveUp', { title: r.title })}
                 box={36}
                 size={18}
                 disabled={i === 0}
@@ -74,7 +80,7 @@ export function ChapterRows(p: {
               />
               <IconBtn
                 icon="chevron-down"
-                accessibilityLabel={`Move ${r.title} down`}
+                accessibilityLabel={t('compile.moveDown', { title: r.title })}
                 box={36}
                 size={18}
                 disabled={i === p.rows.length - 1}

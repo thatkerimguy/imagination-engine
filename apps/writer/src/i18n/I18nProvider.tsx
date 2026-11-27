@@ -9,9 +9,12 @@ import {
   formatDate as fmtDate,
   formatNumber as fmtNumber,
   resolveLocale,
+  tn as pluralT,
   translator,
   type LanguageSetting,
   type Locale,
+  type PluralBase,
+  type TParams,
   type Translate,
 } from './i18n.ts';
 
@@ -19,6 +22,8 @@ export interface I18nValue {
   locale: Locale;
   setting: LanguageSetting;
   t: Translate;
+  /** Plural-aware `t` for `.one` / `.other` key pairs. */
+  tn(base: PluralBase, n: number, params?: TParams): string;
   formatNumber(n: number): string;
   formatDate(iso: string): string;
   setLanguage(next: LanguageSetting): void;
@@ -38,6 +43,7 @@ const make = (setting: LanguageSetting, setLanguage: I18nValue['setLanguage']): 
     locale,
     setting,
     t: translator(locale),
+    tn: (base, n, params) => pluralT(base, n, params, locale),
     formatNumber: (n) => fmtNumber(n, locale),
     formatDate: (iso) => fmtDate(iso, locale),
     setLanguage,

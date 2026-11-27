@@ -12,7 +12,8 @@ import { GimmickLine } from '../../../library/GimmickLine.tsx';
 import { SeasonSection } from '../../../library/SeasonSection.tsx';
 import { routes } from '../../../routes.ts';
 import { useRepoQuery, useRepository } from '../../../store/context.tsx';
-import { moveToTrash, TRASH_HINT, type TrashTarget } from '../../../store/trash.ts';
+import { useI18n } from '../../../i18n/I18nProvider.tsx';
+import { moveToTrash, type TrashTarget } from '../../../store/trash.ts';
 import { useConfirm } from '../../../ui/ConfirmDialog.tsx';
 import {
   addChapter,
@@ -40,15 +41,12 @@ export default function OutlineScreen(): ReactNode {
   const [publishOpen, setPublishOpen] = useState(false);
   const [teaserOpen, setTeaserOpen] = useState(false);
   const confirm = useConfirm();
+  const { t } = useI18n();
   const trash = async (title: string, target: TrashTarget): Promise<void> => {
-    const ok = await confirm({
-      title: `Move “${title}” to Trash?`,
-      message: TRASH_HINT,
-      confirmLabel: 'Move to Trash',
-    });
-    if (ok) await run(() => moveToTrash(repo, target));
+    const ask = { title: t('menu.trashTitle', { title }), confirmLabel: t('menu.trash') };
+    if (await confirm({ ...ask, message: t('trash.hint') }))
+      await run(() => moveToTrash(repo, target));
   };
-
   const run = async (job: () => Promise<unknown>): Promise<void> => {
     try {
       setProblem(null);

@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
+import { NODE_KIND_META } from '../ui/node-kind.ts';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
@@ -14,6 +15,12 @@ const GLYPH: Record<SearchKind, GlyphName> = {
   folder: 'folder',
   doc: 'edit-3',
 };
+
+/** Hit glyph: story-bible docs show their kind icon (user, map-pin, book-open). */
+export const resultGlyph = (r: Pick<SearchResult, 'kind' | 'docKind'>): GlyphName =>
+  r.kind === 'doc' && r.docKind && r.docKind !== 'note'
+    ? NODE_KIND_META[r.docKind].icon
+    : GLYPH[r.kind];
 
 /** Splits `text` into [plain, highlighted, plain…] pieces. Pure. */
 export function splitHighlights(
@@ -57,7 +64,7 @@ export function SearchResultRow(p: {
       testID={p.testID}
       style={[styles.row, !p.last && { borderBottomWidth: 1, borderColor: colors.hairline }]}
     >
-      <Glyph name={r.locked ? 'lock' : GLYPH[r.kind]} size={18} color="inkMuted" />
+      <Glyph name={r.locked ? 'lock' : resultGlyph(r)} size={18} color="inkMuted" />
       <View style={styles.text}>
         <Txt variant="body" numberOfLines={1}>
           {hl(r.title, r.titleHighlights)}

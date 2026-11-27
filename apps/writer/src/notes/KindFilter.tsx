@@ -1,6 +1,9 @@
 // Compact kind filter strip for the Notes workspace: All | Notes | Characters | Locations | Lore.
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import type { StringKey } from '../i18n/i18n.ts';
+import { hitSlopFor } from '../ui/a11y.ts';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { radius, space } from '../ui/tokens.ts';
@@ -9,16 +12,20 @@ import { KIND_META, STORY_KINDS, type StoryKind } from './kind-meta.ts';
 
 export type KindFilterValue = 'all' | StoryKind;
 
-const OPTIONS: readonly { value: KindFilterValue; label: string }[] = [
-  { value: 'all', label: 'All' },
-  ...STORY_KINDS.map((k) => ({ value: k, label: KIND_META[k].plural })),
+const OPTIONS: readonly { value: KindFilterValue; labelKey: StringKey }[] = [
+  { value: 'all', labelKey: 'kinds.all' },
+  ...STORY_KINDS.map((k) => ({ value: k, labelKey: KIND_META[k].pluralKey })),
 ];
+
+/** Pills are 32 dp tall; hitSlop grows the touch target to 48 dp without changing visuals. */
+const PILL_SLOP = hitSlopFor(64, 32);
 
 export function KindFilter(p: {
   value: KindFilterValue;
   onChange(v: KindFilterValue): void;
 }): ReactNode {
   const { colors } = useTheme();
+  const { t } = useI18n();
   return (
     <ScrollView
       horizontal
@@ -29,12 +36,14 @@ export function KindFilter(p: {
     >
       {OPTIONS.map((o) => {
         const on = o.value === p.value;
+        const label = t(o.labelKey);
         return (
           <Press
             key={o.value}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={`Show ${o.label}`}
+            accessibilityLabel={t('kinds.show', { kind: label })}
+            hitSlop={PILL_SLOP}
             onPress={() => p.onChange(o.value)}
             style={[
               styles.pill,
@@ -46,7 +55,7 @@ export function KindFilter(p: {
             testID={`notes-kind-filter-${o.value}`}
           >
             <Txt variant="meta" color={on ? 'ink' : 'inkSecondary'}>
-              {o.label}
+              {label}
             </Txt>
           </Press>
         );

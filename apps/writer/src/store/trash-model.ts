@@ -3,13 +3,17 @@
 // are trashed or sit under a trashed ancestor, so outline, compile, publish, search and the
 // widget skip them for free. Restore clears it; permanent delete lets ON DELETE CASCADE clean up.
 import type { NodeKind, NodeRecord } from '@kn/core';
+import { t, tn, type Locale } from '../i18n/i18n.ts';
+import { isStoryKind, type StoryKind } from '../notes/kind-meta.ts';
 
 export const TRASH_RETENTION_DAYS = 30;
 export const DAY_MS = 86_400_000;
 
-/** The calm undo hint every "Move to Trash" confirmation shows. */
-export const TRASH_HINT =
-  'You can restore it from Settings › Backup & Restore › Trash for 30 days.';
+/** The calm undo hint every "Move to Trash" confirmation shows, in `locale`. */
+export const trashHint = (locale: Locale = 'en'): string => t('trash.hint', undefined, locale);
+
+/** English hint, kept for callers outside the i18n-aware screens. */
+export const TRASH_HINT = trashHint('en');
 
 export type TrashKind = 'novel' | 'season' | 'chapter' | 'folder' | 'doc';
 
@@ -17,6 +21,8 @@ export interface TrashRecord {
   id: string;
   kind: TrashKind;
   title: string;
+  /** Doc: its story kind (note, character, location or lore). */
+  docKind?: StoryKind;
   /** ISO-8601 UTC instant the item was moved to Trash. */
   deletedAt: string;
   /** Season / chapter: the owning book. */
@@ -49,9 +55,9 @@ export const trashDaysLeft = (r: Pick<TrashRecord, 'deletedAt'>, now: number): n
 export const isTrashExpired = (r: Pick<TrashRecord, 'deletedAt'>, now: number): boolean =>
   trashAgeMs(r, now) >= TRASH_RETENTION_DAYS * DAY_MS;
 
-export function deletesInLabel(daysLeft: number): string {
-  if (daysLeft <= 0) return 'Deletes today';
-  return `Deletes in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`;
+export function deletesInLabel(daysLeft: number, locale: Locale = 'en'): string {
+  if (daysLeft <= 0) return t('trash.deletesToday', undefined, locale);
+  return tn('trash.deletesIn', daysLeft, undefined, locale);
 }
 
 interface NoteNode {
@@ -109,6 +115,7 @@ export function trashRecordOf(n: NodeRecord): TrashRecord | null {
   const r: TrashRecord = { id: n.id, kind, title: n.title, deletedAt: n.deletedAt };
   if ((kind === 'season' || kind === 'chapter') && n.bookId) r.novelId = n.bookId;
   if (kind === 'chapter' && n.parentId) r.seasonId = n.parentId;
+  if (kind === 'doc') r.docKind = isStoryKind(n.kind) ? n.kind : 'note';
   if (kind === 'season' || kind === 'chapter') r.index = n.position;
   return r;
 }

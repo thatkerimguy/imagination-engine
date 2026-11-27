@@ -3,14 +3,17 @@
 import type { ChapterDocument } from '@kn/core';
 import { useEffect, useState } from 'react';
 import { useRepository } from '../store/context.tsx';
-import { extractQuoteCandidates } from './teaser-model.ts';
+import { defaultTeaserChapterId, teaserChapterChoices } from './teaser-model.ts';
 
 export interface TeaserSource {
   novelId: string;
   bookTitle: string;
   accent?: string;
   coverUri?: string;
+  /** The chapter to quote from by default. */
   chapter: ChapterDocument | null;
+  /** Every active chapter of the book (novel-level teasers only; empty when `given`). */
+  chapters: ChapterDocument[];
 }
 
 export function useTeaserSource(
@@ -26,10 +29,12 @@ export function useTeaserSource(
     void (async () => {
       const novel = (await repo.listNovels()).find((n) => n.id === novelId);
       let chapter: ChapterDocument | null = given ?? null;
+      let chapters: ChapterDocument[] = [];
       if (!chapter) {
         const bundle = await repo.exportNovel(novelId);
-        const all = bundle.seasons.flatMap((s) => s.chapters);
-        chapter = all.find((c) => extractQuoteCandidates(c.blocks, 1).length > 0) ?? all[0] ?? null;
+        chapters = bundle.seasons.flatMap((s) => s.chapters);
+        const first = defaultTeaserChapterId(teaserChapterChoices(chapters));
+        chapter = chapters.find((c) => c.id === first) ?? null;
       }
       if (live)
         setSource({
@@ -38,6 +43,7 @@ export function useTeaserSource(
           ...(novel?.accent ? { accent: novel.accent } : {}),
           ...(novel?.coverUri ? { coverUri: novel.coverUri } : {}),
           chapter,
+          chapters,
         });
     })().catch(() => live && setSource(null));
     return () => {

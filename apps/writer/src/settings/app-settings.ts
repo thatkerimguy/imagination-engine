@@ -1,4 +1,5 @@
 // Device-level writer settings (not part of any novel).
+import { WORKSPACE_MODES, type WorkspaceMode } from '@kn/core';
 import type { NovelRepository } from '../store/repository.ts';
 import { keys } from '../store/documents.ts';
 import { LANGUAGE_SETTINGS, type LanguageSetting } from '../i18n/i18n.ts';
@@ -21,6 +22,8 @@ export interface AppSettings {
   crashReportingEnabled: boolean;
   /** Writer interface language; 'system' follows the device. */
   language: LanguageSetting;
+  /** Workspace mode new books start in ('prose' = Classic Novel). */
+  defaultWorkspace: WorkspaceMode;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -29,6 +32,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   readerUrl: 'http://127.0.0.1:5173/',
   crashReportingEnabled: false,
   language: 'system',
+  defaultWorkspace: 'prose',
 };
 
 export async function loadSettings(repo: NovelRepository): Promise<AppSettings> {
@@ -39,6 +43,8 @@ export async function loadSettings(repo: NovelRepository): Promise<AppSettings> 
     merged.previewMode = DEFAULT_SETTINGS.previewMode;
   merged.crashReportingEnabled = merged.crashReportingEnabled === true;
   if (!LANGUAGE_SETTINGS.includes(merged.language)) merged.language = DEFAULT_SETTINGS.language;
+  if (!WORKSPACE_MODES.includes(merged.defaultWorkspace))
+    merged.defaultWorkspace = DEFAULT_SETTINGS.defaultWorkspace;
   return merged;
 }
 

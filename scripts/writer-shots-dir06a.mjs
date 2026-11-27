@@ -45,7 +45,10 @@ export async function dir06aPass(page, { WRITER, packAt, tid, ok, fail }) {
   });
   if (row) ok('Appearance & Fonts row is full-bleed inside its card');
   else fail('Appearance & Fonts row is inset inside its card (floating highlight)');
+  // Test connection now lives on Settings › Web Publishing & API (OVERHAUL-02A, 1 tap).
+  await tid('open-publishing').click();
   const test = tid('publish-test');
+  await test.waitFor({ timeout: 15000 });
   await test.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   const testBox = await test.evaluate((el) => {
     const cs = getComputedStyle(el);

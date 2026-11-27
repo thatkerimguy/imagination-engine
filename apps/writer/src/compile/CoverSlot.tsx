@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { BookCoverThumb } from '../components/BookCoverThumb.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { lift, radius, space } from '../ui/tokens.ts';
@@ -15,11 +16,12 @@ export function CoverSlot(p: {
   onPress(): void;
 }): ReactNode {
   const { colors, dark } = useTheme();
+  const { t } = useI18n();
   return (
     <View style={styles.row}>
       <Press
         accessibilityRole="button"
-        accessibilityLabel={p.coverUri ? 'Change cover' : 'Add cover'}
+        accessibilityLabel={p.coverUri ? t('compile.changeCover') : t('compile.addCover')}
         onPress={p.onPress}
         testID="compile-cover"
         style={[
@@ -34,7 +36,7 @@ export function CoverSlot(p: {
           <View style={styles.empty}>
             <BookCoverThumb title={p.title} />
             <Txt variant="caption" color="inkMuted">
-              Add cover
+              {t('compile.addCover')}
             </Txt>
           </View>
         )}

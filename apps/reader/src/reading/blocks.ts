@@ -1,4 +1,4 @@
-import type { Block } from '@kn/core';
+import type { Block } from '@kn/core/guard';
 import { h } from '../dom.ts';
 import { renderInline } from './inline.ts';
 

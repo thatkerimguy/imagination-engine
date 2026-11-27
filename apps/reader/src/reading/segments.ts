@@ -1,4 +1,4 @@
-import type { Block } from '@kn/core';
+import type { Block } from '@kn/core/guard';
 
 /**
  * Splits a chapter into beat segments. Each segment ends on a `beatStop` block (inclusive) or

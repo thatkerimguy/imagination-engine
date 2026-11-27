@@ -73,11 +73,11 @@ export async function dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, 
   await tid('preview-screen').waitFor({ timeout: 15000 });
   const frame = page.frameLocator('iframe[title="Reader preview"]');
   await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
-  const box = frame.locator('.kn-sb');
+  const box = frame.locator('[data-engine="frame-hud"]');
   await box.waitFor({ timeout: 15000 });
   const boxText = await box.evaluate((el) => el.textContent);
   if (/Class Evolution Unlocked/.test(boxText) && /Iron Nerves/.test(boxText))
-    ok('Live Preview renders the litrpg-system-box System window');
+    ok('Live Preview renders the litrpg-system-box cue via the v2 frame-hud engine');
   else fail(`System box text: ${boxText}`);
   await box.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(1200);

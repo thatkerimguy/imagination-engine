@@ -21,6 +21,8 @@ import { dir06aPass } from './writer-shots-dir06a.mjs';
 import { dir07Pass } from './writer-shots-dir07.mjs';
 import { ov01Pass } from './writer-shots-ov01.mjs';
 import { ov02aPass } from './writer-shots-overhaul02a.mjs';
+import { ov03Pass } from './writer-shots-ov03.mjs';
+import { chatState } from './lib/chat-state.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -53,7 +55,8 @@ try {
   // Settled dice call navigator.vibrate() (in the preview iframe too); record when.
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'vibrate', {
-      value: () => ((window.__settled = performance.now()), true),
+      // Dice call vibrate(12); v2 engine haptics always pass an array, so they never count.
+      value: (p) => (typeof p === 'number' && (window.__settled = performance.now()), true),
     });
   });
   // True offline: only the local writer server may answer. previewMode stays at its default.
@@ -189,10 +192,7 @@ try {
   const reader = page.frames().find((f) => f.url() === 'about:srcdoc');
   if (!reader) throw new Error('offline reader srcdoc frame not found');
   await reader.waitForFunction(() => window.__settled, null, { timeout: 30000 });
-  const chat = await reader.evaluate(() => ({
-    pending: document.querySelectorAll('.kn-cbc li.pending').length,
-    last: document.querySelector('.kn-cbc li:last-child')?.textContent,
-  }));
+  const chat = await chatState(reader);
   if (chat.pending === 0 && chat.last === "Don't relax.")
     ok('all 3 KESTREL-9 lines were complete when the dice landed');
   else fail(`dice landed while KESTREL-9 was incomplete: ${JSON.stringify(chat)}`);
@@ -219,10 +219,11 @@ try {
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir05Pass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir06aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail });
-  // D-07 + OVERHAUL-01/-02 are regression now; the pack root holds only the OVERHAUL-02A four.
+  // D-07 + OVERHAUL-01/-02/-02A are regression now; the pack root holds the OVERHAUL-03 shots.
   await dir07Pass(page, { WRITER, packAt: shotsAt, shotsAt, tid, ok, fail, editor });
   await ov01Pass(browser, { WRITER, packAt: shotsAt, ok, fail });
-  await ov02aPass(browser, { WRITER, packAt, ok, fail });
+  await ov02aPass(browser, { WRITER, packAt: shotsAt, ok, fail });
+  await ov03Pass(browser, { WRITER, packAt, ok, fail });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

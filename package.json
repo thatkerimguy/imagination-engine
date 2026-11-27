@@ -28,8 +28,9 @@
     "writer:export": "pnpm --filter @kn/writer export:web",
     "writer:shots": "node scripts/writer-shots.mjs",
     "build:preview-bundle": "node scripts/build-preview-bundle.mjs",
-    "android:prebuild": "node scripts/build-preview-bundle.mjs --if-stale && pnpm --filter @kn/writer exec expo prebuild --platform android --clean",
-    "android:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1"
+    "android:prebuild": "node scripts/build-preview-bundle.mjs --if-stale && pnpm --filter @kn/writer exec expo prebuild --platform android --clean && node scripts/build-preview-assets.mjs",
+    "android:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android-apk.ps1",
+    "build:preview-assets": "node scripts/build-preview-assets.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -39,6 +40,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "happy-dom": "^21.0.4",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.73.0",

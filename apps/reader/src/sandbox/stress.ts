@@ -1,8 +1,9 @@
-import type { ModuleHost } from '../runtime/module-host.ts';
+import type { BlockHost } from '../runtime/block-host.ts';
+import { liveRuntimeResources } from '../runtime-context.ts';
 import type { Stage, StageStats } from '../runtime/stage.ts';
 
 export function statsLine(s: StageStats): string {
-  return `GL contexts made ${s.contextsCreated} · live ${s.liveContext ? 'yes' : 'no'} · leases ${s.leases} · geo ${s.geometries} · tex ${s.textures} · overlay nodes ${s.overlayChildren}${s.contextLost ? ' · CONTEXT LOST' : ''}`;
+  return `GL contexts made ${s.contextsCreated} · live ${s.liveContext ? 'yes' : 'no'} · leases ${s.leases} · geo ${s.geometries} · tex ${s.textures} · overlay nodes ${s.overlayChildren}${s.contextLost ? ' · CONTEXT LOST' : ''} · runtime ${liveRuntimeResources()}`;
 }
 
 /**
@@ -13,7 +14,7 @@ export function statsLine(s: StageStats): string {
  */
 export async function runStress(
   runs: number,
-  make: () => ModuleHost | null,
+  make: () => BlockHost | null,
   stage: Stage,
   report: (line: string) => void,
 ): Promise<void> {
@@ -34,6 +35,7 @@ export async function runStress(
   const clean =
     s.leases === 0 &&
     s.overlayChildren === 0 &&
+    liveRuntimeResources() === 0 &&
     s.geometries <= b.geometries &&
     s.textures <= b.textures &&
     s.geometries === 0 &&

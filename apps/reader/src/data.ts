@@ -1,13 +1,13 @@
 // Static JSON loaders. Published books are plain files beside the reader (novels/<id>/...).
 import {
-  parseChapterDocument,
-  parseNovelManifest,
-  parseSeasonManifest,
+  checkChapterDocument as parseChapterDocument,
+  checkNovelManifest as parseNovelManifest,
+  checkSeasonManifest as parseSeasonManifest,
   type ChapterDocument,
   type NovelManifest,
   type ParseResult,
   type SeasonManifest,
-} from '@kn/core';
+} from '@kn/core/guard';
 
 const cache = new Map<string, Promise<unknown>>();
 

@@ -1,9 +1,9 @@
 // The hybrid pacing engine: a freely scrollable stream, gated at beat-stop blocks by a quiet
 // tap-to-continue cue so dramatic beats (a throw, a breach) land before the prose moves on.
-import type { Block, ModuleBlock } from '@kn/core';
+import type { Block, ModuleBlock } from '@kn/core/guard';
 import type { QualityTier } from '@kn/core/renderer';
 import { h } from '../dom.ts';
-import type { ModuleHost } from '../runtime/module-host.ts';
+import type { BlockHost } from '../runtime/block-host.ts';
 import { segmentEnds, segmentOf } from './segments.ts';
 
 /** Longest one module beat may hold the trigger queue (and its gate cue) before moving on. */
@@ -13,7 +13,7 @@ export interface PacerOptions {
   blocks: readonly Block[];
   elements: readonly HTMLElement[];
   tier: QualityTier;
-  createHost(block: ModuleBlock, el: HTMLElement, tier: QualityTier): ModuleHost;
+  createHost(block: ModuleBlock, el: HTMLElement, tier: QualityTier): BlockHost;
   /** Resume here: earlier segments are revealed and earlier spectacles shown in calm form. */
   restoreIndex: number | null;
   onPosition(blockId: string): void;
@@ -24,7 +24,7 @@ export interface PacerOptions {
 export class Pacer {
   private readonly ends: number[];
   private revealed = -1;
-  private readonly hosts = new Map<number, ModuleHost>();
+  private readonly hosts = new Map<number, BlockHost>();
   private readonly triggered = new Set<number>();
   private cue: HTMLElement | null = null;
   private readonly observers: IntersectionObserver[] = [];
@@ -80,6 +80,8 @@ export class Pacer {
           if (this.abort.signal.aborted) return;
           await host?.trigger();
         }
+        // Lazy replays above the resume point grow after the first scroll: re-anchor once.
+        if (!this.abort.signal.aborted) el?.scrollIntoView({ block: 'start' });
       });
     }
     addEventListener('scroll', this.onScroll, { passive: true, signal: this.abort.signal });
@@ -154,7 +156,7 @@ export class Pacer {
     });
   }
 
-  private hostFor(i: number, tier: QualityTier): ModuleHost | null {
+  private hostFor(i: number, tier: QualityTier): BlockHost | null {
     const block = this.o.blocks[i];
     if (block?.kind !== 'module') return null;
     let host = this.hosts.get(i);

@@ -21,6 +21,7 @@
   },
   "include": [
     "packages/core/src/**/*",
+    "packages/engines/src/**/*",
     "packages/modules/*/**/*.ts",
     "apps/*/src/**/*",
     "apps/*/vite.config.ts",

@@ -6,7 +6,7 @@ import { useRepoQuery } from '../store/context.tsx';
 import { draftKey, getLiveDraft } from '../store/live-drafts.ts';
 import { prepareChapter } from '../store/sanitize.ts';
 import { loadOfflineReaderHtml } from './offline-reader';
-import type { PreviewLoadMessage, PreviewTier } from './protocol.ts';
+import { previewDna, type PreviewLoadMessage, type PreviewTier } from './protocol.ts';
 
 export interface PreviewPayload {
   mode: PreviewMode;
@@ -76,6 +76,7 @@ export function usePreviewPayload(
               season: s,
               chapter,
               tier,
+              visualDna: previewDna(n),
               ...(start ? { startBlockId: start } : {}),
             };
           },

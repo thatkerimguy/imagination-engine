@@ -1,0 +1,23 @@
+{
+  "name": "@kn/engines",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Gimmick System v2 runtime engines (web-only). Each engine is its own lazy entry.",
+  "exports": {
+    "./shared": "./src/shared/index.ts",
+    "./shared/stingers": "./src/shared/synth-stingers.ts",
+    "./blueprints": "./src/blueprints/index.ts",
+    "./frame-hud": "./src/frame-hud/index.ts",
+    "./chat-thread": "./src/chat-thread/index.ts",
+    "./text-alchemy": "./src/text-alchemy/index.ts",
+    "./artifact-doc": "./src/artifact-doc/index.ts",
+    "./tactile-reveal": "./src/tactile-reveal/index.ts",
+    "./telemetry-meter": "./src/telemetry-meter/index.ts",
+    "./kinetic-prose": "./src/kinetic-prose/index.ts"
+  },
+  "dependencies": {
+    "@kn/core": "workspace:*"
+  },
+  "sideEffects": false
+}

@@ -26,6 +26,8 @@ export const novelManifestSchema = z.object({
   theme: z.record(cssToken, z.string().check(z.maxLength(120))),
   enabledModules: z.array(slug),
   seasons: z.array(slug).check(z.minLength(1)),
+  /** Book Visual DNA (OVERHAUL-03); checked by `@kn/core/dna` parseVisualDna. */
+  visualDna: z.optional(z.unknown()),
 });
 
 export const seasonManifestSchema = z.object({
@@ -84,6 +86,9 @@ export const chapterDocumentSchema = z
     title: nonEmpty,
     status: z.enum(chapterStatuses),
     blocks: z.array(blockSchema),
+    /** Per-chapter DNA override and inline v2 blueprints (checked by guardBlueprint). */
+    visualDna: z.optional(z.unknown()),
+    blueprints: z.optional(z.record(z.string(), z.unknown())),
   })
   .check(
     z.refine(

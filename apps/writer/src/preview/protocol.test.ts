@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { a11yMessage, lifecycleMessage, parseReaderMessage } from './protocol.ts';
+import {
+  a11yMessage,
+  lifecycleMessage,
+  parseReaderMessage,
+  previewDna,
+  tierMessage,
+} from './protocol.ts';
 
 describe('parseReaderMessage', () => {
   it('accepts object and JSON-string forms', () => {
@@ -47,5 +53,18 @@ describe('host control messages', () => {
       type: 'a11y',
       reducedMotion: true,
     });
+  });
+});
+
+describe('OVERHAUL-03 live tier + Visual DNA', () => {
+  it('builds a live tier message (no reload)', () => {
+    expect(tierMessage('reduced', true)).toEqual({ type: 'tier', tier: 'reduced', calmMode: true });
+    expect(tierMessage('lite')).toEqual({ type: 'tier', tier: 'lite', calmMode: false });
+  });
+
+  it('defaults Chrome Tide to Noir Rain and other books to Editorial Minimal', () => {
+    expect(previewDna({ id: 'vertical-slice' })).toBe('noir-rain');
+    expect(previewDna({ id: 'my-book' })).toBe('editorial-minimal');
+    expect(previewDna({ id: 'vertical-slice', visualDna: 'celestial-ink' })).toBe('celestial-ink');
   });
 });

@@ -11,7 +11,28 @@ export interface PreviewLoadMessage {
   chapter: ChapterDocument;
   startBlockId?: string;
   tier: PreviewTier;
+  /** Book Visual DNA (archetype id or 7-axis object); the reader re-validates it. */
+  visualDna?: unknown;
+  /** Inline v2 blueprints beside the chapter (the reader re-guards each one). */
+  blueprints?: Record<string, unknown>;
 }
+
+/** Chrome Tide (the demo book) reads as Noir Rain; every other book defaults to Editorial Minimal. */
+export const previewDna = (novel: Pick<NovelManifest, 'id' | 'visualDna'>): unknown =>
+  novel.visualDna ?? (novel.id === 'vertical-slice' ? 'noir-rain' : 'editorial-minimal');
+
+/** Live tier / Calm Mode switch: v2 engines downgrade in place, no reload or remount. */
+export interface PreviewTierMessage {
+  type: 'tier';
+  tier: PreviewTier;
+  calmMode: boolean;
+}
+
+export const tierMessage = (tier: PreviewTier, calmMode = false): PreviewTierMessage => ({
+  type: 'tier',
+  tier,
+  calmMode,
+});
 
 export type LifecycleState = 'active' | 'background';
 
@@ -34,7 +55,11 @@ export interface PreviewRecordMessage {
 }
 
 export type PreviewHostMessage =
-  PreviewLoadMessage | PreviewLifecycleMessage | PreviewA11yMessage | PreviewRecordMessage;
+  | PreviewLoadMessage
+  | PreviewLifecycleMessage
+  | PreviewA11yMessage
+  | PreviewRecordMessage
+  | PreviewTierMessage;
 
 export const recordMessage = (on: boolean): PreviewRecordMessage => ({ type: 'record', on });
 

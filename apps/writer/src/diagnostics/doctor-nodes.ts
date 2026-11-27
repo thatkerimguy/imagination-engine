@@ -1,6 +1,8 @@
 // Document Doctor checks for the node tree and chapter bodies: parent / book references, kinds,
 // cycles, invalid blocks, unknown gimmick modules and bad module props.
-import { parseChapterDocument, type NodeRecord } from '@kn/core';
+import { parseChapterDocument, type ModuleBlock, type NodeRecord } from '@kn/core';
+import { guardBlueprint, resolveBlueprintProps } from '@kn/core/gimmicks';
+import { starterBlueprint } from '@kn/engines/blueprints';
 import { toChapter } from '../store/node-mapping.ts';
 import { mk, type Issue, type ModuleLookup, type Tables } from './doctor-types.ts';
 
@@ -72,6 +74,10 @@ export function checkBodies(
     }
     for (const b of r.value.blocks) {
       if (b.kind !== 'module') continue;
+      if (typeof b.props.blueprintId === 'string') {
+        out.push(...checkCue(b, key, r.value.blueprints));
+        continue;
+      }
       const mod = getModule(b.moduleId);
       if (!mod) {
         const detail = `Block uses “${b.moduleId}”, which this writer does not have.`;
@@ -88,4 +94,22 @@ export function checkBodies(
     }
   }
   return out;
+}
+
+/** A v2 cue: its blueprint must resolve (inline copy or starter) and its props must validate. */
+function checkCue(b: ModuleBlock, key: string, inline?: Record<string, unknown>): Issue[] {
+  const id = String(b.props.blueprintId);
+  const own = inline?.[id];
+  const g = own === undefined ? null : guardBlueprint(own);
+  const bp = g?.ok ? g.blueprint : starterBlueprint(id);
+  if (!bp) {
+    const detail = `Cue uses gimmick “${id}”, which this writer does not have.`;
+    return [mk('unknown-module', key, 'warning', 'Unknown module', detail, undefined, b.id)];
+  }
+  const props = { ...b.props };
+  delete props.blueprintId;
+  const v = resolveBlueprintProps(bp, props);
+  if (v.ok) return [];
+  const detail = `${bp.name}: ${v.errors.slice(0, 2).join('; ')}`;
+  return [mk('bad-props', key, 'warning', 'Module settings are invalid', detail, undefined, b.id)];
 }

@@ -3,10 +3,14 @@
 // module. Used directly by Vitest, persisted by the web driver, and mirrored by the native
 // SQLite driver as its read cache.
 import { sortNodes, type MediaAssetRecord, type NodeLinkRecord, type NodeRecord } from '@kn/core';
+import { CatalogIndex, mergeCatalog } from './catalog-index.ts';
 import { copy, ForeignKeyError, MemoryStore } from './memory-store.ts';
 import {
   SCHEMA_USER_VERSION,
+  type CatalogQuery,
   type DatabasePort,
+  type GimmickBlueprintRow,
+  type GimmickPackRow,
   type DatabaseTables,
   type GrowthLogRow,
   type NodeQuery,
@@ -35,6 +39,7 @@ export class MemoryDatabase implements DatabasePort {
   readonly driver: DatabasePort['driver'];
   readonly schemaVersion = SCHEMA_USER_VERSION;
   private readonly s = new MemoryStore();
+  private readonly catalog = new CatalogIndex();
   /** Called after every committed write with the tables it touched (web persistence). */
   onCommit: ((tables: ReadonlySet<Table>) => void) | null = null;
 
@@ -190,6 +195,24 @@ export class MemoryDatabase implements DatabasePort {
 
   async integrity() {
     return this.s.integrity();
+  }
+
+  async putGimmicks(
+    packs: readonly GimmickPackRow[],
+    blueprints: readonly GimmickBlueprintRow[],
+  ): Promise<void> {
+    this.s.gimmicks = mergeCatalog(this.s.gimmicks, packs, blueprints);
+    this.commit('gimmickPacks', 'gimmickBlueprints');
+  }
+
+  async searchGimmicks(q: CatalogQuery): Promise<GimmickBlueprintRow[]> {
+    this.catalog.sync(this.s.gimmicks.gimmickBlueprints);
+    return this.catalog.search(q);
+  }
+
+  async gimmickGenreCounts() {
+    this.catalog.sync(this.s.gimmicks.gimmickBlueprints);
+    return this.catalog.genreCounts();
   }
 
   async exportTables(): Promise<DatabaseTables> {

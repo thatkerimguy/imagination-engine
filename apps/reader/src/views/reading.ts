@@ -120,6 +120,11 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
     footer,
   );
   v.main.replaceChildren(article);
+  // Book Visual DNA lands on open, even for prose-only chapters (own lazy chunk).
+  void import('../dna-apply.ts').then((d) => {
+    if (article.isConnected)
+      d.attachDna(v.main, d.bookDna(chapter.visualDna ?? novel.visualDna, opts.dnaFallback));
+  });
 
   const restoreAt = opts.startBlockId ? blocks.findIndex((b) => b.id === opts.startBlockId) : -1;
   const tierPref = opts.tier ?? getPrefs().tier;
@@ -127,7 +132,7 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
   const tier: QualityTier = resolveTier(tierPref, deviceHints(calm));
   document.documentElement.dataset.tier = tier;
   seedTier(tier, calm);
-  // The GL stage keeps full 2x sharpness only for an explicit High choice (see stage-gl.ts).
+  // The GL stage keeps full 2x sharpness only for an explicit High choice (webgl-stage.ts).
   document.documentElement.dataset.tierPref = tierPref;
 
   const pacer = new Pacer({
@@ -137,7 +142,6 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
     restoreIndex: restoreAt > 0 ? restoreAt : null,
     createHost: (block: ModuleBlock, el, t) =>
       createBlockHost(block, el, t, {
-        stage: v.stage,
         audio: v.audio,
         resolveAsset: (path) => novelUrl(novel.id, path),
         dnaRoot: v.main,

@@ -7,12 +7,12 @@ import {
   type GimmickEngine,
   type Unsubscribe,
 } from '@kn/core/gimmicks';
-import { cls, el, injectEngineStyle, svgEl } from '../shared/dom-safe.ts';
+import { cls, el, injectEngineStyle } from '../shared/dom-safe.ts';
+import { rt } from '../shared/i18n-reader.ts';
 import { cue, isStill, mountFrame, variantOf } from '../shared/kit.ts';
+import { ID, MECHANISMS, ringSvg, sealSvg } from './mechanisms.ts';
 import { CSS } from './styles.ts';
 
-const ID = 'tactile-reveal';
-const MECHANISMS = ['wax-seal', 'scratch-off', 'biometric-hold', 'fog-wipe'] as const;
 const HOLD_MS = 650;
 const CUE_MS = 600;
 const COLS = 8;
@@ -20,50 +20,13 @@ const ROWS = 5;
 const NEED = 0.35;
 let uid = 0;
 
-const CRACK = 'L46 76 L52 60 L45 44 L51 28 Z';
-
-function sealSvg(): SVGSVGElement {
-  const half = (side: 'l' | 'r'): SVGPathElement =>
-    svgEl('path', {
-      class: `${cls(ID, 'half')} ${cls(ID, `half-${side}`)}`,
-      d: `M50 6 A44 44 0 0 ${side === 'l' ? 0 : 1} 50 94 ${CRACK}`,
-    });
-  return svgEl(
-    'svg',
-    { viewBox: '0 0 100 100', class: cls(ID, 'svg'), 'aria-hidden': 'true', focusable: 'false' },
-    half('l'),
-    half('r'),
-    svgEl('circle', { class: cls(ID, 'rim'), cx: 50, cy: 50, r: 30 }),
-  );
-}
-
-function ringSvg(): SVGSVGElement {
-  const arc = (d: string): SVGPathElement => svgEl('path', { class: cls(ID, 'print'), d });
-  return svgEl(
-    'svg',
-    { viewBox: '0 0 100 100', class: cls(ID, 'svg'), 'aria-hidden': 'true', focusable: 'false' },
-    svgEl('circle', { class: cls(ID, 'track'), cx: 50, cy: 50, r: 44 }),
-    svgEl('circle', {
-      class: cls(ID, 'bar'),
-      cx: 50,
-      cy: 50,
-      r: 44,
-      pathLength: 100,
-      transform: 'rotate(-90 50 50)',
-    }),
-    arc('M34 60 A16 16 0 0 1 66 60'),
-    arc('M40 66 A10 10 0 0 1 60 66'),
-    arc('M46 72 A4 4 0 0 1 54 72'),
-    arc('M30 52 A20 20 0 0 1 70 52'),
-  );
-}
-
 export const tactileRevealEngine: GimmickEngine = {
   id: ID,
   mount(host, blueprint, props, ctx): EngineInstance {
     injectEngineStyle(ID, CSS);
     const mech = variantOf(blueprint, props, 'mechanism', MECHANISMS);
-    const label = propText(props, 'label', 'Reveal');
+    const fallback = mech === 'wax-seal' ? rt('breakSeal') : mech === 'biometric-hold' ? rt('holdToScan') : rt('lookAgain');
+    const label = propText(props, 'label', fallback);
     const { root, body } = mountFrame(host, blueprint, ctx, { label, layout: mech });
     const rid = `kn-tr-${++uid}`;
     const wipe = mech === 'scratch-off' || mech === 'fog-wipe';

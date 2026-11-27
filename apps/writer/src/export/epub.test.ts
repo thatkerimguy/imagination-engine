@@ -1,6 +1,7 @@
 import type { Block } from '@kn/core';
 import { EpubCheck } from '@likecoin/epubcheck-ts';
 import { describe, expect, it } from 'vitest';
+import { starterBlueprint } from '@kn/engines/blueprints';
 import { DEFAULT_EXPORT_OPTIONS, type CompiledBook, type ExportOptions } from './book-model.ts';
 import { EPUB_MIME, buildEpub } from './epub.ts';
 import { textOf, unzipFiles } from './zip.ts';
@@ -13,6 +14,11 @@ const mod = (n: number, moduleId: string, props: Record<string, unknown> = {}): 
   moduleVersion: 1,
   props,
 });
+/** A v2 cue: rendered through its blueprint's `epubXhtml` export template. */
+const cue = (n: number, blueprintId: string, props: Record<string, unknown> = {}): Block => {
+  const bp = starterBlueprint(blueprintId)!;
+  return mod(n, bp.engine, { blueprintId, ...bp.defaultProps, ...props });
+};
 
 const blocks: Block[] = [
   {
@@ -23,11 +29,11 @@ const blocks: Block[] = [
   { id: id(2), kind: 'dialogue', speaker: 'Ana & Bo', text: 'Hi <there>' },
   { id: id(3), kind: 'scene-break', label: 'Later & after' },
   { id: id(4), kind: 'prose', text: 'whispered', style: 'whisper' },
-  mod(5, 'gits-cyberbrain-chat', { senderId: 'KESTREL-9', messages: ['Link established.'] }),
-  mod(6, 'bl-dice-3d'),
-  mod(7, 'pt-gaslight-edit'),
-  mod(8, 'gits-ghost-whisper'),
-  mod(9, 'bl-lighter-flick', { action: 'ignite' }),
+  cue(5, 'cyberbrain-link', { messages: [{ sender: 'KESTREL-9', text: 'Link established.' }] }),
+  cue(6, 'dice-throw-3d'),
+  cue(7, 'gaslight-rewrite'),
+  cue(8, 'system-notification', { title: 'Tom & <b>Jerry</b>' }),
+  cue(9, 'brass-lighter-3d'),
   mod(10, 'core-ambient-bed'),
 ];
 
@@ -114,7 +120,8 @@ describe('buildEpub', () => {
     expect(ch).toContain('&lt;b&gt;tag&lt;/b&gt;');
     expect(ch).toContain('Ana &amp; Bo:');
     expect(ch).toContain('<hr class="scene-break"/>');
-    expect(ch).toContain('KESTREL-9:</span> Link established.');
+    expect(ch).toContain('<strong>KESTREL-9</strong> Link established.');
+    expect(ch).toContain('Tom &amp; &lt;b&gt;Jerry&lt;/b&gt;');
     expect(textOf(files['OEBPS/styles.css']!)).not.toMatch(
       /color:\s*#0+\b|background(-color)?:\s*#f/i,
     );

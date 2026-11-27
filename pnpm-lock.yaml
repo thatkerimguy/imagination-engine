@@ -223,9 +223,6 @@ importers:
       '@kn/engines':
         specifier: workspace:*
         version: link:../../packages/engines
-      three:
-        specifier: ^0.187.0
-        version: 0.187.0
     devDependencies:
       workbox-window:
         specifier: ^7.4.1
@@ -272,6 +269,9 @@ importers:
       '@kn/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@kn/engines':
+        specifier: workspace:*
+        version: link:../../packages/engines
       '@kn/module-bl-dice-3d':
         specifier: workspace:*
         version: link:../../packages/modules/bl-dice-3d
@@ -432,6 +432,12 @@ importers:
       '@kn/core':
         specifier: workspace:*
         version: link:../core
+      cannon-es:
+        specifier: ^0.20.0
+        version: 0.20.0
+      three:
+        specifier: ^0.187.0
+        version: 0.187.0
 
   packages/modules/bl-dice-3d:
     dependencies:

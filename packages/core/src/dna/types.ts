@@ -27,6 +27,7 @@ export const ORNAMENT_GRAMMARS = [
   'dossier-stamp',
   'rune-notch',
   'torn-edge',
+  'chamfer-tech',
 ] as const;
 export const RADII = ['sharp', 'soft', 'pill'] as const;
 export const MOTION_PERSONALITIES = [

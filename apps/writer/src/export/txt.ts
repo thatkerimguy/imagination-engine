@@ -25,7 +25,7 @@ export function toTxt(book: CompiledBook, opts: ExportOptions): string {
   book.sections.forEach((section, i) => {
     if (opts.pageBreaks && (i > 0 || parts.length > 0)) parts.push('\f');
     if (section.showTitle !== false) parts.push(section.title);
-    for (const item of flattenBlocks(section.blocks, section.styles, opts.gimmickMode))
+    for (const item of flattenBlocks(section.blocks, section.styles, opts.gimmickMode, section.blueprints))
       parts.push(itemToTxt(item));
   });
   return `${parts.join('\n\n')}\n`;

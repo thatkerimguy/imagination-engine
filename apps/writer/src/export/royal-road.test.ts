@@ -1,18 +1,23 @@
-// Royal Road exporter: fragment shape, escaping, LitRPG tables, cue fallbacks.
+// Royal Road exporter: fragment shape, escaping, blueprint export templates, cue fallbacks.
 import type { Block, ModuleBlock } from '@kn/core';
 import { describe, expect, it } from 'vitest';
+import { STARTER_BLUEPRINT_LIST, starterBlueprint } from '@kn/engines/blueprints';
 import { getWriterModule } from '../modules/registry.ts';
 import { DEFAULT_EXPORT_OPTIONS, type CompiledBook, type ExportOptions } from './book-model.ts';
 import { buildRoyalRoadHtml } from './royal-road.ts';
 
 const ID = '01HZZZZZZZZZZZZZZZZZZZZZZZ';
-const mod = (moduleId: string, props: Record<string, unknown> = {}): ModuleBlock => ({
+const legacy = (moduleId: string, props: Record<string, unknown> = {}): ModuleBlock => ({
   id: ID,
   kind: 'module',
   moduleId,
   moduleVersion: 1,
   props: { ...getWriterModule(moduleId)!.schema.defaults, ...props },
 });
+const cue = (blueprintId: string, props: Record<string, unknown> = {}): ModuleBlock => {
+  const bp = starterBlueprint(blueprintId)!;
+  return { id: ID, kind: 'module', moduleId: bp.engine, moduleVersion: 1, props: { blueprintId, ...bp.defaultProps, ...props } };
+};
 
 const book = (blocks: Block[], showTitle = true): CompiledBook => ({
   title: 'Tom & "Jerry"',
@@ -56,50 +61,33 @@ describe('buildRoyalRoadHtml', () => {
     expect(html).not.toContain('class=');
   });
 
-  it('turns a System Box into an inline-styled table with the variant accent', () => {
-    const skill = buildRoyalRoadHtml(
-      book([mod('litrpg-system-box', { variant: 'skill' })]),
-      opts(),
-    );
-    expect(skill).toContain(
-      '<table style="border-collapse:collapse;width:100%;background:#0c2340;color:#eef6ff;border:2px solid #3b82f6;margin:1em 0;">',
-    );
-    expect(skill).toContain('<td style="padding:4px 12px;">STR +3</td>');
-    expect(skill).toContain('[SYSTEM NOTIFICATION]<br>Class Evolution Unlocked');
-    const accents = { warning: '#dc2626', 'level-up': '#f59e0b', quest: '#10b981' };
-    for (const [variant, hex] of Object.entries(accents))
-      expect(buildRoyalRoadHtml(book([mod('litrpg-system-box', { variant })]), opts())).toContain(
-        `border:2px solid ${hex};`,
-      );
-  });
-
-  it('escapes System Box text and never emits author tags', () => {
+  it('renders a cue through its blueprint royalRoadHtml template, escaping every value', () => {
     const html = buildRoyalRoadHtml(
-      book([mod('litrpg-system-box', { title: '<b onclick="x">', lines: ['<img src=x>'] })]),
+      book([cue('system-notification', { title: '<b onclick="x">', lines: ['<img src=x>'] })]),
       opts(),
     );
+    expect(html).toContain('<blockquote><p><strong>[SYSTEM NOTIFICATION]</strong> NEW</p>');
     expect(html).toContain('&lt;b onclick=&quot;x&quot;&gt;');
-    expect(html).toContain('&lt;img src=x&gt;');
+    expect(html).toContain('<p>&lt;img src=x&gt;</p>');
     expect(html).not.toContain('<img');
+    expect(html).not.toContain('class=');
   });
 
-  it('renders other cues as italic paragraphs and honours omit', () => {
-    const cue = mod('pt-gaslight-edit');
-    const html = buildRoyalRoadHtml(book([cue]), opts());
-    expect(html).toContain('<p><em>On a second look it reads:');
-    const omitted = buildRoyalRoadHtml(
-      book([cue, mod('litrpg-system-box')]),
-      opts({ gimmickMode: 'omit' }),
-    );
-    expect(omitted).not.toContain('On a second look');
-    expect(omitted).not.toContain('<table');
+  it('every starter blueprint exports paste-ready HTML with no script / style / class', () => {
+    for (const bp of STARTER_BLUEPRINT_LIST) {
+      const html = buildRoyalRoadHtml(book([cue(bp.id)], false), opts({ titlePage: false }));
+      expect(html.trim().length, bp.id).toBeGreaterThan(10);
+      expect(html, bp.id).not.toMatch(/<(script|style)|class=|on\w+=/i);
+    }
   });
 
-  it('still renders the System Box table in summary mode', () => {
-    const html = buildRoyalRoadHtml(
-      book([mod('litrpg-system-box')]),
-      opts({ gimmickMode: 'summary' }),
-    );
-    expect(html).toContain('<table');
+  it('summary mode prints one italic line; omit prints nothing; pre-v2 blocks fall back', () => {
+    const c = cue('gaslight-rewrite');
+    const summary = buildRoyalRoadHtml(book([c]), opts({ gimmickMode: 'summary' }));
+    expect(summary).toMatch(/<p><em>\[Gaslight Rewrite: .+\]<\/em><\/p>/);
+    const omitted = buildRoyalRoadHtml(book([c, legacy('litrpg-system-box')]), opts({ gimmickMode: 'omit' }));
+    expect(omitted).not.toContain('<blockquote');
+    expect(omitted).not.toContain('<em>');
+    expect(buildRoyalRoadHtml(book([legacy('litrpg-system-box')]), opts())).toContain('<p><em>');
   });
 });

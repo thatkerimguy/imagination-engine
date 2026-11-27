@@ -29,6 +29,7 @@
     "@expo/metro-runtime": "~58.0.17",
     "@expo/vector-icons": "^15.0.2",
     "@kn/core": "workspace:*",
+    "@kn/engines": "workspace:*",
     "@kn/module-bl-dice-3d": "workspace:*",
     "@kn/module-bl-lighter-flick": "workspace:*",
     "@kn/module-core-ambient-bed": "workspace:*",

@@ -3,6 +3,8 @@
 // module summary. The "Beat stop" indicator lives here (once) for gimmick blocks.
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { CuePill } from '../gimmicks/CuePill.tsx';
+import { isV2Cue } from '../gimmicks/cue.ts';
 import { getWriterModule } from '../modules/registry.ts';
 import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Glyph } from '../ui/Glyph.tsx';
@@ -24,6 +26,14 @@ export function GimmickPill(p: {
   enabled: boolean;
   onOpen(): void;
 }): ReactNode {
+  return isV2Cue(p.block.props) ? (
+    <CuePill block={p.block} onOpen={p.onOpen} />
+  ) : (
+    <LegacyPill {...p} />
+  );
+}
+
+function LegacyPill(p: { block: ModuleBlockT; enabled: boolean; onOpen(): void }): ReactNode {
   const { colors } = useTheme();
   const module = getWriterModule(p.block.moduleId);
   if (!module) {

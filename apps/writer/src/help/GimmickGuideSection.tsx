@@ -1,14 +1,21 @@
-// Gimmick Module Guide, generated from the module registry (no per-module copy).
+// Gimmick Guide, generated from the bundled starter blueprints (no per-gimmick copy): one row per
+// blueprint with its engine glyph, genre and tagline. Adding a blueprint adds a row.
+import { STARTER_BLUEPRINT_LIST } from '@kn/engines/blueprints';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { writerModules } from '../modules/registry.ts';
+import { engineGlyph } from '../gimmicks/engine-look.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { CardGroup } from '../ui/CardGroup.tsx';
 import { Glyph } from '../ui/Glyph.tsx';
-import { useI18n } from '../i18n/I18nProvider.tsx';
 import { SectionLabel } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
-import { GENRE_ICON, GENRE_LABEL, LAYER_TRIGGER, MODULE_GENRE_OVERRIDE } from './help-content.ts';
+
+const label = (s: string): string =>
+  s
+    .split('-')
+    .map((w) => (w === 'litrpg' ? 'LitRPG' : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ');
 
 export function GimmickGuideSection(): ReactNode {
   const { t } = useI18n();
@@ -16,26 +23,20 @@ export function GimmickGuideSection(): ReactNode {
     <View style={styles.section} testID="help-gimmick-guide">
       <SectionLabel>{t('help.gimmicks')}</SectionLabel>
       <CardGroup>
-        {writerModules.map(({ meta }) => {
-          const over = MODULE_GENRE_OVERRIDE[meta.id];
-          return (
-            <View key={meta.id} style={styles.row} testID={`help-module-${meta.id}`}>
-              <Glyph name={over?.icon ?? GENRE_ICON[meta.genre]} size={20} color="accent" />
-              <View style={styles.text}>
-                <Txt variant="bodyStrong">{meta.name}</Txt>
-                <Txt variant="caption" color="inkMuted">
-                  {over?.label ?? GENRE_LABEL[meta.genre]}
-                </Txt>
-                <Txt variant="meta" color="inkSecondary">
-                  {meta.description}
-                </Txt>
-                <Txt variant="meta" color="inkMuted">
-                  {LAYER_TRIGGER[meta.layer]}
-                </Txt>
-              </View>
+        {STARTER_BLUEPRINT_LIST.map((bp) => (
+          <View key={bp.id} style={styles.row} testID={`help-module-${bp.id}`}>
+            <Glyph name={engineGlyph(bp.engine)} size={20} color="accent" />
+            <View style={styles.text}>
+              <Txt variant="bodyStrong">{bp.name}</Txt>
+              <Txt variant="caption" color="inkMuted">
+                {`${label(bp.genre)} · ${label(bp.engine)}`}
+              </Txt>
+              <Txt variant="meta" color="inkSecondary">
+                {bp.tagline}
+              </Txt>
             </View>
-          );
-        })}
+          </View>
+        ))}
       </CardGroup>
     </View>
   );

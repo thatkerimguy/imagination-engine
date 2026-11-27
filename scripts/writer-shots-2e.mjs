@@ -1,6 +1,6 @@
 // Directive 02E shot pack + gates: grouped Settings cards (no layout jump), Material You picker,
-// unclipped metrics ribbon, dark-theater Live Preview from a Day theme with the native-shake
-// prompt, and Note Editor parity. Runs last in writer-shots.mjs (it changes the dice trigger).
+// unclipped metrics ribbon, dark-theater Live Preview from a Day theme
+// surround, and Note Editor parity.
 
 /** Records the settings-haptics row's top on every frame for 1.5 s after navigation. */
 async function settingsJump(page, url) {
@@ -70,42 +70,22 @@ export async function phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, ed
   await tid('toolbar-collapse-add').waitFor();
   await shot('03-editor-metrics-unclipped');
 
-  // 04 Live Preview from Paper Daylight: dark theater + native-shake prompt, then a shake throws.
-  await page.addInitScript(() => {
-    window.__KN_NATIVE_SHAKE__ = true;
-  });
+  // 04 Live Preview from Paper Daylight: the dark theater surround (the v1 native-shake dice
+  // prompt retired with bl-dice-3d in OVERHAUL-04; bespoke-3d dice are tap-or-auto).
   await page.goto(`${WRITER}appearance`);
   await tid('theme-paper-daylight').scrollIntoViewIfNeeded();
   await tid('theme-paper-daylight').click();
   await editor();
-  await tid(`pill-${ID.dice}`).scrollIntoViewIfNeeded();
-  await tid(`pill-${ID.dice}`).click();
-  await tid('gimmick-sheet').waitFor({ timeout: 5000 });
-  await tid('field-trigger-tap-or-shake').scrollIntoViewIfNeeded();
-  await tid('field-trigger-tap-or-shake').click();
-  await tid('gimmick-save').click();
-  await tid('gimmick-sheet').waitFor({ state: 'detached', timeout: 5000 });
   await tid(`dialogue-text-${ID.dialogue}`).click();
   await tid('preview-button').click();
   await tid('preview-screen').waitFor({ timeout: 10000 });
   const frame = page.frameLocator('iframe[title="Reader preview"]');
   await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
-  const prompt = frame.getByRole('button', { name: '🎲 Tap or shake to throw' });
-  await prompt.waitFor({ timeout: 30000 });
-  ok('offline reader offers "🎲 Tap or shake to throw" under __KN_NATIVE_SHAKE__');
   const bg = await tid('preview-screen').evaluate((el) => getComputedStyle(el).backgroundColor);
   if (bg === 'rgb(14, 15, 18)') ok('Live Preview sits in the #0E0F12 dark theater on a Day theme');
   else fail(`Live Preview surround is ${bg}, expected rgb(14, 15, 18)`);
-  await prompt.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await settle(600);
-  await shot('04-preview-dark-theater-shake');
-  const reader = page.frames().find((f) => f.url() === 'about:srcdoc');
-  await reader.evaluate(() => {
-    window.__settled = 0;
-    window.dispatchEvent(new Event('kn-native-shake'));
-  });
-  await reader.waitForFunction(() => window.__settled > 0, null, { timeout: 30000 });
-  ok('a kn-native-shake event throws the dice');
+  await shot('04-preview-dark-theater');
 
   // 05 Standalone Note Editor: toolbar halves + metrics ribbon.
   await page.goto(`${WRITER}folders/note/d-fog`);

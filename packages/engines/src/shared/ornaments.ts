@@ -1,4 +1,4 @@
-// Modular SVG ornament layers for the 7 `ornament.grammar` styles. Pure vector paths built with
+// Modular SVG ornament layers for the 8 `ornament.grammar` styles. Pure vector paths built with
 // createElementNS (zero innerHTML, zero assets) in `currentColor`, so they inherit the accent.
 // Corners are drawn once (top-left, 24-unit box) and mirrored into the other three corners by
 // nested <svg> anchors at 0% / 100%, so the layer fits any card size without distortion.
@@ -54,6 +54,18 @@ const RECIPES: Record<OrnamentGrammar, Recipe> = {
     },
   },
   'rune-notch': { corner: 'M1 20V9l8-8h11M5 11v4M11 5h4' },
+  // Beveled 45° sci-fi corner cuts plus small registration ticks: structurally distinct from the
+  // open L of `cyber-brackets` (Holographic System vs Noir Rain).
+  'chamfer-tech': {
+    corner: 'M1 22V9l8-8h13M4 13l9-9M18 4h3M4 18v3',
+    extra: (root) => {
+      root.append(
+        svgEl('line', { x1: '50%', x2: '50%', y1: '0', y2: '4', transform: 'translate(-6 0)' }),
+        svgEl('line', { x1: '50%', x2: '50%', y1: '0', y2: '4', transform: 'translate(6 0)' }),
+        anchor('50%', '100%', 1, -1, 'M-6 0v4M6 0v4'),
+      );
+    },
+  },
   'torn-edge': {
     extra: (root, stroke) => {
       const id = `kn-e-deckle-${++patternSeq}`;

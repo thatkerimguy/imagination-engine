@@ -1,7 +1,10 @@
 // Applies Book Visual DNA to a reading root: resolved `--dna-*` colour / font / shape / motion
-// tokens plus the atmosphere layer, re-resolved live when the reader switches light ↔ dark.
-// Lazy (loaded with the first v2 engine); the initial reader chunk never pays for colour math.
+// tokens, the atmosphere layer, the baked surface tiles (`--dna-tile-<material>`) and the Soft
+// Page Harmony page tokens on :root, all re-resolved live when the reader switches light ↔ dark
+// (mounted cards swap tiles without remounting). Its own small lazy chunk, loaded as soon as a
+// chapter opens (prose-only chapters included), independent of the engine host.
 import {
+  SURFACE_MATERIALS,
   DNA_ARCHETYPES,
   isDnaArchetypeId,
   parseVisualDna,
@@ -11,6 +14,10 @@ import {
   type DnaTheme,
   type ResolvedVisualDna,
 } from '@kn/core/dna';
+import { surfaceTile } from '@kn/engines/shared';
+
+/** Root-level tokens Soft Page Harmony reads (only while Aa is on "Book"). */
+export const PAGE_TOKENS = ['--dna-page-bg', '--dna-page-font'] as const;
 
 /** Books without DNA (and new writer books) read as Editorial Minimal. */
 export const DEFAULT_DNA: DnaArchetypeId = 'editorial-minimal';
@@ -69,6 +76,11 @@ export function applyDnaTokens(
   const r = resolveCached(dna, theme);
   for (const [k, v] of Object.entries(r.tokens)) el.style.setProperty(k, v);
   el.style.setProperty('--kn-e-atmos', atmosphere(r));
+  // Tiles are cached per (material, theme, grain step): a theme flip re-points every var.
+  const grain = r.surface.grainIntensity;
+  for (const m of SURFACE_MATERIALS) {
+    if (m !== 'clean') el.style.setProperty(`--dna-tile-${m}`, surfaceTile(m, theme, grain));
+  }
   el.dataset.dnaTheme = theme;
   el.dataset.dnaOrnament = r.ornament.grammar;
   return r;
@@ -88,10 +100,16 @@ export function attachDna(root: HTMLElement, dna: BookVisualDna): ResolvedVisual
     return resolveCached(dna, dnaThemeOf());
   }
   prev?.stop();
-  const resolved = applyDnaTokens(root, dna, dnaThemeOf());
+  const apply = (): ResolvedVisualDna => {
+    const r = applyDnaTokens(root, dna, dnaThemeOf());
+    const page = document.documentElement.style;
+    for (const k of PAGE_TOKENS) page.setProperty(k, r.tokens[k] ?? '');
+    return r;
+  };
+  const resolved = apply();
   const obs = new MutationObserver(() => {
     if (!root.isConnected) return stop();
-    if (root.dataset.dnaTheme !== dnaThemeOf()) applyDnaTokens(root, dna, dnaThemeOf());
+    if (root.dataset.dnaTheme !== dnaThemeOf()) apply();
   });
   const stop = (): void => {
     obs.disconnect();
@@ -100,4 +118,9 @@ export function attachDna(root: HTMLElement, dna: BookVisualDna): ResolvedVisual
   obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   watched.set(root, { dna, stop });
   return resolved;
+}
+
+/** Drops the page tokens (shelf / TOC views read as the plain reader theme). */
+export function clearPageDna(): void {
+  for (const k of PAGE_TOKENS) document.documentElement.style.removeProperty(k);
 }

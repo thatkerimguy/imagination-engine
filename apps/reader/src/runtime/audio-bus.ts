@@ -84,6 +84,9 @@ export function createAudioBus(): AudioBus {
     get sfx() {
       return active() ? sfx : null;
     },
+    get ambience() {
+      return active() ? ambientBus : null;
+    },
     get unlocked() {
       return unlocked;
     },

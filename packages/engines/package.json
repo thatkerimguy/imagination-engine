@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Gimmick System v2 runtime engines (web-only). Each engine is its own lazy entry.",
+  "description": "Gimmick System v2 runtime engines (web-only). Each engine is its own lazy entry; blueprints are pure data.",
   "exports": {
     "./shared": "./src/shared/index.ts",
     "./shared/stingers": "./src/shared/synth-stingers.ts",
@@ -14,10 +14,20 @@
     "./artifact-doc": "./src/artifact-doc/index.ts",
     "./tactile-reveal": "./src/tactile-reveal/index.ts",
     "./telemetry-meter": "./src/telemetry-meter/index.ts",
-    "./kinetic-prose": "./src/kinetic-prose/index.ts"
+    "./kinetic-prose": "./src/kinetic-prose/index.ts",
+    "./margin-note": "./src/margin-note/index.ts",
+    "./spatial-layout": "./src/spatial-layout/index.ts",
+    "./screen-fx": "./src/screen-fx/index.ts",
+    "./particle-field": "./src/particle-field/index.ts",
+    "./audio-bed": "./src/audio-bed/index.ts",
+    "./audio-stinger": "./src/audio-stinger/index.ts",
+    "./bespoke-3d": "./src/bespoke-3d/index.ts"
   },
   "dependencies": {
-    "@kn/core": "workspace:*"
+    "@kn/core": "workspace:*",
+    "three": "^0.187.0",
+    "cannon-es": "^0.20.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "devDependencies": {}
 }

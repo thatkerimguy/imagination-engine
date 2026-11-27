@@ -4,6 +4,7 @@
 // (no blank frames while switching Library ↔ Outline ↔ Editor). Search runs on FTS5.
 import type { NodeRecord } from '@kn/core';
 import * as SQLite from 'expo-sqlite';
+import { catalogGenreCountsSql, searchCatalogSql } from './catalog-sql.ts';
 import { isEmptyQuery, parseQuery, toFtsMatch } from './fts-query.ts';
 import { MemoryDatabase } from './memory-driver.ts';
 import {
@@ -16,7 +17,15 @@ import {
   type IntegrityCounts,
   type NodeWrite,
 } from './port.ts';
-import { OPEN_PRAGMAS, REBUILD_FTS, SCHEMA_V2, SEARCH_SQL, WIPE_ALL } from './schema.ts';
+import {
+  OPEN_PRAGMAS,
+  REBUILD_CATALOG_FTS,
+  REBUILD_FTS,
+  SCHEMA_V2,
+  SCHEMA_V3_CATALOG,
+  SEARCH_SQL,
+  WIPE_ALL,
+} from './schema.ts';
 import { orderForInsert } from './rows.ts';
 import * as T from './sql-rows.ts';
 
@@ -29,6 +38,8 @@ async function migrate(db: Db): Promise<void> {
   if ((row?.user_version ?? 0) >= SCHEMA_USER_VERSION) return;
   await db.withExclusiveTransactionAsync(async (tx) => {
     await tx.execAsync(SCHEMA_V2);
+    await tx.execAsync(SCHEMA_V3_CATALOG);
+    await tx.execAsync(REBUILD_CATALOG_FTS);
     await tx.execAsync(`PRAGMA user_version = ${SCHEMA_USER_VERSION}`);
   });
 }
@@ -141,6 +152,20 @@ class SqliteDatabase implements DatabasePort {
     await this.mirror.deleteSetting(key);
   }
 
+  async putGimmicks(
+    packs: Parameters<DatabasePort['putGimmicks']>[0],
+    blueprints: Parameters<DatabasePort['putGimmicks']>[1],
+  ): Promise<void> {
+    await this.mirror.putGimmicks(packs, blueprints); // validates the pack foreign keys first
+    await this.tx(async (tx) => {
+      await upsert(tx, T.PACKS, packs);
+      await upsert(tx, T.BLUEPRINTS, blueprints);
+    });
+  }
+
+  searchGimmicks: DatabasePort['searchGimmicks'] = (q) => searchCatalogSql(this.db, q);
+  gimmickGenreCounts = () => catalogGenreCountsSql(this.db);
+
   async search(query: string, opts: { limit?: number } = {}) {
     const q = parseQuery(query);
     if (isEmptyQuery(q)) return [];
@@ -186,6 +211,7 @@ class SqliteDatabase implements DatabasePort {
       for (const [key, spec] of T.TABLE_ORDER)
         await upsert(tx, spec as T.TableSpec<object>, clean[key]);
       await tx.execAsync(REBUILD_FTS);
+      await tx.execAsync(REBUILD_CATALOG_FTS);
     });
     await this.mirror.replaceAll(clean);
   }

@@ -7,7 +7,8 @@ export interface Para {
   dialogue: boolean;
 }
 
-export const CHAT_MODULE_ID = 'gits-cyberbrain-chat';
+/** Chat cues: the v2 `chat-thread` engine (records `{ text }`) and the pre-v2 module (strings). */
+export const CHAT_MODULE_IDS: readonly string[] = ['chat-thread', 'gits-cyberbrain-chat'];
 
 /** Words keep inner apostrophes / hyphens ("don't", "well-known") and decimals ("3.14"). */
 const WORD_RE = /[\p{L}\p{N}]+(?:(?:['’-]|(?<=\d)[.,](?=\d))[\p{L}\p{N}]+)*/gu;
@@ -26,10 +27,12 @@ export function collectParagraphs(blocks: readonly Block[], includeChat: boolean
   for (const b of blocks) {
     if (b.kind === 'prose') add(b.text, false);
     else if (b.kind === 'dialogue') add(b.text, true);
-    else if (includeChat && b.kind === 'module' && b.moduleId === CHAT_MODULE_ID) {
+    else if (includeChat && b.kind === 'module' && CHAT_MODULE_IDS.includes(b.moduleId)) {
       const lines = b.props.messages;
-      if (Array.isArray(lines)) {
-        for (const l of lines) if (typeof l === 'string') add(l, false);
+      if (!Array.isArray(lines)) continue;
+      for (const l of lines) {
+        const text = typeof l === 'string' ? l : (l as { text?: unknown } | null)?.text;
+        if (typeof text === 'string') add(text, false);
       }
     }
   }

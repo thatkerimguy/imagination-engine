@@ -2,7 +2,7 @@
 import type { Block } from '@kn/core';
 import type { BlockStyle, ChapterStyles } from '../store/chapter-styles.ts';
 import type { GimmickMode } from './book-model.ts';
-import { gimmickLines } from './gimmick-text.ts';
+import { gimmickLines, type InlineBlueprints } from './gimmick-text.ts';
 import { escapeMarkup } from './markup-util.ts';
 
 export interface ParaItem {
@@ -43,6 +43,7 @@ export function flattenBlocks(
   blocks: readonly Block[],
   styles: ChapterStyles,
   mode: GimmickMode,
+  inline?: InlineBlueprints,
 ): Item[] {
   const out: Item[] = [];
   for (const b of blocks) {
@@ -60,7 +61,7 @@ export function flattenBlocks(
     } else if (b.kind === 'scene-break') {
       out.push({ type: 'break', ...(b.label?.trim() ? { label: b.label.trim() } : {}) });
     } else {
-      for (const line of gimmickLines(b, mode)) {
+      for (const line of gimmickLines(b, mode, inline)) {
         out.push({
           type: 'p',
           text: escapeMarkup(line.text),

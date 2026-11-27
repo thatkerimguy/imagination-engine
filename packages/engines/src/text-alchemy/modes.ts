@@ -2,6 +2,7 @@
 // all author text is written with textContent only.
 import type { EngineRuntimeContext } from '@kn/core/gimmicks';
 import { actionButton, cls, el } from '../shared/dom-safe.ts';
+import { rt } from '../shared/i18n-reader.ts';
 import { isStill } from '../shared/kit.ts';
 
 export interface AlchemyEnv {
@@ -61,7 +62,7 @@ export function gaslight(e: AlchemyEnv): ModeRun {
         ),
       );
     } else if (!alt)
-      ctl.append(actionButton('Look again', swap, e.ctx.signal, { class: c('btn') }, 'Look again'));
+      ctl.append(actionButton(rt('lookAgain'), swap, e.ctx.signal, { class: c('btn') }, rt('lookAgain')));
   };
   if (typeof IntersectionObserver !== 'undefined') {
     const io = new IntersectionObserver((entries) => {
@@ -103,7 +104,7 @@ export function whisper(e: AlchemyEnv): ModeRun {
   }
   const btn = toggle(
     e,
-    e.hint || 'Hold to listen',
+    e.hint || rt('holdToListen'),
     () => pinned,
     (v) => ((pinned = v), apply()),
   );
@@ -120,7 +121,7 @@ export function redact(e: AlchemyEnv): ModeRun {
     if (i % 2 === 0) return void (part && para.append(part));
     if (still) return void para.append(el('span', { class: c('rev') }, part));
     const bar = actionButton(
-      'Reveal redacted text',
+      rt('revealRedacted'),
       () => open(bar, part, false),
       e.ctx.signal,
       { class: c('bar') },

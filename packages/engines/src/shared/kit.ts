@@ -24,7 +24,8 @@ letter-spacing:var(--dna-tracking,0);line-height:1.5;overflow-wrap:anywhere;isol
 .kn-e[data-border=glow]{border:var(--dna-stroke,1px) solid var(--kn-e-accent);
 box-shadow:0 0 0 1px color-mix(in srgb,var(--kn-e-accent) 30%,transparent),0 0 22px -8px var(--kn-e-accent)}
 .kn-e button{font:inherit;color:inherit;min-height:44px;min-width:44px;cursor:pointer}
-.kn-e :focus-visible{outline:2px solid var(--kn-e-accent);outline-offset:2px}
+.kn-e :focus-visible{outline:2px solid var(--dna-accent,currentColor);outline-offset:2px}
+.kn-e button:focus:not(:focus-visible){outline:none}
 .kn-e-muted{color:var(--dna-muted,#b4b4b4)}
 .kn-e[data-tier=reduced],.kn-e[data-tier=reduced] *{animation:none!important;transition:none!important}
 @media (prefers-reduced-motion:reduce){.kn-e,.kn-e *{animation:none!important;transition:none!important}}`;
@@ -73,8 +74,10 @@ export function mountFrame(
   root.style.setProperty('--kn-e-accent', accentVar(v.accentRole));
   if (opts.surface !== false) {
     const material = v.surface && v.surface !== 'inherit' ? v.surface : ctx.dna.surface.material;
-    const tile = ctx.surfaceTile(material);
-    if (tile !== 'none') root.style.setProperty('--kn-e-tile', tile);
+    // The reading root carries `--dna-tile-<material>` (re-baked on every light/dark switch), so
+    // mounted cards swap tiles live; the context's own tile is the fallback (sheets, tests).
+    const tile = material === 'clean' ? 'none' : ctx.surfaceTile(material);
+    root.style.setProperty('--kn-e-tile', `var(--dna-tile-${material},${tile})`);
   }
   if (opts.ornament !== false) {
     root.append(ctx.ornamentSvg(v.ornament === 'inherit' ? ctx.dna.ornament.grammar : v.ornament));

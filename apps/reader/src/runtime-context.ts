@@ -3,7 +3,12 @@
 // the writer host (`kn:lifecycle`) and page visibility; tier changes arrive live on
 // `kn:tier-change` and are pushed to engines without remounting.
 import type { ResolvedVisualDna } from '@kn/core/dna';
-import type { EngineRuntimeContext, EngineTier, HapticPattern } from '@kn/core/gimmicks';
+import type {
+  EngineAudioGraph,
+  EngineRuntimeContext,
+  EngineTier,
+  HapticPattern,
+} from '@kn/core/gimmicks';
 import type { AudioBusAccess } from '@kn/core/renderer';
 import { createOrnamentLayer, surfaceTile } from '@kn/engines/shared';
 import { playStinger, type StingerHandle } from '@kn/engines/shared/stingers';
@@ -45,9 +50,10 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
   const resumeCbs = new Set<() => void>();
   const tierCbs = new Set<(t: EngineTier) => void>();
   const stingers = new Set<StingerHandle>();
+  const graphs = new Set<{ out: GainNode; closed: boolean }>();
   let counted = 0;
   const recount = (): void => {
-    const n = sched.size + stingers.size;
+    const n = sched.size + stingers.size + graphs.size;
     live += n - counted;
     counted = n;
   };
@@ -69,6 +75,25 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
   const bus = (): AudioBusAccess | null =>
     opts.audio?.context && opts.audio.sfx && opts.dna.sonic.timbre !== 'silent' ? opts.audio : null;
 
+  // Host-side kill switch for procedural graphs: a 50 ms ramp to silence, then disconnect.
+  const closeGraphs = (): void => {
+    for (const g of graphs) {
+      g.closed = true;
+      try {
+        const t = g.out.context.currentTime;
+        g.out.gain.cancelScheduledValues(t);
+        g.out.gain.setValueAtTime(g.out.gain.value, t);
+        g.out.gain.linearRampToValueAtTime(0, t + 0.05);
+        const out = g.out;
+        globalThis.setTimeout(() => out.disconnect(), 80);
+      } catch {
+        g.out.disconnect();
+      }
+    }
+    graphs.clear();
+    recount();
+  };
+
   const audio: EngineRuntimeContext['audio'] = Object.freeze({
     get enabled() {
       return !still() && !!bus();
@@ -82,6 +107,24 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
       stingers.add(h);
       recount();
       sched.timeout(() => (stingers.delete(h), recount()), 450);
+    },
+    graph(kind: 'bed' | 'oneshot'): EngineAudioGraph | null {
+      const b = bus();
+      const dest = kind === 'bed' ? (b?.ambience ?? b?.sfx) : b?.sfx;
+      if (still() || signal.aborted || !b?.context || !dest) return null;
+      const out = b.context.createGain();
+      out.gain.value = opts.dna.sonic.gain > 0 ? 1 : 0;
+      out.connect(dest);
+      const g = { out, closed: false };
+      graphs.add(g);
+      recount();
+      return {
+        context: b.context,
+        out,
+        get closed() {
+          return g.closed;
+        },
+      };
     },
   });
 
@@ -129,7 +172,10 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
     if (signal.aborted || (t === tier && nextCalm === calm)) return;
     tier = t;
     calm = nextCalm;
-    if (still()) for (const h of stingers) h.stop();
+    if (still()) {
+      for (const h of stingers) h.stop();
+      closeGraphs();
+    }
     for (const cb of [...tierCbs]) run(() => cb(tier));
   };
 
@@ -166,6 +212,7 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
       sched.clear();
       for (const h of stingers) h.stop();
       stingers.clear();
+      closeGraphs();
       pauseCbs.clear();
       resumeCbs.clear();
       tierCbs.clear();

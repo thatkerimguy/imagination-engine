@@ -1,7 +1,6 @@
 import { h } from './dom.ts';
 import { parseRoute, routeHref, type Route } from './router.ts';
 import { createAudioBus } from './runtime/audio-bus.ts';
-import { createStage } from './runtime/stage.ts';
 import { readingView } from './views/reading.ts';
 import { openSettings } from './views/settings.ts';
 import { errorView, type Cleanup, type ViewContext } from './views/shared.ts';
@@ -30,7 +29,6 @@ export function startApp(): void {
   );
   const main = h('main', { class: 'kn-main', id: 'main' });
   document.body.append(bar, main);
-  const stage = createStage();
 
   let cleanup: Cleanup | null = null;
   let generation = 0;
@@ -52,7 +50,6 @@ export function startApp(): void {
 
   const ctx: ViewContext = {
     main,
-    stage,
     audio,
     link,
     setBar(text, backTo) {
@@ -70,6 +67,9 @@ export function startApp(): void {
     cleanup?.();
     cleanup = null;
     main.removeAttribute('style');
+    // Soft Page Harmony tokens belong to the open book only (re-applied by dna-apply.ts).
+    for (const k of ['--dna-page-bg', '--dna-page-font'])
+      document.documentElement.style.removeProperty(k);
     main.replaceChildren();
     scrollTo(0, 0);
     try {

@@ -19,11 +19,26 @@ export interface StingerOptions {
   pitchShift?: number;
 }
 
+/** A private, host-tracked output for procedural WebAudio engines (audio-bed, audio-stinger). */
+export interface EngineAudioGraph {
+  readonly context: BaseAudioContext;
+  /**
+   * Per-engine gain (starts at 1) routed to the reader's ambience bus (`bed`) or SFX bus
+   * (`oneshot`). Connect sources here. The host ramps it to 0 and disconnects it the instant the
+   * tier drops to `reduced` / Calm Mode, and on unmount, so a forgotten node can never keep playing.
+   */
+  readonly out: GainNode;
+  /** True once the host has silenced this graph (reduced, calm or unmount); rebuild via graph(). */
+  readonly closed: boolean;
+}
+
 export interface EngineAudio {
   /** False in `reduced`, Calm Mode, silent mode, `sonic.timbre: 'silent'` or before unlock. */
   readonly enabled: boolean;
   /** One-shot procedural stinger (≤ 0.35 s) shaped by `dna.sonic.timbre`. No-op when disabled. */
   stinger(patch: StingerPatch, options?: StingerOptions): void;
+  /** A fresh tracked output for a procedural graph, or null whenever `enabled` is false. */
+  graph(kind: 'bed' | 'oneshot'): EngineAudioGraph | null;
 }
 
 export interface EngineRuntimeContext {

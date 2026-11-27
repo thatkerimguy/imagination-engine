@@ -48,6 +48,8 @@ export interface AudioBusAccess {
   readonly context: AudioContext | null;
   /** Destination for one-shot SFX (sits after the duck stage). Null when `context` is null. */
   readonly sfx: AudioNode | null;
+  /** Duckable ambience bus for procedural beds (v2 `audio-bed`). Null when `context` is null. */
+  readonly ambience?: AudioNode | null;
   /** Crossfades to a new ambient bed. Re-sending the current key only retunes its volume. */
   setAmbient(
     key: string,

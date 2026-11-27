@@ -1,7 +1,7 @@
 // Directive 07 writer shots (phone, run last by writer-shots.mjs; pack root). Runs the Directive 06
 // pass first as regression (its PNGs go to <pack>/regression), then:
-//   01 Help & Legal Gimmick Guide: 7 modules, Feather icons, zero emoji,
-//   02 Live Preview rendering litrpg-system-box | Book Compiler with the Royal Road tile,
+//   01 Help & Legal Gimmick Guide: 28 starter blueprints, Feather icons, zero emoji,
+//   02 Live Preview rendering a v2 system-notification cue | Book Compiler with Royal Road,
 //   03 9:16 BookTok / Reels Teaser Studio | 9:16 Record Mode,
 //   04 Settings › Language = Español | Library in Spanish (no horizontal overflow).
 import { waitForRepo } from './lib/writer-v2.mjs';
@@ -13,25 +13,24 @@ const EMOJI = /\p{Extended_Pictographic}/u;
 const SYS_BLOCK = {
   id: SYS_ID,
   kind: 'module',
-  moduleId: 'litrpg-system-box',
+  moduleId: 'frame-hud',
   moduleVersion: 1,
   props: {
+    blueprintId: 'system-notification',
     header: '[SYSTEM NOTIFICATION]',
-    variant: 'skill',
     title: 'Class Evolution Unlocked',
+    badge: 'NEW',
     lines: ['STR +3', 'Perception +2', 'New Skill: Iron Nerves (Lv. 1)'],
+    footer: '',
     sound: false,
   },
 };
 
-/** Enables the module on the demo novel and puts a System box at the top of ch01. */
+/** Puts a v2 System notification cue at the top of ch01 (v2 cues need no enabledModules). */
 const seedSystemBox = async (page) => {
   await waitForRepo(page);
   await page.evaluate(async (block) => {
     const repo = globalThis.__knWriterRepo;
-    const n = await repo.requireNovel('vertical-slice');
-    if (!n.enabledModules.includes(block.moduleId))
-      await repo.saveNovel({ ...n, enabledModules: [...n.enabledModules, block.moduleId] });
     const c = await repo.getChapter('vertical-slice', 's01', 'ch01');
     if (!c.blocks.some((b) => b.id === block.id))
       await repo.saveChapter('vertical-slice', { ...c, blocks: [block, ...c.blocks] });
@@ -50,20 +49,20 @@ export async function dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, 
   const guide = tid('help-gimmick-guide');
   await guide.waitFor({ timeout: 15000 });
   const modules = await page.locator('[data-testid^="help-module-"]').count();
-  if (modules === 7) ok('Gimmick Guide lists all 7 modules (incl. litrpg-system-box)');
+  if (modules === 28) ok('Gimmick Guide lists all 28 starter blueprints (generated, no per-gimmick copy)');
   else fail(`Gimmick Guide lists ${modules} modules`);
   const guideText = await guide.innerText();
   if (!EMOJI.test(guideText)) ok('Gimmick Guide rows carry zero emoji (Feather icons only)');
   else fail(`emoji in Gimmick Guide: ${guideText.match(EMOJI)?.[0]}`);
-  if (guideText.includes('LitRPG / Progression')) ok('System Box shows "LitRPG / Progression"');
-  else fail('System Box genre label missing');
+  if (guideText.includes('LitRPG')) ok('Gimmick Guide shows the LitRPG genre label');
+  else fail('LitRPG genre label missing');
   await guide.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await page.waitForTimeout(300);
   const helpA = await page.screenshot();
-  await tid('help-module-litrpg-system-box').evaluate((el) => el.scrollIntoView({ block: 'end' }));
+  await tid('help-module-level-up-chord').evaluate((el) => el.scrollIntoView({ block: 'end' }));
   await page.waitForTimeout(300);
   const helpB = await page.screenshot();
-  if (packAt) await composite(page, [helpA, helpB], path('01-help-no-emojis-and-7-modules'));
+  if (packAt) await composite(page, [helpA, helpB], path('01-help-no-emojis-and-28-blueprints'));
 
   // 02 — Live Preview renders the System window; Compiler offers Royal Road.
   await page.goto(`${WRITER}`);
@@ -77,7 +76,7 @@ export async function dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, 
   await box.waitFor({ timeout: 15000 });
   const boxText = await box.evaluate((el) => el.textContent);
   if (/Class Evolution Unlocked/.test(boxText) && /Iron Nerves/.test(boxText))
-    ok('Live Preview renders the litrpg-system-box cue via the v2 frame-hud engine');
+    ok('Live Preview renders the v2 system-notification cue via the frame-hud engine');
   else fail(`System box text: ${boxText}`);
   await box.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(1200);
@@ -92,14 +91,14 @@ export async function dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, 
   await tid('export-royalroad-copy').click();
   await tid('compile-notice').waitFor({ timeout: 10000 });
   const html = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-  if (html.includes('border:2px solid #3b82f6') && !/<script|<style/i.test(html))
-    ok('Copy HTML puts an inline-styled System table (no script/style) on the clipboard');
+  if (html.includes('<p><strong>[SYSTEM NOTIFICATION]</strong> NEW</p>') && !/<script|<style/i.test(html))
+    ok('Copy HTML puts the blueprint royalRoadHtml template (no script/style) on the clipboard');
   else fail(`Royal Road clipboard: ${html.slice(0, 120)}`);
   await rr.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(300);
   const compiler = await page.screenshot();
   if (packAt)
-    await composite(page, [preview, compiler], path('02-litrpg-system-box-preview-and-rr'));
+    await composite(page, [preview, compiler], path('02-system-notification-preview-and-rr'));
 
   // 03 — 9:16 Teaser Studio from the Chapter Editor ⋯ menu, then Record Mode.
   await editor();

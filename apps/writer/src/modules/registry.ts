@@ -7,6 +7,7 @@ import type {
   ModuleSchemaDefinition,
   ValidationResult,
 } from '@kn/core';
+import { starterCueBlueprint } from '../gimmicks/cue.ts';
 import * as dice from '@kn/module-bl-dice-3d';
 import * as lighter from '@kn/module-bl-lighter-flick';
 import * as ambient from '@kn/module-core-ambient-bed';
@@ -77,7 +78,7 @@ const stripLeadingSymbols = (s: string): string => s.replace(/^[^\p{L}\p{N}]+/u,
  */
 export function moduleOutlineLabel(moduleId: string, props: Record<string, unknown>): string {
   const mod = byId.get(moduleId);
-  if (!mod) return moduleId;
+  if (!mod) return starterCueBlueprint(props)?.name ?? moduleId;
   const card = mod.summarize(props);
   const detail = card.badge === 'FIX' ? '' : stripLeadingSymbols(card.title);
   return detail && detail !== mod.meta.name ? `${mod.meta.name} · ${detail}` : mod.meta.name;

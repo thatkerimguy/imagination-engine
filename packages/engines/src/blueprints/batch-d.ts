@@ -1,0 +1,160 @@
+// Starter v2 blueprints, batch D: the two bespoke-3d hero spectacles. Pure data.
+import type { BlueprintFieldSpec, GimmickBlueprint } from '@kn/core/gimmicks';
+import { base, opts, sound, text } from '../frame-hud/bp-kit.ts';
+
+const common: BlueprintFieldSpec[] = [
+  text('caption', 'Caption', true),
+  { key: 'trigger', label: 'Start', type: 'select', options: opts('auto', 'tap'), optional: true },
+  {
+    key: 'holdSeconds',
+    label: 'Hold result',
+    type: 'number',
+    min: 0.3,
+    max: 6,
+    step: 0.1,
+    unit: 's',
+    optional: true,
+  },
+  sound,
+];
+
+export const BATCH_D: GimmickBlueprint[] = [
+  {
+    ...base,
+    id: 'dice-throw-3d',
+    engine: 'bespoke-3d',
+    genre: 'noir',
+    subgenre: 'gambling',
+    mood: ['tense', 'fateful'],
+    tags: ['dice', '3d', 'physics', 'scripted', 'gamble'],
+    name: '3D Dice Throw',
+    tagline: 'Real physics dice tumble across the page and land on the number you chose.',
+    fields: [
+      {
+        key: 'spectacle',
+        label: 'Spectacle',
+        type: 'select',
+        options: [{ value: 'dice-throw', label: 'Dice throw' }],
+        optional: true,
+      },
+      { key: 'count', label: 'Dice', type: 'number', min: 1, max: 4, step: 1 },
+      {
+        key: 'values',
+        label: 'Scripted faces (empty = random)',
+        type: 'list',
+        itemLabel: 'Face (1-6)',
+        maxItems: 4,
+        optional: true,
+      },
+      {
+        key: 'material',
+        label: 'Finish',
+        type: 'select',
+        options: opts('ivory', 'obsidian', 'brass', 'casino-red'),
+      },
+      {
+        key: 'throwFrom',
+        label: 'Thrown from',
+        type: 'select',
+        options: opts('right', 'left', 'bottom'),
+        optional: true,
+      },
+      ...common,
+    ],
+    defaultProps: {
+      spectacle: 'dice-throw',
+      count: 2,
+      values: ['1', '1'],
+      material: 'ivory',
+      throwFrom: 'right',
+      caption: 'The house rolls first.',
+      trigger: 'auto',
+      holdSeconds: 1.5,
+      sound: true,
+    },
+    sampleProps: {
+      spectacle: 'dice-throw',
+      count: 2,
+      values: ['6', '6'],
+      material: 'obsidian',
+      throwFrom: 'left',
+      caption: 'Double or nothing. Her dice.',
+      trigger: 'tap',
+      holdSeconds: 1.5,
+      sound: true,
+    },
+    visual: {
+      layout: 'dice-throw',
+      ornament: 'inherit',
+      accentRole: 'primary',
+      borderStyle: 'hairline',
+      motionPreset: 'none',
+    },
+    haptics: 'tap',
+    exports: {
+      transcript: '{{caption}}\n[{{count}} dice roll: {{#each values}}{{.}} {{/each}}]',
+      summary: '🎲 {{count}}× {{material}} dice',
+      epubXhtml:
+        '<aside class="kn-dice" role="note"><p><em>{{caption}}</em></p><p><strong>Dice: {{#each values}}<span>⚀ {{.}}</span> {{/each}}</strong></p></aside>',
+      royalRoadHtml:
+        '<blockquote><p><i>{{caption}}</i></p><p><b>🎲 {{#each values}}[{{.}}] {{/each}}</b></p></blockquote>',
+    },
+  },
+  {
+    ...base,
+    id: 'brass-lighter-3d',
+    engine: 'bespoke-3d',
+    genre: 'noir',
+    subgenre: 'hardboiled',
+    mood: ['smoky', 'intimate'],
+    tags: ['lighter', 'zippo', 'flame', '3d', 'brass'],
+    name: 'Brass Lighter',
+    tagline: 'A brass lighter flips open, strikes and holds a small steady flame.',
+    fields: [
+      {
+        key: 'spectacle',
+        label: 'Spectacle',
+        type: 'select',
+        options: [{ value: 'zippo-lighter', label: 'Brass lighter' }],
+        optional: true,
+      },
+      { key: 'material', label: 'Finish', type: 'select', options: opts('brass', 'obsidian') },
+      text('settledText', 'Calm description', true),
+      ...common,
+    ],
+    defaultProps: {
+      spectacle: 'zippo-lighter',
+      material: 'brass',
+      caption: 'She lit it without looking at the flame.',
+      settledText: 'Brass lighter flame steadies.',
+      trigger: 'auto',
+      holdSeconds: 2.2,
+      sound: true,
+    },
+    sampleProps: {
+      spectacle: 'zippo-lighter',
+      material: 'obsidian',
+      caption: 'One click. The alley went orange.',
+      settledText: 'Black chrome lighter flame steadies.',
+      trigger: 'tap',
+      holdSeconds: 3,
+      sound: true,
+    },
+    visual: {
+      layout: 'zippo-lighter',
+      ornament: 'inherit',
+      accentRole: 'warning',
+      borderStyle: 'hairline',
+      motionPreset: 'none',
+    },
+    haptics: 'tap',
+    exports: {
+      transcript: '{{caption}}\n[A lighter flicks open and catches.]',
+      summary: '🔥 {{material}} lighter',
+      epubXhtml:
+        '<aside class="kn-lighter" role="note"><p><em>{{caption}}</em></p><p><small>{{settledText}}</small></p></aside>',
+      royalRoadHtml:
+        '<blockquote><p><i>{{caption}}</i></p><p>🔥 <small>{{settledText}}</small></p></blockquote>',
+    },
+  },
+];

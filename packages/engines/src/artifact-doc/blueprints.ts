@@ -63,7 +63,7 @@ export const ARTIFACT_DOC_BLUEPRINTS: GimmickBlueprint[] = [
       layout: 'dossier',
       ornament: 'inherit',
       surface: 'paper-grain',
-      accentRole: 'warning',
+      accentRole: 'primary',
       borderStyle: 'hairline',
       motionPreset: 'stamp',
     },

@@ -33,6 +33,17 @@ export interface TestContext {
   haptics: HapticPattern[];
   /** Live timers + queued frames; must be 0 after dispose. */
   pending(): number;
+  /** Graphs handed out by `ctx.audio.graph()` (fake nodes; `closed` flips on reduced/dispose). */
+  graphs: FakeGraph[];
+  /** Pretend the audio bus is unlocked (default false: `graph()` returns null like a fresh tab). */
+  setAudioUnlocked(on: boolean): void;
+}
+
+export interface FakeGraph {
+  kind: 'bed' | 'oneshot';
+  closed: boolean;
+  context: BaseAudioContext;
+  out: GainNode;
 }
 
 export function createTestContext(
@@ -51,6 +62,11 @@ export function createTestContext(
   const resumeCbs = new Set<() => void>();
   const tierCbs = new Set<(t: EngineTier) => void>();
   const stingers: StingerPatch[] = [];
+  const graphs: FakeGraph[] = [];
+  let unlocked = false;
+  const closeGraphs = (): void => {
+    for (const g of graphs) g.closed = true;
+  };
   const haptics: HapticPattern[] = [];
   const sub = <T>(set: Set<T>, cb: T): (() => void) => {
     if (ac.signal.aborted) return () => undefined;
@@ -101,6 +117,12 @@ export function createTestContext(
       stinger(patch) {
         if (current.tier !== 'reduced' && !current.calm) stingers.push(patch);
       },
+      graph(kind) {
+        if (!unlocked || current.tier === 'reduced' || current.calm || ac.signal.aborted) return null;
+        const g = fakeGraph(kind);
+        graphs.push(g);
+        return g;
+      },
     },
     haptics(p) {
       if (current.tier !== 'reduced' && !current.calm) haptics.push(p);
@@ -113,10 +135,13 @@ export function createTestContext(
     ctx,
     stingers,
     haptics,
+    graphs,
+    setAudioUnlocked: (on) => void (unlocked = on),
     setTier(t, c = false) {
       const next = { tier: c ? ('reduced' as EngineTier) : t, calm: c };
       if (next.tier === current.tier && next.calm === current.calm) return;
       current = next;
+      if (current.tier === 'reduced') closeGraphs();
       for (const cb of [...tierCbs]) cb(current.tier);
     },
     pause() {
@@ -157,6 +182,7 @@ export function createTestContext(
     },
     dispose() {
       ac.abort();
+      closeGraphs();
       timers.clear();
       frames.clear();
       pauseCbs.clear();
@@ -165,4 +191,52 @@ export function createTestContext(
     },
     pending: () => timers.size + frames.size,
   };
+}
+
+/** Minimal recording fake of the WebAudio nodes procedural engines use (happy-dom has none). */
+function fakeGraph(kind: 'bed' | 'oneshot'): FakeGraph {
+  const param = (v: number): AudioParam =>
+    ({
+      value: v,
+      setValueAtTime: () => undefined,
+      linearRampToValueAtTime: () => undefined,
+      exponentialRampToValueAtTime: () => undefined,
+      setTargetAtTime: () => undefined,
+      cancelScheduledValues: () => undefined,
+    }) as unknown as AudioParam;
+  const node = (): Record<string, unknown> => ({
+    connect: (n: unknown) => n,
+    disconnect: () => undefined,
+    start: () => undefined,
+    stop: () => undefined,
+    onended: null,
+    gain: param(1),
+    frequency: param(440),
+    detune: param(0),
+    Q: param(1),
+    playbackRate: param(1),
+    pan: param(0),
+    type: 'sine',
+    buffer: null,
+    loop: false,
+  });
+  const context = {
+    currentTime: 0,
+    sampleRate: 22050,
+    state: 'running',
+    destination: node(),
+    createGain: node,
+    createOscillator: node,
+    createBiquadFilter: node,
+    createBufferSource: node,
+    createStereoPanner: node,
+    createBuffer: (ch: number, len: number, rate: number) => ({
+      numberOfChannels: ch,
+      length: len,
+      sampleRate: rate,
+      duration: len / rate,
+      getChannelData: () => new Float32Array(len),
+    }),
+  } as unknown as BaseAudioContext;
+  return { kind, closed: false, context, out: node() as unknown as GainNode };
 }

@@ -1,7 +1,7 @@
 // Scoped CSS for kinetic-prose: reads as prose on the page, not as a card.
 export const CSS = `
 .kn-e.kn-e-kinetic-prose{padding:0;background:none;box-shadow:none;border-radius:0;font-family:var(--dna-font-prose,Georgia,serif);
-font-size:1.08em;line-height:1.7;color:var(--dna-ink,#e6e6e6);margin:1.2em 0}
+font-size:1.08em;line-height:1.7;color:var(--dna-ink,#e6e6e6);margin:1.2em 0;overflow-wrap:anywhere;hyphens:auto}
 .kn-e.kn-e-kinetic-prose[data-border]{border:0;box-shadow:none}
 .kn-e-kinetic-prose .kn-e-body{position:relative}
 .kn-e-kinetic-prose__layer{margin:0}

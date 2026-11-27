@@ -17,7 +17,10 @@ import { chapterWords } from './word-count.ts';
 export const iso = (ms: number): string => new Date(ms).toISOString();
 export const ms = (isoString: string): number => Date.parse(isoString) || 0;
 
-type BookMeta = Pick<NovelManifest, 'author' | 'sectionLabel' | 'theme' | 'enabledModules'>;
+type BookMeta = Pick<
+  NovelManifest,
+  'author' | 'sectionLabel' | 'theme' | 'enabledModules' | 'visualDna'
+>;
 type SeasonMeta = Pick<SeasonManifest, 'accentColor'>;
 type ChapterMeta = Pick<ChapterDocument, 'status'>;
 
@@ -52,6 +55,7 @@ export function bookNode(
     sectionLabel: n.sectionLabel,
     theme: n.theme,
     enabledModules: n.enabledModules,
+    ...(n.visualDna !== undefined ? { visualDna: n.visualDna } : {}),
   };
   return {
     ...base(now, existing),
@@ -78,6 +82,7 @@ export function toManifest(node: NodeRecord, seasonIds: string[]): NovelManifest
     sectionLabel: m.sectionLabel ?? 'Season',
     theme: m.theme ?? {},
     enabledModules: m.enabledModules ?? [],
+    ...(m.visualDna !== undefined ? { visualDna: m.visualDna } : {}),
     seasons: seasonIds,
   };
 }

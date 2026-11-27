@@ -1,19 +1,19 @@
 // Writer QA pack: drives the Expo Web export of apps/writer at 390×844 (library, editor, focus,
 // gimmick sheet, analysis, growth, appearance, offline live preview with every non-local request
 // aborted). Needs `pnpm writer:export`. Usage: node scripts/writer-shots.mjs [--shots <dir>]
-// The 3 DIRECTIVE-04 PNGs land in <dir> (ToS gate, Report abuse, tablet outline labels; the tablet
-// pack needs `pnpm build`); every earlier pack (04A, D-03, publish) lands in <dir>/regression.
+// The 3 OVERHAUL-04 writer PNGs (03 Chrome Tide Calm, 04 catalog + form, 05 DNA Studio) land in
+// <dir>; every earlier pack lands in <dir>/regression (the tablet pack needs `pnpm build`).
 import { spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { serveSpa } from './lib/spa-server.mjs';
-import { seedKv } from './lib/writer-v2.mjs';
-import { GROWTH_SEED, ID, RICH, skipOnboarding } from './lib/writer-fixtures.mjs';
+import { corePass } from './lib/shots-runner.mjs';
+import { ID, skipOnboarding } from './lib/writer-fixtures.mjs';
 import { phase2ePass } from './writer-shots-2e.mjs';
 import { flowPass } from './writer-shots-flow.mjs';
 import { phase2fPass } from './writer-shots-2f.mjs';
-import { offlinePreviewShot, settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
+import { settingsAndCompilerShots, toolbarPass } from './writer-shots-2d.mjs';
 import { workspacePass } from './writer-shots-workspace.mjs';
 import { phase4aPass } from './writer-shots-4a.mjs';
 import { dir05Pass } from './writer-shots-dir05.mjs';
@@ -22,7 +22,7 @@ import { dir07Pass } from './writer-shots-dir07.mjs';
 import { ov01Pass } from './writer-shots-ov01.mjs';
 import { ov02aPass } from './writer-shots-overhaul02a.mjs';
 import { ov03Pass } from './writer-shots-ov03.mjs';
-import { chatState } from './lib/chat-state.mjs';
+import { ov04Pass } from './writer-shots-ov04.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -52,13 +52,6 @@ try {
     colorScheme: 'dark',
   });
   await skipOnboarding(page);
-  // Settled dice call navigator.vibrate() (in the preview iframe too); record when.
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'vibrate', {
-      // Dice call vibrate(12); v2 engine haptics always pass an array, so they never count.
-      value: (p) => (typeof p === 'number' && (window.__settled = performance.now()), true),
-    });
-  });
   // True offline: only the local writer server may answer. previewMode stays at its default.
   await page.route('**/*', (route) => {
     const { hostname } = new URL(route.request().url());
@@ -79,137 +72,7 @@ try {
   };
   const closeSheet = () => page.getByRole('button', { name: 'Close sheet' }).last().click();
 
-  // 01 Folio Library (dark): book rows with spine thumbs, quiet bar, no FAB.
-  await page.goto(WRITER);
-  await tid('novel-card-vertical-slice').waitFor({ timeout: 20000 });
-  await seedKv(page, [['growth/chapter:ch01', GROWTH_SEED]]);
-  if (await page.getByRole('button', { name: /^New novel$/ }).count())
-    ok('library has a quiet New novel action');
-  await page.waitForTimeout(300);
-  await shot('01-folio-library-dark');
-
-  // 02 Folio chapter editor (dark): slim bar, metrics strip, active rail, cue strip, rail toolbar.
-  await editor();
-  for (const id of ['editor-top-bar', 'stats-pill', 'undo-button', 'redo-button', 'preview-button'])
-    await tid(id).waitFor();
-  await tid('metrics-ribbon').waitFor();
-  await tid('tool-tab').waitFor();
-  ok('slim top bar, metrics strip and formatting rail (with Tab) render');
-  await tid(`prose-text-${ID.snake}`).click();
-  const snake = page.locator(`textarea[data-testid="prose-text-${ID.snake}"]`);
-  await snake.waitFor();
-  await snake.fill(RICH);
-  await tid(`dialogue-text-${ID.dialogue}`).click();
-  const wysiwyg = tid(`prose-text-${ID.snake}-view`);
-  const raw = await wysiwyg.textContent();
-  if (raw.includes('**') || raw.includes('==')) fail(`unfocused prose shows raw markup: ${raw}`);
-  else ok('unfocused prose renders WYSIWYG with zero raw syntax');
-  await tid('undo-button').click();
-  await tid('redo-button').click();
-  ok('undo / redo buttons respond');
-  await page.getByTestId('save-status').filter({ hasText: 'Saved' }).waitFor({ timeout: 5000 });
-  const beats = await tid(`block-${ID.dice}`).getByText(/beat/i).count();
-  if (beats <= 1) ok(`dice cue strip shows the Beat marker at most once (${beats})`);
-  else fail(`dice cue strip repeats the Beat marker ${beats}×`);
-  await tid(`dialogue-text-${ID.dialogue}`).click();
-  await tid(`block-${ID.dialogue}`).evaluate((el) => el.scrollIntoView({ block: 'center' }));
-  await page.waitForTimeout(400);
-  await shot('02-folio-editor-dark');
-
-  // 04 Folio schema sheet on bl-dice-3d.
-  await tid(`pill-${ID.dice}`).scrollIntoViewIfNeeded();
-  await tid(`pill-${ID.dice}`).click();
-  await tid('gimmick-sheet').waitFor({ timeout: 5000 });
-  await page.waitForTimeout(400);
-  await shot('04-folio-gimmick-sheet-dice');
-  await closeSheet();
-  ok('dice gimmick sheet opens');
-
-  // 05 Text analysis sheet, Frequency tab, Content filter.
-  await tid('stats-pill').click();
-  await tid('text-analysis-sheet').waitFor();
-  await tid('analysis-tab-frequency').click();
-  await tid('freq-filter-content').click();
-  await page.waitForTimeout(500);
-  await shot('05-folio-text-analysis');
-  await closeSheet();
-  ok('text analysis sheet opens with frequency chart');
-
-  // 06 Growth (All).
-  await tid('editor-menu').click();
-  await tid('menu-growth').click();
-  await tid('growth-range-lifetime').click();
-  await tid('growth-card-words').waitFor();
-  const paths = await page.locator('svg path').count();
-  if (paths >= 4) ok(`growth charts render (${paths} svg paths)`);
-  else fail(`growth charts missing (${paths} svg paths)`);
-  await page.waitForTimeout(300);
-  await shot('06-folio-growth-dashboard');
-
-  // 07 Appearance & fonts in a Day theme (Paper Daylight).
-  await page.goto(`${WRITER}appearance`);
-  await tid('theme-warm-sepia').waitFor();
-  const themes = await page.locator('[data-testid^="theme-"]').count();
-  if (themes >= 13) ok(`appearance lists ${themes - 1} themes + System`);
-  else fail(`expected 12 theme swatches + System, found ${themes}`);
-  await tid('theme-paper-daylight').scrollIntoViewIfNeeded();
-  await tid('theme-paper-daylight').click();
-  await page.waitForTimeout(300);
-  await page.goto(`${WRITER}appearance`);
-  await tid('import-font').waitFor();
-  await page.waitForTimeout(400);
-  await shot('07-folio-appearance-light');
-
-  // 03 Focus mode with Warm Sepia and a literary serif.
-  await tid('theme-warm-sepia').scrollIntoViewIfNeeded();
-  await tid('theme-warm-sepia').click();
-  await tid('font-lora').scrollIntoViewIfNeeded();
-  await tid('font-lora').click();
-  await editor();
-  await tid('editor-menu').click();
-  await tid('menu-focus').click();
-  await tid('focus-exit').waitFor();
-  if (await tid('editor-top-bar').count()) fail('focus mode still shows the top bar');
-  else ok('focus mode hides top bar, metrics strip and formatting rail');
-  await page.waitForTimeout(800);
-  await shot('03-folio-focus-sepia');
-  await tid('focus-exit').click();
-  await page.goto(`${WRITER}appearance`);
-  await tid('theme-system').click();
-  await tid('font-classic-serif').scrollIntoViewIfNeeded();
-  await tid('font-classic-serif').click();
-
-  // 06 Live preview of the unsaved rich prose, sequenced chat + dice.
-  await editor();
-  await tid(`prose-text-${ID.snake}`).click();
-  await page.locator(`textarea[data-testid="prose-text-${ID.snake}"]`).fill(RICH + ' ');
-  // Start the preview at the dialogue line above the dice, as the Author would.
-  await tid(`dialogue-text-${ID.dialogue}`).click();
-  await tid('preview-button').click();
-  await tid('preview-screen').waitFor({ timeout: 10000 });
-  const frame = page.frameLocator('iframe[title="Reader preview"]');
-  await frame.getByRole('button', { name: 'Silent' }).click({ timeout: 15000 });
-  const reader = page.frames().find((f) => f.url() === 'about:srcdoc');
-  if (!reader) throw new Error('offline reader srcdoc frame not found');
-  await reader.waitForFunction(() => window.__settled, null, { timeout: 30000 });
-  const chat = await chatState(reader);
-  if (chat.pending === 0 && chat.last === "Don't relax.")
-    ok('all 3 KESTREL-9 lines were complete when the dice landed');
-  else fail(`dice landed while KESTREL-9 was incomplete: ${JSON.stringify(chat)}`);
-  await frame.getByText('Tap to continue', { exact: false }).click();
-  await frame.locator('strong', { hasText: 'Snake eyes.' }).waitFor({ timeout: 15000 });
-  const spans = await frame
-    .locator(`[data-block="${ID.snake}"]`)
-    .evaluate((el) => ['strong', 'em', 'u', 's', 'mark'].map((t) => el.querySelectorAll(t).length));
-  if (spans.every((n) => n === 1))
-    ok('preview renders bold, italic, underline, strike and highlight');
-  else fail(`inline spans in preview: ${JSON.stringify(spans)}`);
-  await frame
-    .locator(`[data-block="${ID.snake}"]`)
-    .evaluate((el) => el.scrollIntoView({ block: 'center' }));
-  await page.waitForTimeout(400);
-  await shot('08-live-preview-rich-formatting');
-  await offlinePreviewShot(page, { frame, reader, tid, shot, ok, fail, blocked, RICH });
+  await corePass(page, { WRITER, tid, shot, ok, fail, editor, closeSheet, blocked });
   await workspacePass(page, { WRITER, shotsAt, tid, ok, fail, editor });
   await toolbarPass(page, { tid, editor, shotsAt, ok, fail });
   await settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail });
@@ -219,11 +82,12 @@ try {
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir05Pass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir06aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail });
-  // D-07 + OVERHAUL-01/-02/-02A are regression now; the pack root holds the OVERHAUL-03 shots.
+  // Every earlier pack is regression now; the pack root holds the OVERHAUL-04 shots.
   await dir07Pass(page, { WRITER, packAt: shotsAt, shotsAt, tid, ok, fail, editor });
   await ov01Pass(browser, { WRITER, packAt: shotsAt, ok, fail });
   await ov02aPass(browser, { WRITER, packAt: shotsAt, ok, fail });
-  await ov03Pass(browser, { WRITER, packAt, ok, fail });
+  await ov03Pass(browser, { WRITER, packAt: shotsAt, ok, fail });
+  await ov04Pass(browser, { WRITER, packAt, ok, fail });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

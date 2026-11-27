@@ -11,6 +11,10 @@ user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-
 .kn-e-tactile-reveal__svg{display:block;width:100%;max-width:120px;height:auto}
 .kn-e-tactile-reveal__hint{font-size:.85em;color:var(--dna-muted,#b4b4b4)}
 .kn-e-tactile-reveal__half{fill:var(--kn-e-accent);transform-origin:50px 50px}
+.kn-e-tactile-reveal--wax-seal .kn-e-tactile-reveal__svg{filter:drop-shadow(0 2px 2px rgb(0 0 0/.38)) drop-shadow(0 6px 10px rgb(0 0 0/.22))}
+.kn-e-tactile-reveal__stamp{fill:none;stroke:var(--dna-surface,#1f2125);stroke-width:1.6;stroke-dasharray:2.4 2.2;opacity:.5}
+.kn-e-tactile-reveal__ring{transition:opacity .2s linear}
+.is-open .kn-e-tactile-reveal__ring{opacity:0}
 .kn-e-tactile-reveal__rim,.kn-e-tactile-reveal__track,.kn-e-tactile-reveal__print{fill:none;stroke:var(--dna-border,currentColor);stroke-width:2}
 .kn-e-tactile-reveal__print{stroke:var(--dna-muted,#b4b4b4);stroke-linecap:round}
 .kn-e-tactile-reveal__rim{stroke:var(--dna-surface,#1f2125);opacity:.55}

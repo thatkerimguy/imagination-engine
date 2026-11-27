@@ -1,7 +1,9 @@
 // EPUB 3 content documents (XHTML): chapters, cover page, title page and the nav document. Pure.
+import type { Block } from '@kn/core';
 import type { InlineRun } from '../editor/inline-markup.ts';
 import type { CompiledBook, BookSection, ExportOptions } from './book-model.ts';
 import { flattenBlocks, headingDepth, type Item } from './flatten.ts';
+import { renderCue } from './gimmick-text.ts';
 import { italicRuns, markupRuns } from './markup-util.ts';
 
 // eslint-disable-next-line no-control-regex
@@ -60,6 +62,23 @@ function itemXhtml(item: Item, showTitle: boolean): string {
   return `<p${classes.length ? ` class="${classes.join(' ')}"` : ''}>${lead}${spoken}</p>`;
 }
 
+/** HTML void tags written as XML (`<br>` → `<br/>`), so template output stays well-formed. */
+export const xmlVoid = (html: string): string =>
+  html.replace(
+    /<(br|hr|img|wbr)(\s[^<>]*?)?\s*\/?>/gi,
+    (_m, tag: string, attrs = '') => `<${tag}${attrs}/>`,
+  );
+
+function blockXhtml(b: Block, s: BookSection, opts: ExportOptions, showTitle: boolean): string {
+  if (b.kind === 'module' && opts.gimmickMode === 'transcript') {
+    const r = renderCue(b, 'epubXhtml', s.blueprints);
+    if (r?.text) return xmlVoid(r.text);
+  }
+  return flattenBlocks([b], s.styles, opts.gimmickMode, s.blueprints)
+    .map((it) => itemXhtml(it, showTitle))
+    .join('\n');
+}
+
 /** A complete XHTML5 content document. `body` is already-escaped markup. */
 export function page(lang: string, title: string, body: string, bodyAttrs = ''): string {
   const l = escapeXml(lang);
@@ -86,9 +105,11 @@ export function chapterXhtml(
 ): string {
   const showTitle = section.showTitle !== false;
   const title = sectionTitle(section, index);
-  const items = flattenBlocks(section.blocks, section.styles, opts.gimmickMode);
   const head = showTitle ? `<h1>${escapeXml(title)}</h1>\n` : '';
-  const body = items.map((it) => itemXhtml(it, showTitle)).join('\n');
+  const body = section.blocks
+    .map((b) => blockXhtml(b, section, opts, showTitle))
+    .filter(Boolean)
+    .join('\n');
   return page(
     lang,
     title,

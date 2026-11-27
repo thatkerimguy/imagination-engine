@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { BATCH_A } from './blueprints/batch-a.ts';
 import { createTestContext, type TestContext } from './shared/test-context.ts';
 import { textAlchemyEngine } from './text-alchemy/index.ts';
+import { CSS } from './text-alchemy/styles.ts';
 
 let t: TestContext;
 let host: HTMLElement;
@@ -79,5 +80,12 @@ describe('text-alchemy', () => {
     await p2;
     expect(b.root.textContent).toContain('open when I left');
     expect(t.pending()).toBe(0);
+  });
+});
+
+describe('redaction bar specificity', () => {
+  it('hides the bar text even though the kit styles every button with color:inherit', () => {
+    // The kit rule is `.kn-e button` (0,1,1): the bar rule must outrank it or dark mode leaks text.
+    expect(CSS).toMatch(/\.kn-e \.kn-e-text-alchemy__bar\{[^}]*color:transparent/);
   });
 });

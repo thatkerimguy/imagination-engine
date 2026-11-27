@@ -47,7 +47,7 @@ export function toMarkdown(book: CompiledBook, opts: ExportOptions): string {
     if (opts.pageBreaks && (i > 0 || parts.length > 0))
       parts.push('<div style="page-break-after: always;"></div>');
     if (showTitle) parts.push(`## ${escapeMd(section.title)}`);
-    for (const item of flattenBlocks(section.blocks, section.styles, opts.gimmickMode))
+    for (const item of flattenBlocks(section.blocks, section.styles, opts.gimmickMode, section.blueprints))
       parts.push(itemToMd(item, showTitle));
   });
   return `${parts.join('\n\n')}\n`;

@@ -1,6 +1,8 @@
 // Settings row: "External backup folder (survives uninstall)". Android: pick / change /
 // disconnect a visible SAF folder and see the last mirror status. Elsewhere: an Android-only note.
 import type { ReactNode } from 'react';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import { translator, type Locale, type Translate } from '../i18n/i18n.ts';
 import { relativeTime } from '../library/relative-time.ts';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { ListRow } from '../ui/Page.tsx';
@@ -9,15 +11,21 @@ import { pickSafFolder, SAF_SUPPORTED } from './saf-mirror';
 
 type SafField = 'safFolderUri' | 'safFolderLabel' | 'lastSafMirrorAt' | 'lastSafMirrorError';
 
-const TITLE = 'External backup folder (survives uninstall)';
-
-function status(s: BackupSettings | null): string {
-  if (!s?.safFolderUri) return 'Pick a visible folder, e.g. Documents/ImaginationEngine';
+/** The row subtitle: pick hint, last-copy failure, or "<folder> · copied 5 minutes ago". */
+export function folderStatus(
+  s: BackupSettings | null,
+  locale: Locale = 'en',
+  t: Translate = translator(locale),
+): string {
+  if (!s?.safFolderUri) return t('backup.folder.pick');
+  const folder = s.safFolderLabel ?? '';
   if (s.lastSafMirrorError)
-    return `${s.safFolderLabel} · Last copy failed: ${s.lastSafMirrorError}`;
+    return t('backup.folder.failed', { folder, error: s.lastSafMirrorError });
   const at = s.lastSafMirrorAt ? Date.parse(s.lastSafMirrorAt) : NaN;
-  const last = Number.isNaN(at) ? 'no copy yet' : `copied ${relativeTime(at)}`;
-  return `${s.safFolderLabel} · ${last}`;
+  const last = Number.isNaN(at)
+    ? t('backup.folder.noCopy')
+    : t('backup.folder.copied', { when: relativeTime(at, Date.now(), locale) });
+  return `${folder} · ${last}`;
 }
 
 export function ExternalFolderRow(p: {
@@ -27,12 +35,14 @@ export function ExternalFolderRow(p: {
   onChange(patch: Partial<Record<SafField, string | undefined>>): Promise<void>;
 }): ReactNode {
   const confirm = useConfirm();
+  const { t, locale } = useI18n();
+  const title = t('backup.folder.title');
   if (!SAF_SUPPORTED) {
     return (
       <ListRow
         icon="hard-drive"
-        title={TITLE}
-        subtitle="Android only — on this device, use “Back up now” to save a .zip."
+        title={title}
+        subtitle={t('backup.folder.android')}
         last
         testID="backup-external-folder"
       />
@@ -50,9 +60,9 @@ export function ExternalFolderRow(p: {
   };
   const disconnect = async (): Promise<void> => {
     const ok = await confirm({
-      title: 'Disconnect folder?',
-      message: 'Backups already in the folder stay there. New snapshots stay on this device only.',
-      confirmLabel: 'Disconnect',
+      title: t('backup.folder.disconnectTitle'),
+      message: t('backup.folder.disconnectMsg'),
+      confirmLabel: t('backup.folder.disconnect'),
     });
     if (ok)
       await p.onChange({
@@ -67,9 +77,9 @@ export function ExternalFolderRow(p: {
     <>
       <ListRow
         icon="hard-drive"
-        title={TITLE}
-        subtitle={status(p.settings)}
-        detail={connected ? 'Change' : 'Choose'}
+        title={title}
+        subtitle={folderStatus(p.settings, locale, t)}
+        detail={connected ? t('backup.folder.change') : t('backup.folder.choose')}
         last
         testID="backup-external-folder"
         onPress={() => void (p.busy || pick())}
@@ -77,7 +87,7 @@ export function ExternalFolderRow(p: {
       {connected ? (
         <ListRow
           icon="x-circle"
-          title="Disconnect folder"
+          title={t('backup.folder.disconnectRow')}
           last
           testID="backup-external-disconnect"
           onPress={() => void (p.busy || disconnect())}

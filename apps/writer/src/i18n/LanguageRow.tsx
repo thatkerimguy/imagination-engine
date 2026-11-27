@@ -1,4 +1,4 @@
-// Settings → Language: System / English / Español, saved on tap and applied app-wide at once.
+// Settings → Language: System / English / Türkçe / Español, saved on tap and applied app-wide at once.
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { CardGroup } from '../ui/CardGroup.tsx';
@@ -13,6 +13,7 @@ export function LanguageRow(): ReactNode {
   const options: readonly SegmentOption<LanguageSetting>[] = [
     { value: 'system', label: t('settings.language.system'), testID: 'settings-language-system' },
     { value: 'en', label: t('settings.language.en'), testID: 'settings-language-en' },
+    { value: 'tr', label: t('settings.language.tr'), testID: 'settings-language-tr' },
     { value: 'es', label: t('settings.language.es'), testID: 'settings-language-es' },
   ];
   return (

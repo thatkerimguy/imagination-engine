@@ -1,6 +1,7 @@
 // Search tab (root pager page 2): instant full-text search across every chapter, note and folder on this phone.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { runAfterInteractions } from '../ui/after-interactions.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { isRedacted } from '../store/unlock-session.ts';
@@ -17,13 +18,13 @@ import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { UnderlineTabs, type TabOption } from '../ui/UnderlineTabs.tsx';
 
-const SCOPES: readonly TabOption<SearchScope>[] = [
-  { value: 'all', label: 'All', testID: 'scope-all' },
-  { value: 'chapters', label: 'Chapters', testID: 'scope-chapters' },
-  { value: 'notes', label: 'Notes', testID: 'scope-notes' },
-];
-
 export function SearchView(): ReactNode {
+  const { t, locale } = useI18n();
+  const scopes: readonly TabOption<SearchScope>[] = [
+    { value: 'all', label: t('kinds.all'), testID: 'scope-all' },
+    { value: 'chapters', label: t('search.scope.chapters'), testID: 'scope-chapters' },
+    { value: 'notes', label: t('tab.notes'), testID: 'scope-notes' },
+  ];
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<SearchScope>('all');
@@ -40,10 +41,15 @@ export function SearchView(): ReactNode {
     const src = sources.data;
     if (!src) return;
     const handle = runAfterInteractions(() => {
-      setIndex(buildSearchIndex(src, { isLocked: (id) => isRedacted(id, src.meta.get(id)) }));
+      setIndex(
+        buildSearchIndex(src, {
+          locale,
+          isLocked: (id) => isRedacted(id, src.meta.get(id)),
+        }),
+      );
     });
     return () => handle.cancel();
-  }, [sources.data]);
+  }, [sources.data, locale]);
   const hits = useFtsHits(query);
   const results = useMemo(
     () =>
@@ -60,17 +66,17 @@ export function SearchView(): ReactNode {
     <Page>
       <ScreenOptions options={{ title: '', headerRight: undefined }} />
       <Txt variant="display" accessibilityRole="header" style={{ paddingTop: space.xs }}>
-        Search
+        {t('tab.search')}
       </Txt>
       <View>
         <Field
           value={text}
           onChangeText={setText}
-          placeholder="Search chapters and notes"
+          placeholder={t('search.placeholder')}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
-          accessibilityLabel="Search"
+          accessibilityLabel={t('tab.search')}
           testID="search-field"
         />
         {text ? (
@@ -78,7 +84,7 @@ export function SearchView(): ReactNode {
             <IconBtn
               icon="x"
               size={18}
-              accessibilityLabel="Clear search"
+              accessibilityLabel={t('search.clear')}
               onPress={() => setText('')}
               testID="search-clear"
             />
@@ -86,20 +92,20 @@ export function SearchView(): ReactNode {
         ) : null}
       </View>
       <UnderlineTabs<SearchScope>
-        options={SCOPES}
+        options={scopes}
         value={scope}
         onChange={setScope}
-        accessibilityLabel="Search scope"
+        accessibilityLabel={t('search.scopeA11y')}
         testID="search-scope"
       />
       {!searching ? (
+        <EmptyState icon="search" title={t('search.empty.title')} body={t('search.empty.body')} />
+      ) : results.length === 0 ? (
         <EmptyState
           icon="search"
-          title="Search everything"
-          body="Find a word or phrase in any chapter, note or folder."
+          title={t('search.noResults.title')}
+          body={t('search.noResults.body', { query: query.trim() })}
         />
-      ) : results.length === 0 ? (
-        <EmptyState icon="search" title="No results" body={`Nothing matches “${query.trim()}”.`} />
       ) : (
         <View>
           {results.map((r, i) => (

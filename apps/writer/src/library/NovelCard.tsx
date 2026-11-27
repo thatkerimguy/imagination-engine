@@ -9,7 +9,7 @@ import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 import { useI18n } from '../i18n/I18nProvider.tsx';
-import { countLabel, relativeTime } from './relative-time.ts';
+import { relativeTime } from './relative-time.ts';
 
 export function NovelCard({
   novel,
@@ -25,7 +25,7 @@ export function NovelCard({
   onDelete(): void;
 }): ReactNode {
   const { colors } = useTheme();
-  const { t, locale, formatNumber } = useI18n();
+  const { t, tn, locale, formatNumber } = useI18n();
   const items: MenuItem[] = [
     {
       label: t('library.menu.export'),
@@ -48,8 +48,8 @@ export function NovelCard({
     },
   ];
   const meta = [
-    countLabel(novel.seasonCount, novel.sectionLabel.toLowerCase()),
-    countLabel(novel.chapterCount, 'chapter'),
+    tn(`count.${novel.sectionLabel}`, novel.seasonCount),
+    tn('count.chapter', novel.chapterCount),
     t('library.words', { n: formatNumber(novel.words) }),
   ].join(' · ');
   const edited = t('library.edited', { when: relativeTime(novel.updatedAt, Date.now(), locale) });
@@ -91,7 +91,7 @@ export function NovelCard({
       </Press>
       <PopoverMenu
         items={items}
-        accessibilityLabel={`${novel.title} options`}
+        accessibilityLabel={t('library.options', { title: novel.title })}
         testID={`novel-menu-${novel.id}`}
       />
     </View>

@@ -2,9 +2,12 @@ import type { Block } from '@kn/core';
 import { describe, expect, it } from 'vitest';
 import {
   clampQuote,
+  defaultTeaserChapterId,
   extractQuoteCandidates,
   gimmickBadge,
   quoteLayout,
+  showChapterPicker,
+  teaserChapterChoices,
   TEASER_PRESETS,
   TEASER_SIZE,
 } from './teaser-model.ts';
@@ -87,5 +90,24 @@ describe('layout and badge', () => {
         } as unknown as Block,
       ]),
     ).toBeUndefined();
+  });
+});
+
+describe('chapter picker', () => {
+  const ch = (id: string, blocks: Block[]) => ({ id, title: id, blocks });
+  const chapters = [ch('a', []), ch('b', [prose('p', long)]), ch('c', [prose('q', long)])];
+
+  it('flags quotable chapters and defaults to the first quotable one', () => {
+    const choices = teaserChapterChoices(chapters);
+    expect(choices.map((c) => c.quotable)).toEqual([false, true, true]);
+    expect(defaultTeaserChapterId(choices)).toBe('b');
+    expect(defaultTeaserChapterId(teaserChapterChoices([ch('x', [])]))).toBe('x');
+    expect(defaultTeaserChapterId([])).toBeUndefined();
+  });
+
+  it('shows only for novel-level teasers with more than one chapter', () => {
+    expect(showChapterPicker(false, 3)).toBe(true);
+    expect(showChapterPicker(false, 1)).toBe(false);
+    expect(showChapterPicker(true, 3)).toBe(false);
   });
 });

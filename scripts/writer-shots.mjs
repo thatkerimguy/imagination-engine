@@ -20,6 +20,7 @@ import { dir05Pass } from './writer-shots-dir05.mjs';
 import { dir06aPass } from './writer-shots-dir06a.mjs';
 import { dir07Pass } from './writer-shots-dir07.mjs';
 import { ov01Pass } from './writer-shots-ov01.mjs';
+import { ov02aPass } from './writer-shots-overhaul02a.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const packAt = process.argv.includes('--shots')
@@ -209,21 +210,19 @@ try {
   await page.waitForTimeout(400);
   await shot('08-live-preview-rich-formatting');
   await offlinePreviewShot(page, { frame, reader, tid, shot, ok, fail, blocked, RICH });
-
   await workspacePass(page, { WRITER, shotsAt, tid, ok, fail, editor });
   await toolbarPass(page, { tid, editor, shotsAt, ok, fail });
   await settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail });
   await flowPass(page, { WRITER, tid, ok, fail });
-  // 2E's five shots are regression now; the pack root holds only the current (2F) four.
   await phase2ePass(page, { WRITER, ID, tid, shotsAt, ok, fail, editor });
   await phase2fPass(page, { WRITER, tid, shotsAt, ok, fail, editor });
-  // 04A / 05 / 06A / 06 packs are regression now; the pack root holds only the Directive 07 four.
   await phase4aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir05Pass(page, { WRITER, packAt: shotsAt, tid, ok, fail, editor });
   await dir06aPass(page, { WRITER, packAt: shotsAt, tid, ok, fail });
-  // Directive 07 is regression now; the pack root holds only the OVERHAUL-01 three.
+  // D-07 + OVERHAUL-01/-02 are regression now; the pack root holds only the OVERHAUL-02A four.
   await dir07Pass(page, { WRITER, packAt: shotsAt, shotsAt, tid, ok, fail, editor });
-  await ov01Pass(browser, { WRITER, packAt, ok, fail });
+  await ov01Pass(browser, { WRITER, packAt: shotsAt, ok, fail });
+  await ov02aPass(browser, { WRITER, packAt, ok, fail });
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
   else ok('zero console errors');
   await browser.close();

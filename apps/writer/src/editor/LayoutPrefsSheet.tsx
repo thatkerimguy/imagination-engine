@@ -20,6 +20,7 @@ import { Txt } from '../ui/Txt.tsx';
 import { radius, space, TOUCH, withAlpha } from '../ui/tokens.ts';
 import { makeStyles, useTheme, useWriterPrefs } from '../ui/theme.tsx';
 import { toolLabel } from './FormattingToolbar.tsx';
+import { hitSlopFor, MIN_TOUCH } from '../ui/a11y.ts';
 
 export interface LayoutPrefsSheetProps {
   visible: boolean;
@@ -164,7 +165,7 @@ export function FocusExitPill({ onExit }: { onExit(): void }): ReactNode {
       accessibilityRole="button"
       accessibilityLabel="Exit focus mode"
       onPress={onExit}
-      hitSlop={8}
+      hitSlop={hitSlopFor(MIN_TOUCH, 28)}
       wash={null}
       style={[
         styles.pill,

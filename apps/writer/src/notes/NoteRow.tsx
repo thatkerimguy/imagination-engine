@@ -3,6 +3,8 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { CoverImage } from '../components/CoverImage.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import type { Locale } from '../i18n/i18n.ts';
 import { relativeTime } from '../library/relative-time.ts';
 import type { ItemMeta } from '../store/item-meta.ts';
 import { isRedacted } from '../store/unlock-session.ts';
@@ -15,8 +17,8 @@ import { useTheme } from '../ui/theme.tsx';
 import { KIND_META } from './kind-meta.ts';
 import type { NoteItem } from './use-notes-data.ts';
 
-export function itemMetaLine(item: NoteItem): string {
-  const when = relativeTime(item.updatedAt);
+export function itemMetaLine(item: NoteItem, locale: Locale = 'en', now = Date.now()): string {
+  const when = relativeTime(item.updatedAt, now, locale);
   if (item.kind === 'folder') {
     const n = item.count ?? 0;
     return `${n} ${n === 1 ? 'item' : 'items'} · ${when}`;
@@ -34,6 +36,7 @@ export interface NoteRowProps {
 
 export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
   const { colors } = useTheme();
+  const { t, locale } = useI18n();
   const redacted = isRedacted(item.id, meta);
   const prefix = item.kind === 'folder' ? 'folder' : 'doc';
   return (
@@ -47,7 +50,7 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
       />
       <Press
         accessibilityRole="button"
-        accessibilityLabel={`${item.kind === 'folder' ? 'Folder' : KIND_META[item.storyKind ?? 'note'].label} ${item.title}`}
+        accessibilityLabel={`${t(item.kind === 'folder' ? 'kind.folder' : KIND_META[item.storyKind ?? 'note'].labelKey)} ${item.title}`}
         onPress={onOpen}
         style={styles.body}
         testID={`${prefix}-open-${item.id}`}
@@ -72,13 +75,13 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
               <View style={styles.pill} testID={`kind-pill-${item.id}`}>
                 <Glyph name={KIND_META[item.storyKind].icon} size={10} color="inkMuted" />
                 <Txt variant="caption" color="inkMuted">
-                  {KIND_META[item.storyKind].label}
+                  {t(KIND_META[item.storyKind].labelKey)}
                 </Txt>
               </View>
             ) : null}
           </View>
           <Txt variant="meta" color="inkMuted" numberOfLines={1}>
-            {redacted ? 'Locked' : itemMetaLine(item)}
+            {redacted ? t('notes.locked') : itemMetaLine(item, locale)}
           </Txt>
           {meta?.tags.length && !redacted ? (
             <Txt variant="caption" color="inkMuted" numberOfLines={1}>
@@ -89,7 +92,7 @@ export function NoteRow({ item, meta, menu, onOpen }: NoteRowProps): ReactNode {
       </Press>
       <PopoverMenu
         items={menu}
-        accessibilityLabel={`Actions for ${item.title}`}
+        accessibilityLabel={t('notes.actionsFor', { title: item.title })}
         testID={`item-menu-${item.id}`}
       />
     </View>

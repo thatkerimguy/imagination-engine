@@ -2,6 +2,8 @@
 // node through [[wikilinks]] or @mentions. Reactive to repository writes.
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import { tn, translator, type Locale, type Translate } from '../i18n/i18n.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { listBacklinks, type Backlink } from '../store/backlinks.ts';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
@@ -22,8 +24,10 @@ export interface BacklinksSectionProps {
 const iconOf = (b: Backlink): GlyphName =>
   isStoryKind(b.sourceKind) ? KIND_META[b.sourceKind].icon : 'bookmark';
 
-export const backlinksHeader = (n: number): string =>
-  n === 0 ? 'No backlinks yet' : `Referenced in ${n} ${n === 1 ? 'place' : 'places'}`;
+export const backlinksHeader = (n: number, t?: Translate, locale: Locale = 'en'): string =>
+  n === 0
+    ? (t ?? translator(locale))('backlinks.none')
+    : tn('backlinks.count', n, undefined, locale);
 
 export function BacklinksSection({
   targetId,
@@ -31,6 +35,7 @@ export function BacklinksSection({
   defaultOpen,
 }: BacklinksSectionProps): ReactNode {
   const { colors } = useTheme();
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(defaultOpen ?? false);
   const q = useRepoQuery<Backlink[]>(`backlinks:${targetId}`, (r) => listBacklinks(r, targetId));
   const links = q.data ?? [];
@@ -40,14 +45,14 @@ export function BacklinksSection({
       <Press
         accessibilityRole="button"
         accessibilityState={{ expanded: open && !empty }}
-        accessibilityLabel={backlinksHeader(links.length)}
+        accessibilityLabel={backlinksHeader(links.length, t, locale)}
         onPress={() => setOpen((o) => !o)}
         disabled={empty}
         style={styles.head}
         testID="backlinks-toggle"
       >
         <Txt variant="meta" color={empty ? 'inkMuted' : 'inkSecondary'} style={styles.title}>
-          {backlinksHeader(links.length)}
+          {backlinksHeader(links.length, t, locale)}
         </Txt>
         {empty ? null : (
           <Glyph name={open ? 'chevron-up' : 'chevron-down'} size={16} color="inkMuted" />
@@ -58,7 +63,7 @@ export function BacklinksSection({
             <Press
               key={b.sourceId}
               accessibilityRole="button"
-              accessibilityLabel={`Open ${b.sourceTitle}`}
+              accessibilityLabel={t('backlinks.open', { title: b.sourceTitle })}
               onPress={() => onOpen(b)}
               style={styles.row}
               testID={`backlink-${b.sourceId}`}

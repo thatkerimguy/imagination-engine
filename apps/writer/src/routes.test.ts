@@ -38,6 +38,8 @@ describe('workspace routes', () => {
     expect(parentHref('/compile-folder', { folder: 'f1' })).toBe('/folders/f1');
     expect(parentHref(routes.doctor, {})).toBe('/settings');
     expect(parentHref(routes.lock, {})).toBe('/settings');
+    expect(parentHref(routes.settingsBackup, {})).toBe('/settings');
+    expect(parentHref(routes.settingsPublishing, {})).toBe('/settings');
   });
   it('deep-links a chapter at a block', () => {
     expect(routes.chapter('n', 's', 'c', 'B1')).toBe('/novel/n/chapter/s/c?block=B1');

@@ -3,15 +3,17 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { CardGroup } from '../ui/CardGroup.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { SectionLabel } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { MARKUP_NOTE, MARKUP_ROWS } from './help-content.ts';
 
 export function FormattingSection(p: { onOpenShortcuts(): void; onReplayTour(): void }): ReactNode {
+  const { t } = useI18n();
   return (
     <View style={styles.section}>
-      <SectionLabel>Formatting & shortcuts</SectionLabel>
+      <SectionLabel>{t('help.formatting')}</SectionLabel>
       <CardGroup>
         {MARKUP_ROWS.map((r) => (
           <View key={r.syntax} style={styles.row}>

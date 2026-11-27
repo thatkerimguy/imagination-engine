@@ -3,6 +3,7 @@
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Alert, View } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { RecentStrip } from '../components/RecentStrip.tsx';
 import { ItemMetaSheet } from '../components/ItemMetaSheet.tsx';
 import { folderHref, routes } from '../routes.ts';
@@ -35,6 +36,7 @@ const SORTS = Object.keys(SORT_LABELS) as SortMode[];
 
 export function NotesWorkspace({ folderId }: { folderId: string | null }): ReactNode {
   const repo = useRepository();
+  const { t } = useI18n();
   const data = useNotesData(folderId);
   const allFolders = useRepoQuery('notes-all-folders', listAllFolders);
   const menu = useItemMenu();
@@ -44,7 +46,7 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
   const { items: all = [], meta, crumbs = [], folder, sort = 'date-edited' } = data.data ?? {};
   const items =
     filter === 'all' ? all : all.filter((i) => i.kind === 'folder' || i.storyKind === filter);
-  const title = folderId ? (folder?.title ?? '') : 'Notes';
+  const title = folderId ? (folder?.title ?? '') : t('tab.notes');
 
   const open = (item: NoteItem): void =>
     router.push(
@@ -59,7 +61,10 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
       const id = await pickAndImport(repo, { folderId });
       if (id) router.push(routes.note(id, folderId));
     } catch (err) {
-      Alert.alert('Import failed', err instanceof Error ? err.message : 'Please try again.');
+      Alert.alert(
+        t('notes.importFailed'),
+        err instanceof Error ? err.message : t('notes.tryAgain'),
+      );
     }
   };
   const picked = menu.target;
@@ -74,17 +79,17 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
             <View style={{ flexDirection: 'row' }}>
               <PopoverMenu
                 icon="file-plus"
-                accessibilityLabel="Create new"
+                accessibilityLabel={t('notes.createNew')}
                 testID="notes-new"
                 items={[
                   ...STORY_KINDS.map((k) => ({
-                    label: KIND_META[k].label,
+                    label: t(KIND_META[k].labelKey),
                     icon: KIND_META[k].icon,
                     onPress: () => void addDoc(k),
                     testID: `notes-new-${k}`,
                   })),
                   {
-                    label: 'Folder',
+                    label: t('kind.folder'),
                     icon: 'folder-plus' as const,
                     onPress: () => setNewFolder(true),
                     testID: 'notes-new-folder',
@@ -93,7 +98,7 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
               />
               <IconBtn
                 icon="download"
-                accessibilityLabel="Import .txt, .md or .docx"
+                accessibilityLabel={t('notes.import')}
                 onPress={() => void importDoc()}
                 testID="notes-import"
               />
@@ -114,10 +119,10 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
         <View style={{ flex: 1 }}>{folderId ? <Breadcrumbs crumbs={crumbs} /> : null}</View>
         <PopoverMenu
           icon="sliders"
-          accessibilityLabel={`Sort: ${SORT_LABELS[sort]}`}
+          accessibilityLabel={t('notes.sort', { order: t(`notes.sort.${sort}`) })}
           testID="notes-sort"
           items={SORTS.map((m) => ({
-            label: SORT_LABELS[m],
+            label: t(`notes.sort.${m}`),
             icon: m === sort ? 'check' : undefined,
             onPress: () => void data.setSort(m),
             testID: `sort-${m}`,
@@ -130,12 +135,12 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
           icon={folderId ? 'folder' : 'edit-3'}
           title={
             filter !== 'all'
-              ? 'Nothing here yet'
+              ? t('notes.empty.filtered')
               : folderId
-                ? 'This folder is empty'
-                : 'No notes yet'
+                ? t('notes.empty.folder')
+                : t('notes.empty.none')
           }
-          body="Use the + button above to add a note, character, location, lore entry or folder."
+          body={t('notes.empty.body')}
         />
       ) : null}
       <Grid columns={columns} testID="notes-grid">
@@ -152,9 +157,9 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
 
       <NameSheet
         visible={newFolder}
-        title="New folder"
+        title={t('notes.newFolder')}
         initial=""
-        confirmLabel="Create"
+        confirmLabel={t('common.create')}
         onClose={() => setNewFolder(false)}
         onSubmit={(name) => {
           setNewFolder(false);
@@ -163,9 +168,9 @@ export function NotesWorkspace({ folderId }: { folderId: string | null }): React
       />
       <NameSheet
         visible={picked?.sheet === 'rename'}
-        title="Rename"
+        title={t('common.rename')}
         initial={picked?.item.title ?? ''}
-        confirmLabel="Save"
+        confirmLabel={t('common.save')}
         onClose={menu.close}
         onSubmit={(name) => picked && void menu.rename(picked.item, name)}
       />

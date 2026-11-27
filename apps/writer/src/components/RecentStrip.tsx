@@ -3,79 +3,29 @@
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { relativeTime } from '../library/relative-time.ts';
 import { routes } from '../routes.ts';
 import { claimInnerHorizontal } from './root-tab.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { listAllDocs } from '../store/folders.ts';
 import { hiddenNodeIds } from '../store/trash-model.ts';
-import { loadAllItemMeta, type ItemMeta } from '../store/item-meta.ts';
+import { loadAllItemMeta } from '../store/item-meta.ts';
+import { recentItems, type RecentInput, type RecentItem } from './recent-items.ts';
 import { isRedacted } from '../store/unlock-session.ts';
 import type { NovelRepository } from '../store/repository.ts';
 import { runAfterInteractions } from '../ui/after-interactions.ts';
 import { Glyph } from '../ui/Glyph.tsx';
+import { NODE_KIND_META } from '../ui/node-kind.ts';
+import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { radius, space } from '../ui/tokens.ts';
 import { makeStyles } from '../ui/theme.tsx';
 
-export interface RecentItem {
-  id: string;
-  kind: 'chapter' | 'doc';
-  title: string;
-  /** Book title for chapters, empty for notes. */
-  book: string;
-  /** max(updatedAt, lastOpenedAt). */
-  at: number;
-  locked: boolean;
-  novelId?: string;
-  seasonId?: string;
-  folderId?: string | null;
-}
-
-export interface RecentInput {
-  chapters: {
-    novelId: string;
-    seasonId: string;
-    id: string;
-    title: string;
-    book: string;
-    updatedAt: number;
-  }[];
-  docs: { id: string; title: string; folderId: string | null; updatedAt: number }[];
-  meta: ReadonlyMap<string, ItemMeta>;
-  /** Locked-and-not-unlocked predicate (defaults to `meta.locked`). */
-  isLocked?(id: string): boolean;
-}
-
-/** The most recently edited / opened chapters and notes, newest first. Pure. */
-export function recentItems(input: RecentInput, limit = 5): RecentItem[] {
-  const at = (id: string, updatedAt: number): number =>
-    Math.max(updatedAt, input.meta.get(id)?.lastOpenedAt ?? 0);
-  const locked = input.isLocked ?? ((id: string) => input.meta.get(id)?.locked === true);
-  const all: RecentItem[] = [
-    ...input.chapters.map((c) => ({
-      id: c.id,
-      kind: 'chapter' as const,
-      title: c.title,
-      book: c.book,
-      at: at(c.id, c.updatedAt),
-      locked: locked(c.id),
-      novelId: c.novelId,
-      seasonId: c.seasonId,
-    })),
-    ...input.docs.map((d) => ({
-      id: d.id,
-      kind: 'doc' as const,
-      title: d.title,
-      book: '',
-      at: at(d.id, d.updatedAt),
-      locked: locked(d.id),
-      folderId: d.folderId,
-    })),
-  ];
-  return all.sort((a, b) => b.at - a.at).slice(0, limit);
-}
+/** Icon + label key of a Recent tile (chapters, or the doc's story kind). */
+export const recentKind = (item: Pick<RecentItem, 'kind' | 'docKind'>) =>
+  NODE_KIND_META[item.kind === 'chapter' ? 'chapter' : (item.docKind ?? 'note')];
 
 export function openRecent(item: RecentItem): void {
   if (item.kind === 'chapter' && item.novelId && item.seasonId)
@@ -84,7 +34,7 @@ export function openRecent(item: RecentItem): void {
 }
 
 const useStyles = makeStyles((t) => ({
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 36 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: MIN_TOUCH },
   row: { gap: space.xs, paddingRight: space.gutter },
   tile: {
     width: 148,
@@ -135,6 +85,7 @@ async function readRecent(repo: NovelRepository): Promise<RecentItem[]> {
     title: d.title,
     folderId: d.parentFolderId,
     updatedAt: d.updatedAt,
+    kind: d.kind,
   }));
   const meta = await loadAllItemMeta(repo);
   return recentItems({ chapters, docs, meta, isLocked: (id) => isRedacted(id, meta.get(id)) });
@@ -142,6 +93,7 @@ async function readRecent(repo: NovelRepository): Promise<RecentItem[]> {
 
 export function RecentStrip({ testID = 'recent-strip' }: { testID?: string }): ReactNode {
   const s = useStyles();
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(true);
   const query = useRepoQuery('recent-strip', loadRecent);
   useEffect(
@@ -159,13 +111,13 @@ export function RecentStrip({ testID = 'recent-strip' }: { testID?: string }): R
         onPress={() => setOpen((o) => !o)}
         wash={null}
         accessibilityRole="button"
-        accessibilityLabel={open ? 'Collapse recent' : 'Expand recent'}
+        accessibilityLabel={open ? t('recent.collapse') : t('recent.expand')}
         accessibilityState={{ expanded: open }}
         style={s.head}
         testID="recent-toggle"
       >
         <Txt variant="overline" color="inkSecondary">
-          Recent
+          {t('recent.title')}
         </Txt>
         <Glyph name={open ? 'chevron-down' : 'chevron-right'} size={14} color="inkMuted" />
       </Press>
@@ -182,18 +134,24 @@ export function RecentStrip({ testID = 'recent-strip' }: { testID?: string }): R
               key={`${item.kind}:${item.id}`}
               onPress={() => openRecent(item)}
               accessibilityRole="button"
-              accessibilityLabel={`Resume ${item.title}`}
+              accessibilityLabel={t('recent.resume', { title: item.title })}
               style={s.tile}
               testID={`recent-tile-${item.id}`}
             >
               <View style={s.titleRow}>
+                <Glyph name={recentKind(item).icon} size={12} color="inkMuted" />
                 {item.locked ? <Glyph name="lock" size={12} color="inkMuted" /> : null}
                 <Txt variant="bodyStrong" numberOfLines={1} style={s.grow}>
                   {item.title}
                 </Txt>
               </View>
               <Txt variant="caption" color="inkMuted" numberOfLines={1}>
-                {[item.kind === 'chapter' ? item.book || 'Chapter' : 'Note', relativeTime(item.at)]
+                {[
+                  item.kind === 'chapter'
+                    ? item.book || t('kind.chapter')
+                    : t(recentKind(item).labelKey),
+                  relativeTime(item.at, Date.now(), locale),
+                ]
                   .filter(Boolean)
                   .join(' · ')}
               </Txt>

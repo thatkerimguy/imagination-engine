@@ -7,7 +7,8 @@ import { ChapterEditor } from '../../../../../editor/ChapterEditor.tsx';
 import { routes } from '../../../../../routes.ts';
 import { ItemLockGate } from '../../../../../security/LockGate.tsx';
 import { useRepoQuery, useRepository } from '../../../../../store/context.tsx';
-import { moveToTrash, TRASH_HINT } from '../../../../../store/trash.ts';
+import { useI18n } from '../../../../../i18n/I18nProvider.tsx';
+import { moveToTrash } from '../../../../../store/trash.ts';
 import { useConfirm } from '../../../../../ui/ConfirmDialog.tsx';
 import { useChapterDraft } from '../../../../../store/use-chapter-draft.ts';
 import { Txt } from '../../../../../ui/Txt.tsx';
@@ -45,11 +46,12 @@ export default function ChapterEditorScreen(): ReactNode {
 
   const repo = useRepository();
   const confirm = useConfirm();
+  const { t } = useI18n();
   const trash = async (): Promise<void> => {
     const ok = await confirm({
-      title: `Move “${chapter?.title ?? 'this chapter'}” to Trash?`,
-      message: TRASH_HINT,
-      confirmLabel: 'Move to Trash',
+      title: t('menu.trashTitle', { title: chapter?.title ?? t('kind.chapter') }),
+      message: t('trash.hint'),
+      confirmLabel: t('menu.trash'),
     });
     if (!ok) return;
     await flush();

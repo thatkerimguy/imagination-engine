@@ -28,6 +28,7 @@ export async function loadSearchSources(repo: NovelRepository): Promise<SearchSo
     title: d.title,
     folderId: d.parentFolderId,
     blocks: d.blocks,
+    kind: d.kind,
   }));
   return {
     novels: novels.map((n) => ({

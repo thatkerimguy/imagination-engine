@@ -7,6 +7,7 @@ import {
   type ExportFormat,
   type ExportOptions,
 } from '../export/book-model.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { compileFolder, compileNovel, exportBook } from '../export/compile-book.ts';
 import { buildRoyalRoadHtml } from '../export/royal-road.ts';
 import { listFolderNotes, listNovelEntries, type CompileEntry } from '../export/compile-source.ts';
@@ -49,11 +50,11 @@ const INITIAL: CompilerState = {
   notice: null,
 };
 
-const message = (err: unknown): string =>
-  err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-
 export function useCompiler(source: CompileSource) {
   const repo = useRepository();
+  const { t } = useI18n();
+  const message = (err: unknown): string =>
+    err instanceof Error ? err.message : t('compile.failed');
   const itemId = source.kind === 'novel' ? source.novelId : source.folderId;
   const [state, setState] = useState<CompilerState>(INITIAL);
   const patch = useCallback((p: Partial<CompilerState>) => setState((s) => ({ ...s, ...p })), []);
@@ -125,8 +126,7 @@ export function useCompiler(source: CompileSource) {
 
   const run = async (format: ExportFormat): Promise<void> => {
     const order = state.rows.filter((r) => r.included).map((r) => r.id);
-    if (order.length === 0 && format !== 'knbook')
-      return patch({ error: 'Select at least one chapter to export.' });
+    if (order.length === 0 && format !== 'knbook') return patch({ error: t('compile.selectOne') });
     patch({ busy: format, error: null, notice: null });
     try {
       const book =
@@ -138,7 +138,7 @@ export function useCompiler(source: CompileSource) {
         ...(source.kind === 'novel' ? { novelId: source.novelId } : {}),
       });
       if (out.status === 'saved') {
-        patch({ notice: `Saved ${out.filename}` });
+        patch({ notice: t('compile.saved', { name: out.filename }) });
         void maybeRequestReview(repo, 'export');
       }
     } catch (err) {
@@ -150,7 +150,7 @@ export function useCompiler(source: CompileSource) {
 
   const copyRoyalRoad = async (): Promise<void> => {
     const order = state.rows.filter((r) => r.included).map((r) => r.id);
-    if (order.length === 0) return patch({ error: 'Select at least one chapter to export.' });
+    if (order.length === 0) return patch({ error: t('compile.selectOne') });
     patch({ busy: 'royalroad', error: null, notice: null });
     try {
       const book =
@@ -158,7 +158,7 @@ export function useCompiler(source: CompileSource) {
           ? await compileNovel(repo, source.novelId, { order })
           : await compileFolder(repo, source.folderId, { order });
       await Clipboard.setStringAsync(buildRoyalRoadHtml(book, state.opts));
-      patch({ notice: 'Royal Road HTML copied to the clipboard' });
+      patch({ notice: t('compile.copied') });
     } catch (err) {
       patch({ error: message(err) });
     } finally {

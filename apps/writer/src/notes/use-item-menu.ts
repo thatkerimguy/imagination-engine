@@ -1,6 +1,7 @@
 // The per-item ⋯ menu of the Notes workspace and the actions behind it.
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { deleteCoverFiles } from '../media/cover-files';
 import { pickCoverImage } from '../media/pick-cover';
 import { setItemCover } from '../store/covers.ts';
@@ -8,7 +9,7 @@ import { routes } from '../routes.ts';
 import { useRepository } from '../store/context.tsx';
 import { moveFolder, renameFolder, saveDoc } from '../store/folders.ts';
 import { updateItemMeta, type ItemMeta } from '../store/item-meta.ts';
-import { TRASH_HINT, moveToTrash } from '../store/trash.ts';
+import { moveToTrash } from '../store/trash.ts';
 import { unlockSession } from '../store/unlock-session.ts';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import type { MenuItem } from '../ui/PopoverMenu.tsx';
@@ -19,6 +20,7 @@ export type ItemSheet = 'rename' | 'move' | 'meta' | 'promote';
 export function useItemMenu() {
   const repo = useRepository();
   const confirm = useConfirm();
+  const { t } = useI18n();
   const [target, setTarget] = useState<{ item: NoteItem; sheet: ItemSheet } | null>(null);
   const close = useCallback(() => setTarget(null), []);
 
@@ -35,9 +37,9 @@ export function useItemMenu() {
   const remove = async (item: NoteItem): Promise<void> => {
     const folder = item.kind === 'folder';
     const ok = await confirm({
-      title: `Move “${item.title}” to Trash?`,
-      message: `${folder ? 'Everything inside the folder goes with it. ' : ''}${TRASH_HINT}`,
-      confirmLabel: 'Move to Trash',
+      title: t('menu.trashTitle', { title: item.title }),
+      message: `${folder ? `${t('menu.trashFolder')} ` : ''}${t('trash.hint')}`,
+      confirmLabel: t('menu.trash'),
     });
     if (ok) await moveToTrash(repo, { kind: item.kind, id: item.id });
   };
@@ -59,46 +61,46 @@ export function useItemMenu() {
     const locked = meta?.locked === true;
     return [
       {
-        label: 'Rename',
+        label: t('menu.rename'),
         icon: 'edit-2',
         onPress: open('rename'),
         testID: `menu-rename-${item.id}`,
       },
       {
-        label: 'Move to Folder',
+        label: t('menu.move'),
         icon: 'folder',
         onPress: open('move'),
         testID: `menu-move-${item.id}`,
       },
-      { label: 'Tags & Color', icon: 'tag', onPress: open('meta'), testID: `menu-meta-${item.id}` },
+      { label: t('menu.meta'), icon: 'tag', onPress: open('meta'), testID: `menu-meta-${item.id}` },
       {
-        label: pinned ? 'Unpin' : 'Pin',
+        label: pinned ? t('menu.unpin') : t('menu.pin'),
         icon: 'bookmark',
         onPress: () => void updateItemMeta(repo, item.id, { pinned: pinned ? undefined : true }),
       },
       {
-        label: locked ? 'Unlock' : 'Lock',
+        label: locked ? t('menu.unlock') : t('menu.lock'),
         icon: locked ? 'unlock' : 'lock',
         onPress: () => void toggleLock(item, locked),
       },
-      { label: 'Set Cover Art', icon: 'image', onPress: () => void setCover(item) },
+      { label: t('menu.cover'), icon: 'image', onPress: () => void setCover(item) },
       ...(item.kind === 'doc'
         ? [
             {
-              label: 'Promote to Novel Chapter',
+              label: t('menu.promote'),
               icon: 'arrow-up-right' as const,
               onPress: open('promote'),
             },
           ]
         : [
             {
-              label: 'Compile Folder as Book',
+              label: t('menu.compileFolder'),
               icon: 'book' as const,
               onPress: () => router.push(routes.compileFolder(item.id)),
             },
           ]),
       {
-        label: 'Move to Trash',
+        label: t('menu.trash'),
         icon: 'trash-2',
         destructive: true,
         onPress: () => void remove(item),

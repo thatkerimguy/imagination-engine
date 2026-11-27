@@ -67,33 +67,26 @@ export async function toolbarPass(page, { tid, editor, shotsAt, ok, fail }) {
   ok('toolbar halves collapse, persist across reload and restore');
 }
 
-/** 04 App Settings (preview selector + haptics) and 05 compiler export grid (.knbook tile). */
+/** 04 App Settings (haptics on the root, preview selector on Web Publishing & API) and 05 the
+ * compiler export grid (.knbook tile). */
 export async function settingsAndCompilerShots(page, { WRITER, tid, shotsAt, ok, fail }) {
   const shot = (name) => shotsAt && page.screenshot({ path: `${shotsAt}/${name}.png` });
   await page.goto(`${WRITER}settings`);
-  await tid('settings-preview-mode').waitFor({ timeout: 15000 });
-  await tid('settings-haptics').waitFor();
-  // Scroll so the "Live preview" section label sits just under the top bar.
-  await tid('settings-preview-mode').evaluate((el) => {
-    el.scrollIntoView({ block: 'start' });
-    let s = el.parentElement;
-    while (s && s.scrollHeight <= s.clientHeight) s = s.parentElement;
-    s?.scrollBy(0, -170);
-  });
+  await tid('settings-haptics').waitFor({ timeout: 15000 });
+  await tid('settings-haptics-test').evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(300);
-  const box = await tid('settings-haptics-test').boundingBox();
-  if (box && box.y + box.height <= 844) {
-    await shot('04-settings-offline-and-haptics');
-  } else {
-    const top = await page.screenshot();
-    await tid('settings-haptics-test').evaluate((el) => el.scrollIntoView({ block: 'end' }));
-    await page.waitForTimeout(300);
-    await composite(page, shotsAt, '04-settings-offline-and-haptics', [
-      top,
-      await page.screenshot(),
-    ]);
-  }
-  ok('App Settings shows the Live preview selector, Haptics toggle and Test vibration');
+  const root = await page.screenshot();
+  await tid('open-publishing').click();
+  await tid('settings-preview-mode').waitFor({ timeout: 15000 });
+  await tid('settings-preview-mode').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(300);
+  await composite(page, shotsAt, '04-settings-offline-and-haptics', [
+    root,
+    await page.screenshot(),
+  ]);
+  ok(
+    'Settings shows Haptics + Test vibration; Web Publishing & API hosts the Live preview selector',
+  );
 
   await page.goto(`${WRITER}novel/vertical-slice/compile`);
   await tid('export-knbook').waitFor({ timeout: 10000 });

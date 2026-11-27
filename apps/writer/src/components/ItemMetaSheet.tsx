@@ -19,6 +19,7 @@ import { Toggle } from '../ui/Toggle.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
+import { hitSlopFor, MIN_TOUCH } from '../ui/a11y.ts';
 
 export interface ItemMetaSheetProps {
   visible: boolean;
@@ -122,6 +123,7 @@ export function ItemMetaSheet(p: ItemMetaSheetProps): ReactNode {
                 accessibilityLabel={`Remove tag ${t}`}
                 onPress={() => save({ tags: meta.tags.filter((x) => x !== t) })}
                 testID={`meta-tag-${t}`}
+                hitSlop={hitSlopFor(MIN_TOUCH, 32)}
                 style={styles.tag}
               >
                 <Txt variant="meta" color="inkSecondary">{`#${t}`}</Txt>

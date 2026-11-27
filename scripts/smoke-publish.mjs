@@ -117,6 +117,7 @@ try {
 
   // Settings: configure publishing and test the connection.
   await writer.goto(`${WRITER}/settings`);
+  await tid('open-publishing').click();
   await tid('publish-api-url').fill(API);
   await tid('publish-token').fill(TOKEN);
   await tid('publish-reader-url').fill(READER);

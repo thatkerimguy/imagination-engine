@@ -9,6 +9,7 @@ import { tapFeedback } from '../ui/haptics.ts';
 import { Press } from '../ui/Press.tsx';
 import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { MODE_CHOICES } from './mode-policy.ts';
 
 const ICONS: Record<WorkspaceMode, GlyphName> = { prose: 'feather', interactive: 'zap' };
@@ -20,8 +21,13 @@ export interface ModePickerProps {
 }
 
 export function ModePicker({ value, onChange, testID }: ModePickerProps): ReactNode {
+  const { t } = useI18n();
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="Workspace mode" testID={testID}>
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t('novel.workspaceMode')}
+      testID={testID}
+    >
       <CardGroup>
         {MODE_CHOICES.map((c) => {
           const on = c.mode === value;
@@ -29,7 +35,7 @@ export function ModePicker({ value, onChange, testID }: ModePickerProps): ReactN
             <Press
               key={c.mode}
               accessibilityRole="radio"
-              accessibilityLabel={`${c.label}. ${c.hint}`}
+              accessibilityLabel={`${t(c.labelKey)}. ${t(c.hintKey)}`}
               accessibilityState={{ selected: on, checked: on }}
               aria-checked={on}
               testID={`mode-option-${c.mode}`}
@@ -43,10 +49,10 @@ export function ModePicker({ value, onChange, testID }: ModePickerProps): ReactN
               <Glyph name={ICONS[c.mode]} size={20} color={on ? 'accent' : 'inkSecondary'} />
               <View style={styles.text}>
                 <Txt variant="body" color={on ? 'accent' : 'ink'}>
-                  {c.label}
+                  {t(c.labelKey)}
                 </Txt>
                 <Txt variant="meta" color="inkSecondary">
-                  {c.hint}
+                  {t(c.hintKey)}
                 </Txt>
               </View>
             </Press>

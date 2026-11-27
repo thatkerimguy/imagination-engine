@@ -17,10 +17,13 @@ import { Toggle } from '../ui/Toggle.tsx';
 import { space } from '../ui/tokens.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { useTheme } from '../ui/theme.tsx';
+import { TeaserChapterStrip } from './TeaserChapterStrip.tsx';
 import { TeaserCardView } from './TeaserCardView.tsx';
 import { exportTeaserPng } from './teaser-export';
 import {
   clampQuote,
+  showChapterPicker,
+  teaserChapterChoices,
   extractQuoteCandidates,
   gimmickBadge,
   MAX_QUOTE_CHARS,
@@ -52,7 +55,14 @@ export function TeaserSheet(p: TeaserSheetProps): ReactNode {
   const params = useLocalSearchParams<{ novelId?: string }>();
   const novelId = p.novelId ?? params.novelId ?? '';
   const source = useTeaserSource(p.visible, novelId, p.chapter);
-  const chapter = source?.chapter ?? null;
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  const chapters = source?.chapters;
+  const choices = useMemo(() => teaserChapterChoices(chapters ?? []), [chapters]);
+  const picker = showChapterPicker(p.chapter !== undefined, choices.length);
+  const chapter =
+    (picker && chosenId ? chapters?.find((c) => c.id === chosenId) : undefined) ??
+    source?.chapter ??
+    null;
   const candidates = useMemo(
     () => (chapter ? extractQuoteCandidates(chapter.blocks) : []),
     [chapter],
@@ -137,6 +147,9 @@ export function TeaserSheet(p: TeaserSheetProps): ReactNode {
           accessibilityLabel={t('teaser.style')}
           testID="teaser-preset"
         />
+        {picker ? (
+          <TeaserChapterStrip choices={choices} activeId={chapter?.id} onPick={setChosenId} />
+        ) : null}
         <Txt variant="label" color="inkSecondary">
           {candidates.length ? t('teaser.pick') : t('teaser.noProse')}
         </Txt>

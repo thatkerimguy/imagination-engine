@@ -134,3 +134,30 @@ export function quoteLayout(length: number): { fontSize: number; lineHeight: num
   const fontSize = length <= 80 ? 88 : length <= 140 ? 74 : length <= 210 ? 62 : 54;
   return { fontSize, lineHeight: Math.round(fontSize * 1.32) };
 }
+
+export interface TeaserChapterChoice {
+  id: string;
+  title: string;
+  /** Has at least one quotable sentence. */
+  quotable: boolean;
+}
+
+/** Chapter chips for the picker, in reading order. Pure. */
+export function teaserChapterChoices(
+  chapters: readonly { id: string; title: string; blocks: readonly Block[] }[],
+): TeaserChapterChoice[] {
+  return chapters.map((c) => ({
+    id: c.id,
+    title: c.title,
+    quotable: extractQuoteCandidates(c.blocks, 1).length > 0,
+  }));
+}
+
+/** The chapter chosen by default: the first quotable one, else the first. */
+export const defaultTeaserChapterId = (
+  choices: readonly TeaserChapterChoice[],
+): string | undefined => (choices.find((c) => c.quotable) ?? choices[0])?.id;
+
+/** The picker shows only for a novel-level teaser (no chapter given) on a book with 2+ chapters. */
+export const showChapterPicker = (hasGivenChapter: boolean, chapterCount: number): boolean =>
+  !hasGivenChapter && chapterCount > 1;

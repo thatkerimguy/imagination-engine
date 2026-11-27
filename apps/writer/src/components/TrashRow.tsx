@@ -2,25 +2,18 @@
 // one-tap Restore / Delete forever actions.
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import {
-  deletesInLabel,
-  TRASH_KIND_LABEL,
-  type TrashKind,
-  type TrashListItem,
-} from '../store/trash.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import { deletesInLabel, type TrashListItem } from '../store/trash.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
-import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
+import { Glyph } from '../ui/Glyph.tsx';
+import { NODE_KIND_META, type NodeKindName } from '../ui/node-kind.ts';
 import { Txt } from '../ui/Txt.tsx';
 import { radius, space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 
-const ICON: Readonly<Record<TrashKind, GlyphName>> = {
-  novel: 'book',
-  season: 'layers',
-  chapter: 'file-text',
-  folder: 'folder',
-  doc: 'edit-3',
-};
+/** The node kind a Trash item shows: docs keep their story kind (character, location, ...). */
+export const trashNodeKind = (item: Pick<TrashListItem, 'kind' | 'docKind'>): NodeKindName =>
+  item.kind === 'novel' ? 'book' : item.kind === 'doc' ? (item.docKind ?? 'note') : item.kind;
 
 export function TrashRow(p: {
   item: TrashListItem;
@@ -29,24 +22,26 @@ export function TrashRow(p: {
   onDelete(): void;
 }): ReactNode {
   const { colors } = useTheme();
+  const { t, locale } = useI18n();
   const { item } = p;
+  const meta = NODE_KIND_META[trashNodeKind(item)];
   const soon = item.daysLeft <= 3;
   return (
     <View style={[styles.row, { borderColor: colors.hairline }]} testID={`trash-row-${item.id}`}>
       <View style={styles.head}>
-        <Glyph name={ICON[item.kind]} size={18} color="inkSecondary" />
+        <Glyph name={meta.icon} size={18} color="inkSecondary" />
         <View style={styles.text}>
           <Txt variant="body" numberOfLines={2}>
-            {item.title || 'Untitled'}
+            {item.title || t('common.untitled')}
           </Txt>
           <View style={styles.meta}>
             <View style={[styles.badge, { borderColor: colors.hairline }]}>
               <Txt variant="meta" color="inkSecondary">
-                {TRASH_KIND_LABEL[item.kind]}
+                {t(meta.labelKey)}
               </Txt>
             </View>
             <Txt variant="meta" color={soon ? 'warm' : 'inkMuted'} testID={`trash-days-${item.id}`}>
-              {deletesInLabel(item.daysLeft)}
+              {deletesInLabel(item.daysLeft, locale)}
             </Txt>
           </View>
         </View>
@@ -56,8 +51,8 @@ export function TrashRow(p: {
           compact
           variant="secondary"
           icon="rotate-ccw"
-          label="Restore"
-          accessibilityLabel={`Restore ${item.title}`}
+          label={t('trash.restore')}
+          accessibilityLabel={t('trash.restoreA11y', { title: item.title })}
           disabled={p.busy}
           onPress={p.onRestore}
           testID={`trash-restore-${item.id}`}
@@ -66,8 +61,8 @@ export function TrashRow(p: {
           compact
           variant="danger"
           icon="trash-2"
-          label="Delete forever"
-          accessibilityLabel={`Delete ${item.title} forever`}
+          label={t('trash.deleteConfirm')}
+          accessibilityLabel={t('trash.deleteA11y', { title: item.title })}
           disabled={p.busy}
           onPress={p.onDelete}
           testID={`trash-delete-${item.id}`}

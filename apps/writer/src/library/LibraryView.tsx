@@ -9,7 +9,7 @@ import { OnboardingLauncher } from '../onboarding/OnboardingLauncher.tsx';
 import { routes } from '../routes.ts';
 import { DEMO_NOVEL_ID, loadDemoNovel } from '../store/demo.ts';
 import { useRepoQuery, useRepository } from '../store/context.tsx';
-import { moveToTrash, TRASH_HINT } from '../store/trash.ts';
+import { moveToTrash } from '../store/trash.ts';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { useConfirm } from '../ui/ConfirmDialog.tsx';
 import { IconBtn } from '../ui/IconBtn.tsx';
@@ -33,7 +33,7 @@ export function LibraryView(): ReactNode {
     if (
       await confirm({
         title: t('library.trash.title', { title }),
-        message: t('library.trash.message', { hint: TRASH_HINT }),
+        message: t('library.trash.message', { hint: t('trash.hint') }),
         confirmLabel: t('library.trash.confirm'),
       })
     )

@@ -42,14 +42,16 @@ export async function dir05Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   if ((await tid('outline-chapter-ch01').count()) === 0) ok('trashed chapter left the outline');
   else fail('trashed chapter still listed in the outline');
 
-  // 02 — Settings → Backup & Restore.
+  // 02 — Settings root (Data & Backup hub: Trash count) → Backups & External Folder (1 tap).
   await page.goto(`${WRITER}settings`);
+  await tid('open-trash').waitFor({ timeout: 15000 });
+  const trashRow = (await tid('open-trash').textContent()) ?? '';
+  await tid('open-backup').click();
   const backup = tid('card-backup');
   await backup.waitFor({ timeout: 15000 });
   await tid('backup-freshness').evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await page.waitForTimeout(400);
   const fresh = (await tid('backup-freshness').textContent()) ?? '';
-  const trashRow = (await tid('open-trash').textContent()) ?? '';
   const parts = [
     /Not backed up yet|Backed up/.test(fresh),
     (await tid('backup-external-folder').textContent())?.includes('survives uninstall'),
@@ -61,7 +63,8 @@ export async function dir05Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   else fail(`Backup & Restore card incomplete: ${JSON.stringify(parts)} ${trashRow}`);
   await shot('02-settings-saf-backup-card');
 
-  // 03 — Trash screen.
+  // 03 — Trash screen (back to the Settings root, then the Data & Backup hub's Trash row).
+  await page.goto(`${WRITER}settings`);
   await tid('open-trash').click();
   await tid('trash-row-ch01').waitFor({ timeout: 10000 });
   const days = await tid('trash-days-ch01').textContent();

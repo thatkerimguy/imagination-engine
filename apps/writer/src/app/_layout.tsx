@@ -81,11 +81,19 @@ function ThemedStack(): ReactNode {
           <Stack.Screen name="index" options={{ title: t('tab.library'), animation: 'none' }} />
           <Stack.Screen name="new-novel" options={{ title: t('nav.newNovel') }} />
           <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
+          <Stack.Screen name="settings-backup" options={{ title: t('settings.backupRow') }} />
+          <Stack.Screen
+            name="settings-publishing"
+            options={{ title: t('settings.publishingRow') }}
+          />
           <Stack.Screen name="novel/[novelId]/index" options={{ title: '' }} />
-          <Stack.Screen name="novel/[novelId]/settings" options={{ title: 'Novel settings' }} />
+          <Stack.Screen
+            name="novel/[novelId]/settings"
+            options={{ title: t('novel.settingsTitle') }}
+          />
           <Stack.Screen
             name="novel/[novelId]/chapter/[seasonId]/[chapterId]"
-            options={{ title: 'Chapter' }}
+            options={{ title: t('kind.chapter') }}
           />
           <Stack.Screen
             name="preview"
@@ -96,17 +104,17 @@ function ThemedStack(): ReactNode {
             }}
           />
           <Stack.Screen name="appearance" options={{ title: t('nav.appearance') }} />
-          <Stack.Screen name="growth" options={{ title: 'Growth' }} />
+          <Stack.Screen name="growth" options={{ title: t('novel.growth') }} />
           <Stack.Screen name="folders/index" options={{ title: '', animation: 'none' }} />
           <Stack.Screen name="folders/[folderId]" options={{ title: '' }} />
-          <Stack.Screen name="folders/note/[docId]" options={{ title: 'Note' }} />
+          <Stack.Screen name="folders/note/[docId]" options={{ title: t('kind.note') }} />
           <Stack.Screen name="search" options={{ title: '', animation: 'none' }} />
-          <Stack.Screen name="novel/[novelId]/compile" options={{ title: 'Book compiler' }} />
-          <Stack.Screen name="compile-folder" options={{ title: 'Book compiler' }} />
-          <Stack.Screen name="doctor" options={{ title: 'Document Doctor' }} />
+          <Stack.Screen name="novel/[novelId]/compile" options={{ title: t('nav.compiler') }} />
+          <Stack.Screen name="compile-folder" options={{ title: t('nav.compiler') }} />
+          <Stack.Screen name="doctor" options={{ title: t('settings.doctor') }} />
           <Stack.Screen name="trash" options={{ title: t('nav.trash') }} />
           <Stack.Screen name="help" options={{ title: t('nav.help') }} />
-          <Stack.Screen name="lock" options={{ title: 'Master Lock' }} />
+          <Stack.Screen name="lock" options={{ title: t('settings.lock') }} />
           <Stack.Screen name="open" options={{ title: '' }} />
         </Stack>
         <FolioTabBar />

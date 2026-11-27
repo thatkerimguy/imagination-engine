@@ -10,6 +10,7 @@ import { writerModules } from '../../../modules/registry.ts';
 import { useRepoQuery, useRepository } from '../../../store/context.tsx';
 import { ValidationError } from '../../../store/errors.ts';
 import type { NovelRepository } from '../../../store/repository.ts';
+import { useI18n } from '../../../i18n/I18nProvider.tsx';
 import { routes } from '../../../routes.ts';
 import { ActionButton } from '../../../ui/ActionButton.tsx';
 import { Field } from '../../../ui/Field.tsx';
@@ -32,14 +33,14 @@ async function moduleUsage(repo: NovelRepository, novelId: string): Promise<Map<
   return counts;
 }
 
-const OPTIONS: readonly SegmentOption<SectionLabel>[] = SECTION_LABELS.map((l) => ({
-  value: l,
-  label: l,
-}));
-
 export default function NovelSettingsScreen(): ReactNode {
   const { novelId } = useLocalSearchParams<{ novelId: string }>();
   const repo = useRepository();
+  const { t } = useI18n();
+  const options: readonly SegmentOption<SectionLabel>[] = SECTION_LABELS.map((l) => ({
+    value: l,
+    label: t(`section.${l}`),
+  }));
   const { data } = useRepoQuery(`novel-settings:${novelId}`, async (r) => ({
     novel: await r.requireNovel(novelId),
     usage: await moduleUsage(r, novelId),
@@ -93,7 +94,7 @@ export default function NovelSettingsScreen(): ReactNode {
       setErrors(
         err instanceof ValidationError
           ? err.errors
-          : [err instanceof Error ? err.message : 'Could not save.'],
+          : [err instanceof Error ? err.message : t('common.couldNotSave')],
       );
     }
   };
@@ -102,10 +103,10 @@ export default function NovelSettingsScreen(): ReactNode {
     <Page>
       <Stack.Screen
         options={{
-          title: 'Novel settings',
+          title: t('novel.settingsTitle'),
           headerRight: () => (
             <ActionButton
-              label="Save"
+              label={t('common.save')}
               variant="ghost"
               disabled={!dirty || !valid}
               onPress={() => void save()}
@@ -114,29 +115,38 @@ export default function NovelSettingsScreen(): ReactNode {
           ),
         }}
       />
-      <Label>Details</Label>
-      <Field label="Title" value={draft.title} onChangeText={(title) => edit({ title })} serif />
+      <Label>{t('novel.details')}</Label>
       <Field
-        label="Subtitle"
+        label={t('novel.title')}
+        value={draft.title}
+        onChangeText={(title) => edit({ title })}
+        serif
+      />
+      <Field
+        label={t('novel.subtitle')}
         value={draft.subtitle ?? ''}
-        onChangeText={(t) => {
+        onChangeText={(v) => {
           const rest: NovelManifest = { ...draft };
           delete rest.subtitle;
           setSaved(false);
-          setDraft(t ? { ...rest, subtitle: t } : rest);
+          setDraft(v ? { ...rest, subtitle: v } : rest);
         }}
       />
-      <Field label="Author" value={draft.author} onChangeText={(author) => edit({ author })} />
+      <Field
+        label={t('novel.author')}
+        value={draft.author}
+        onChangeText={(author) => edit({ author })}
+      />
       <SegmentControl
-        options={OPTIONS}
+        options={options}
         value={draft.sectionLabel}
         onChange={(sectionLabel: SectionLabel) => edit({ sectionLabel })}
-        accessibilityLabel="Section name"
+        accessibilityLabel={t('novel.sectionName')}
         testID="section-label"
       />
-      <Label>Reading theme</Label>
+      <Label>{t('novel.readingTheme')}</Label>
       <AccentPicker value={draft.theme['--accent']} onChange={setAccent} />
-      <Label>Workspace mode</Label>
+      <Label>{t('novel.workspaceMode')}</Label>
       <ModePicker
         value={data.mode}
         onChange={(m) => void repo.setWorkspaceMode(novelId, m)}
@@ -144,7 +154,7 @@ export default function NovelSettingsScreen(): ReactNode {
       />
       {workspaceCapabilities(data.mode).modulesSettings ? (
         <>
-          <Label>Gimmick modules</Label>
+          <Label>{t('novel.modules')}</Label>
           <View>
             {writerModules.map((m) => (
               <ModuleToggleRow
@@ -159,13 +169,13 @@ export default function NovelSettingsScreen(): ReactNode {
         </>
       ) : (
         <Txt variant="meta" color="inkSecondary" testID="settings-modules-hidden-note">
-          Interactive modules live in Interactive Studio. Switch anytime — you won't lose a word.
+          {t('novel.modulesHint')}
         </Txt>
       )}
-      <Label>Insights</Label>
+      <Label>{t('novel.insights')}</Label>
       <ListRow
         icon="trending-up"
-        title="Growth"
+        title={t('novel.growth')}
         last
         testID="novel-growth"
         onPress={() => router.push(routes.growth(`novel:${novelId}`))}
@@ -177,7 +187,7 @@ export default function NovelSettingsScreen(): ReactNode {
       ))}
       {saved ? (
         <Txt variant="body" color="accent">
-          Saved
+          {t('common.saved')}
         </Txt>
       ) : null}
     </Page>

@@ -3,15 +3,17 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { CardGroup } from '../ui/CardGroup.tsx';
 import { Glyph } from '../ui/Glyph.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { SectionLabel } from '../ui/Page.tsx';
 import { Txt } from '../ui/Txt.tsx';
 import { space } from '../ui/tokens.ts';
 import { BACKUP_CARDS, WHATS_NEW } from './help-content.ts';
 
 export function BackupSection(): ReactNode {
+  const { t } = useI18n();
   return (
     <View style={styles.section}>
-      <SectionLabel>Backup, EPUB 3 & publishing</SectionLabel>
+      <SectionLabel>{t('help.backup')}</SectionLabel>
       <CardGroup>
         {BACKUP_CARDS.map((c) => (
           <View key={c.title} style={styles.row}>
@@ -30,9 +32,10 @@ export function BackupSection(): ReactNode {
 }
 
 export function WhatsNewSection(): ReactNode {
+  const { t } = useI18n();
   return (
     <View style={styles.section}>
-      <SectionLabel>What's new (v1.0)</SectionLabel>
+      <SectionLabel>{t('help.whatsNew')}</SectionLabel>
       {WHATS_NEW.map((line) => (
         <Txt key={line} variant="meta" color="inkSecondary">
           {`• ${line}`}

@@ -3,7 +3,10 @@
 // memory, and queried synchronously. Locked items index ONLY their title, never body text.
 import type { Block } from '@kn/core';
 import { stripInlineMarkup } from '../editor/inline-markup.ts';
+import { t, type Locale } from '../i18n/i18n.ts';
+import { isStoryKind, type StoryKind } from '../notes/kind-meta.ts';
 import type { ItemMeta } from '../store/item-meta.ts';
+import { nodeKindLabel } from '../ui/node-kind.ts';
 import { excerptOf, occurrences } from './search-excerpt.ts';
 
 export interface SearchSources {
@@ -17,7 +20,14 @@ export interface SearchSources {
     blocks: readonly Block[];
   }[];
   folders: { id: string; title: string; parentFolderId: string | null }[];
-  docs: { id: string; title: string; folderId: string | null; blocks: readonly Block[] }[];
+  docs: {
+    id: string;
+    title: string;
+    folderId: string | null;
+    blocks: readonly Block[];
+    /** Story kind (default `note`). */
+    kind?: StoryKind;
+  }[];
   meta: ReadonlyMap<string, ItemMeta>;
 }
 
@@ -34,6 +44,8 @@ export interface SearchResult {
   id: string;
   title: string;
   subtitle: string;
+  /** Docs: the story kind (note, character, location, lore). */
+  docKind?: StoryKind;
   /** ~100 chars of plain text around the first hit ('' for title-only hits). */
   excerpt: string;
   /** `[start, end)` offsets into `excerpt`. */
@@ -50,6 +62,7 @@ interface Entry {
   id: string;
   title: string;
   subtitle: string;
+  docKind?: StoryKind;
   /** Searched text: the title, or one block's plain text. */
   text: string;
   norm: string;
@@ -88,11 +101,14 @@ const flat = (s: string): string => s.replace(/\s/g, ' ');
 export interface BuildOptions {
   /** Whether an item id is locked (default: `meta.locked`). Locked → title only. */
   isLocked?(id: string): boolean;
+  /** Language of the subtitles (default English). */
+  locale?: Locale;
 }
 
 function folderPath(
   id: string | null,
   byId: ReadonlyMap<string, SearchSources['folders'][number]>,
+  locale: Locale = 'en',
 ): string {
   const parts: string[] = [];
   const seen = new Set<string>();
@@ -103,10 +119,12 @@ function folderPath(
     parts.unshift(f.title);
     cur = f.parentFolderId;
   }
-  return ['Notes', ...parts].join(' / ');
+  return [t('tab.notes', undefined, locale), ...parts].join(' / ');
 }
 
 export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): SearchIndex {
+  const locale = opts.locale ?? 'en';
+  const bookLabel = nodeKindLabel('book', locale);
   const locked = opts.isLocked ?? ((id: string) => src.meta.get(id)?.locked === true);
   const entries: Entry[] = [];
   const add = (e: Omit<Entry, 'norm' | 'text'> & { text: string }): void => {
@@ -117,9 +135,9 @@ export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): S
     const lock = locked(n.id);
     const target = { novelId: n.id };
     const base = { kind: 'novel', scope: 'chapters', id: n.id, locked: lock, target } as const;
-    add({ ...base, title: n.title, subtitle: 'Book', text: n.title, isTitle: true });
+    add({ ...base, title: n.title, subtitle: bookLabel, text: n.title, isTitle: true });
     if (n.subtitle && !lock)
-      add({ ...base, title: n.title, subtitle: 'Book', text: n.subtitle, isTitle: false });
+      add({ ...base, title: n.title, subtitle: bookLabel, text: n.subtitle, isTitle: false });
   }
   for (const c of src.chapters) {
     const lock = locked(c.chapterId) || locked(c.novelId);
@@ -146,7 +164,7 @@ export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): S
       scope: 'notes',
       id: f.id,
       title: f.title,
-      subtitle: folderPath(f.parentFolderId, byId),
+      subtitle: folderPath(f.parentFolderId, byId, locale),
       text: f.title,
       isTitle: true,
       locked: locked(f.id),
@@ -154,12 +172,15 @@ export function buildSearchIndex(src: SearchSources, opts: BuildOptions = {}): S
     });
   for (const d of src.docs) {
     const lock = locked(d.id) || inLockedFolder(d.folderId);
+    const docKind = isStoryKind(d.kind) ? d.kind : 'note';
+    const path = folderPath(d.folderId, byId, locale);
     const base = {
+      docKind,
       kind: 'doc',
       scope: 'notes',
       id: d.id,
       title: d.title,
-      subtitle: folderPath(d.folderId, byId),
+      subtitle: docKind === 'note' ? path : `${nodeKindLabel(docKind, locale)} · ${path}`,
       locked: lock,
       target: { docId: d.id, folderId: d.folderId },
     } as const;
@@ -218,6 +239,7 @@ export function search(
       id: e.id,
       title: e.title,
       subtitle: e.subtitle,
+      ...(e.docKind ? { docKind: e.docKind } : {}),
       ...x,
       titleHighlights: e.isTitle ? h.spans : [],
       locked: e.locked,

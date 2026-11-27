@@ -81,7 +81,7 @@ export async function phase4aPass(page, { WRITER, packAt, tid, ok, fail, editor 
       body: '{"ok":true}',
     }),
   );
-  await page.goto(`${WRITER}settings`);
+  await page.goto(`${WRITER}settings-publishing`);
   await tid('publish-api-url').waitFor({ timeout: 15000 });
   await tid('publish-api-url').fill(MOCK_API);
   await tid('publish-token').fill('qa-token');

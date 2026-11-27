@@ -6,9 +6,14 @@
   "description": "Frozen core: content schema, module contract and validators. Zero DOM (except the web-only renderer contract entry).",
   "exports": {
     ".": "./src/index.ts",
-    "./renderer": "./src/renderer-contract.ts"
+    "./renderer": "./src/renderer-contract.ts",
+    "./gimmicks": "./src/gimmicks/index.ts",
+    "./dna": "./src/dna/index.ts",
+    "./gimmicks/validate": "./src/gimmicks/validate.ts",
+    "./guard": "./src/guard/index.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"
-  }
+  },
+  "sideEffects": false
 }

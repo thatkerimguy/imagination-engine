@@ -1,5 +1,7 @@
 // Writer live-preview bridge (DIRECTIVE 02 §5): `?preview=1` must render an unsaved draft
 // delivered over postMessage, and refuse an invalid one with a readable message.
+import { chatState } from './lib/chat-state.mjs';
+
 const HEADLINE = 'Snake Eyes — unsaved draft headline';
 const LINE =
   'Unsaved line: the Dealer smiles **a little** too *wide* ==tonight== <script>window.__xss=1</script>';
@@ -64,11 +66,8 @@ export async function previewPass(page, base, { ok, fail, shot }) {
   await post('from-dialogue');
   await page.getByRole('button', { name: 'Silent' }).click({ timeout: 10000 });
   await page.waitForFunction(() => window.__settled, null, { timeout: 20000 });
-  const chat = await page.evaluate(() => ({
-    calm: !document.querySelector('.kn-cbc')?.classList.contains('kn-cbc--motion'),
-    pending: document.querySelectorAll('.kn-cbc li.pending').length,
-    last: document.querySelector('.kn-cbc li:last-child')?.textContent,
-  }));
+  const state = await chatState(page);
+  const chat = { ...state, calm: state.tier === 'reduced' };
   if (chat.calm && chat.pending === 0 && chat.last === "Don't relax.")
     ok('preview from a mid-chapter block keeps beats sequential (KESTREL-9 before dice)');
   else fail(`preview resume played beats concurrently: ${JSON.stringify(chat)}`);

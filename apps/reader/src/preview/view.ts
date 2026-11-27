@@ -4,6 +4,8 @@ import { h } from '../dom.ts';
 import { mountChapter } from '../views/reading.ts';
 import type { Cleanup, ViewContext } from '../views/shared.ts';
 import { dispatchLifecycle } from '../runtime/lifecycle.ts';
+import { dispatchTierChange } from '../runtime/tier-bus.ts';
+import { deviceHints, resolveTier } from '../tier.ts';
 import {
   parseHostControl,
   parsePreviewLoad,
@@ -15,8 +17,16 @@ interface NativeBridge {
   postMessage(data: string): void;
 }
 
+type BridgeWindow = Window & {
+  ReactNativeWebView?: NativeBridge;
+  /** Android KnReaderWebView (WebViewAssetLoader transport, OVERHAUL-03). */
+  KnHostBridge?: NativeBridge;
+  __knReceive?: (json: string) => void;
+};
+
 function postToHost(msg: HostMessage): void {
-  const rn = (window as Window & { ReactNativeWebView?: NativeBridge }).ReactNativeWebView;
+  const w = window as BridgeWindow;
+  const rn = w.KnHostBridge ?? w.ReactNativeWebView;
   if (rn) rn.postMessage(JSON.stringify(msg));
   else if (window.parent !== window) window.parent.postMessage(msg, '*');
 }
@@ -31,6 +41,7 @@ export function startPreview(v: ViewContext): void {
   let lastLoad: PreviewLoad | null = null;
   let lastBlockId: string | null = null;
   let reducedMotion = false;
+  let calm = false;
 
   const mount = (load: PreviewLoad, startBlockId: string | null): void => {
     cleanup?.();
@@ -45,7 +56,7 @@ export function startPreview(v: ViewContext): void {
       {
         startBlockId,
         tier,
-        reducedMotion,
+        reducedMotion: reducedMotion || calm,
         footerLink: h('span', { class: 'kn-card-sub' }, 'End of draft preview'),
         preview: {
           curtain: !audioUnlocked,
@@ -60,10 +71,20 @@ export function startPreview(v: ViewContext): void {
     postToHost({ type: 'kn-preview-rendered', chapterId: chapter.id });
   };
 
+  // KnReaderWebView delivers host messages by evaluateJavascript → the normal message path.
+  (window as BridgeWindow).__knReceive = (json) =>
+    window.dispatchEvent(new MessageEvent('message', { data: json }));
   addEventListener('message', (event: MessageEvent<unknown>) => {
     const control = parseHostControl(event.data);
     if (control?.type === 'lifecycle') return dispatchLifecycle(control.state === 'active');
     if (control?.type === 'record') return setRecordMode(control.on);
+    if (control?.type === 'tier') {
+      // Live: v2 engines downgrade / upgrade in place; the next remount keeps the choice.
+      calm = control.calmMode;
+      if (lastLoad) lastLoad = { ...lastLoad, tier: control.tier };
+      const still = reducedMotion || calm;
+      return dispatchTierChange(resolveTier(control.tier, deviceHints(still)), still);
+    }
     if (control?.type === 'a11y') {
       const changed = control.reducedMotion !== reducedMotion;
       reducedMotion = control.reducedMotion;

@@ -25,6 +25,8 @@ qa-shots*/
 apps/writer/assets/reader-preview.html
 # Local Android builds: `expo prebuild` output, built APKs, and the local signing keystore.
 apps/writer/android/
+# Split offline reader for WebViewAssetLoader (`pnpm build:preview-assets`), inside android/ too.
+apps/writer/android/app/src/main/assets/reader/
 apps/writer/dist/
 apps/writer/dist-web/
 apps/writer/dist-android/

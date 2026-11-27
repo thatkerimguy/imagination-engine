@@ -1,13 +1,13 @@
 // Writer ↔ reader live-preview messages (apps/writer/src/preview/protocol.ts mirrors these).
 // The writer sends unsaved drafts; everything is re-validated with @kn/core before rendering.
 import {
-  parseChapterDocument,
-  parseNovelManifest,
-  parseSeasonManifest,
+  checkChapterDocument as parseChapterDocument,
+  checkNovelManifest as parseNovelManifest,
+  checkSeasonManifest as parseSeasonManifest,
   type ChapterDocument,
   type NovelManifest,
   type SeasonManifest,
-} from '@kn/core';
+} from '@kn/core/guard';
 import type { TierPreference } from '../prefs.ts';
 
 export interface PreviewLoad {
@@ -30,7 +30,11 @@ export type HostControl =
   | { type: 'lifecycle'; state: 'active' | 'background' }
   | { type: 'a11y'; reducedMotion: boolean }
   /** 9:16 Record Mode: hide the reader's own chrome so only the chapter is captured. */
-  | { type: 'record'; on: boolean };
+  | { type: 'record'; on: boolean }
+  /** Live tier / Calm Mode switch: engines downgrade in place, no reload (OVERHAUL-03). */
+  | { type: 'tier'; tier: TierPreference; calmMode: boolean };
+
+const TIERS: readonly TierPreference[] = ['auto', 'high', 'lite', 'reduced'];
 
 function decode(raw: unknown): Record<string, unknown> | null {
   let data = raw;
@@ -53,10 +57,12 @@ export function parseHostControl(raw: unknown): HostControl | null {
   if (msg.type === 'a11y' && typeof msg.reducedMotion === 'boolean')
     return { type: 'a11y', reducedMotion: msg.reducedMotion };
   if (msg.type === 'record' && typeof msg.on === 'boolean') return { type: 'record', on: msg.on };
+  if (msg.type === 'tier' && typeof msg.calmMode === 'boolean') {
+    const tier = TIERS.find((t) => t === msg.tier);
+    if (tier) return { type: 'tier', tier, calmMode: msg.calmMode };
+  }
   return null;
 }
-
-const TIERS: readonly TierPreference[] = ['auto', 'high', 'lite', 'reduced'];
 
 export type ParsedLoad = { ok: true; load: PreviewLoad } | { ok: false; errors: string[] } | null;
 
@@ -75,8 +81,12 @@ export function parsePreviewLoad(raw: unknown): ParsedLoad {
   if (!novel.ok || !season.ok || !chapter.ok) return { ok: false, errors };
   const tier = TIERS.find((t) => t === msg.tier) ?? 'auto';
   const startBlockId = typeof msg.startBlockId === 'string' ? msg.startBlockId : null;
-  return {
-    ok: true,
-    load: { novel: novel.value, season: season.value, chapter: chapter.value, startBlockId, tier },
-  };
+  // Book DNA and inline blueprints may ride beside the chapter; engines re-check both.
+  const n = msg.visualDna !== undefined ? { ...novel.value, visualDna: msg.visualDna } : novel.value;
+  const bp = msg.blueprints;
+  const c =
+    bp && typeof bp === 'object' && !Array.isArray(bp)
+      ? { ...chapter.value, blueprints: { ...(bp as Record<string, unknown>), ...chapter.value.blueprints } }
+      : chapter.value;
+  return { ok: true, load: { novel: n, season: season.value, chapter: c, startBlockId, tier } };
 }

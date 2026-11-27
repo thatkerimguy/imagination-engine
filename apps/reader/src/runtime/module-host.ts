@@ -2,30 +2,18 @@
 // trigger the beat, and guarantee cleanup. Problems are shown as a quiet notice, never thrown.
 import type { ModuleLayer } from '@kn/core';
 import type { ModuleRenderer, QualityTier } from '@kn/core/renderer';
-import type { AudioBus } from './audio-bus.ts';
-import { loadModuleEntry, loadRendererFactory, type AnyProps } from './registry.ts';
-import type { Stage } from './stage.ts';
+import { loadModuleEntry, loadRendererFactory, type AnyProps } from '../engine-loader.ts';
+import type { BlockHost, HostDeps, HostRequest } from './block-host.ts';
 
-export interface HostDeps {
-  stage: Stage;
-  audio: AudioBus;
-  resolveAsset(path: string): string;
-}
-
-export interface ModuleRequest {
-  moduleId: string;
-  moduleVersion: number;
-  props: AnyProps;
-}
-
-export class ModuleHost {
+/** Temporary v1 host for the 3 legacy arms (dice, lighter, ambient bed) until OVERHAUL-04. */
+export class ModuleHost implements BlockHost {
   layer: ModuleLayer | null = null;
   private renderer: ModuleRenderer<AnyProps> | null = null;
   private readonly abort = new AbortController();
   private mounting: Promise<boolean> | null = null;
 
   constructor(
-    private readonly request: ModuleRequest,
+    private readonly request: HostRequest,
     private readonly el: HTMLElement,
     private readonly tier: QualityTier,
     private readonly deps: HostDeps,

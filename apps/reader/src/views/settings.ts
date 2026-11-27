@@ -1,5 +1,7 @@
 // Reading settings sheet: size, theme, spectacle quality, sound.
 import { h } from '../dom.ts';
+import { dispatchTierChange } from '../runtime/tier-bus.ts';
+import { deviceHints, resolveTier } from '../tier.ts';
 import { FONT_SCALES, getPrefs, setPrefs, soundAllowed, type Prefs } from '../prefs.ts';
 import { inPreviewMode, reportEndpoint } from '../report-endpoint.ts';
 import type { AudioBus } from '../runtime/audio-bus.ts';
@@ -157,7 +159,7 @@ export function openSettings(audio: AudioBus): void {
         h(
           'p',
           { class: 'kn-setting-note' },
-          'Spectacle and Calm Mode motion changes apply from the next chapter you open; sound changes apply now.',
+          'Calm Mode, spectacle and sound changes apply now; 3D dice and ambient beds switch from the next chapter.',
         ),
         reportButton(close),
         h('button', { type: 'button', class: 'kn-sheet-close', onClick: close }, 'Done'),
@@ -166,7 +168,11 @@ export function openSettings(audio: AudioBus): void {
   };
   const update = (patch: Partial<Prefs>): void => {
     setPrefs(patch);
-    audio.setSound(soundAllowed(getPrefs()));
+    const p = getPrefs();
+    audio.setSound(soundAllowed(p));
+    // v2 engines follow tier and Calm Mode live; no chapter reload.
+    if ('tier' in patch || 'calmMode' in patch)
+      dispatchTierChange(resolveTier(p.tier, deviceHints(p.calmMode)), p.calmMode);
     render(getPrefs());
   };
   sheet.addEventListener('click', (e) => e.target === sheet && close());

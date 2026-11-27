@@ -12,6 +12,7 @@ import {
   a11yMessage,
   lifecycleMessage,
   recordMessage,
+  tierMessage,
   type PreviewTier,
   type ReaderMessage,
 } from '../preview/protocol.ts';
@@ -127,7 +128,8 @@ function PreviewBody(): ReactNode {
 
   const pickTier = (t: PreviewTier): void => {
     setTier(t);
-    if (status === 'live') send(t);
+    // Live: engines switch in place over postMessage; no WebView reload, no chapter remount.
+    if (status === 'live') frame.current?.send(tierMessage(t));
   };
 
   const header = (

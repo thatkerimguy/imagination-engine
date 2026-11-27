@@ -1,5 +1,6 @@
+import type { DnaArchetypeId } from '@kn/core/dna';
 import type { QualityTier } from '@kn/core/renderer';
-import type { ChapterDocument, ModuleBlock, NovelManifest, SeasonManifest } from '@kn/core';
+import type { ChapterDocument, ModuleBlock, NovelManifest, SeasonManifest } from '@kn/core/guard';
 import { h } from '../dom.ts';
 import { showCurtain } from '../curtain.ts';
 import { loadChapter, loadNovel, loadSeason, novelUrl } from '../data.ts';
@@ -9,7 +10,8 @@ import { renderBlock } from '../reading/blocks.ts';
 import { readBookmark, saveBookmark } from '../reading/bookmark.ts';
 import { Pacer } from '../reading/pacing.ts';
 import type { Route } from '../router.ts';
-import { ModuleHost } from '../runtime/module-host.ts';
+import { createBlockHost } from '../runtime/block-host.ts';
+import { seedTier } from '../runtime/tier-bus.ts';
 import { deviceHints, resolveTier } from '../tier.ts';
 import { applyTheme, type Cleanup, type ViewContext } from './shared.ts';
 
@@ -31,6 +33,8 @@ export interface MountOptions {
   preview?: { curtain: boolean; onAudioUnlocked(): void; onPosition?: (blockId: string) => void };
   /** Host accessibility setting (writer preview); forces the reduced tier. */
   reducedMotion?: boolean;
+  /** DNA archetype used when the book has no visualDna. */
+  dnaFallback?: DnaArchetypeId;
 }
 
 export async function readingView(v: ViewContext, route: ReadRoute): Promise<Cleanup> {
@@ -65,7 +69,9 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
   applyTheme(v.main, novel.theme, season.accentColor);
   const enabled = new Set(novel.enabledModules);
   const blocks = chapter.blocks.filter((b) => {
-    if (b.kind !== 'module' || enabled.has(b.moduleId)) return true;
+    // v2 cues (props.blueprintId) are data, always allowed; v1 cues still need enabledModules.
+    if (b.kind !== 'module' || typeof b.props.blueprintId === 'string' || enabled.has(b.moduleId))
+      return true;
     console.warn(`[reader] ${b.moduleId} is not enabled for ${novel.id}; skipping block ${b.id}`);
     return false;
   });
@@ -117,11 +123,10 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
 
   const restoreAt = opts.startBlockId ? blocks.findIndex((b) => b.id === opts.startBlockId) : -1;
   const tierPref = opts.tier ?? getPrefs().tier;
-  const tier: QualityTier = resolveTier(
-    tierPref,
-    deviceHints(opts.reducedMotion || getPrefs().calmMode),
-  );
+  const calm = !!opts.reducedMotion || getPrefs().calmMode;
+  const tier: QualityTier = resolveTier(tierPref, deviceHints(calm));
   document.documentElement.dataset.tier = tier;
+  seedTier(tier, calm);
   // The GL stage keeps full 2x sharpness only for an explicit High choice (see stage-gl.ts).
   document.documentElement.dataset.tierPref = tierPref;
 
@@ -131,10 +136,14 @@ export function mountChapter(v: ViewContext, data: ChapterData, opts: MountOptio
     tier,
     restoreIndex: restoreAt > 0 ? restoreAt : null,
     createHost: (block: ModuleBlock, el, t) =>
-      new ModuleHost(block, el, t, {
+      createBlockHost(block, el, t, {
         stage: v.stage,
         audio: v.audio,
         resolveAsset: (path) => novelUrl(novel.id, path),
+        dnaRoot: v.main,
+        visualDna: chapter.visualDna ?? novel.visualDna,
+        dnaFallback: opts.dnaFallback,
+        blueprints: chapter.blueprints,
       }),
     onPosition(blockId) {
       if (preview) return preview.onPosition?.(blockId);

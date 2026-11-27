@@ -14,6 +14,7 @@
 //  5. Nav-bar icon appearance + hardware-keyboard shortcuts (DIRECTIVE-03): see android-input.js.
 //  6. Verified App Links, `autoVerify` intent filter (DIRECTIVE-04): see android-app-links.js.
 //  7. Home-screen writing widget, Master Lock-redacted (DIRECTIVE-07): see android-widget.js.
+//  8. Offline split reader via WebViewAssetLoader (OVERHAUL-03): see android-webview-assets.js.
 const fs = require('fs');
 const path = require('path');
 const {
@@ -25,6 +26,7 @@ const withBackupRules = require('./android-backup-rules');
 const withAndroidInput = require('./android-input');
 const withAppLinks = require('./android-app-links');
 const withAndroidWidget = require('./android-widget');
+const withWebviewAssets = require('./android-webview-assets');
 
 const MARK = '// kn-android-release';
 const DEBUG_ONLY = ['android.permission.SYSTEM_ALERT_WINDOW'];
@@ -104,10 +106,12 @@ function withReleaseOverlay(config) {
 }
 
 module.exports = function withAndroidRelease(config) {
-  return withAndroidWidget(
-    withAppLinks(
-      withAndroidInput(
-        withBackupRules(withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)))),
+  return withWebviewAssets(
+    withAndroidWidget(
+      withAppLinks(
+        withAndroidInput(
+          withBackupRules(withReleaseOverlay(withReleaseManifestPolicy(withDebugSymbols(config)))),
+        ),
       ),
     ),
   );

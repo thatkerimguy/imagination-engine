@@ -1,4 +1,4 @@
-import { isUlid } from '@kn/core';
+import { isUlid } from '@kn/core/guard';
 import { readJson, writeJson } from '../storage.ts';
 
 export interface Bookmark {

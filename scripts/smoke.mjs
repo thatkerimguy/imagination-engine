@@ -3,9 +3,11 @@
 // Usage: node scripts/smoke.mjs [--shots <dir>]
 import { createRequire } from 'node:module';
 import { diceMaterialsPass } from './smoke-dice-materials.mjs';
-import { pack1Pass } from './smoke-pack-1.mjs';
+import { v2Pass } from './smoke-v2.mjs';
+import { nextFrames, warmPass } from './smoke-warm.mjs';
 import { previewPass } from './smoke-preview.mjs';
 import { startPreviewServer } from './smoke-server.mjs';
+import { chatState } from './lib/chat-state.mjs';
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -48,7 +50,8 @@ try {
     // Settled dice call navigator.vibrate(); record it so shots can be timed to the hold window.
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'vibrate', {
-        value: () => ((window.__settled = performance.now()), true),
+        // Dice call vibrate(12); v2 engine haptics always pass an array, so they never count.
+        value: (p) => (typeof p === 'number' && (window.__settled = performance.now()), true),
       });
     });
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -61,18 +64,18 @@ try {
 
   await readerPass(await newPage(), shot, settled, resetSettled);
   await sandboxPass(await newPage(1), shot, settled, resetSettled);
-  await warmPass(await newPage(), shot, settled);
+  await warmPass(await newPage(), shot, settled, BASE);
   await previewPass(await newPage(), BASE, { ok, fail, shot });
   await diceMaterialsPass(newPage, BASE, { ok, fail, shot });
-  await pack1Pass(newPage, BASE, { ok, fail, shotsAt });
+  await v2Pass(newPage, BASE, { ok, fail, shotsAt });
   const fresh = await newPage();
-  await fresh.goto(`${BASE}sandbox/?module=gits-cyberbrain-chat&tier=high`);
+  await fresh.goto(`${BASE}sandbox/?blueprint=cyberbrain-link&tier=high`);
   await fresh.getByRole('button', { name: 'Trigger Beat' }).click();
   await fresh.waitForTimeout(4500);
   const lazy = await fresh.locator('.sb-stats').textContent();
   if (/GL contexts made 0 · live no/.test(lazy ?? ''))
-    ok(`cyberbrain keeps WebGL unloaded: ${lazy}`);
-  else fail(`cyberbrain created WebGL: ${lazy}`);
+    ok(`v2 cyberbrain-link keeps WebGL unloaded: ${lazy}`);
+  else fail(`v2 cyberbrain-link created WebGL: ${lazy}`);
   await shot(fresh, '08-sandbox-cyberbrain-lazy-gl');
 
   if (errors.length) fail(`console errors:\n  ${errors.join('\n  ')}`);
@@ -101,10 +104,7 @@ async function readerPass(page, shot, settled, resetSettled) {
   await page.waitForTimeout(250);
   await shot(page, '02-ivory-dice-settled');
   // Beats are queued in document order: the thought-link must be complete before dice land.
-  const kestrel = await page.evaluate(() => ({
-    pending: document.querySelectorAll('.kn-cbc li.pending').length,
-    last: document.querySelector('.kn-cbc li:last-child')?.textContent,
-  }));
+  const kestrel = await chatState(page);
   if (kestrel.pending === 0 && kestrel.last === "Don't relax.")
     ok('KESTREL-9 finished all 3 lines before the dice settled');
   else fail(`dice settled while KESTREL-9 was incomplete: ${JSON.stringify(kestrel)}`);
@@ -237,32 +237,4 @@ async function sandboxPass(page, shot, settled, resetSettled) {
       await shot(page, '06-sandbox-reduced-mode');
     }
   }
-}
-
-async function warmPass(page, shot, settled) {
-  await page.addInitScript(() =>
-    localStorage.setItem(
-      'kn:prefs',
-      JSON.stringify({ fontScale: 1, theme: 'warm', tier: 'auto', sound: true }),
-    ),
-  );
-  await page.goto(`${BASE}sandbox/?module=bl-dice-3d&tier=high`);
-  await page.getByRole('button', { name: 'Trigger Beat' }).click();
-  await page.locator('.kn-stage-gl:not([hidden])').waitFor({ timeout: 10000 });
-  await page.waitForTimeout(150);
-  await shot(page, '02a-warm-theme-dice-midroll');
-  await settled(page);
-  await page.waitForTimeout(200);
-  await shot(page, '02-warm-theme-dice-shadows');
-}
-
-function nextFrames(page, n) {
-  return page.evaluate(
-    (count) =>
-      new Promise((resolve) => {
-        const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : resolve());
-        step(count);
-      }),
-    n,
-  );
 }

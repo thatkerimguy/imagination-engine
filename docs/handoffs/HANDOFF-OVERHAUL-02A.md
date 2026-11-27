@@ -101,17 +101,14 @@ Gate script updates:
 - OVERHAUL-01/-02 shots moved to `regression/`.
 - The new `writer-shots-overhaul02a.mjs` is chained from `writer-shots.mjs`.
 
-Note: Playwright resolves from the global npm root on this machine. Run the shots with
-`NODE_PATH=%APPDATA%\npm\node_modules`, as the qa-runner sweep could not find it otherwise.
+Note: Playwright is global here; run shots with `NODE_PATH` set to the global npm `node_modules`.
 
 ## 5. Captured QA Screenshots (`qa-shots-overhaul02a/`, git-ignored)
 
 1. `01-settings-4-hubs.png`: the 4-hub root beside the Web Publishing & API sub-screen
 2. `02-compiler-2x4-grid.png`: the 2x4 grid, "Ready to paste", and the Share & print card
 3. `03-recent-trash-entity-labels.png`: Recent and Trash with Character / Location / Lore and their icons
-4. `04-turkish-and-spanish-i18n.png`: Türkçe Library beside Español Book Compiler
-
-(`_failure.png` in that folder is stale from the first run, before the dir06a route fix.)
+4. `04-turkish-and-spanish-i18n.png`: Türkçe Library beside Español Book Compiler (a stale `_failure.png` from the first run, before the dir06a fix, can be ignored)
 
 ## 6. Ready-for-Overhaul-03 Notes
 

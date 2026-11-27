@@ -14,16 +14,21 @@ const blocks: Block[] = [
   {
     id: '01HZZZZZZZZZZZZZZZZZZZZZ04',
     kind: 'module',
-    moduleId: 'gits-cyberbrain-chat',
+    moduleId: 'chat-thread',
     moduleVersion: 1,
-    props: { senderId: 'KESTREL-9', messages: ['Link established.'] },
+    props: {
+      blueprintId: 'cyberbrain-link',
+      channel: 'KESTREL-9',
+      encryption: 'aes-q',
+      messages: [{ sender: 'KESTREL-9', text: 'Link established.' }],
+    },
   },
   {
     id: '01HZZZZZZZZZZZZZZZZZZZZZ05',
     kind: 'module',
-    moduleId: 'bl-dice-3d',
+    moduleId: 'bespoke-3d',
     moduleVersion: 1,
-    props: {},
+    props: { blueprintId: 'dice-throw-3d' },
   },
 ];
 const book: CompiledBook = {

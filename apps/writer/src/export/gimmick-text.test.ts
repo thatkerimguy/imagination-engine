@@ -1,61 +1,87 @@
-// Book Compiler text for the Milestone 4 pack: transcript + summary lines per gimmick.
+// Cue text for every exporter comes from the blueprint's own export templates (no per-gimmick
+// code): all 28 starters, inline-blueprint precedence, summary / omit, and the pre-v2 fallback.
 import type { ModuleBlock } from '@kn/core';
+import type { GimmickBlueprint } from '@kn/core/gimmicks';
+import { STARTER_BLUEPRINT_LIST, starterBlueprint } from '@kn/engines/blueprints';
 import { describe, expect, it } from 'vitest';
 import { getWriterModule } from '../modules/registry.ts';
-import { gimmickLines } from './gimmick-text.ts';
+import { cueBlueprint, gimmickLines, renderCue } from './gimmick-text.ts';
 
-const block = (moduleId: string, props: Record<string, unknown> = {}): ModuleBlock => ({
-  id: '01HZZZZZZZZZZZZZZZZZZZZZZZ',
-  kind: 'module',
-  moduleId,
-  moduleVersion: 1,
-  props: { ...getWriterModule(moduleId)!.schema.defaults, ...props },
-});
+const ID = '01HZZZZZZZZZZZZZZZZZZZZZZZ';
+const cue = (blueprintId: string, props: Record<string, unknown> = {}): ModuleBlock => {
+  const bp = starterBlueprint(blueprintId);
+  return {
+    id: ID,
+    kind: 'module',
+    moduleId: bp?.engine ?? 'frame-hud',
+    moduleVersion: 1,
+    props: { blueprintId, ...(bp?.defaultProps ?? {}), ...props },
+  };
+};
 
-describe('gimmickLines for gimmick pack 1', () => {
-  it('prints the gaslit passage, then its rewrite as a cue', () => {
-    expect(gimmickLines(block('pt-gaslight-edit'), 'transcript')).toEqual([
-      { text: 'The hallway light was still on when I locked the door.' },
-      {
-        text: 'On a second look it reads: “The hallway light was already off when I unlocked the door.”',
-        italic: true,
-      },
-    ]);
-  });
-
-  it('prints the surface line with the ghost line beneath it', () => {
-    const lines = gimmickLines(block('gits-ghost-whisper'), 'transcript');
-    expect(lines[0]).toEqual({ text: 'Routine telemetry check. All ports nominal.' });
-    expect(lines[1]?.text).toBe(
-      'Beneath it, a ghost line: “Someone is riding behind your optic nerve.”',
-    );
-  });
-
-  it('reads the lighter as a stage direction', () => {
-    const name = getWriterModule('bl-lighter-flick')!.meta.name;
-    expect(gimmickLines(block('bl-lighter-flick'), 'transcript')).toEqual([
-      { text: `${name} flicks alight.`, italic: true },
-    ]);
-    expect(
-      gimmickLines(block('bl-lighter-flick', { action: 'extinguish' }), 'transcript')[0]?.text,
-    ).toBe(`${name} snaps shut.`);
-  });
-
-  it('prints the LitRPG system box as a header line plus its status lines', () => {
-    expect(gimmickLines(block('litrpg-system-box'), 'transcript')).toEqual([
-      { text: '[SYSTEM NOTIFICATION] Class Evolution Unlocked' },
-      { text: 'STR +3' },
-      { text: 'Perception +2' },
-      { text: 'New Skill: Iron Nerves (Lv. 1)' },
-    ]);
-  });
-
-  it('summaries are one bracketed line from the card; omit prints nothing', () => {
-    for (const id of ['pt-gaslight-edit', 'gits-ghost-whisper', 'bl-lighter-flick']) {
-      const [line, ...rest] = gimmickLines(block(id), 'summary');
+describe('gimmickLines (template-driven)', () => {
+  it('every starter blueprint prints transcript lines and a one-line bracketed summary', () => {
+    expect(STARTER_BLUEPRINT_LIST).toHaveLength(28);
+    for (const bp of STARTER_BLUEPRINT_LIST) {
+      const lines = gimmickLines(cue(bp.id), 'transcript');
+      expect(lines.length, bp.id).toBeGreaterThan(0);
+      expect(
+        lines.every((l) => l.text.trim() !== ''),
+        bp.id,
+      ).toBe(true);
+      const [summary, ...rest] = gimmickLines(cue(bp.id), 'summary');
       expect(rest).toEqual([]);
-      expect(line?.text).toMatch(new RegExp(`^\\[${getWriterModule(id)!.meta.name}: .+\\]$`));
-      expect(gimmickLines(block(id), 'omit')).toEqual([]);
+      expect(summary?.text, bp.id).toMatch(
+        new RegExp(`^\\[${bp.name.replace(/[()]/g, '.')}: .+\\]$`),
+      );
+      expect(gimmickLines(cue(bp.id), 'omit')).toEqual([]);
     }
+  });
+
+  it('renders the author props, not the defaults', () => {
+    const lines = gimmickLines(
+      cue('cyberbrain-link', { channel: 'ECHO', messages: [{ sender: 'ECHO', text: 'Run.' }] }),
+      'transcript',
+    );
+    expect(lines.map((l) => l.text)).toEqual(['[ECHO]', 'ECHO: Run.']);
+  });
+
+  it('the chapter inline blueprint wins over the bundled starter copy', () => {
+    const base = starterBlueprint('system-notification')!;
+    const custom: GimmickBlueprint = {
+      ...base,
+      name: 'House System',
+      exports: { ...base.exports, transcript: 'HOUSE: {{title}}', summary: '{{title}}' },
+    };
+    const block = cue('system-notification', { title: 'Door opens' });
+    const inline = { 'system-notification': custom };
+    expect(cueBlueprint(block, inline)?.name).toBe('House System');
+    expect(gimmickLines(block, 'transcript', inline)).toEqual([{ text: 'HOUSE: Door opens' }]);
+    expect(gimmickLines(block, 'summary', inline)).toEqual([
+      { text: '[House System: Door opens]' },
+    ]);
+    // A tampered inline blueprint is rejected by the guard and the starter is used instead.
+    const bad = { 'system-notification': { ...custom, engine: 'not-an-engine' } };
+    expect(cueBlueprint(block, bad)?.name).toBe(base.name);
+  });
+
+  it('HTML formats escape every interpolated value', () => {
+    const r = renderCue(cue('system-notification', { title: '<script>x</script>' }), 'epubXhtml');
+    expect(r?.text).toContain('&lt;script&gt;x&lt;/script&gt;');
+    expect(r?.text).not.toContain('<script');
+  });
+
+  it('pre-v2 module blocks and unknown blueprints degrade to a readable line', () => {
+    const v1: ModuleBlock = {
+      id: ID,
+      kind: 'module',
+      moduleId: 'litrpg-system-box',
+      moduleVersion: 1,
+      props: { ...getWriterModule('litrpg-system-box')!.schema.defaults },
+    };
+    const name = getWriterModule('litrpg-system-box')!.meta.name;
+    expect(gimmickLines(v1, 'transcript')[0]?.text).toMatch(new RegExp(`^${name}: `));
+    expect(gimmickLines(v1, 'summary')[0]?.text).toMatch(new RegExp(`^\\[${name}: .+\\]$`));
+    expect(renderCue(cue('nope-404'), 'transcript')).toBeNull();
   });
 });

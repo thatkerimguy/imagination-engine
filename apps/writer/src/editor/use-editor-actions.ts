@@ -1,5 +1,7 @@
 import type { Block } from '@kn/core';
 import { useCallback, useState } from 'react';
+import type { GimmickBlueprint } from '@kn/core/gimmicks';
+import { buildCueBlock } from '../gimmicks/cue.ts';
 import type { WriterModule } from '../modules/registry.ts';
 import {
   createBlock,
@@ -51,6 +53,18 @@ export function useEditorActions(update: ChapterDraft['update']) {
     [add, pickerAfter],
   );
 
+  /** Inserts a v2 cue from the Catalog and opens its form. */
+  const pickBlueprint = useCallback(
+    (bp: GimmickBlueprint) => {
+      const afterId = pickerAfter?.afterId ?? null;
+      setPickerAfter(null);
+      const block = buildCueBlock(bp);
+      add(block, afterId);
+      setSheetId(block.id);
+    },
+    [add, pickerAfter],
+  );
+
   const remove = useCallback(
     async (id: string) => {
       const ok = await confirm({
@@ -76,6 +90,7 @@ export function useEditorActions(update: ChapterDraft['update']) {
     closePicker: () => setPickerAfter(null),
     pick,
     pickModule,
+    pickBlueprint,
     remove,
     /** Text edits coalesce in undo history (800 ms, same block); other changes are boundaries. */
     change: (block: Block) =>

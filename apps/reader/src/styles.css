@@ -34,6 +34,28 @@
   --surface: #0d0d0e;
   --line: #1d1d1f;
 }
+/* Soft Page Harmony: with Aa on "Book", the page ground and prose voice come from the book's
+   Visual DNA (set on :root by dna-apply.ts); any manual Aa choice drops these rules entirely. */
+:root[data-theme='dark'][data-theme-pref='book'] {
+  --bg: var(--dna-page-bg, #16171a);
+}
+:root[data-theme='warm'][data-theme-pref='book'] {
+  --bg: var(--dna-page-bg, #f4eee3);
+}
+:root[data-font-pref='book'] {
+  --font-prose: var(
+    --dna-page-font,
+    'Iowan Old Style',
+    'Charter',
+    'Palatino Linotype',
+    Palatino,
+    Georgia,
+    serif
+  );
+}
+:root[data-font-pref='sans'] {
+  --font-prose: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
 
 * {
   box-sizing: border-box;

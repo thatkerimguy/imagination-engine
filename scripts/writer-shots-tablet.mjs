@@ -92,7 +92,7 @@ try {
     .getByText(/^3D Dice Throw/)
     .first()
     .waitFor({ timeout: 5000 });
-  const raw = await pane.getByText(/^(bl-dice-3d|gits-cyberbrain-chat|core-ambient-bed)$/).count();
+  const raw = await pane.getByText(/^(bespoke-3d|chat-thread|audio-bed|bl-dice-3d|gits-cyberbrain-chat|core-ambient-bed)$/).count();
   if (raw === 0) ok('Outline shows human-readable module titles (no raw ids)');
   else fail(`Outline still shows ${raw} raw module id(s)`);
   if (dir04At) await page.screenshot({ path: `${dir04At}/03-tablet-outline-human-labels.png` });

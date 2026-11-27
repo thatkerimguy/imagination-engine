@@ -73,9 +73,22 @@ export function resolveVisualDna(dna: BookVisualDna, theme: DnaTheme): ResolvedV
     '--dna-accent': fit(at(dark ? 0.78 : 0.5, chroma, hue), ui),
     '--dna-accent-2': fit(at(dark ? 0.74 : 0.48, chroma * 0.85, wrapHue(p.secondaryHue)), ui),
     '--dna-border': oklchToHex(at(dark ? 0.38 : 0.82, Math.min(chroma * 0.4, 0.05), hue)),
-    '--dna-warn': fit(at(dark ? 0.8 : 0.5, 0.15, 65), ui),
-    '--dna-ok': fit(at(dark ? 0.8 : 0.48, 0.14, 150), ui),
+    // Semantic hues lean 10% toward the book's warmth-shifted neutral so badges feel native.
+    '--dna-warn': fit(at(dark ? 0.8 : 0.5, 0.15, lerpHue(65, neutral, 0.1)), ui),
+    '--dna-ok': fit(at(dark ? 0.8 : 0.48, 0.14, lerpHue(150, neutral, 0.1)), ui),
   };
+  const border = colors['--dna-border'];
+  // Redaction bars: deep ink on light; on dark a depressed obsidian strictly below the surface
+  // (never a near-white highlighter) with a 1 px border and a faint censor hatch.
+  const redactBg = oklchToHex(
+    dark ? at(0.11, 0.01, hue) : at(0.2, Math.min(tint, 0.01), neutral),
+  );
+  // Soft Page Harmony: a page ground barely tinted by the book (the reader's Aa choice wins).
+  const pageBg = oklchToHex(
+    dark
+      ? at(0.095, Math.min(chroma * 0.18, 0.015), neutral)
+      : at(0.968, Math.min(chroma * 0.15, 0.012), neutral),
+  );
 
   const [ease, durScale] = EASE[dna.motion.personality];
   const tempo = clampNum(dna.motion.tempo, 0.5, 2);
@@ -92,6 +105,13 @@ export function resolveVisualDna(dna: BookVisualDna, theme: DnaTheme): ResolvedV
     '--dna-dur': `${Math.round((320 * durScale) / tempo)}ms`,
     '--dna-grain': String(clampNum(dna.surface.grainIntensity, 0, 1)),
     '--dna-atmos': String(clampNum(dna.atmosphere.intensity, 0, 1)),
+    '--dna-redact-bg': redactBg,
+    '--dna-redact-border': dark ? border : 'transparent',
+    '--dna-redact-hatch': dark
+      ? `repeating-linear-gradient(-45deg,color-mix(in srgb,${border} 38%,transparent) 0 1px,transparent 1px 6px)`
+      : 'none',
+    '--dna-page-bg': pageBg,
+    '--dna-page-font': FONT_STACKS[dna.typography.prose],
   };
   return {
     theme,

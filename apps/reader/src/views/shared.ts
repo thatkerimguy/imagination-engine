@@ -1,10 +1,8 @@
 import type { Route } from '../router.ts';
 import type { AudioBus } from '../runtime/audio-bus.ts';
-import type { Stage } from '../runtime/stage.ts';
 
 export interface ViewContext {
   main: HTMLElement;
-  stage: Stage;
   audio: AudioBus;
   setBar(title: string, back: Route | null): void;
   link(route: Route, ...children: (Node | string | null)[]): HTMLAnchorElement;

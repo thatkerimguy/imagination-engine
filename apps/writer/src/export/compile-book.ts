@@ -23,6 +23,7 @@ export async function compileNovel(
         id: c.id,
         title: c.title,
         blocks: c.blocks,
+        ...(c.blueprints ? { blueprints: c.blueprints } : {}),
         styles: await loadChapterStyles(repo, c.id),
       });
   }

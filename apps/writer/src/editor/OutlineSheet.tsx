@@ -2,6 +2,8 @@
 import type { Block } from '@kn/core';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { engineGlyph } from '../gimmicks/engine-look.ts';
+import { isV2Cue } from '../gimmicks/cue.ts';
 import { moduleOutlineLabel } from '../modules/registry.ts';
 import type { ChapterStyles } from '../store/chapter-styles.ts';
 import { Glyph, type GlyphName } from '../ui/Glyph.tsx';
@@ -39,7 +41,12 @@ export function outlineEntries(blocks: readonly Block[], styles: ChapterStyles):
       out.push({ id: b.id, label, icon: 'minus', level: 1 });
     } else if (b.kind === 'module') {
       const label = moduleOutlineLabel(b.moduleId, b.props);
-      out.push({ id: b.id, label, icon: gimmickGlyph(b.moduleId), level: 1 });
+      out.push({
+        id: b.id,
+        label,
+        icon: isV2Cue(b.props) ? engineGlyph(b.moduleId) : gimmickGlyph(b.moduleId),
+        level: 1,
+      });
     }
   }
   return out;

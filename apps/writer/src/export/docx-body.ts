@@ -62,7 +62,7 @@ export function docxBody(book: CompiledBook, opts: ExportOptions): string {
     const showTitle = section.showTitle !== false;
     if (opts.pageBreaks && i > 0) out.push(PAGE_BREAK);
     if (showTitle) out.push(paraXml([plain(section.title)], { style: 'Heading1' }));
-    for (const item of flattenBlocks(section.blocks, section.styles, opts.gimmickMode))
+    for (const item of flattenBlocks(section.blocks, section.styles, opts.gimmickMode, section.blueprints))
       out.push(itemXml(item, showTitle));
   });
   return out.join('');

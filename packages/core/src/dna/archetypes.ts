@@ -36,7 +36,7 @@ export const DNA_ARCHETYPES: Record<DnaArchetypeId, BookVisualDna> = {
     palette: { hue: 265, chroma: 0.17, warmth: -0.6, secondaryHue: 175, contrastMode: 'balanced' },
     typography: { display: 'sans-clean', prose: 'sans-clean', diegetic: 'mono-terminal', tracking: 'wide' },
     surface: { material: 'clean', grainIntensity: 0 },
-    ornament: { grammar: 'cyber-brackets', radius: 'soft', strokeWidth: 1 },
+    ornament: { grammar: 'chamfer-tech', radius: 'soft', strokeWidth: 1 },
     motion: { personality: 'crisp', tempo: 1.3 },
     atmosphere: { style: 'subtle-vignette', intensity: 0.3 },
     sonic: { timbre: 'ethereal', gain: 0.45 },

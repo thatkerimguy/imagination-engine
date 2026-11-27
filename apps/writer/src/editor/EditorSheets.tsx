@@ -5,13 +5,15 @@ import { useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 import type { DocumentMetrics } from '../analysis/metrics.ts';
 import { PublishSheet } from '../publish/PublishSheet.tsx';
-import { enabledWriterModules, getWriterModule } from '../modules/registry.ts';
+import { CatalogSheet } from '../gimmicks/CatalogSheet.tsx';
+import { CueSheet } from '../gimmicks/CueSheet.tsx';
+import { isV2Cue } from '../gimmicks/cue.ts';
+import { getWriterModule } from '../modules/registry.ts';
 import type { ChapterDraft } from '../store/use-chapter-draft.ts';
 import { TextAnalysisSheet } from '../views/TextAnalysisSheet.tsx';
 import { VersionHistorySheet } from '../views/VersionHistorySheet.tsx';
 import { CommentSheet } from './EditorChrome.tsx';
 import { GimmickBlockSheet } from './GimmickBlockSheet.tsx';
-import { GimmickPicker } from './InsertSheets.tsx';
 import { LayoutPrefsSheet } from './LayoutPrefsSheet.tsx';
 import { MetricPickerSheet } from './MetricsRibbon.tsx';
 import { OutlineSheet } from './OutlineSheet.tsx';
@@ -42,15 +44,16 @@ export function EditorSheets(p: EditorSheetsProps): ReactNode {
   const close = (): void => p.setSheet(null);
   const { novelId } = useLocalSearchParams<{ novelId: string }>();
   const sheetBlock = chapter.blocks.find((b) => b.id === a.sheetId);
+  const v2Cue = sheetBlock?.kind === 'module' && isV2Cue(sheetBlock.props) ? sheetBlock : null;
   const sheetModule =
-    sheetBlock?.kind === 'module' ? getWriterModule(sheetBlock.moduleId) : undefined;
+    sheetBlock?.kind === 'module' && !v2Cue ? getWriterModule(sheetBlock.moduleId) : undefined;
   const gimmickSheet = sheetBlock?.kind === 'module' && sheetModule ? sheetBlock : null;
   const open = new Set(
     sheetsToMount({
       sheet: p.sheet,
       commentOpen: f.commentOpen,
       pickerOpen: a.pickerOpen,
-      gimmickSheetOpen: !!gimmickSheet,
+      gimmickSheetOpen: !!gimmickSheet || !!v2Cue,
     }),
   );
   return (
@@ -104,13 +107,11 @@ export function EditorSheets(p: EditorSheetsProps): ReactNode {
       {open.has('comment') ? (
         <CommentSheet visible onAdd={f.addComment} onClose={f.closeComment} />
       ) : null}
-      {open.has('picker') ? (
-        <GimmickPicker
-          visible
-          modules={enabledWriterModules(p.enabledModules)}
-          onPick={a.pickModule}
-          onClose={a.closePicker}
-        />
+      {open.has('picker') && novelId ? (
+        <CatalogSheet visible novelId={novelId} onPick={a.pickBlueprint} onClose={a.closePicker} />
+      ) : null}
+      {v2Cue ? (
+        <CueSheet block={v2Cue} update={draft.update} onDone={() => a.openSheet(null)} />
       ) : null}
       {gimmickSheet && sheetModule ? (
         <GimmickBlockSheet

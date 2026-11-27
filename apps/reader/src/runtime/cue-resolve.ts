@@ -1,6 +1,6 @@
-// Resolves a chapter `module` cue to a v2 blueprint + validated props:
-//   1. `props.blueprintId` → inline chapter blueprint (re-guarded) or a starter blueprint
-//   2. a retired v1 moduleId (cyberbrain, gaslight, ghost-whisper, system box) → LEGACY_CUES
+// Resolves a chapter `module` cue to a v2 blueprint + validated props. Every cue carries
+// `props.blueprintId`; the blueprint comes from the chapter's inline `blueprints` map (re-guarded,
+// the published path) and only falls back to the lazily loaded starter set (sandbox, dev books).
 import {
   guardBlueprint,
   resolveBlueprintProps,
@@ -16,38 +16,26 @@ export async function resolveCue(
   req: HostRequest,
   inline: Record<string, unknown> | undefined,
 ): Promise<ResolvedCue> {
-  const { starterBlueprint, LEGACY_CUES } = await import('@kn/engines/blueprints');
   const { blueprintId, ...rest } = req.props;
-  let blueprint: GimmickBlueprint | null = null;
-  let raw: Record<string, unknown> = rest;
-
-  if (typeof blueprintId === 'string') {
-    const own = inline?.[blueprintId];
-    if (own !== undefined) {
-      const g = guardBlueprint(own);
-      if (!g.ok)
-        return { ok: false, error: `Blueprint “${blueprintId}” was rejected: ${g.errors[0]}` };
-      blueprint = g.blueprint;
-    } else {
-      blueprint = starterBlueprint(blueprintId);
-    }
-    if (blueprint && req.moduleVersion > blueprint.version) {
-      return {
-        ok: false,
-        error: `${blueprint.name} v${req.moduleVersion} needs a newer reader (has v${blueprint.version}).`,
-      };
-    }
-    if (!blueprint) return { ok: false, error: `Unknown gimmick “${blueprintId}”.` };
+  if (typeof blueprintId !== 'string')
+    return { ok: false, error: `Unknown spectacle “${req.moduleId}”.` };
+  let blueprint: GimmickBlueprint | null;
+  const own = inline?.[blueprintId];
+  if (own !== undefined) {
+    const g = guardBlueprint(own);
+    if (!g.ok) return { ok: false, error: `Blueprint “${blueprintId}” was rejected: ${g.errors[0]}` };
+    blueprint = g.blueprint;
   } else {
-    const cue = LEGACY_CUES[req.moduleId];
-    if (cue) {
-      blueprint = starterBlueprint(cue.blueprintId);
-      raw = cue.map(req.props);
-    }
-    if (!blueprint) return { ok: false, error: `Unknown spectacle “${req.moduleId}”.` };
+    blueprint = (await import('@kn/engines/blueprints')).starterBlueprint(blueprintId);
   }
-
-  const props = resolveBlueprintProps(blueprint, raw);
+  if (!blueprint) return { ok: false, error: `Unknown gimmick “${blueprintId}”.` };
+  if (req.moduleVersion > blueprint.version) {
+    return {
+      ok: false,
+      error: `${blueprint.name} v${req.moduleVersion} needs a newer reader (has v${blueprint.version}).`,
+    };
+  }
+  const props = resolveBlueprintProps(blueprint, rest);
   if (!props.ok)
     return { ok: false, error: `${blueprint.name}: ${props.errors.slice(0, 3).join('; ')}` };
   return { ok: true, blueprint, props: props.props };

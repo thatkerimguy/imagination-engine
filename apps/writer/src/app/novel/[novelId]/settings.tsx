@@ -146,6 +146,13 @@ export default function NovelSettingsScreen(): ReactNode {
       />
       <Label>{t('novel.readingTheme')}</Label>
       <AccentPicker value={draft.theme['--accent']} onChange={setAccent} />
+      <ListRow
+        icon="sliders"
+        title={t('dna.row')}
+        subtitle={t('dna.rowSub')}
+        testID="settings-visual-dna-row"
+        onPress={() => router.push(`/novel/${novelId}/visual-dna`)}
+      />
       <Label>{t('novel.workspaceMode')}</Label>
       <ModePicker
         value={data.mode}

@@ -65,7 +65,7 @@ export async function previewPass(page, base, { ok, fail, shot }) {
   await page.getByText('Waiting for the writer…').waitFor({ timeout: 10000 });
   await post('from-dialogue');
   await page.getByRole('button', { name: 'Silent' }).click({ timeout: 10000 });
-  await page.waitForFunction(() => window.__settled, null, { timeout: 20000 });
+  await page.locator('[data-engine="bespoke-3d"][data-state="done"]').first().waitFor({ timeout: 20000 });
   const state = await chatState(page);
   const chat = { ...state, calm: state.tier === 'reduced' };
   if (chat.calm && chat.pending === 0 && chat.last === "Don't relax.")

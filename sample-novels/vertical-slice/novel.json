@@ -8,7 +8,7 @@
   "theme": {
     "--accent": "#4fd1c5"
   },
-  "enabledModules": ["core-ambient-bed", "gits-cyberbrain-chat", "bl-dice-3d"],
+  "enabledModules": [],
   "seasons": [
     "s01"
   ],

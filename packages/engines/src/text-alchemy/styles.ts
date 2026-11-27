@@ -14,10 +14,11 @@ font-size:1.05em;line-height:1.6;font-style:italic;color:var(--kn-e-accent);opac
 transition:opacity .4s var(--dna-ease,ease)}
 .kn-e-text-alchemy[data-ghost=on] .kn-e-text-alchemy__ghost{opacity:.85}
 .kn-e-text-alchemy--whisper .kn-e-text-alchemy__text{color:var(--dna-muted)}
-.kn-e-text-alchemy__bar{display:inline;padding:0 2px;border:0;border-radius:2px;min-height:0!important;min-width:0!important;
-font:inherit;color:transparent;background:var(--dna-ink);cursor:pointer;
+.kn-e .kn-e-text-alchemy__bar{display:inline;padding:0 2px;border:0;border-radius:2px;min-height:0!important;min-width:0!important;
+font:inherit;color:transparent;background-color:var(--dna-redact-bg,var(--dna-ink));
+background-image:var(--dna-redact-hatch,none);box-shadow:inset 0 0 0 1px var(--dna-redact-border,transparent);cursor:pointer;
 transition:background .35s var(--dna-ease,ease),color .35s var(--dna-ease,ease)}
-.kn-e-text-alchemy__bar[data-revealed]{color:var(--dna-ink);background:color-mix(in srgb,var(--kn-e-accent) 18%,transparent);cursor:default}
+.kn-e .kn-e-text-alchemy__bar[data-revealed]{color:var(--dna-ink);background-image:none;box-shadow:none;background-color:color-mix(in srgb,var(--kn-e-accent) 18%,transparent);cursor:default}
 .kn-e-text-alchemy__rev{background:color-mix(in srgb,var(--kn-e-accent) 18%,transparent);padding:0 2px}
 .kn-e-text-alchemy--cipher .kn-e-text-alchemy__text{font-family:var(--dna-font-diegetic,monospace);letter-spacing:.06em}
 `;

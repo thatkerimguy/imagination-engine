@@ -123,12 +123,25 @@ export function openSettings(audio: AudioBus): void {
         chips(
           'Theme',
           [
-            ['warm', 'Warm'],
-            ['dark', 'Dark'],
+            ['book', 'Book'],
+            ['warm', 'Paper'],
+            ['dark', 'Night'],
             ['obsidian', 'Obsidian'],
           ],
           p.theme,
           (theme) => update({ theme }),
+          'settings-theme',
+        ),
+        chips(
+          'Font',
+          [
+            ['book', 'Book'],
+            ['serif', 'Serif'],
+            ['sans', 'Sans'],
+          ],
+          p.font,
+          (font) => update({ font }),
+          'settings-font',
         ),
         chips(
           'Spectacle',

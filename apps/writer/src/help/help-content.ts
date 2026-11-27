@@ -1,32 +1,5 @@
 // Pure copy + data for Help & Legal (100% offline).
-import type { ModuleGenre, ModuleLayer } from '@kn/core';
 import type { GlyphName } from '../ui/Glyph.tsx';
-
-export const GENRE_ICON: Record<ModuleGenre, GlyphName> = {
-  core: 'layers',
-  gits: 'cpu',
-  'black-lagoon': 'anchor',
-  'psych-thriller': 'eye',
-};
-
-export const GENRE_LABEL: Record<ModuleGenre, string> = {
-  core: 'Core',
-  gits: 'Cyberpunk',
-  'black-lagoon': 'Crime action',
-  'psych-thriller': 'Psychological thriller',
-};
-
-/** Writer-side label/icon for modules whose genre is not in core's frozen union. */
-export const MODULE_GENRE_OVERRIDE: Readonly<Record<string, { label: string; icon: GlyphName }>> = {
-  'litrpg-system-box': { label: 'LitRPG / Progression', icon: 'terminal' },
-};
-
-export const LAYER_TRIGGER: Record<ModuleLayer, string> = {
-  backdrop: 'Plays behind the prose from its cue card onward.',
-  inline: 'Appears inline in the text; readers tap or scroll to it.',
-  'overlay-vfx': 'Plays over the screen when the reader reaches the cue.',
-  'audio-haptic': 'Plays sound and haptics when the reader reaches the cue.',
-};
 
 export interface HelpCard {
   icon: GlyphName;

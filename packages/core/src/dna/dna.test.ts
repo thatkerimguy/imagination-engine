@@ -7,6 +7,7 @@ import {
   oklchToHex,
   oklchToSrgb,
   parseVisualDna,
+  relativeLuminance,
   resolveVisualDna,
   UI_TARGET,
   wcagContrast,
@@ -110,5 +111,41 @@ describe('resolveVisualDna', () => {
   it('rejects malformed DNA', () => {
     const bad = { ...DNA_ARCHETYPES['noir-rain'], palette: { hue: 'red' } };
     expect(parseVisualDna(bad).ok).toBe(false);
+  });
+});
+
+describe('OVERHAUL-04 tokens', () => {
+  it('dark redaction bars are obsidian, darker than every card surface; light bars are ink', () => {
+    for (const id of DNA_ARCHETYPE_IDS) {
+      const dark = resolveVisualDna(DNA_ARCHETYPES[id], 'dark');
+      const redact = dark.tokens['--dna-redact-bg']!;
+      expect(relativeLuminance(redact)).toBeLessThan(relativeLuminance(dark.colors['--dna-surface']));
+      expect(relativeLuminance(redact)).toBeLessThan(0.02);
+      expect(dark.tokens['--dna-redact-border']).toBe(dark.colors['--dna-border']);
+      expect(dark.tokens['--dna-redact-hatch']).toContain('repeating-linear-gradient(-45deg');
+      const light = resolveVisualDna(DNA_ARCHETYPES[id], 'light');
+      expect(relativeLuminance(light.tokens['--dna-redact-bg']!)).toBeLessThan(0.05);
+      expect(light.tokens['--dna-redact-border']).toBe('transparent');
+    }
+  });
+
+  it('Soft Page Harmony: a barely tinted page ground plus the book prose font', () => {
+    const r = resolveVisualDna(DNA_ARCHETYPES['noir-rain'], 'light');
+    expect(relativeLuminance(r.tokens['--dna-page-bg']!)).toBeGreaterThan(0.85);
+    expect(r.tokens['--dna-page-font']).toBe(r.tokens['--dna-font-prose']);
+    const d = resolveVisualDna(DNA_ARCHETYPES['noir-rain'], 'dark');
+    expect(relativeLuminance(d.tokens['--dna-page-bg']!)).toBeLessThan(0.02);
+  });
+
+  it('Holographic System uses chamfer-tech, distinct from Noir Rain brackets', () => {
+    expect(DNA_ARCHETYPES['holographic-system'].ornament.grammar).toBe('chamfer-tech');
+    expect(DNA_ARCHETYPES['noir-rain'].ornament.grammar).toBe('cyber-brackets');
+    expect(parseVisualDna(DNA_ARCHETYPES['holographic-system']).ok).toBe(true);
+  });
+
+  it('warn / ok lean toward the book but stay distinct between warm and cool books', () => {
+    const warm = resolveVisualDna(DNA_ARCHETYPES['antique-parchment'], 'dark').colors['--dna-warn'];
+    const cool = resolveVisualDna(DNA_ARCHETYPES['holographic-system'], 'dark').colors['--dna-warn'];
+    expect(warm).not.toBe(cool);
   });
 });

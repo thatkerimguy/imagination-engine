@@ -23,7 +23,7 @@ export interface SettingRow {
   updatedAt: string;
 }
 
-/** Gimmick v2 scaffold (OVERHAUL-03/04): rows are stored and exported, nothing reads them yet. */
+/** Gimmick v2 catalog packs; blueprints are searchable via `gimmick_blueprints_fts` (schema v3). */
 export interface GimmickPackRow {
   id: string;
   genre: string;
@@ -41,6 +41,23 @@ export interface GimmickBlueprintRow {
   title: string;
   configJson: string;
   createdAt: string;
+}
+
+/** Catalog search: every filter is optional and ANDed; `text` uses the FTS grammar. */
+export interface CatalogQuery {
+  text?: string;
+  genre?: string;
+  engine?: string;
+  tier?: 'free' | 'pro';
+  /** Restrict to these blueprint ids (Favorites / Recent). */
+  ids?: readonly string[];
+  /** Default 200. */
+  limit?: number;
+}
+
+export interface CatalogFacet {
+  genre: string;
+  count: number;
 }
 
 /** Every table as plain rows: the backup format and the restore input. */
@@ -133,12 +150,22 @@ export interface DatabasePort {
   rebuildSearchIndex(): Promise<void>;
   integrity(): Promise<IntegrityCounts>;
 
+  /** Upserts catalog packs + blueprints (every blueprint's pack must exist) and syncs the index. */
+  putGimmicks(
+    packs: readonly GimmickPackRow[],
+    blueprints: readonly GimmickBlueprintRow[],
+  ): Promise<void>;
+  /** Ranked by relevance when `text` is set, else alphabetical by blueprint name. */
+  searchGimmicks(query: CatalogQuery): Promise<GimmickBlueprintRow[]>;
+  /** Blueprint count per genre, most populated first. */
+  gimmickGenreCounts(): Promise<CatalogFacet[]>;
+
   exportTables(): Promise<DatabaseTables>;
   /** Atomically replaces every table with `tables` and rebuilds the search index. */
   replaceAll(tables: DatabaseTables): Promise<void>;
 }
 
-export const SCHEMA_USER_VERSION = 2;
+export const SCHEMA_USER_VERSION = 3;
 export const DATABASE_NAME = 'kinetic-writer-v2.db';
 
 export const emptyTables = (): DatabaseTables => ({

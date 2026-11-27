@@ -86,7 +86,7 @@ export async function dir06Pass(page, { WRITER, packAt, tid, ok, fail, editor })
   await tid('open-help').click();
   await tid('help-screen').waitFor({ timeout: 15000 });
   const modules = await page.locator('[data-testid^="help-module-"]').count();
-  if (modules === 7) ok('Gimmick Guide lists all 7 registry modules');
+  if (modules === 28) ok('Gimmick Guide lists all 28 starter blueprints');
   else fail(`Gimmick Guide lists ${modules} modules`);
   for (const id of ['help-open-shortcuts', 'help-replay-tour', 'help-licenses', 'help-open-doctor'])
     if ((await tid(id).count()) !== 1) fail(`Help is missing ${id}`);

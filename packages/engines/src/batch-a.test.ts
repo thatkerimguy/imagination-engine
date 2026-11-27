@@ -11,7 +11,6 @@ import { validateBlueprint } from '@kn/core/gimmicks/validate';
 import { afterEach, describe, expect, it } from 'vitest';
 import { artifactDocEngine } from './artifact-doc/index.ts';
 import { BATCH_A } from './blueprints/batch-a.ts';
-import { LEGACY_CUES } from './blueprints/index.ts';
 import { chatThreadEngine } from './chat-thread/index.ts';
 import { frameHudEngine } from './frame-hud/index.ts';
 import { createTestContext, type TestContext } from './shared/test-context.ts';
@@ -67,19 +66,6 @@ describe('blueprints', () => {
     }
   });
 
-  it('maps the legacy cues onto these blueprints', () => {
-    const cases: [string, Record<string, unknown>][] = [
-      ['gits-cyberbrain-chat', { senderId: 'ECHO', messages: ['hi', 'there'] }],
-      ['pt-gaslight-edit', { initialText: 'a', mutatedText: 'b' }],
-      ['gits-ghost-whisper', { surfaceLine: 'calm', ghostLine: 'run' }],
-      ['litrpg-system-box', { variant: 'level-up', title: 'Lv 2', lines: ['HP up'] }],
-    ];
-    for (const [id, raw] of cases) {
-      const cue = LEGACY_CUES[id]!;
-      const res = resolveBlueprintProps(bpOf(cue.blueprintId), cue.map(raw));
-      expect(res.ok ? [] : res.errors, id).toEqual([]);
-    }
-  });
 });
 
 describe('frame-hud', () => {

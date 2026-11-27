@@ -26,7 +26,7 @@ export const BATCH_B: GimmickBlueprint[] = [
     tier: 'free',
     fields: revealFields('Pick the interaction.', REVEAL_OPTIONS, 'Shown above the seal.'),
     defaultProps: {
-      prompt: 'A letter arrives, its crimson seal unbroken.',
+      prompt: 'A letter arrives, its wax seal unbroken.',
       label: 'Break the seal',
       revealedTitle: 'My dearest Elara,',
       revealedBody: [

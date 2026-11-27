@@ -28,6 +28,8 @@ const FORBIDDEN: readonly RegExp[] = [
   /^cannon-es(\/|$)/,
   /^@dimforge\//,
   /^@kn\/core\/renderer/,
+  // Engines are web-only runtime code; the writer may read only the pure blueprint data.
+  /^@kn\/engines(?!\/blueprints$)/,
   /^@kn\/module-[^/]+\/renderer/,
   /(^|\/)renderer(\.ts)?$/,
 ];

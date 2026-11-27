@@ -1,4 +1,5 @@
-// v2 relational schema (PRAGMA user_version = 2). Clean slate: no v1 KV migration.
+// Relational schema (PRAGMA user_version = 3). v3 adds the Gimmick Catalog FTS index on top of
+// the v2 tables; every statement is idempotent, so a v2 database upgrades in place.
 // The FTS5 index is kept in sync by triggers, which also fire for ON DELETE CASCADE deletes, so
 // every node/body write and every delete updates `nodes_fts` atomically in the same transaction.
 
@@ -121,6 +122,37 @@ CREATE TRIGGER IF NOT EXISTS bodies_fts_au AFTER UPDATE ON node_bodies BEGIN
 END;
 `;
 
+// Catalog discovery columns live inside config_json (the full blueprint), so the triggers read
+// them with JSON1; no column migration is needed on top of v2.
+const CAT_ROW = `SELECT b.rowid, b.id, COALESCE(json_extract(b.config_json, '$.name'), b.title),
+  COALESCE(json_extract(b.config_json, '$.tagline'), ''), b.genre,
+  COALESCE(json_extract(b.config_json, '$.subgenre'), ''),
+  COALESCE((SELECT group_concat(value, ' ') FROM json_each(b.config_json, '$.tags')), ''),
+  COALESCE((SELECT group_concat(value, ' ') FROM json_each(b.config_json, '$.mood')), '')
+  FROM gimmick_blueprints b`;
+const CAT_COLS = 'rowid, blueprint_id, name, tagline, genre, subgenre, tags, mood';
+
+export const SCHEMA_V3_CATALOG = `
+CREATE VIRTUAL TABLE IF NOT EXISTS gimmick_blueprints_fts USING fts5(
+  blueprint_id UNINDEXED, name, tagline, genre, subgenre, tags, mood,
+  tokenize='unicode61 remove_diacritics 2'
+);
+CREATE TRIGGER IF NOT EXISTS gimmick_fts_ai AFTER INSERT ON gimmick_blueprints BEGIN
+  INSERT INTO gimmick_blueprints_fts(${CAT_COLS}) ${CAT_ROW} WHERE b.id = new.id;
+END;
+CREATE TRIGGER IF NOT EXISTS gimmick_fts_au AFTER UPDATE ON gimmick_blueprints BEGIN
+  DELETE FROM gimmick_blueprints_fts WHERE rowid = old.rowid;
+  INSERT INTO gimmick_blueprints_fts(${CAT_COLS}) ${CAT_ROW} WHERE b.id = new.id;
+END;
+CREATE TRIGGER IF NOT EXISTS gimmick_fts_ad AFTER DELETE ON gimmick_blueprints BEGIN
+  DELETE FROM gimmick_blueprints_fts WHERE rowid = old.rowid;
+END;
+`;
+
+/** Rebuilds the catalog index (v2 → v3 upgrade, restore). */
+export const REBUILD_CATALOG_FTS = `DELETE FROM gimmick_blueprints_fts;
+INSERT INTO gimmick_blueprints_fts(${CAT_COLS}) ${CAT_ROW};`;
+
 /** Ranked FTS5 search (title weighted 10×). Params: MATCH expression, limit. */
 export const SEARCH_SQL =
   'SELECT node_id, bm25(nodes_fts, 0.0, 10.0, 1.0) AS rank FROM nodes_fts WHERE nodes_fts MATCH ? ORDER BY rank LIMIT ?';
@@ -131,5 +163,6 @@ INSERT INTO nodes_fts(rowid, node_id, title, plain_text) ${FTS_ROW} WHERE n.dele
 
 /** Child tables first, so a full wipe never trips a foreign key. */
 export const WIPE_ALL = `DELETE FROM gimmick_blueprints; DELETE FROM gimmick_packs;
+DELETE FROM gimmick_blueprints_fts;
 DELETE FROM growth_logs; DELETE FROM node_links; DELETE FROM node_bodies; DELETE FROM nodes;
 DELETE FROM media_assets; DELETE FROM settings; DELETE FROM nodes_fts;`;

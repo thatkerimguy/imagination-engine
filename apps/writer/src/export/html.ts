@@ -73,7 +73,7 @@ export function toHtml(book: CompiledBook, opts: ExportOptions): string {
   book.sections.forEach((section, i) => {
     const showTitle = section.showTitle !== false;
     const brk = opts.pageBreaks && (i > 0 || body.length > 0) ? ' break' : '';
-    const items = flattenBlocks(section.blocks, section.styles, opts.gimmickMode);
+    const items = flattenBlocks(section.blocks, section.styles, opts.gimmickMode, section.blueprints);
     const head = showTitle ? `<h2>${escapeHtml(section.title)}</h2>` : '';
     body.push(
       `<section class="chapter${brk}" id="ch-${i + 1}">${head}${items.map((it) => itemToHtml(it, showTitle)).join('\n')}</section>`,

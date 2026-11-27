@@ -68,9 +68,9 @@ export async function ov01Pass(browser, { WRITER, packAt, ok, fail }) {
       hits: (await db.search('lant')).map((h) => h.nodeId),
     };
   });
-  if (rows.driver === 'web' && rows.version === 2 && rows.books === 1)
-    ok('Library seeded from v2 relational nodes (user_version 2)');
-  else fail(`unexpected v2 store: ${JSON.stringify(rows)}`);
+  if (rows.driver === 'web' && rows.version === 3 && rows.books === 1)
+    ok('Library seeded from v2 relational nodes (user_version 3)');
+  else fail(`unexpected v3 store: ${JSON.stringify(rows)}`);
   if (rows.hits.includes('ch01') && rows.hits.includes(NOTE.id))
     ok('FTS prefix "lant" matches chapter ch01 and the note');
   else fail(`FTS hits: ${rows.hits}`);

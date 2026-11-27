@@ -1,11 +1,11 @@
-// The production v2 SQL (schema.ts + sql-rows.ts) executed on a REAL SQLite 3 with FTS5
+// The production v2 + v3 SQL (schema.ts + sql-rows.ts) executed on a REAL SQLite 3 with FTS5
 // (Node's built-in `node:sqlite`): foreign keys, ON DELETE CASCADE, the FTS sync triggers (also
 // on cascade deletes), the FTS5 MATCH grammar the native driver sends, and the 100k-word bench.
 import type { NodeKind, NodeRecord } from '@kn/core';
 import { DatabaseSync } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
 import { parseQuery, toFtsMatch } from './fts-query.ts';
-import { REBUILD_FTS, SCHEMA_V2, SEARCH_SQL, WIPE_ALL } from './schema.ts';
+import { REBUILD_FTS, SCHEMA_V2, SCHEMA_V3_CATALOG, SEARCH_SQL, WIPE_ALL } from './schema.ts';
 import { BODIES, GROWTH, LINKS, NODES, upsertSql } from './sql-rows.ts';
 
 const T0 = '2026-11-26T10:00:00.000Z';
@@ -14,7 +14,8 @@ function open(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA_V2);
-  db.exec('PRAGMA user_version = 2');
+  db.exec(SCHEMA_V3_CATALOG);
+  db.exec('PRAGMA user_version = 3');
   return db;
 }
 

@@ -9,6 +9,8 @@ export interface BookSection {
   title: string;
   blocks: readonly Block[];
   styles: ChapterStyles;
+  /** The chapter's inline v2 blueprints (cue export templates); starters are the fallback. */
+  blueprints?: Readonly<Record<string, unknown>>;
   /** Print the title as a chapter heading (default true). */
   showTitle?: boolean;
 }

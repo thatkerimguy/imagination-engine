@@ -13,14 +13,12 @@ import { STARTER_BLUEPRINTS_V2 } from '@kn/engines/blueprints';
 import { h } from '../dom.ts';
 import { createAudioBus } from '../runtime/audio-bus.ts';
 import { BlueprintHost } from '../runtime/blueprint-host.ts';
-import { createStage } from '../runtime/stage.ts';
 import { dispatchTierChange, seedTier } from '../runtime/tier-bus.ts';
 import { renderBlueprintForm } from './blueprint-form.ts';
 import { SAMPLE_AFTER, SAMPLE_BEFORE } from './sample-prose.ts';
 import { runStress, statsLine } from './stress.ts';
 
 const audio = createAudioBus();
-const stage = createStage();
 const q = new URLSearchParams(location.search);
 const all = [...STARTER_BLUEPRINTS_V2.values()];
 let bp = STARTER_BLUEPRINTS_V2.get(q.get('blueprint') ?? '') ?? all[0]!;
@@ -123,7 +121,7 @@ function newHost(): BlueprintHost | null {
     },
     slot,
     tier,
-    { stage, audio, resolveAsset: (p) => p, dnaRoot: main, visualDna: dna },
+    { audio, resolveAsset: (p) => p, dnaRoot: main, visualDna: dna },
   );
 }
 
@@ -180,14 +178,14 @@ stress.addEventListener('click', () => {
   host = null;
   stress.disabled = trigger.disabled = true;
   verdict = '';
-  void runStress(20, newHost, stage, (line) => (stats.textContent = verdict = line)).finally(() => {
+  void runStress(20, newHost, (line) => (stats.textContent = verdict = line)).finally(() => {
     stress.disabled = false;
     trigger.disabled = false;
   });
 });
 setInterval(() => {
   if (stress.disabled) return;
-  const live = `now: ${statsLine(stage.stats())}`;
+  const live = `now: ${statsLine()}`;
   stats.textContent = verdict ? `${verdict}\n${live}` : live;
 }, 1000);
 

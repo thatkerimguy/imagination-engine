@@ -21,17 +21,6 @@ export const ENGINE_IDS = [
 ] as const;
 export type EngineId = (typeof ENGINE_IDS)[number];
 
-/** Engines shipped in OVERHAUL-03; the other 7 render a calm placeholder until OVERHAUL-04. */
-export const LIVE_ENGINE_IDS = [
-  'frame-hud',
-  'chat-thread',
-  'text-alchemy',
-  'artifact-doc',
-  'tactile-reveal',
-  'telemetry-meter',
-  'kinetic-prose',
-] as const satisfies readonly EngineId[];
-export type LiveEngineId = (typeof LIVE_ENGINE_IDS)[number];
 
 export const isEngineId = (v: unknown): v is EngineId =>
   typeof v === 'string' && (ENGINE_IDS as readonly string[]).includes(v);

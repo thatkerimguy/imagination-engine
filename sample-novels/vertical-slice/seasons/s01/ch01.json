@@ -13,9 +13,16 @@
     {
       "id": "01M7WD7TG1R63M5MJ69NG6995F",
       "kind": "module",
-      "moduleId": "core-ambient-bed",
+      "moduleId": "audio-bed",
       "moduleVersion": 1,
-      "props": { "action": "play", "preset": "rain", "volume": 0.55, "fadeSeconds": 4 }
+      "props": {
+        "blueprintId": "rain-on-tin",
+        "scene": "rain-tin",
+        "label": "Rain",
+        "volume": 0.55,
+        "fadeMs": 4000,
+        "stop": false
+      }
     },
     {
       "id": "01M7WD7TG2E6A9YY5JE036YWV9",
@@ -25,19 +32,31 @@
     {
       "id": "01M7WD7TG3C1Z266E87HFD27KR",
       "kind": "module",
-      "moduleId": "gits-cyberbrain-chat",
+      "moduleId": "chat-thread",
       "moduleVersion": 1,
       "props": {
-        "senderId": "KESTREL-9",
-        "encryption": "AES-Q",
-        "side": "right",
+        "blueprintId": "cyberbrain-link",
+        "channel": "KESTREL-9",
+        "encryption": "aes-q",
+        "lineDelay": 1.4,
+        "sound": true,
         "messages": [
-          "Dealer's cup is weighted. Left side.",
-          "He rolls snakes when he wants the room to relax.",
-          "Don't relax."
-        ],
-        "chime": true,
-        "lineDelay": 1.4
+          {
+            "sender": "KESTREL-9",
+            "text": "Dealer's cup is weighted. Left side.",
+            "side": "right"
+          },
+          {
+            "sender": "KESTREL-9",
+            "text": "He rolls snakes when he wants the room to relax.",
+            "side": "right"
+          },
+          {
+            "sender": "KESTREL-9",
+            "text": "Don't relax.",
+            "side": "right"
+          }
+        ]
       }
     },
     {
@@ -50,13 +69,19 @@
     {
       "id": "01M7WD7TG54FMBWYMZM8XKD1V7",
       "kind": "module",
-      "moduleId": "bl-dice-3d",
+      "moduleId": "bespoke-3d",
       "moduleVersion": 1,
       "props": {
+        "blueprintId": "dice-throw-3d",
+        "spectacle": "dice-throw",
         "count": 2,
+        "values": [
+          "1",
+          "1"
+        ],
         "material": "ivory",
-        "outcomeMode": "scripted",
-        "scriptedNumbers": [1, 1],
+        "throwFrom": "right",
+        "caption": "The house rolls first.",
         "trigger": "auto",
         "holdSeconds": 1.5,
         "sound": true
@@ -72,9 +97,16 @@
     {
       "id": "01M7WD7TG7F2A4E8JSNGC9BMN2",
       "kind": "module",
-      "moduleId": "core-ambient-bed",
+      "moduleId": "audio-bed",
       "moduleVersion": 1,
-      "props": { "action": "play", "preset": "barroom", "volume": 0.5, "fadeSeconds": 3 }
+      "props": {
+        "blueprintId": "barroom-hum",
+        "scene": "barroom-hum",
+        "label": "Barroom",
+        "volume": 0.5,
+        "fadeMs": 3000,
+        "stop": false
+      }
     },
     {
       "id": "01M7WD7TG8MNRH5HAN9SRG9HTD",
@@ -92,14 +124,20 @@
     {
       "id": "01M7WD7TGAR4E536V2J9GYDN9K",
       "kind": "module",
-      "moduleId": "bl-dice-3d",
+      "moduleId": "bespoke-3d",
       "moduleVersion": 1,
       "props": {
+        "blueprintId": "dice-throw-3d",
+        "spectacle": "dice-throw",
         "count": 2,
+        "values": [
+          "6",
+          "6"
+        ],
         "material": "obsidian",
-        "outcomeMode": "scripted",
-        "scriptedNumbers": [6, 6],
-        "trigger": "tap-or-shake",
+        "throwFrom": "right",
+        "caption": "Double or nothing. Her dice.",
+        "trigger": "tap",
         "holdSeconds": 1.5,
         "sound": true
       },
@@ -110,5 +148,556 @@
       "kind": "prose",
       "text": "Boxcars. The Dealer smiled the way men smile when they have already decided what happens next. Outside, the rain kept writing on the glass."
     }
-  ]
+  ],
+  "blueprints": {
+    "barroom-hum": {
+      "version": 1,
+      "tier": "free",
+      "id": "barroom-hum",
+      "engine": "audio-bed",
+      "genre": "thriller",
+      "subgenre": "late-bar",
+      "mood": [
+        "smoky",
+        "uneasy"
+      ],
+      "tags": [
+        "bar",
+        "crowd",
+        "murmur",
+        "ambience"
+      ],
+      "name": "Barroom Hum",
+      "tagline": "Low crowd murmur and a warm electric hum.",
+      "fields": [
+        {
+          "key": "scene",
+          "label": "Ambience",
+          "type": "select",
+          "options": [
+            {
+              "value": "rain-tin",
+              "label": "Rain on tin"
+            },
+            {
+              "value": "barroom-hum",
+              "label": "Barroom hum"
+            },
+            {
+              "value": "starship-bridge",
+              "label": "Starship bridge"
+            },
+            {
+              "value": "ocean-surf",
+              "label": "Ocean surf"
+            },
+            {
+              "value": "forest-wind",
+              "label": "Forest wind"
+            },
+            {
+              "value": "vinyl-crackle",
+              "label": "Vinyl crackle"
+            }
+          ]
+        },
+        {
+          "key": "label",
+          "label": "Label",
+          "type": "text"
+        },
+        {
+          "key": "volume",
+          "label": "Volume",
+          "type": "number",
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        },
+        {
+          "key": "fadeMs",
+          "label": "Crossfade",
+          "type": "number",
+          "min": 500,
+          "max": 12000,
+          "step": 250,
+          "unit": "ms"
+        },
+        {
+          "key": "stop",
+          "label": "Fade out the current ambience instead",
+          "type": "boolean",
+          "optional": true
+        }
+      ],
+      "defaultProps": {
+        "scene": "barroom-hum",
+        "label": "Barroom",
+        "volume": 0.5,
+        "fadeMs": 3500,
+        "stop": false
+      },
+      "sampleProps": {
+        "scene": "vinyl-crackle",
+        "label": "Old record",
+        "volume": 0.4,
+        "fadeMs": 2500
+      },
+      "visual": {
+        "layout": "barroom-hum",
+        "ornament": "minimal",
+        "accentRole": "warning",
+        "borderStyle": "hairline",
+        "motionPreset": "fade"
+      },
+      "exports": {
+        "transcript": "[Ambient sound: {{label}}]",
+        "summary": "Ambient sound: {{label}}",
+        "epubXhtml": "<p class=\"kn-ambient\"><em>[Ambient sound: {{label}}]</em></p>",
+        "royalRoadHtml": "<p><em>[Ambient sound: {{label}}]</em></p>"
+      }
+    },
+    "cyberbrain-link": {
+      "version": 1,
+      "tier": "free",
+      "id": "cyberbrain-link",
+      "engine": "chat-thread",
+      "genre": "cyberpunk",
+      "subgenre": "neural-link",
+      "mood": [
+        "cold",
+        "urgent"
+      ],
+      "tags": [
+        "chat",
+        "encrypted",
+        "hacker"
+      ],
+      "name": "Cyberbrain Link",
+      "tagline": "An encrypted neural channel that decodes line by line.",
+      "fields": [
+        {
+          "key": "channel",
+          "label": "Channel",
+          "type": "text"
+        },
+        {
+          "key": "encryption",
+          "label": "Encryption",
+          "type": "select",
+          "options": [
+            {
+              "value": "aes-q",
+              "label": "AES-Q encrypted"
+            },
+            {
+              "value": "open",
+              "label": "Open channel"
+            },
+            {
+              "value": "spoofed",
+              "label": "Spoofed"
+            }
+          ]
+        },
+        {
+          "key": "messages",
+          "label": "Messages",
+          "type": "records",
+          "columns": [
+            {
+              "key": "sender",
+              "label": "Sender",
+              "type": "text"
+            },
+            {
+              "key": "text",
+              "label": "Message",
+              "type": "text"
+            },
+            {
+              "key": "side",
+              "label": "Side",
+              "type": "select",
+              "options": [
+                {
+                  "value": "left",
+                  "label": "Left"
+                },
+                {
+                  "value": "right",
+                  "label": "Right"
+                },
+                {
+                  "value": "system",
+                  "label": "System"
+                }
+              ],
+              "optional": true
+            },
+            {
+              "key": "time",
+              "label": "Time",
+              "type": "text",
+              "optional": true
+            }
+          ],
+          "itemLabel": "Message",
+          "minItems": 1,
+          "maxItems": 12
+        },
+        {
+          "key": "lineDelay",
+          "label": "Seconds between lines",
+          "type": "number",
+          "min": 0.4,
+          "max": 4,
+          "step": 0.1,
+          "unit": "s"
+        },
+        {
+          "key": "sound",
+          "label": "Play sound",
+          "type": "boolean",
+          "optional": true
+        }
+      ],
+      "defaultProps": {
+        "channel": "KESTREL-9",
+        "encryption": "aes-q",
+        "messages": [
+          {
+            "sender": "KESTREL-9",
+            "text": "You are not alone in here."
+          },
+          {
+            "sender": "KESTREL-9",
+            "text": "Do not trust the second voice."
+          }
+        ],
+        "lineDelay": 1.2,
+        "sound": true
+      },
+      "sampleProps": {
+        "channel": "NULL-SPACE",
+        "encryption": "spoofed",
+        "messages": [
+          {
+            "sender": "GHOST",
+            "text": "Your signature is cloned."
+          },
+          {
+            "sender": "GHOST",
+            "text": "Cut the link. Now."
+          },
+          {
+            "sender": "SYSTEM",
+            "text": "Link terminated.",
+            "side": "system"
+          }
+        ],
+        "lineDelay": 1.6
+      },
+      "visual": {
+        "layout": "cyber-link",
+        "ornament": "inherit",
+        "surface": "crt-glass",
+        "accentRole": "primary",
+        "borderStyle": "hairline",
+        "motionPreset": "decrypt"
+      },
+      "sound": {
+        "patch": "chime",
+        "gain": 0.4
+      },
+      "haptics": "tap",
+      "exports": {
+        "transcript": "[{{channel}}]\n{{#each messages}}{{sender}}: {{text}}\n{{/each}}",
+        "summary": "Thread on {{channel}}",
+        "epubXhtml": "<section class=\"kn-chat\" role=\"log\"><p><strong>{{channel}}</strong></p><ul>{{#each messages}}<li><strong>{{sender}}</strong> {{text}}</li>{{/each}}</ul></section>",
+        "royalRoadHtml": "<blockquote><p><b>{{channel}}</b></p>{{#each messages}}<p><b>{{sender}}:</b> {{text}}</p>{{/each}}</blockquote>"
+      }
+    },
+    "dice-throw-3d": {
+      "version": 1,
+      "tier": "free",
+      "id": "dice-throw-3d",
+      "engine": "bespoke-3d",
+      "genre": "noir",
+      "subgenre": "gambling",
+      "mood": [
+        "tense",
+        "fateful"
+      ],
+      "tags": [
+        "dice",
+        "3d",
+        "physics",
+        "scripted",
+        "gamble"
+      ],
+      "name": "3D Dice Throw",
+      "tagline": "Real physics dice tumble across the page and land on the number you chose.",
+      "fields": [
+        {
+          "key": "spectacle",
+          "label": "Spectacle",
+          "type": "select",
+          "options": [
+            {
+              "value": "dice-throw",
+              "label": "Dice throw"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "key": "count",
+          "label": "Dice",
+          "type": "number",
+          "min": 1,
+          "max": 4,
+          "step": 1
+        },
+        {
+          "key": "values",
+          "label": "Scripted faces (empty = random)",
+          "type": "list",
+          "itemLabel": "Face (1-6)",
+          "maxItems": 4,
+          "optional": true
+        },
+        {
+          "key": "material",
+          "label": "Finish",
+          "type": "select",
+          "options": [
+            {
+              "value": "ivory",
+              "label": "Ivory"
+            },
+            {
+              "value": "obsidian",
+              "label": "Obsidian"
+            },
+            {
+              "value": "brass",
+              "label": "Brass"
+            },
+            {
+              "value": "casino-red",
+              "label": "Casino-red"
+            }
+          ]
+        },
+        {
+          "key": "throwFrom",
+          "label": "Thrown from",
+          "type": "select",
+          "options": [
+            {
+              "value": "right",
+              "label": "Right"
+            },
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "bottom",
+              "label": "Bottom"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "key": "caption",
+          "label": "Caption",
+          "type": "text",
+          "optional": true
+        },
+        {
+          "key": "trigger",
+          "label": "Start",
+          "type": "select",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Auto"
+            },
+            {
+              "value": "tap",
+              "label": "Tap"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "key": "holdSeconds",
+          "label": "Hold result",
+          "type": "number",
+          "min": 0.3,
+          "max": 6,
+          "step": 0.1,
+          "unit": "s",
+          "optional": true
+        },
+        {
+          "key": "sound",
+          "label": "Play sound",
+          "type": "boolean",
+          "optional": true
+        }
+      ],
+      "defaultProps": {
+        "spectacle": "dice-throw",
+        "count": 2,
+        "values": [
+          "1",
+          "1"
+        ],
+        "material": "ivory",
+        "throwFrom": "right",
+        "caption": "The house rolls first.",
+        "trigger": "auto",
+        "holdSeconds": 1.5,
+        "sound": true
+      },
+      "sampleProps": {
+        "spectacle": "dice-throw",
+        "count": 2,
+        "values": [
+          "6",
+          "6"
+        ],
+        "material": "obsidian",
+        "throwFrom": "left",
+        "caption": "Double or nothing. Her dice.",
+        "trigger": "tap",
+        "holdSeconds": 1.5,
+        "sound": true
+      },
+      "visual": {
+        "layout": "dice-throw",
+        "ornament": "inherit",
+        "accentRole": "primary",
+        "borderStyle": "hairline",
+        "motionPreset": "none"
+      },
+      "haptics": "tap",
+      "exports": {
+        "transcript": "{{caption}}\n[{{count}} dice roll: {{#each values}}{{.}} {{/each}}]",
+        "summary": "🎲 {{count}}× {{material}} dice",
+        "epubXhtml": "<aside class=\"kn-dice\" role=\"note\"><p><em>{{caption}}</em></p><p><strong>Dice: {{#each values}}<span>⚀ {{.}}</span> {{/each}}</strong></p></aside>",
+        "royalRoadHtml": "<blockquote><p><i>{{caption}}</i></p><p><b>🎲 {{#each values}}[{{.}}] {{/each}}</b></p></blockquote>"
+      }
+    },
+    "rain-on-tin": {
+      "version": 1,
+      "tier": "free",
+      "id": "rain-on-tin",
+      "engine": "audio-bed",
+      "genre": "noir",
+      "subgenre": "rainy-night",
+      "mood": [
+        "moody",
+        "lonely"
+      ],
+      "tags": [
+        "rain",
+        "tin",
+        "ambience",
+        "night"
+      ],
+      "name": "Rain on Tin",
+      "tagline": "A steady rain drumming on a tin roof, generated live.",
+      "fields": [
+        {
+          "key": "scene",
+          "label": "Ambience",
+          "type": "select",
+          "options": [
+            {
+              "value": "rain-tin",
+              "label": "Rain on tin"
+            },
+            {
+              "value": "barroom-hum",
+              "label": "Barroom hum"
+            },
+            {
+              "value": "starship-bridge",
+              "label": "Starship bridge"
+            },
+            {
+              "value": "ocean-surf",
+              "label": "Ocean surf"
+            },
+            {
+              "value": "forest-wind",
+              "label": "Forest wind"
+            },
+            {
+              "value": "vinyl-crackle",
+              "label": "Vinyl crackle"
+            }
+          ]
+        },
+        {
+          "key": "label",
+          "label": "Label",
+          "type": "text"
+        },
+        {
+          "key": "volume",
+          "label": "Volume",
+          "type": "number",
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        },
+        {
+          "key": "fadeMs",
+          "label": "Crossfade",
+          "type": "number",
+          "min": 500,
+          "max": 12000,
+          "step": 250,
+          "unit": "ms"
+        },
+        {
+          "key": "stop",
+          "label": "Fade out the current ambience instead",
+          "type": "boolean",
+          "optional": true
+        }
+      ],
+      "defaultProps": {
+        "scene": "rain-tin",
+        "label": "Rain",
+        "volume": 0.55,
+        "fadeMs": 4000,
+        "stop": false
+      },
+      "sampleProps": {
+        "scene": "ocean-surf",
+        "label": "Distant surf",
+        "volume": 0.45,
+        "fadeMs": 3000
+      },
+      "visual": {
+        "layout": "rain-tin",
+        "ornament": "minimal",
+        "accentRole": "secondary",
+        "borderStyle": "hairline",
+        "motionPreset": "fade"
+      },
+      "exports": {
+        "transcript": "[Ambient sound: {{label}}]",
+        "summary": "Ambient sound: {{label}}",
+        "epubXhtml": "<p class=\"kn-ambient\"><em>[Ambient sound: {{label}}]</em></p>",
+        "royalRoadHtml": "<p><em>[Ambient sound: {{label}}]</em></p>"
+      }
+    }
+  }
 }

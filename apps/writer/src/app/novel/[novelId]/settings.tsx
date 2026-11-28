@@ -81,8 +81,12 @@ export default function NovelSettingsScreen(): ReactNode {
 
   const save = async (): Promise<void> => {
     try {
+      // Visual DNA is edited on its own screen (DNA Studio) while this form stays mounted: keep
+      // the stored value so saving settings never reverts it (Gate 4 finding).
+      const stored = await repo.getNovel(draft.id);
       const next = await repo.saveNovel({
         ...draft,
+        ...(stored && stored.visualDna !== undefined ? { visualDna: stored.visualDna } : {}),
         title: draft.title.trim(),
         author: draft.author.trim(),
       });

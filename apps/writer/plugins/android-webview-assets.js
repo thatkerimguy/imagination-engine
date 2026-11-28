@@ -22,6 +22,9 @@ const WEBKIT = 'implementation("androidx.webkit:webkit:1.12.1") // kn-webview-as
 const managerKt = (pkg) => `package ${pkg}
 
 import android.annotation.SuppressLint
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
@@ -55,9 +58,11 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
   override fun createViewInstance(context: ThemedReactContext): WebView {
     val view = WebView(context)
     view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+    val assets = WebViewAssetLoader.AssetsPathHandler(context)
     val loader = WebViewAssetLoader.Builder()
       .setDomain(DOMAIN)
-      .addPathHandler("/reader/", WebViewAssetLoader.AssetsPathHandler(context))
+      // The handler receives the path *after* /reader/; the files live under assets/reader/.
+      .addPathHandler("/reader/") { path -> assets.handle("reader/" + path) }
       .build()
     view.settings.apply {
       javaScriptEnabled = true
@@ -76,6 +81,8 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
       override fun shouldOverrideUrlLoading(v: WebView, request: WebResourceRequest): Boolean =
         request.url.host != DOMAIN
 
+      override fun onPageFinished(v: WebView, url: String) { Log.i(NAME, "loaded " + url) }
+
       override fun onReceivedError(v: WebView, request: WebResourceRequest, error: WebResourceError) {
         if (request.isForMainFrame) emit(context, v, native("kn-native-load-error", "description", error.description.toString()))
       }
@@ -87,6 +94,16 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
       // A dead renderer must never take the host app down: report it and let JS remount the view.
       override fun onRenderProcessGone(v: WebView, detail: RenderProcessGoneDetail): Boolean {
         emit(context, v, native("kn-native-render-gone", "didCrash", detail.didCrash()))
+        return true
+      }
+    }
+    // Reader warnings / errors reach logcat (tag KnReaderWebView); info logs stay quiet.
+    view.webChromeClient = object : WebChromeClient() {
+      override fun onConsoleMessage(m: ConsoleMessage): Boolean {
+        val level = m.messageLevel()
+        if (level == ConsoleMessage.MessageLevel.ERROR || level == ConsoleMessage.MessageLevel.WARNING) {
+          Log.w(NAME, level.name + ": " + m.message() + " (" + m.sourceId() + ":" + m.lineNumber() + ")")
+        }
         return true
       }
     }

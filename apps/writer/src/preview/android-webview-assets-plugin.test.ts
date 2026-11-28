@@ -23,7 +23,8 @@ describe('android-webview-assets plugin', () => {
     expect(kt).toContain('setDomain(DOMAIN)');
     expect(kt).toContain('const val DOMAIN = "appassets.androidplatform.net"');
     expect(kt).toContain(
-      'addPathHandler("/reader/", WebViewAssetLoader.AssetsPathHandler(context))',
+      // Gate 4: the handler gets the suffix after /reader/, so it must re-prefix reader/.
+      'addPathHandler("/reader/") { path -> assets.handle("reader/" + path) }',
     );
     expect(kt).toContain('loader.shouldInterceptRequest(request.url)');
   });

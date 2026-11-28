@@ -65,7 +65,6 @@ describe('blueprints', () => {
       }
     }
   });
-
 });
 
 describe('frame-hud', () => {

@@ -53,7 +53,14 @@ describe('bespoke-3d blueprints', () => {
 describe('bespoke-3d engine', () => {
   it('reduced / Calm Mode: a serene static badge at once, no motion, no tray', async () => {
     const { inst, root, result } = mount('dice-throw-3d', 'reduced');
-    expect(result()).toBe('2× D6 Ivory settle on [1, 1] · Snake eyes');
+    expect(result()).toBe('2× D6 Ivory settle on [1, 1]Snake eyes');
+    const vals = root.querySelector('.kn-e-bespoke-3d__vals')!;
+    expect(vals.textContent).toBe('[1, 1]');
+    expect(vals.parentElement?.className).toContain('kn-e-bespoke-3d__line');
+    const sub = root.querySelector('.kn-e-bespoke-3d__sub')!;
+    expect(sub.textContent).toBe('Snake eyes');
+    expect(root.querySelector('.kn-e-bespoke-3d__result')?.textContent).not.toMatch(/[·•]/);
+    expect(document.head.textContent).toContain('__vals{white-space:nowrap}');
     expect(root.dataset.state).toBe('done');
     await inst.trigger();
     expect(root.querySelectorAll('.kn-e-bespoke-3d__die')).toHaveLength(0);

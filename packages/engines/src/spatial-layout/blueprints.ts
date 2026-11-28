@@ -42,13 +42,17 @@ const FIELDS: BlueprintFieldSpec[] = [
   sound,
 ];
 
+// Labels are optional: separators only render when both sides exist, headers only when either does.
+const pair = (sep: string): string =>
+  `{{#if leftLabel}}{{leftLabel}}{{#if rightLabel}}${sep}{{rightLabel}}{{/if}}{{else}}{{rightLabel}}{{/if}}`;
+const when = (inner: string, tail = ''): string =>
+  `{{#if leftLabel}}${inner}${tail}{{else}}{{#if rightLabel}}${inner}${tail}{{/if}}{{/if}}`;
+
 const EXPORTS: BlueprintExports = {
-  transcript: '{{leftLabel}} / {{rightLabel}}\n{{#each entries}}{{text}}\n{{/each}}',
-  summary: '{{leftLabel}} and {{rightLabel}}: {{#each entries}}{{text}} {{/each}}',
-  epubXhtml:
-    '<section class="kn-spatial"><h4>{{leftLabel}} / {{rightLabel}}</h4>{{#each entries}}<p>{{text}}</p>{{/each}}</section>',
-  royalRoadHtml:
-    '<div style="border-left:2px solid #888;padding-left:10px"><p><strong>{{leftLabel}} / {{rightLabel}}</strong></p>{{#each entries}}<p>{{text}}</p>{{/each}}</div>',
+  transcript: `${when(pair(' / '), '\n')}{{#each entries}}{{text}}\n{{/each}}`,
+  summary: `${when(pair(' and '), ': ')}{{#each entries}}{{text}} {{/each}}`,
+  epubXhtml: `<section class="kn-spatial">${when(`<h4>${pair(' / ')}</h4>`)}{{#each entries}}<p>{{text}}</p>{{/each}}</section>`,
+  royalRoadHtml: `<div style="border-left:2px solid #888;padding-left:10px">${when(`<p><strong>${pair(' / ')}</strong></p>`)}{{#each entries}}<p>{{text}}</p>{{/each}}</div>`,
 };
 
 export const SPATIAL_LAYOUT_BLUEPRINTS: GimmickBlueprint[] = [

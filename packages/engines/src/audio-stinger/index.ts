@@ -10,6 +10,7 @@ import {
 import { cls, el, injectEngineStyle } from '../shared/dom-safe.ts';
 import { rt } from '../shared/i18n-reader.ts';
 import { isStill, mountFrame, variantOf } from '../shared/kit.ts';
+import { iconFor } from './icons.ts';
 import { CSS } from './styles.ts';
 import { FOLEYS, MAX_S, play, type Shot } from './synth.ts';
 
@@ -35,7 +36,7 @@ export const audioStingerEngine: GimmickEngine = {
       el(
         'div',
         { class: cls(ID, 'cap') },
-        el('span', { class: cls(ID, 'ico'), 'aria-hidden': 'true' }, '♪'),
+        el('span', { class: cls(ID, 'ico'), 'aria-hidden': 'true' }, iconFor(foley)),
         el('span', {}, label),
       ),
       el('div', { class: cls(ID, 'hair'), 'aria-hidden': 'true' }, el('i')),

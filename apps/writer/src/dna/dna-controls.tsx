@@ -1,12 +1,15 @@
 // Small labelled controls shared by the Visual DNA axes: option chips, steppers and groups.
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
-import { OptionGrid } from '../forms/controls/OptionGrid.tsx';
+import { StyleSheet, View } from 'react-native';
+import { tapFeedback } from '../ui/haptics.ts';
+import { Press } from '../ui/Press.tsx';
+import { useTheme } from '../ui/theme.tsx';
+import { chipStates } from './dna-choice.ts';
 import { useI18n } from '../i18n/I18nProvider.tsx';
 import type { StringKey } from '../i18n/i18n.ts';
 import { Stepper } from '../ui/Stepper.tsx';
 import { Txt } from '../ui/Txt.tsx';
-import { space } from '../ui/tokens.ts';
+import { radius, space, TOUCH } from '../ui/tokens.ts';
 
 export function Labeled({ label, children }: { label: string; children: ReactNode }): ReactNode {
   return (
@@ -19,6 +22,10 @@ export function Labeled({ label, children }: { label: string; children: ReactNod
   );
 }
 
+/**
+ * Radio chips. Selection is the only fill: a chip never takes the Press hover / pressed wash, so a
+ * sticky hover on the last-touched chip (e.g. Typewriter) cannot read as a second selection.
+ */
 export function Choice<T extends string>(p: {
   id: string;
   label: StringKey;
@@ -28,18 +35,61 @@ export function Choice<T extends string>(p: {
   onPick(v: T): void;
 }): ReactNode {
   const { t } = useI18n();
+  const { colors } = useTheme();
   return (
     <Labeled label={t(p.label)}>
-      <OptionGrid
-        role="radio"
-        options={p.values.map((v) => ({ value: v, label: t(`${p.prefix}.${v}` as StringKey) }))}
-        isSelected={(v) => v === p.value}
-        onPick={(v) => p.onPick(v as T)}
-        testIDFor={(v) => `dna-${p.id}-${v}`}
-      />
+      <View style={chipStyles.grid} accessibilityRole="radiogroup">
+        {chipStates(p.values, p.value).map(({ value, active }) => {
+          const label = t(`${p.prefix}.${value}` as StringKey);
+          return (
+            <Press
+              key={value}
+              wash={null}
+              accessibilityRole="radio"
+              accessibilityLabel={label}
+              accessibilityState={{ selected: active, checked: active }}
+              testID={`dna-${p.id}-${value}`}
+              onPress={() => {
+                tapFeedback();
+                p.onPick(value);
+              }}
+              style={[
+                chipStyles.tile,
+                {
+                  borderColor: active ? colors.accent : colors.hairline,
+                  backgroundColor: active ? colors.accentSoft : 'transparent',
+                },
+              ]}
+            >
+              <Txt
+                variant="label"
+                color={active ? 'accent' : 'ink'}
+                numberOfLines={2}
+                style={chipStyles.label}
+              >
+                {label}
+              </Txt>
+            </Press>
+          );
+        })}
+      </View>
     </Labeled>
   );
 }
+
+const chipStyles = StyleSheet.create({
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  tile: {
+    width: '48.5%',
+    minHeight: TOUCH,
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
+    justifyContent: 'center',
+  },
+  label: { textAlign: 'center' },
+});
 
 export function Num(p: {
   id: string;

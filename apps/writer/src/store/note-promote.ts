@@ -6,6 +6,7 @@ import { NotFoundError, ValidationError } from './errors.ts';
 import { getDoc, UNTITLED, type DocRecord, type NoteBlock } from './folders.ts';
 import { newSlugId } from './ids.ts';
 import type { NovelRepository } from './repository.ts';
+import { catalogResolver } from './blueprint-resolver.ts';
 import { prepareChapter } from './sanitize.ts';
 
 /** A note seen as a chapter-shaped draft, so the chapter editor components can edit it. */
@@ -36,7 +37,7 @@ export async function promoteDocToChapter(
     status: 'draft',
     blocks: doc.blocks.filter(isNoteBlock),
   };
-  const prepared = prepareChapter(draft);
+  const prepared = prepareChapter(draft, await catalogResolver(repo.db, [draft]));
   if (!prepared.ok) throw new ValidationError('Chapter', prepared.errors);
   const { chapter } = await repo.saveChapter(novelId, prepared.chapter);
   await repo.saveSeason(novelId, { ...season, chapters: [...season.chapters, chapter.id] });

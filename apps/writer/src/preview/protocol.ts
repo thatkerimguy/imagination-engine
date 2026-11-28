@@ -54,8 +54,17 @@ export interface PreviewRecordMessage {
   on: boolean;
 }
 
+/** Live Visual DNA push: the reader restyles in place, mounted engines get `onDnaChange`. */
+export interface PreviewDnaMessage {
+  type: 'dna';
+  dna: unknown;
+}
+
+export const dnaMessage = (dna: unknown): PreviewDnaMessage => ({ type: 'dna', dna });
+
 export type PreviewHostMessage =
   | PreviewLoadMessage
+  | PreviewDnaMessage
   | PreviewLifecycleMessage
   | PreviewA11yMessage
   | PreviewRecordMessage
@@ -110,4 +119,27 @@ export function parseReaderMessage(raw: unknown): ReaderMessage | null {
     default:
       return null;
   }
+}
+
+/** Android KnReaderWebView's own events (renderer death, main-frame load failure). */
+export type NativeFrameEvent =
+  | { type: 'kn-native-render-gone'; didCrash: boolean }
+  | { type: 'kn-native-load-error'; description: string };
+
+export function parseNativeEvent(raw: string): NativeFrameEvent | null {
+  let msg: unknown;
+  try {
+    msg = JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+  if (!msg || typeof msg !== 'object') return null;
+  const m = msg as Record<string, unknown>;
+  if (m.type === 'kn-native-render-gone') return { type: m.type, didCrash: m.didCrash === true };
+  if (m.type === 'kn-native-load-error')
+    return {
+      type: m.type,
+      description: typeof m.description === 'string' ? m.description : 'The reader could not load.',
+    };
+  return null;
 }

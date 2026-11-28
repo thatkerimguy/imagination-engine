@@ -7,6 +7,8 @@ border:var(--dna-stroke,1px) solid var(--kn-e-accent);border-radius:var(--dna-ra
 .kn-e-bespoke-3d__go[hidden]{display:none}
 .kn-e-bespoke-3d__result{margin:10px 0 0;font-family:var(--dna-font-diegetic,monospace);color:var(--dna-ink);
 letter-spacing:.04em;opacity:0;transition:opacity var(--dna-dur,320ms) var(--dna-ease,ease)}
+.kn-e-bespoke-3d__vals{white-space:nowrap}
+.kn-e-bespoke-3d__sub{display:block;margin-top:2px;font-size:.85em;letter-spacing:.06em;color:var(--dna-muted)}
 .kn-e-bespoke-3d[data-state=done] .kn-e-bespoke-3d__result{opacity:1}
 .kn-e-bespoke-3d__tray{display:flex;gap:12px;justify-content:center;min-height:0;margin-top:10px}
 .kn-e-bespoke-3d__tray:empty{display:none}

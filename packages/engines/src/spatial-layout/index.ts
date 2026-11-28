@@ -34,8 +34,8 @@ export const spatialLayoutEngine: GimmickEngine = {
         el(
           'div',
           { class: cls(ID, 'head'), 'aria-hidden': 'true' },
-          el('span', {}, labels.left),
-          el('span', {}, labels.right),
+          labels.left ? el('span', { 'data-side': 'left' }, labels.left) : null,
+          labels.right ? el('span', { 'data-side': 'right' }, labels.right) : null,
         ),
       );
     }

@@ -25,7 +25,12 @@ export const tactileRevealEngine: GimmickEngine = {
   mount(host, blueprint, props, ctx): EngineInstance {
     injectEngineStyle(ID, CSS);
     const mech = variantOf(blueprint, props, 'mechanism', MECHANISMS);
-    const fallback = mech === 'wax-seal' ? rt('breakSeal') : mech === 'biometric-hold' ? rt('holdToScan') : rt('lookAgain');
+    const fallback =
+      mech === 'wax-seal'
+        ? rt('breakSeal')
+        : mech === 'biometric-hold'
+          ? rt('holdToScan')
+          : rt('lookAgain');
     const label = propText(props, 'label', fallback);
     const { root, body } = mountFrame(host, blueprint, ctx, { label, layout: mech });
     const rid = `kn-tr-${++uid}`;
@@ -73,9 +78,15 @@ export const tactileRevealEngine: GimmickEngine = {
       holdStop?.();
       holdStop = null;
     };
+    /** `touch-action: none` lives only on the live gesture button; the card keeps native pan. */
+    const syncTouch = (): void => {
+      const gesture = wipe || mech === 'biometric-hold';
+      btn.style.touchAction = gesture && !done && rich() ? 'none' : '';
+    };
     const reveal = (): void => {
       if (done || destroyed) return;
       done = true;
+      syncTouch();
       cancelHold();
       endCue?.();
       btn.setAttribute('aria-expanded', 'true');
@@ -174,10 +185,12 @@ export const tactileRevealEngine: GimmickEngine = {
     });
 
     ctx.onTierChange(() => {
+      syncTouch();
       if (!isStill(ctx)) return;
       cancelHold();
       reveal();
     });
+    syncTouch();
     if (isStill(ctx)) reveal();
 
     return {

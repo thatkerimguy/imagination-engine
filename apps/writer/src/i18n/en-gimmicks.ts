@@ -19,7 +19,6 @@ export const enGimmicks = {
   'catalog.genre.horror': 'Horror',
   'catalog.genre.core': 'Core',
   'catalog.chipA11y': '{{label}}, {{n}} gimmicks',
-  'catalog.free': 'Free',
   'catalog.pro': 'Pro',
   'catalog.favorite': 'Add {{name}} to favorites',
   'catalog.unfavorite': 'Remove {{name}} from favorites',
@@ -28,6 +27,22 @@ export const enGimmicks = {
   'catalog.emptyHint': 'Try another word or pick a different genre.',
   'catalog.emptyFavs': 'No favorites yet',
   'catalog.emptyFavsHint': 'Tap the star on a gimmick to keep it here.',
+
+  // Engine category labels (catalog rows)
+  'engine.frame-hud': 'Status Panel',
+  'engine.chat-thread': 'Chat Thread',
+  'engine.text-alchemy': 'Text Effect',
+  'engine.artifact-doc': 'Document',
+  'engine.tactile-reveal': 'Tap to Reveal',
+  'engine.telemetry-meter': 'Live Meter',
+  'engine.kinetic-prose': 'Moving Text',
+  'engine.margin-note': 'Margin Note',
+  'engine.spatial-layout': 'Page Layout',
+  'engine.screen-fx': 'Screen Effect',
+  'engine.particle-field': 'Particles',
+  'engine.audio-bed': 'Ambient Sound',
+  'engine.audio-stinger': 'Sound Cue',
+  'engine.bespoke-3d': '3D Object',
 
   // Cue form
   'cue.unknown': 'Unknown cue {{id}}',

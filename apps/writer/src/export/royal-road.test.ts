@@ -1,8 +1,8 @@
 // Royal Road exporter: fragment shape, escaping, blueprint export templates, cue fallbacks.
+import { readFileSync } from 'node:fs';
 import type { Block, ModuleBlock } from '@kn/core';
 import { describe, expect, it } from 'vitest';
 import { STARTER_BLUEPRINT_LIST, starterBlueprint } from '@kn/engines/blueprints';
-import { getWriterModule } from '../modules/registry.ts';
 import { DEFAULT_EXPORT_OPTIONS, type CompiledBook, type ExportOptions } from './book-model.ts';
 import { buildRoyalRoadHtml } from './royal-road.ts';
 
@@ -12,11 +12,17 @@ const legacy = (moduleId: string, props: Record<string, unknown> = {}): ModuleBl
   kind: 'module',
   moduleId,
   moduleVersion: 1,
-  props: { ...getWriterModule(moduleId)!.schema.defaults, ...props },
+  props,
 });
 const cue = (blueprintId: string, props: Record<string, unknown> = {}): ModuleBlock => {
   const bp = starterBlueprint(blueprintId)!;
-  return { id: ID, kind: 'module', moduleId: bp.engine, moduleVersion: 1, props: { blueprintId, ...bp.defaultProps, ...props } };
+  return {
+    id: ID,
+    kind: 'module',
+    moduleId: bp.engine,
+    moduleVersion: 1,
+    props: { blueprintId, ...bp.defaultProps, ...props },
+  };
 };
 
 const book = (blocks: Block[], showTitle = true): CompiledBook => ({
@@ -66,11 +72,20 @@ describe('buildRoyalRoadHtml', () => {
       book([cue('system-notification', { title: '<b onclick="x">', lines: ['<img src=x>'] })]),
       opts(),
     );
-    expect(html).toContain('<blockquote><p><strong>[SYSTEM NOTIFICATION]</strong> NEW</p>');
+    expect(html).toContain(
+      '<table style="border-collapse:collapse;width:100%;background:#0c2340;color:#eef6ff;border:2px solid #3b82f6;margin:1em 0"><tbody>',
+    );
+    expect(html).toContain('[SYSTEM NOTIFICATION] · NEW</td></tr>');
     expect(html).toContain('&lt;b onclick=&quot;x&quot;&gt;');
-    expect(html).toContain('<p>&lt;img src=x&gt;</p>');
-    expect(html).not.toContain('<img');
-    expect(html).not.toContain('class=');
+    expect(html).toContain('>&lt;img src=x&gt;</td></tr>');
+    expect(html).not.toMatch(/<(img|script|style)\b|class=|javascript:/i);
+    // The empty footer row is omitted by {{#if footer}}, not left as an empty cell.
+    expect(html).not.toContain('font-style:italic');
+  });
+
+  it('the System box is driven by the blueprint template, not by exporter code', () => {
+    const src = readFileSync(new URL('./royal-road.ts', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/system-notification|moduleId\s*===/);
   });
 
   it('every starter blueprint exports paste-ready HTML with no script / style / class', () => {
@@ -85,7 +100,10 @@ describe('buildRoyalRoadHtml', () => {
     const c = cue('gaslight-rewrite');
     const summary = buildRoyalRoadHtml(book([c]), opts({ gimmickMode: 'summary' }));
     expect(summary).toMatch(/<p><em>\[Gaslight Rewrite: .+\]<\/em><\/p>/);
-    const omitted = buildRoyalRoadHtml(book([c, legacy('litrpg-system-box')]), opts({ gimmickMode: 'omit' }));
+    const omitted = buildRoyalRoadHtml(
+      book([c, legacy('litrpg-system-box')]),
+      opts({ gimmickMode: 'omit' }),
+    );
     expect(omitted).not.toContain('<blockquote');
     expect(omitted).not.toContain('<em>');
     expect(buildRoyalRoadHtml(book([legacy('litrpg-system-box')]), opts())).toContain('<p><em>');

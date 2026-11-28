@@ -67,4 +67,3 @@ export async function summarizeNovels(
   for (const b of books) out.push(await summarizeNovel(repo, b));
   return out.sort((a, b) => b.updatedAt - a.updatedAt);
 }
-

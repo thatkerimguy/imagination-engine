@@ -9,6 +9,7 @@ import type {
 } from '../../../publish-api/src/protocol.ts';
 import { loadItemMeta } from '../store/item-meta.ts';
 import type { NovelRepository } from '../store/repository.ts';
+import { catalogResolver } from '../store/blueprint-resolver.ts';
 import { prepareChapter } from '../store/sanitize.ts';
 import {
   endpoint,
@@ -62,6 +63,10 @@ export async function inspectNovelForPublish(
   let draft = 0;
   let skippedBlocks = 0;
   const seasons: PublishRequest['seasons'] = [];
+  const resolve = await catalogResolver(
+    repo.db,
+    bundle.seasons.flatMap((x) => x.chapters),
+  );
 
   for (const { season, chapters } of bundle.seasons) {
     const sent: ChapterDocument[] = [];
@@ -70,7 +75,7 @@ export async function inspectNovelForPublish(
         draft++;
         continue;
       }
-      const prepared = prepareChapter(raw);
+      const prepared = prepareChapter(raw, resolve);
       if (!prepared.ok) {
         draft++;
         warnings.push(`"${raw.title}" could not be prepared and was left out.`);

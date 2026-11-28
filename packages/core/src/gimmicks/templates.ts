@@ -2,7 +2,11 @@
 //   {{key}}                         a prop (lists join with ", ")
 //   {{#each list}}{{.}}{{/each}}    string lists; {{@n}} is the 1-based item number
 //   {{#each msgs}}{{sender}}{{/each}} object lists: {{field}} reads the item, then the props
-// HTML formats escape every interpolated value and strip any <script>/<style> in the template.
+//   {{#if key}}…{{else}}…{{/if}}       optional sections (nest inside / around {{#each}})
+// HTML formats escape every interpolated value, strip any <script>/<style> in the template and
+// drop any inline-style declaration outside the safe visual allowlist (security.ts).
+import { sanitizeStyles } from './security.ts';
+import { isTruthy, parseTemplate, type TemplateNode } from './template-ast.ts';
 import type { BlueprintExports, BlueprintProps, ExportFormat } from './types.ts';
 
 const HTML_FORMATS: ReadonlySet<ExportFormat> = new Set(['epubXhtml', 'royalRoadHtml']);
@@ -39,6 +43,44 @@ const collapse = (s: string): string =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
+interface Frame {
+  scope: Scope;
+  item?: unknown;
+  n?: number;
+}
+
+function lookup(key: string, f: Frame): unknown {
+  if (key === '.') return f.item;
+  if (key === '@n') return f.n;
+  const own =
+    f.item && typeof f.item === 'object' && !Array.isArray(f.item)
+      ? (f.item as Scope)[key]
+      : undefined;
+  return own !== undefined ? own : f.scope[key];
+}
+
+function emit(nodes: readonly TemplateNode[], f: Frame, esc: (s: string) => string): string {
+  let out = '';
+  for (const node of nodes) {
+    if (node.kind === 'text') out += node.text;
+    else if (node.kind === 'value') {
+      out +=
+        node.key === '@n'
+          ? f.n === undefined
+            ? ''
+            : String(f.n)
+          : esc(scalar(lookup(node.key, f)));
+    } else if (node.kind === 'if') {
+      out += emit(isTruthy(lookup(node.key, f)) ? node.then : node.else, f, esc);
+    } else {
+      const v = lookup(node.key, f);
+      const items: unknown[] = Array.isArray(v) ? v : v === undefined || v === '' ? [] : [v];
+      items.forEach((item, i) => (out += emit(node.body, { scope: f.scope, item, n: i + 1 }, esc)));
+    }
+  }
+  return out;
+}
+
 /** Renders one template string against props (exported for tests and the writer exporters). */
 export function renderTemplate(
   tpl: string,
@@ -47,24 +89,8 @@ export function renderTemplate(
 ): string {
   const esc = html ? escapeHtml : (s: string): string => s;
   const source = html ? stripForbidden(tpl) : tpl;
-  const fill = (body: string, scope: Scope, item?: unknown, n?: number): string =>
-    body.replace(/\{\{\s*(\.|@n|[a-zA-Z][a-zA-Z0-9]*)\s*\}\}/g, (_m, tok: string) => {
-      if (tok === '@n') return n === undefined ? '' : String(n);
-      if (tok === '.') return esc(scalar(item));
-      const own =
-        item && typeof item === 'object' && !Array.isArray(item) ? (item as Scope)[tok] : undefined;
-      return esc(scalar(own !== undefined ? own : scope[tok]));
-    });
-  const looped = source.replace(
-    /\{\{#each\s+([a-zA-Z][a-zA-Z0-9]*)\s*\}\}([\s\S]*?)\{\{\/each\}\}/g,
-    (_m, key: string, body: string) => {
-      const v = props[key];
-      const items: unknown[] = Array.isArray(v) ? v : v === undefined || v === '' ? [] : [v];
-      return items.map((item, i) => fill(body, props, item, i + 1)).join('');
-    },
-  );
-  const out = fill(looped, props);
-  return html ? out.trim() : collapse(out);
+  const out = emit(parseTemplate(source), { scope: props }, esc);
+  return html ? sanitizeStyles(out).trim() : collapse(out);
 }
 
 export function renderBlueprintExport(

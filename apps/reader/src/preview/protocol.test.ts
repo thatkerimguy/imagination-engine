@@ -83,4 +83,16 @@ describe('parseHostControl', () => {
     expect(parseHostControl(null)).toBeNull();
     expect(parsePreviewLoad({ type: 'lifecycle', state: 'active' })).toBeNull();
   });
+  it('accepts live Visual DNA pushes (id or object) and rejects empty ones', () => {
+    expect(parseHostControl({ type: 'dna', dna: 'noir-rain' })).toEqual({
+      type: 'dna',
+      dna: 'noir-rain',
+    });
+    expect(parseHostControl('{"type":"dna","dna":{"a":1}}')).toEqual({
+      type: 'dna',
+      dna: { a: 1 },
+    });
+    expect(parseHostControl({ type: 'dna' })).toBeNull();
+    expect(parseHostControl({ type: 'dna', dna: null })).toBeNull();
+  });
 });

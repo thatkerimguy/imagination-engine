@@ -1,7 +1,13 @@
 // Deterministic fake EngineRuntimeContext for engine unit tests (happy-dom). Mirrors the
 // reader's runtime-context semantics: pausable timers, one-shot frames deferred while paused,
 // live tier changes, abort-on-dispose. Never imported by production code.
-import { DNA_ARCHETYPES, resolveVisualDna, type DnaArchetypeId } from '@kn/core/dna';
+import {
+  DNA_ARCHETYPES,
+  resolveVisualDna,
+  type DnaArchetypeId,
+  type DnaTheme,
+  type ResolvedVisualDna,
+} from '@kn/core/dna';
 import type {
   EngineRuntimeContext,
   EngineTier,
@@ -9,6 +15,7 @@ import type {
   StingerPatch,
 } from '@kn/core/gimmicks';
 import { createOrnamentLayer } from './ornaments.ts';
+import { fakeGraph, type FakeGraph } from './test-audio.ts';
 
 interface Timer {
   id: number;
@@ -22,6 +29,8 @@ interface Timer {
 export interface TestContext {
   ctx: EngineRuntimeContext;
   setTier(t: EngineTier, calm?: boolean): void;
+  /** Re-resolves DNA (theme flip / new archetype) and fires `onDnaChange`. */
+  setDna(theme: DnaTheme, archetype?: DnaArchetypeId): void;
   pause(): void;
   resume(): void;
   /** Advances the fake clock, firing due timers in order. */
@@ -39,13 +48,7 @@ export interface TestContext {
   setAudioUnlocked(on: boolean): void;
 }
 
-export interface FakeGraph {
-  kind: 'bed' | 'oneshot';
-  closed: boolean;
-  context: BaseAudioContext;
-  out: GainNode;
-}
-
+export type { FakeGraph } from './test-audio.ts';
 export function createTestContext(
   tier: EngineTier = 'high',
   archetype: DnaArchetypeId = 'noir-rain',
@@ -61,6 +64,8 @@ export function createTestContext(
   const pauseCbs = new Set<() => void>();
   const resumeCbs = new Set<() => void>();
   const tierCbs = new Set<(t: EngineTier) => void>();
+  const dnaCbs = new Set<(d: ResolvedVisualDna) => void>();
+  let dna = resolveVisualDna(DNA_ARCHETYPES[archetype], 'dark');
   const stingers: StingerPatch[] = [];
   const graphs: FakeGraph[] = [];
   let unlocked = false;
@@ -98,10 +103,13 @@ export function createTestContext(
       return paused;
     },
     signal: ac.signal,
-    dna: resolveVisualDna(DNA_ARCHETYPES[archetype], 'dark'),
+    get dna() {
+      return dna;
+    },
     onPause: (cb) => sub(pauseCbs, cb),
     onResume: (cb) => sub(resumeCbs, cb),
     onTierChange: (cb) => sub(tierCbs, cb),
+    onDnaChange: (cb) => sub(dnaCbs, cb),
     raf(cb) {
       if (ac.signal.aborted) return () => undefined;
       const id = ++seq;
@@ -144,6 +152,10 @@ export function createTestContext(
       if (current.tier === 'reduced') closeGraphs();
       for (const cb of [...tierCbs]) cb(current.tier);
     },
+    setDna(theme, arch = archetype) {
+      dna = resolveVisualDna(DNA_ARCHETYPES[arch], theme);
+      for (const cb of [...dnaCbs]) cb(dna);
+    },
     pause() {
       if (paused) return;
       paused = true;
@@ -185,58 +197,8 @@ export function createTestContext(
       closeGraphs();
       timers.clear();
       frames.clear();
-      pauseCbs.clear();
-      resumeCbs.clear();
-      tierCbs.clear();
+      for (const set of [pauseCbs, resumeCbs, tierCbs, dnaCbs]) set.clear();
     },
     pending: () => timers.size + frames.size,
   };
-}
-
-/** Minimal recording fake of the WebAudio nodes procedural engines use (happy-dom has none). */
-function fakeGraph(kind: 'bed' | 'oneshot'): FakeGraph {
-  const param = (v: number): AudioParam =>
-    ({
-      value: v,
-      setValueAtTime: () => undefined,
-      linearRampToValueAtTime: () => undefined,
-      exponentialRampToValueAtTime: () => undefined,
-      setTargetAtTime: () => undefined,
-      cancelScheduledValues: () => undefined,
-    }) as unknown as AudioParam;
-  const node = (): Record<string, unknown> => ({
-    connect: (n: unknown) => n,
-    disconnect: () => undefined,
-    start: () => undefined,
-    stop: () => undefined,
-    onended: null,
-    gain: param(1),
-    frequency: param(440),
-    detune: param(0),
-    Q: param(1),
-    playbackRate: param(1),
-    pan: param(0),
-    type: 'sine',
-    buffer: null,
-    loop: false,
-  });
-  const context = {
-    currentTime: 0,
-    sampleRate: 22050,
-    state: 'running',
-    destination: node(),
-    createGain: node,
-    createOscillator: node,
-    createBiquadFilter: node,
-    createBufferSource: node,
-    createStereoPanner: node,
-    createBuffer: (ch: number, len: number, rate: number) => ({
-      numberOfChannels: ch,
-      length: len,
-      sampleRate: rate,
-      duration: len / rate,
-      getChannelData: () => new Float32Array(len),
-    }),
-  } as unknown as BaseAudioContext;
-  return { kind, closed: false, context, out: node() as unknown as GainNode };
 }

@@ -1,20 +1,6 @@
-// Every gimmick the writer knows about. Only each module's pure barrel is imported — schema,
-// meta and formatCardSummary — never renderer.ts (CLAUDE.md §3.3, checked by boundary.test.ts).
-import type {
-  ModuleCard,
-  ModuleCardFormatter,
-  ModuleMeta,
-  ModuleSchemaDefinition,
-  ValidationResult,
-} from '@kn/core';
+// Legacy v1 module lookup (now empty). See writerModules below.
+import type { ModuleCard, ModuleMeta, ModuleSchemaDefinition } from '@kn/core';
 import { starterCueBlueprint } from '../gimmicks/cue.ts';
-import * as dice from '@kn/module-bl-dice-3d';
-import * as lighter from '@kn/module-bl-lighter-flick';
-import * as ambient from '@kn/module-core-ambient-bed';
-import * as chat from '@kn/module-gits-cyberbrain-chat';
-import * as whisper from '@kn/module-gits-ghost-whisper';
-import * as gaslight from '@kn/module-pt-gaslight-edit';
-import * as system from '@kn/module-litrpg-system-box';
 
 type Props = Record<string, unknown>;
 
@@ -26,40 +12,11 @@ export interface WriterModule {
   summarize(props: Props): ModuleCard;
 }
 
-function register<P extends object>(
-  schema: ModuleSchemaDefinition<P>,
-  format: ModuleCardFormatter<P>,
-): WriterModule {
-  const erased: ModuleSchemaDefinition<Props> = {
-    meta: schema.meta,
-    fields: schema.fields,
-    defaults: schema.defaults as unknown as Props,
-    validate: (raw) => schema.validate(raw) as ValidationResult<Props>,
-  };
-  return {
-    meta: schema.meta,
-    schema: erased,
-    summarize(props) {
-      const result = schema.validate(props);
-      if (result.ok) return format(result.props);
-      return {
-        title: `${schema.meta.icon} ${schema.meta.name}`,
-        subtitle: result.errors[0] ?? 'Needs attention',
-        badge: 'FIX',
-      };
-    },
-  };
-}
-
-export const writerModules: readonly WriterModule[] = [
-  register(ambient.schema, ambient.formatCardSummary),
-  register(chat.schema, chat.formatCardSummary),
-  register(dice.schema, dice.formatCardSummary),
-  register(gaslight.schema, gaslight.formatCardSummary),
-  register(whisper.schema, whisper.formatCardSummary),
-  register(lighter.schema, lighter.formatCardSummary),
-  register(system.schema, system.formatCardSummary),
-];
+/**
+ * Legacy v1 modules are retired: v2 gimmicks live in the blueprint catalog. The registry stays
+ * as the (empty) lookup for pre-v2 `module` blocks, which degrade to fallback lines elsewhere.
+ */
+export const writerModules: readonly WriterModule[] = [];
 
 const byId = new Map(writerModules.map((m) => [m.meta.id, m]));
 

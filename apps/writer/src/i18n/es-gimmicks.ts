@@ -20,7 +20,6 @@ export const esGimmicks: Record<keyof typeof enGimmicks, string> = {
   'catalog.genre.horror': 'Terror',
   'catalog.genre.core': 'Básicos',
   'catalog.chipA11y': '{{label}}, {{n}} efectos',
-  'catalog.free': 'Gratis',
   'catalog.pro': 'Pro',
   'catalog.favorite': 'Añadir {{name}} a favoritos',
   'catalog.unfavorite': 'Quitar {{name}} de favoritos',
@@ -29,6 +28,22 @@ export const esGimmicks: Record<keyof typeof enGimmicks, string> = {
   'catalog.emptyHint': 'Prueba otra palabra o elige otro género.',
   'catalog.emptyFavs': 'Aún no hay favoritos',
   'catalog.emptyFavsHint': 'Toca la estrella de un efecto para guardarlo aquí.',
+
+  // Engine category labels (catalog rows)
+  'engine.frame-hud': 'Panel de estado',
+  'engine.chat-thread': 'Hilo de chat',
+  'engine.text-alchemy': 'Efecto de texto',
+  'engine.artifact-doc': 'Documento',
+  'engine.tactile-reveal': 'Toca para revelar',
+  'engine.telemetry-meter': 'Medidor en vivo',
+  'engine.kinetic-prose': 'Texto en movimiento',
+  'engine.margin-note': 'Nota al margen',
+  'engine.spatial-layout': 'Diseño de página',
+  'engine.screen-fx': 'Efecto de pantalla',
+  'engine.particle-field': 'Partículas',
+  'engine.audio-bed': 'Sonido ambiente',
+  'engine.audio-stinger': 'Efecto sonoro',
+  'engine.bespoke-3d': 'Objeto 3D',
 
   // Cue form
   'cue.unknown': 'Señal desconocida {{id}}',

@@ -6,3 +6,4 @@ export * from './security.ts';
 export * from './templates.ts';
 export * from './guard.ts';
 export type * from './runtime.ts';
+export * from './template-ast.ts';

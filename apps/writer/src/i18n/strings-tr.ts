@@ -7,4 +7,10 @@ import { trDna } from './tr-dna.ts';
 import { trGimmicks } from './tr-gimmicks.ts';
 import { trScreens } from './tr-screens.ts';
 
-export const tr: Record<StringKey, string> = { ...trCore, ...trScreens, ...trContent, ...trGimmicks, ...trDna };
+export const tr: Record<StringKey, string> = {
+  ...trCore,
+  ...trScreens,
+  ...trContent,
+  ...trGimmicks,
+  ...trDna,
+};

@@ -272,27 +272,6 @@ importers:
       '@kn/engines':
         specifier: workspace:*
         version: link:../../packages/engines
-      '@kn/module-bl-dice-3d':
-        specifier: workspace:*
-        version: link:../../packages/modules/bl-dice-3d
-      '@kn/module-bl-lighter-flick':
-        specifier: workspace:*
-        version: link:../../packages/modules/bl-lighter-flick
-      '@kn/module-core-ambient-bed':
-        specifier: workspace:*
-        version: link:../../packages/modules/core-ambient-bed
-      '@kn/module-gits-cyberbrain-chat':
-        specifier: workspace:*
-        version: link:../../packages/modules/gits-cyberbrain-chat
-      '@kn/module-gits-ghost-whisper':
-        specifier: workspace:*
-        version: link:../../packages/modules/gits-ghost-whisper
-      '@kn/module-litrpg-system-box':
-        specifier: workspace:*
-        version: link:../../packages/modules/litrpg-system-box
-      '@kn/module-pt-gaslight-edit':
-        specifier: workspace:*
-        version: link:../../packages/modules/pt-gaslight-edit
       '@sentry/react-native':
         specifier: ~8.28.1
         version: 8.28.1(@babel/core@7.29.13(supports-color@8.1.1))(@expo/config-types@58.0.3)(@expo/config@58.0.12(supports-color@8.1.1)(typescript@6.0.3))(@expo/env@2.6.0(supports-color@8.1.1))(dotenv@17.4.2)(expo-router@58.0.32)(expo@58.0.26)(metro-config@0.87.3(supports-color@8.1.1))(metro-resolver@0.87.3)(metro@0.87.3(supports-color@8.1.1))(open@8.4.2)(promise@8.3.0)(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(rollup@4.68.7)(supports-color@8.1.1)

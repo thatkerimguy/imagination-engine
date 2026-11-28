@@ -93,11 +93,11 @@ export const BATCH_D: GimmickBlueprint[] = [
     haptics: 'tap',
     exports: {
       transcript: '{{caption}}\n[{{count}} dice roll: {{#each values}}{{.}} {{/each}}]',
-      summary: '🎲 {{count}}× {{material}} dice',
+      summary: '{{count}}× {{material}} dice',
       epubXhtml:
         '<aside class="kn-dice" role="note"><p><em>{{caption}}</em></p><p><strong>Dice: {{#each values}}<span>⚀ {{.}}</span> {{/each}}</strong></p></aside>',
       royalRoadHtml:
-        '<blockquote><p><i>{{caption}}</i></p><p><b>🎲 {{#each values}}[{{.}}] {{/each}}</b></p></blockquote>',
+        '<blockquote><p><i>{{caption}}</i></p><p><b>{{#each values}}[{{.}}] {{/each}}</b></p></blockquote>',
     },
   },
   {

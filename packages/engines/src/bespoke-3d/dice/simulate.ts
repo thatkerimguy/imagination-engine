@@ -39,6 +39,9 @@ export interface ThrowRecording {
   flatness: number;
 }
 
+/** Fraction of the half-height the throw is biased downward (0 = centred). */
+const LOWER = 0.22;
+
 export interface ThrowSetup {
   count: number;
   bounds: WorldBounds;
@@ -95,6 +98,8 @@ function simulateOnce({ count, bounds, throwFrom, seed }: ThrowSetup): ThrowReco
   for (const [side, body] of Object.entries(walls)) if (side !== throwFrom) world.addBody(body);
   let entryClosed = false;
 
+  // Aim the whole tumble a little below centre (the cue card's vertical zone), full travel kept.
+  const lowY = -hh * LOWER;
   const dice: Body[] = [];
   const impacts: Impact[] = [];
   const lastImpact: number[] = [];
@@ -105,11 +110,15 @@ function simulateOnce({ count, bounds, throwFrom, seed }: ThrowSetup): ThrowReco
     const pos =
       throwFrom === 'bottom'
         ? new Vec3(spread, -hh - 1.6 - i * 0.4, 1.6 + rand())
-        : new Vec3((throwFrom === 'left' ? -1 : 1) * (hw + 1.6 + i * 0.4), spread, 1.6 + rand());
+        : new Vec3(
+            (throwFrom === 'left' ? -1 : 1) * (hw + 1.6 + i * 0.4),
+            spread + lowY,
+            1.6 + rand(),
+          );
     const vel =
       throwFrom === 'bottom'
-        ? new Vec3((rand() - 0.5) * 5, speed * (hh / hw > 1.3 ? 1.25 : 1), 4)
-        : new Vec3((throwFrom === 'left' ? 1 : -1) * speed, (rand() - 0.5) * 5, 4);
+        ? new Vec3((rand() - 0.5) * 5, speed * (hh / hw > 1.3 ? 1.25 : 1) * (1 - LOWER), 4)
+        : new Vec3((throwFrom === 'left' ? 1 : -1) * speed, (rand() - 0.5) * 5 + lowY * 1.6, 4);
     const body = new Body({
       mass: 1,
       material: dieMat,

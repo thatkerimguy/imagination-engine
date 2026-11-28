@@ -4,7 +4,6 @@ import type { ModuleBlock } from '@kn/core';
 import type { GimmickBlueprint } from '@kn/core/gimmicks';
 import { STARTER_BLUEPRINT_LIST, starterBlueprint } from '@kn/engines/blueprints';
 import { describe, expect, it } from 'vitest';
-import { getWriterModule } from '../modules/registry.ts';
 import { cueBlueprint, gimmickLines, renderCue } from './gimmick-text.ts';
 
 const ID = '01HZZZZZZZZZZZZZZZZZZZZZZZ';
@@ -77,9 +76,9 @@ describe('gimmickLines (template-driven)', () => {
       kind: 'module',
       moduleId: 'litrpg-system-box',
       moduleVersion: 1,
-      props: { ...getWriterModule('litrpg-system-box')!.schema.defaults },
+      props: {},
     };
-    const name = getWriterModule('litrpg-system-box')!.meta.name;
+    const name = 'litrpg-system-box';
     expect(gimmickLines(v1, 'transcript')[0]?.text).toMatch(new RegExp(`^${name}: `));
     expect(gimmickLines(v1, 'summary')[0]?.text).toMatch(new RegExp(`^\\[${name}: .+\\]$`));
     expect(renderCue(cue('nope-404'), 'transcript')).toBeNull();

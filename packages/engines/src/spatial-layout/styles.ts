@@ -22,6 +22,7 @@ export const CSS = `
 .kn-e-spatial-layout--split-timeline .kn-e-spatial-layout__grid::before{content:'';position:absolute;inset-block:0;inset-inline-start:50%;border-inline-start:1px solid var(--kn-e-accent)}
 .kn-e-spatial-layout__head{display:grid;grid-column:1/-1;grid-template-columns:subgrid;font-size:.78em;letter-spacing:.1em;text-transform:uppercase;color:var(--kn-e-accent)}
 .kn-e-spatial-layout--dual-pov .kn-e-spatial-layout__cell,.kn-e-spatial-layout--split-timeline .kn-e-spatial-layout__cell{margin-inline-start:0}
+.kn-e-spatial-layout__head>[data-side=right]{grid-column:2}
 .kn-e-spatial-layout__cell[data-col=left]{grid-column:1}
 .kn-e-spatial-layout__cell[data-col=right]{grid-column:2}
 .kn-e-spatial-layout__cell[data-col=center]{grid-column:1/-1;text-align:center}

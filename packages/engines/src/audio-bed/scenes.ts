@@ -5,7 +5,6 @@ export type SceneId =
 type Buf = 'white' | 'pink' | 'pops';
 
 interface Scene {
-  icon: string;
   buf: Buf;
   type: BiquadFilterType;
   freq: number;
@@ -19,7 +18,6 @@ interface Scene {
 
 export const SCENES: Record<SceneId, Scene> = {
   'rain-tin': {
-    icon: '\u{1F327}',
     buf: 'white',
     type: 'bandpass',
     freq: 3200,
@@ -31,7 +29,6 @@ export const SCENES: Record<SceneId, Scene> = {
     level: 0.55,
   },
   'barroom-hum': {
-    icon: '\u{1F37A}',
     buf: 'pink',
     type: 'bandpass',
     freq: 520,
@@ -43,7 +40,6 @@ export const SCENES: Record<SceneId, Scene> = {
     level: 1.2,
   },
   'starship-bridge': {
-    icon: '\u{1F680}',
     buf: 'pink',
     type: 'lowpass',
     freq: 380,
@@ -55,7 +51,6 @@ export const SCENES: Record<SceneId, Scene> = {
     level: 1.3,
   },
   'ocean-surf': {
-    icon: '\u{1F30A}',
     buf: 'pink',
     type: 'lowpass',
     freq: 650,
@@ -67,7 +62,6 @@ export const SCENES: Record<SceneId, Scene> = {
     level: 1.2,
   },
   'forest-wind': {
-    icon: '\u{1F332}',
     buf: 'pink',
     type: 'bandpass',
     freq: 900,
@@ -79,7 +73,6 @@ export const SCENES: Record<SceneId, Scene> = {
     level: 1,
   },
   'vinyl-crackle': {
-    icon: '\u{1F4BF}',
     buf: 'pops',
     type: 'highpass',
     freq: 1800,

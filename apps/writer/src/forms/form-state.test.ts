@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { schema as ambient } from '@kn/module-core-ambient-bed';
-import { schema as dice } from '@kn/module-bl-dice-3d';
-import { schema as chat } from '@kn/module-gits-cyberbrain-chat';
 import type { ModuleSchemaDefinition } from '@kn/core';
+import { ambientS, chatS, diceS } from './form-fixtures.ts';
 import {
   initialDraft,
   listAdd,
@@ -18,9 +16,6 @@ import {
 } from './form-state.ts';
 
 type S = ModuleSchemaDefinition<Record<string, unknown>>;
-const diceS = dice as unknown as S;
-const ambientS = ambient as unknown as S;
-const chatS = chat as unknown as S;
 const keys = (s: S, d: Record<string, unknown>): string[] =>
   visibleFields(s.fields, d).map((f) => f.key);
 

@@ -24,6 +24,7 @@ import {
   type NovelBundle,
 } from './repository-bundle.ts';
 import { chapterWrite, nextPosition } from './repository-writes.ts';
+import { catalogResolver } from './blueprint-resolver.ts';
 import { prepareChapter } from './sanitize.ts';
 import { summarizeNovels, type NovelSummary } from './novel-summary.ts';
 
@@ -218,7 +219,7 @@ export class NovelRepository {
    * its search text and @mention links, and records a day-0 growth baseline for a new chapter.
    */
   async saveChapter(novelId: string, draft: ChapterDocument): Promise<ChapterSaveResult> {
-    const prepared = prepareChapter(draft);
+    const prepared = prepareChapter(draft, await catalogResolver(this.db, [draft]));
     if (!prepared.ok) throw new ValidationError('Chapter', prepared.errors);
     const { chapter, skipped } = prepared;
     const season = await this.kindNode(chapter.seasonId, 'season');

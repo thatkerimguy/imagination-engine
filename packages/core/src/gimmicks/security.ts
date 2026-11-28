@@ -20,6 +20,35 @@ const ALLOWED_TAGS = new Set(
 );
 const ALLOWED_ATTR = /^(class|style|role|lang|dir|colspan|rowspan|epub:type|aria-[a-z]+)$/;
 
+/** Inline-style properties export HTML may use: visual only, nothing that can fetch or run. */
+const STYLE_PROP =
+  /^(border(-[a-z]+)*|background(-color)?|color|padding(-[a-z]+)?|margin(-[a-z]+)?|width|max-width|font(-[a-z]+)?|text-align|text-transform|letter-spacing|line-height)$/;
+const STYLE_VALUE_BAD = /url\s*\(|expression\s*\(|javascript\s*:|@import|[<>\\]/i;
+
+/** Declarations in one `style` value outside the allowlist (or carrying a fetch / script). */
+export function styleIssues(style: string): string[] {
+  const issues: string[] = [];
+  for (const decl of style.split(';')) {
+    if (!decl.trim()) continue;
+    const at = decl.indexOf(':');
+    const prop = (at < 0 ? decl : decl.slice(0, at)).trim().toLowerCase();
+    if (at < 0 || !STYLE_PROP.test(prop)) issues.push(`style property ${prop} is not allowed`);
+    else if (STYLE_VALUE_BAD.test(decl.slice(at + 1))) issues.push(`style ${prop} value is unsafe`);
+  }
+  return issues;
+}
+
+/** Rendered export HTML: keeps only allowlisted, safe declarations inside every `style="…"`. */
+export function sanitizeStyles(html: string): string {
+  return html.replace(/\sstyle\s*=\s*"([^"]*)"/gi, (_m, css: string) => {
+    const kept = css
+      .split(';')
+      .filter((d) => d.trim() && styleIssues(d).length === 0)
+      .map((d) => d.trim());
+    return kept.length ? ` style="${kept.join(';')}"` : '';
+  });
+}
+
 function walk(value: unknown, path: string, out: [string, string][]): void {
   if (typeof value === 'string') out.push([path, value]);
   else if (Array.isArray(value)) value.forEach((v, i) => walk(v, `${path}.${i}`, out));
@@ -36,6 +65,10 @@ export function templateTagIssues(html: string): string[] {
     if (!ALLOWED_TAGS.has(tag)) issues.push(`tag <${tag}> is not allowed`);
     for (const a of (m[2] ?? '').matchAll(/([a-zA-Z:-]+)\s*=/g)) {
       if (!ALLOWED_ATTR.test(a[1]!.toLowerCase())) issues.push(`attribute ${a[1]} is not allowed`);
+    }
+    for (const st of (m[2] ?? '').matchAll(/style\s*=\s*"([^"]*)"/gi)) {
+      // Interpolated values are sanitized at render time; only the template's own CSS is checked.
+      issues.push(...styleIssues(st[1]!.replace(/\{\{[^}]*\}\}/g, 'x')));
     }
   }
   return issues;

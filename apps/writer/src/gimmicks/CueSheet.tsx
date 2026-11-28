@@ -1,6 +1,8 @@
 // Edit sheet for a v2 cue: the BlueprintForm in a Folio sheet; Done saves valid props to the block.
 import type { ChapterDocument, ModuleBlock } from '@kn/core';
 import { useRef, useState, type ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
+import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Glyph } from '../ui/Glyph.tsx';
 import { ActionButton } from '../ui/ActionButton.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
@@ -39,6 +41,7 @@ export function CueSheet(p: {
           disabled={!valid}
           onPress={done}
           testID="cue-sheet-done"
+          style={styles.done}
         />
       }
     >
@@ -56,3 +59,6 @@ export function CueSheet(p: {
     </Sheet>
   );
 }
+
+// Full-width primary footer action, at least 48 dp tall.
+const styles = StyleSheet.create({ done: { flex: 1, height: MIN_TOUCH } });

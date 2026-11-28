@@ -7,8 +7,8 @@
 // own android.webkit.WebView + WebViewAssetLoader, a `KnHostBridge.postMessage` JS interface that
 // emits `onKnMessage`, and a `postMessage` command that calls `window.__knReceive(json)`.
 // react-native-webview is never patched. androidx.webkit is a pure Java/Kotlin AAR: 0 `.so`,
-// 0 permissions. The writer keeps `reader-preview.html` as the active Android transport until
-// KnReaderWebView is verified on hardware (see HANDOFF-OVERHAUL-03.md, fallback guard).
+// 0 permissions. OVERHAUL-04A: the active Android Live Preview transport (PreviewFrame.android.tsx,
+// kill switch KN_ASSET_WEBVIEW_ENABLED); `reader-preview.html` remains the fallback.
 const fs = require('fs');
 const path = require('path');
 const {
@@ -22,7 +22,12 @@ const WEBKIT = 'implementation("androidx.webkit:webkit:1.12.1") // kn-webview-as
 const managerKt = (pkg) => `package ${pkg}
 
 import android.annotation.SuppressLint
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -52,9 +57,12 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
   @SuppressLint("SetJavaScriptEnabled")
   override fun createViewInstance(context: ThemedReactContext): WebView {
     val view = WebView(context)
+    view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+    val assets = WebViewAssetLoader.AssetsPathHandler(context)
     val loader = WebViewAssetLoader.Builder()
       .setDomain(DOMAIN)
-      .addPathHandler("/reader/", WebViewAssetLoader.AssetsPathHandler(context))
+      // The handler receives the path *after* /reader/; the files live under assets/reader/.
+      .addPathHandler("/reader/") { path -> assets.handle("reader/" + path) }
       .build()
     view.settings.apply {
       javaScriptEnabled = true
@@ -65,10 +73,39 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
     }
     view.webViewClient = object : WebViewClient() {
       override fun shouldInterceptRequest(v: WebView, request: WebResourceRequest): WebResourceResponse? =
-        loader.shouldInterceptRequest(request.url)
+        loader.shouldInterceptRequest(request.url)?.also { res ->
+          // ES-module chunks must never be served as text/plain (strict MIME checking).
+          mimeFor(request.url.path)?.let { res.mimeType = it }
+        }
 
       override fun shouldOverrideUrlLoading(v: WebView, request: WebResourceRequest): Boolean =
         request.url.host != DOMAIN
+
+      override fun onPageFinished(v: WebView, url: String) { Log.i(NAME, "loaded " + url) }
+
+      override fun onReceivedError(v: WebView, request: WebResourceRequest, error: WebResourceError) {
+        if (request.isForMainFrame) emit(context, v, native("kn-native-load-error", "description", error.description.toString()))
+      }
+
+      override fun onReceivedHttpError(v: WebView, request: WebResourceRequest, res: WebResourceResponse) {
+        if (request.isForMainFrame) emit(context, v, native("kn-native-load-error", "description", "HTTP " + res.statusCode))
+      }
+
+      // A dead renderer must never take the host app down: report it and let JS remount the view.
+      override fun onRenderProcessGone(v: WebView, detail: RenderProcessGoneDetail): Boolean {
+        emit(context, v, native("kn-native-render-gone", "didCrash", detail.didCrash()))
+        return true
+      }
+    }
+    // Reader warnings / errors reach logcat (tag KnReaderWebView); info logs stay quiet.
+    view.webChromeClient = object : WebChromeClient() {
+      override fun onConsoleMessage(m: ConsoleMessage): Boolean {
+        val level = m.messageLevel()
+        if (level == ConsoleMessage.MessageLevel.ERROR || level == ConsoleMessage.MessageLevel.WARNING) {
+          Log.w(NAME, level.name + ": " + m.message() + " (" + m.sourceId() + ":" + m.lineNumber() + ")")
+        }
+        return true
+      }
     }
     view.addJavascriptInterface(Bridge(context, view), "KnHostBridge")
     return view
@@ -76,13 +113,7 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
 
   private class Bridge(private val context: ThemedReactContext, private val view: WebView) {
     @JavascriptInterface
-    fun postMessage(json: String) {
-      view.post {
-        val tag = view.id
-        UIManagerHelper.getEventDispatcher(context)
-          ?.dispatchEvent(KnReaderMessageEvent(UIManagerHelper.getSurfaceId(view), tag, json))
-      }
-    }
+    fun postMessage(json: String) = emit(context, view, json)
   }
 
   @ReactProp(name = "sourcePath")
@@ -91,8 +122,19 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
     if (view.url != target) view.loadUrl(target)
   }
 
+  // Fabric interop dispatches the string name; the legacy bridge may send the integer id.
+  override fun getCommandsMap(): MutableMap<String, Int> = mutableMapOf("postMessage" to POST_MESSAGE)
+
   override fun receiveCommand(view: WebView, commandId: String, args: ReadableArray?) {
-    if (commandId != "postMessage") return
+    if (commandId == "postMessage" || commandId == POST_MESSAGE.toString()) deliver(view, args)
+  }
+
+  @Deprecated("Legacy integer command path")
+  override fun receiveCommand(view: WebView, commandId: Int, args: ReadableArray?) {
+    if (commandId == POST_MESSAGE) deliver(view, args)
+  }
+
+  private fun deliver(view: WebView, args: ReadableArray?) {
     val json = args?.getString(0) ?: return
     view.evaluateJavascript("window.__knReceive && window.__knReceive(" + JSONObject.quote(json) + ")", null)
   }
@@ -110,6 +152,25 @@ class KnReaderWebViewManager : SimpleViewManager<WebView>() {
   companion object {
     const val NAME = "KnReaderWebView"
     const val DOMAIN = "appassets.androidplatform.net"
+    const val POST_MESSAGE = 1
+
+    private val MIME = mapOf(
+      "js" to "text/javascript", "mjs" to "text/javascript", "css" to "text/css",
+      "html" to "text/html", "json" to "application/json", "wasm" to "application/wasm",
+      "svg" to "image/svg+xml", "webmanifest" to "application/manifest+json",
+    )
+
+    fun mimeFor(path: String?): String? = MIME[path?.substringAfterLast('.', "")?.lowercase()]
+
+    fun native(type: String, key: String, value: Any): String =
+      JSONObject().put("type", type).put(key, value).toString()
+
+    fun emit(context: ThemedReactContext, view: WebView, json: String) {
+      view.post {
+        UIManagerHelper.getEventDispatcher(context)
+          ?.dispatchEvent(KnReaderMessageEvent(UIManagerHelper.getSurfaceId(view), view.id, json))
+      }
+    }
   }
 }
 `;

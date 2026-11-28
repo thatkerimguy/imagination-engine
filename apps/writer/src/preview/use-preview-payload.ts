@@ -4,6 +4,7 @@ import type { NovelManifest, SeasonManifest } from '@kn/core';
 import { loadSettings, previewUrl, type PreviewMode } from '../settings/app-settings.ts';
 import { useRepoQuery } from '../store/context.tsx';
 import { draftKey, getLiveDraft } from '../store/live-drafts.ts';
+import { catalogResolver } from '../store/blueprint-resolver.ts';
 import { prepareChapter } from '../store/sanitize.ts';
 import { loadOfflineReaderHtml } from './offline-reader';
 import { previewDna, type PreviewLoadMessage, type PreviewTier } from './protocol.ts';
@@ -43,7 +44,7 @@ export function usePreviewPayload(
       const draft = live ?? stored;
       if (!novel || !season || !draft)
         return { ok: false, errors: ['This chapter no longer exists.'] };
-      const prepared = prepareChapter(draft);
+      const prepared = prepareChapter(draft, await catalogResolver(repo.db, [draft]));
       if (!prepared.ok) return { ok: false, errors: prepared.errors };
       const chapter = prepared.chapter;
       const startBlockId =

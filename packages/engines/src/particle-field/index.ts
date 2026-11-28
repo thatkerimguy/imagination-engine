@@ -15,6 +15,7 @@ import { paint, PRESETS, spawn, step, type P } from './sim.ts';
 import { CSS } from './styles.ts';
 
 const ID = 'particle-field';
+const EMBER_LIGHT = '#b23a0e'; // deep burnt amber/crimson: contrast on a light page
 const ROLE_VAR: Record<string, [string, string]> = {
   primary: ['--dna-accent', '#4fd1c5'],
   secondary: ['--dna-accent-2', '#b794f4'],
@@ -65,6 +66,8 @@ export const particleFieldEngine: GimmickEngine = {
     let w = 320;
     let h = 120;
     let color = '#fff';
+    let light = ctx.dna.theme === 'light';
+    let visible = true;
     const measure = (): void => {
       w = box.clientWidth || (fullBleed ? window.innerWidth : 320);
       h = box.clientHeight || (fullBleed ? window.innerHeight : 120);
@@ -74,6 +77,7 @@ export const particleFieldEngine: GimmickEngine = {
       g?.setTransform(dpr, 0, 0, dpr, 0, 0);
       const v = getComputedStyle(root).getPropertyValue(roleVar[0]).trim();
       color = v || roleVar[1];
+      if (light && preset === 'embers') color = EMBER_LIGHT;
     };
     const seed = (): void => {
       measure();
@@ -96,7 +100,7 @@ export const particleFieldEngine: GimmickEngine = {
         acc = 0;
         for (const p of ps) step(p, preset, sec, wind, speed, w, h);
         g!.clearRect(0, 0, w, h);
-        paint(g!, ps, preset, color, h);
+        paint(g!, ps, preset, color, h, light);
       }
       stop = ctx.raf(frame);
     };
@@ -105,7 +109,7 @@ export const particleFieldEngine: GimmickEngine = {
       stop = null;
     };
     const run = (): void => {
-      if (stop || destroyed || calm() || ctx.paused) return;
+      if (stop || destroyed || !visible || calm() || ctx.paused || ctx.tier === 'reduced') return;
       last = null;
       stop = ctx.raf(frame);
     };
@@ -120,10 +124,39 @@ export const particleFieldEngine: GimmickEngine = {
       }
     };
     ctx.onTierChange(sync);
+    ctx.onDnaChange((dna) => {
+      light = dna.theme === 'light';
+      if (!calm()) measure();
+    });
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(
+        (entries) => {
+          const last = entries[entries.length - 1];
+          if (!last) return;
+          visible = last.isIntersecting;
+          if (visible) run();
+          else halt();
+        },
+        { threshold: 0.05 },
+      );
+      io.observe(box);
+    }
+    const unobserve = (): void => {
+      io?.disconnect();
+      io = null;
+    };
     ctx.onPause(halt);
     ctx.onResume(run);
     window.addEventListener('resize', () => !calm() && measure(), { signal: ctx.signal });
-    ctx.signal.addEventListener('abort', halt, { once: true });
+    ctx.signal.addEventListener(
+      'abort',
+      () => {
+        halt();
+        unobserve();
+      },
+      { once: true },
+    );
     sync();
 
     return {
@@ -135,6 +168,7 @@ export const particleFieldEngine: GimmickEngine = {
         if (destroyed) return;
         destroyed = true;
         halt();
+        unobserve();
         box.remove();
         root.remove();
       },

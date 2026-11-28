@@ -49,12 +49,15 @@ export interface EngineRuntimeContext {
   readonly paused: boolean;
   /** Aborted when the block unmounts; tie any extra DOM listeners to it. */
   readonly signal: AbortSignal;
+  /** The latest resolved DNA (live: re-resolved on a theme flip or a writer DNA push). */
   readonly dna: ResolvedVisualDna;
 
   onPause(cb: () => void): Unsubscribe;
   onResume(cb: () => void): Unsubscribe;
   /** Fires after `tier` changed (e.g. high → reduced on `kn:tier-change`). Downgrade in place. */
   onTierChange(cb: (tier: EngineTier) => void): Unsubscribe;
+  /** Fires after `dna` changed (Light/Dark/Book theme or a new Visual DNA). Restyle in place. */
+  onDnaChange(cb: (dna: ResolvedVisualDna) => void): Unsubscribe;
 
   /** One-shot animation frame (re-request each frame). Deferred while paused. `t` in ms. */
   raf(cb: (tMs: number) => void): Unsubscribe;

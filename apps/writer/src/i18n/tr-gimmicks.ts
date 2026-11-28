@@ -20,7 +20,6 @@ export const trGimmicks: Record<keyof typeof enGimmicks, string> = {
   'catalog.genre.horror': 'Korku',
   'catalog.genre.core': 'Temel',
   'catalog.chipA11y': '{{label}}, {{n}} efekt',
-  'catalog.free': 'Ücretsiz',
   'catalog.pro': 'Pro',
   'catalog.favorite': '{{name}} favorilere ekle',
   'catalog.unfavorite': '{{name}} favorilerden çıkar',
@@ -29,6 +28,22 @@ export const trGimmicks: Record<keyof typeof enGimmicks, string> = {
   'catalog.emptyHint': 'Başka bir sözcük dene ya da farklı bir tür seç.',
   'catalog.emptyFavs': 'Henüz favori yok',
   'catalog.emptyFavsHint': 'Bir efektin yıldızına dokun, burada dursun.',
+
+  // Engine category labels (catalog rows)
+  'engine.frame-hud': 'Durum Paneli',
+  'engine.chat-thread': 'Sohbet Akışı',
+  'engine.text-alchemy': 'Metin Efekti',
+  'engine.artifact-doc': 'Belge',
+  'engine.tactile-reveal': 'Dokun ve Aç',
+  'engine.telemetry-meter': 'Canlı Gösterge',
+  'engine.kinetic-prose': 'Hareketli Metin',
+  'engine.margin-note': 'Kenar Notu',
+  'engine.spatial-layout': 'Sayfa Düzeni',
+  'engine.screen-fx': 'Ekran Efekti',
+  'engine.particle-field': 'Parçacıklar',
+  'engine.audio-bed': 'Ortam Sesi',
+  'engine.audio-stinger': 'Ses Efekti',
+  'engine.bespoke-3d': '3B Nesne',
 
   // Cue form
   'cue.unknown': 'Bilinmeyen işaret {{id}}',

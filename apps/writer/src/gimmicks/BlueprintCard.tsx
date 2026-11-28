@@ -7,11 +7,12 @@ import { StyleSheet, View } from 'react-native';
 import { fontFamilyFor } from '../dna/dna-fonts.ts';
 import { radiusDp } from '../dna/dna-look.ts';
 import { useI18n } from '../i18n/I18nProvider.tsx';
+import type { StringKey } from '../i18n/i18n.ts';
 import { Glyph } from '../ui/Glyph.tsx';
 import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Press } from '../ui/Press.tsx';
 import { Txt } from '../ui/Txt.tsx';
-import { space } from '../ui/tokens.ts';
+import { radius, space } from '../ui/tokens.ts';
 import { useTheme } from '../ui/theme.tsx';
 import { engineGlyph } from './engine-look.ts';
 import type { BookVisualDna } from '@kn/core/dna';
@@ -83,11 +84,18 @@ function BlueprintCardImpl(p: BlueprintCardProps): ReactNode {
           </Txt>
           <View style={styles.badges}>
             <Txt variant="caption" color="inkMuted" numberOfLines={1} style={styles.engine}>
-              {bp.engine}
+              {t(`engine.${bp.engine}` as StringKey)}
             </Txt>
-            <Txt variant="caption" color={bp.tier === 'pro' ? 'warm' : 'success'} numberOfLines={1}>
-              {t(bp.tier === 'pro' ? 'catalog.pro' : 'catalog.free').toUpperCase()}
-            </Txt>
+            {bp.tier === 'pro' ? (
+              <View
+                style={[styles.pro, { backgroundColor: colors.accentSoft }]}
+                testID={`blueprint-pro-${bp.id}`}
+              >
+                <Txt variant="caption" color="accent" numberOfLines={1}>
+                  {t('catalog.pro').toUpperCase()}
+                </Txt>
+              </View>
+            ) : null}
           </View>
         </View>
       </Press>
@@ -130,5 +138,6 @@ const styles = StyleSheet.create({
   text: { flex: 1, minWidth: 0, gap: 2 },
   badges: { flexDirection: 'row', gap: space.xs, alignItems: 'center' },
   engine: { flexShrink: 1 },
+  pro: { paddingHorizontal: space.xs, borderRadius: radius.pill },
   star: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
 });

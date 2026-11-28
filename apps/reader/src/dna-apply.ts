@@ -15,6 +15,7 @@ import {
   type ResolvedVisualDna,
 } from '@kn/core/dna';
 import { surfaceTile } from '@kn/engines/shared';
+import { dispatchDnaChange } from './runtime/dna-bus.ts';
 
 /** Root-level tokens Soft Page Harmony reads (only while Aa is on "Book"). */
 export const PAGE_TOKENS = ['--dna-page-bg', '--dna-page-font'] as const;
@@ -104,6 +105,7 @@ export function attachDna(root: HTMLElement, dna: BookVisualDna): ResolvedVisual
     const r = applyDnaTokens(root, dna, dnaThemeOf());
     const page = document.documentElement.style;
     for (const k of PAGE_TOKENS) page.setProperty(k, r.tokens[k] ?? '');
+    dispatchDnaChange(root, r);
     return r;
   };
   const resolved = apply();

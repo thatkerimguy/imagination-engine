@@ -14,13 +14,18 @@ describe('android-webview-assets plugin', () => {
   const kt = plugin.managerKt('dev.kinetic.writer');
 
   it('pins androidx.webkit 1.12.1 (Java/Kotlin AAR, no native libs)', () => {
-    expect(plugin.WEBKIT).toBe('implementation("androidx.webkit:webkit:1.12.1") // kn-webview-assets');
+    expect(plugin.WEBKIT).toBe(
+      'implementation("androidx.webkit:webkit:1.12.1") // kn-webview-assets',
+    );
   });
 
   it('serves assets/reader/ from the appassets https origin', () => {
     expect(kt).toContain('setDomain(DOMAIN)');
     expect(kt).toContain('const val DOMAIN = "appassets.androidplatform.net"');
-    expect(kt).toContain('addPathHandler("/reader/", WebViewAssetLoader.AssetsPathHandler(context))');
+    expect(kt).toContain(
+      // Gate 4: the handler gets the suffix after /reader/, so it must re-prefix reader/.
+      'addPathHandler("/reader/") { path -> assets.handle("reader/" + path) }',
+    );
     expect(kt).toContain('loader.shouldInterceptRequest(request.url)');
   });
 
@@ -30,6 +35,19 @@ describe('android-webview-assets plugin', () => {
     expect(kt).toContain('JSONObject.quote(json)');
     expect(kt).toContain('request.url.host != DOMAIN');
     expect(kt).not.toMatch(/uses-permission|System\.loadLibrary/);
+  });
+
+  it('survives renderer death, reports load errors and fixes module MIME types', () => {
+    expect(kt).toMatch(/onRenderProcessGone[\s\S]*?return true/);
+    expect(kt).toContain('kn-native-load-error');
+    expect(kt).toContain('"js" to "text/javascript"');
+    expect(kt).toContain('"wasm" to "application/wasm"');
+  });
+
+  it('accepts string and integer postMessage commands and destroys the view on drop', () => {
+    expect(kt).toContain('mutableMapOf("postMessage" to POST_MESSAGE)');
+    expect(kt).toContain('override fun receiveCommand(view: WebView, commandId: Int');
+    expect(kt).toMatch(/onDropViewInstance[\s\S]*?view\.destroy\(\)/);
   });
 
   it('registers one view manager under the package name', () => {

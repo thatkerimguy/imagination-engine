@@ -68,6 +68,7 @@ export function paint(
   preset: Preset,
   color: string,
   h: number,
+  light = false,
 ): void {
   g.fillStyle = color;
   for (const p of ps) {
@@ -87,7 +88,7 @@ export function paint(
       default: {
         const a =
           preset === 'embers'
-            ? 0.25 + 0.7 * (1 - p.y / h)
+            ? (light ? 0.5 : 0.25) + (light ? 0.5 : 0.7) * (1 - p.y / h)
             : preset === 'fireflies'
               ? 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(p.ph))
               : preset === 'ash'
@@ -95,7 +96,7 @@ export function paint(
                 : 0.75;
         g.globalAlpha = Math.max(0, Math.min(1, a));
         g.beginPath();
-        g.arc(p.x, p.y, p.r, 0, 6.28);
+        g.arc(p.x, p.y, light && preset === 'embers' ? p.r + 0.5 : p.r, 0, 6.28);
         g.fill();
       }
     }

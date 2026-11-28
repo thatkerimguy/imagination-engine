@@ -26,7 +26,12 @@ function noise(ac: BaseAudioContext): AudioBuffer {
 
 type Stop = () => void;
 
-function voice(ctx: EngineRuntimeContext): { ac: BaseAudioContext; out: AudioNode; stop: Stop; add(n: AudioScheduledSourceNode): void } | null {
+function voice(ctx: EngineRuntimeContext): {
+  ac: BaseAudioContext;
+  out: AudioNode;
+  stop: Stop;
+  add(n: AudioScheduledSourceNode): void;
+} | null {
   const g = ctx.audio.graph('oneshot');
   if (!g) return null;
   const nodes: AudioScheduledSourceNode[] = [];

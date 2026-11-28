@@ -85,6 +85,13 @@ export function startPreview(v: ViewContext): void {
       const still = reducedMotion || calm;
       return dispatchTierChange(resolveTier(control.tier, deviceHints(still)), still);
     }
+    if (control?.type === 'dna') {
+      // Live: dna-apply re-resolves the root and broadcasts kn:dna-change to mounted engines.
+      const raw = control.dna;
+      if (lastLoad) lastLoad = { ...lastLoad, novel: { ...lastLoad.novel, visualDna: raw } };
+      void import('../dna-apply.ts').then((d) => d.attachDna(v.main, d.bookDna(raw)));
+      return;
+    }
     if (control?.type === 'a11y') {
       const changed = control.reducedMotion !== reducedMotion;
       reducedMotion = control.reducedMotion;

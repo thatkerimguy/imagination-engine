@@ -1,4 +1,4 @@
-// Metro in a pnpm monorepo: watch the workspace so @kn/core and @kn/module-* (TypeScript source,
+// Metro in a pnpm monorepo: watch the workspace so @kn/core and @kn/engines (TypeScript source,
 // symlinked by pnpm) hot-reload, and resolve node_modules from both the app and the root.
 const path = require('node:path');
 const { getDefaultConfig } = require('expo/metro-config');

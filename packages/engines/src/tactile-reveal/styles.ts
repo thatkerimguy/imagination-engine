@@ -5,8 +5,6 @@ export const CSS = `
 .kn-e-tactile-reveal__btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;padding:12px;
 background:transparent;border:var(--dna-stroke,1px) solid var(--dna-border,currentColor);border-radius:var(--dna-radius,10px);
 user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.kn-e-tactile-reveal--biometric-hold .kn-e-tactile-reveal__btn,.kn-e-tactile-reveal--scratch-off .kn-e-tactile-reveal__btn,
-.kn-e-tactile-reveal--fog-wipe .kn-e-tactile-reveal__btn{touch-action:none}
 .kn-e-tactile-reveal__stage{position:relative;width:100%;min-height:96px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--dna-radius,10px)}
 .kn-e-tactile-reveal__svg{display:block;width:100%;max-width:120px;height:auto}
 .kn-e-tactile-reveal__hint{font-size:.85em;color:var(--dna-muted,#b4b4b4)}

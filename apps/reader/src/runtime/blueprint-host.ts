@@ -43,6 +43,7 @@ export class BlueprintHost implements BlockHost {
       tier,
       calm: live?.calm ?? false,
       dna,
+      dnaRoot: root,
       audio: this.deps.audio,
     });
     try {

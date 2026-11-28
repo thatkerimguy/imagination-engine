@@ -49,7 +49,8 @@ export async function dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, 
   const guide = tid('help-gimmick-guide');
   await guide.waitFor({ timeout: 15000 });
   const modules = await page.locator('[data-testid^="help-module-"]').count();
-  if (modules === 28) ok('Gimmick Guide lists all 28 starter blueprints (generated, no per-gimmick copy)');
+  if (modules === 28)
+    ok('Gimmick Guide lists all 28 starter blueprints (generated, no per-gimmick copy)');
   else fail(`Gimmick Guide lists ${modules} modules`);
   const guideText = await guide.innerText();
   if (!EMOJI.test(guideText)) ok('Gimmick Guide rows carry zero emoji (Feather icons only)');
@@ -91,7 +92,11 @@ export async function dir07Pass(page, { WRITER, packAt, shotsAt, tid, ok, fail, 
   await tid('export-royalroad-copy').click();
   await tid('compile-notice').waitFor({ timeout: 10000 });
   const html = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-  if (html.includes('<p><strong>[SYSTEM NOTIFICATION]</strong> NEW</p>') && !/<script|<style/i.test(html))
+  // OVERHAUL-04A: system-notification exports the declarative cobalt Royal Road System table.
+  const blueBox =
+    /<table style="[^"]*background:#0c2340[^"]*border:2px solid #3b82f6/.test(html) &&
+    html.includes('[SYSTEM NOTIFICATION] · NEW</td></tr>');
+  if (blueBox && !/<script|<style/i.test(html))
     ok('Copy HTML puts the blueprint royalRoadHtml template (no script/style) on the clipboard');
   else fail(`Royal Road clipboard: ${html.slice(0, 120)}`);
   await rr.evaluate((el) => el.scrollIntoView({ block: 'center' }));

@@ -19,6 +19,7 @@ import { recordBaseline } from './growth-store.ts';
 import { bookNode, chapterNode, seasonNode } from './node-mapping.ts';
 import { check, type NovelRepository } from './repository.ts';
 import { mentionLinks } from './repository-writes.ts';
+import { catalogResolver } from './blueprint-resolver.ts';
 import { prepareChapter } from './sanitize.ts';
 
 export interface SeasonBundle {
@@ -73,15 +74,19 @@ export function newNovelBundle(input: NewNovelInput): NovelBundle {
 
 export async function importBundleInto(repo: NovelRepository, bundle: NovelBundle): Promise<void> {
   const novel = check('Novel', parseNovelManifest(bundle.novel));
+  const db = repo.db;
+  const resolve = await catalogResolver(
+    db,
+    bundle.seasons.flatMap((s) => s.chapters),
+  );
   const seasons = bundle.seasons.map((s) => ({
     season: check(`Season ${s.season.id}`, parseSeasonManifest(s.season)),
     chapters: s.chapters.map((c) => {
-      const p = prepareChapter(c);
+      const p = prepareChapter(c, resolve);
       if (!p.ok) throw new ValidationError(`Chapter ${c.id}`, p.errors);
       return p.chapter;
     }),
   }));
-  const db = repo.db;
   const now = repo.nowIso();
   const existing = await db.getNode(novel.id);
   if (existing && existing.kind !== 'book') throw new ValidationError('Novel', ['Id in use']);

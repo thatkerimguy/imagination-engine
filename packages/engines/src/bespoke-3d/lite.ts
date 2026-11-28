@@ -30,10 +30,13 @@ export function playDiceLite(
   tray.replaceChildren(...values.map((v) => dieFace(v, material)));
   let finish: () => void = () => undefined;
   const done = new Promise<void>((r) => (finish = r));
-  const cancel = ctx.timeout(() => {
-    ctx.haptics('tap');
-    finish();
-  }, Math.round(900 / ctx.dna.motion.tempo));
+  const cancel = ctx.timeout(
+    () => {
+      ctx.haptics('tap');
+      finish();
+    },
+    Math.round(900 / ctx.dna.motion.tempo),
+  );
   ctx.signal.addEventListener('abort', () => finish(), { once: true });
   const stop = (): void => {
     cancel();

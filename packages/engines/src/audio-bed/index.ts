@@ -12,6 +12,7 @@ import {
 import { cls, el, injectEngineStyle, setText } from '../shared/dom-safe.ts';
 import { rt } from '../shared/i18n-reader.ts';
 import { isStill, mountFrame, variantOf } from '../shared/kit.ts';
+import { iconFor } from './icons.ts';
 import { buildBed, ramp, SCENE_IDS, SCENES, type BuiltBed } from './scenes.ts';
 import { CSS } from './styles.ts';
 
@@ -39,7 +40,8 @@ export const audioBedEngine: GimmickEngine = {
     });
     root.setAttribute('role', 'group');
     const text = el('span', { class: cls(ID, 'text') });
-    body.append(el('span', { class: cls(ID, 'dot'), 'aria-hidden': 'true' }), text);
+    const ico = el('span', { class: cls(ID, 'ico'), 'aria-hidden': 'true' }, iconFor(scene));
+    body.append(el('span', { class: cls(ID, 'dot'), 'aria-hidden': 'true' }), ico, text);
 
     const show = (state: 'idle' | 'playing' | 'muted' | 'stopped'): void => {
       root.dataset.state = state;
@@ -49,7 +51,7 @@ export const audioBedEngine: GimmickEngine = {
           : state === 'stopped' || stopMode
             ? rt('fadingOut')
             : `crossfade ${Number.isInteger(secs) ? secs : secs.toFixed(1)} s`;
-      setText(text, `${def.icon} ${label} · ${tail}`);
+      setText(text, `${label} · ${tail}`);
     };
 
     let graph: EngineAudioGraph | null = null;

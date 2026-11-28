@@ -7,4 +7,10 @@ import { esGimmicks } from './es-gimmicks.ts';
 import { esScreens } from './es-screens.ts';
 import type { StringKey } from './strings-en.ts';
 
-export const es: Record<StringKey, string> = { ...esCore, ...esScreens, ...esContent, ...esGimmicks, ...esDna };
+export const es: Record<StringKey, string> = {
+  ...esCore,
+  ...esScreens,
+  ...esContent,
+  ...esGimmicks,
+  ...esDna,
+};

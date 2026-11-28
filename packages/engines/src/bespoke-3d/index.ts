@@ -35,13 +35,25 @@ export const bespoke3dEngine: GimmickEngine = {
       .map((v) => Math.round(Number(v)))
       .filter((v) => v >= 1 && v <= 6);
     const fixed = scripted.length > 0 ? scripted : null;
-    const settle = (vals: number[]): string =>
-      dice
-        ? `${count}× D6 ${cap(material)} settle on [${vals.join(', ')}] · ${describeRoll(vals)}`
-        : propText(props, 'settledText', 'The lighter flame steadies.');
+    const settle = (vals: number[]): (Node | string)[] => {
+      if (!dice) return [propText(props, 'settledText', 'The lighter flame steadies.')];
+      const outcome = describeRoll(vals).trim();
+      return [
+        el(
+          'span',
+          { class: cls(ID, 'line') },
+          `${count}× D6 ${cap(material)} settle on `,
+          el('span', { class: cls(ID, 'vals') }, `[${vals.join(', ')}]`),
+        ),
+        ...(outcome ? [el('span', { class: cls(ID, 'sub') }, outcome)] : []),
+      ];
+    };
     const caption = propText(props, 'caption');
     const tapMode = propText(props, 'trigger', 'auto') === 'tap';
-    const { root, body } = mountFrame(host, blueprint, ctx, { label: caption || blueprint.name, layout: spectacle });
+    const { root, body } = mountFrame(host, blueprint, ctx, {
+      label: caption || blueprint.name,
+      layout: spectacle,
+    });
     const go = el(
       'button',
       { type: 'button', class: cls(ID, 'go'), hidden: true },
@@ -60,7 +72,7 @@ export const bespoke3dEngine: GimmickEngine = {
       if (landed || destroyed) return;
       landed = true;
       go.hidden = true;
-      result.textContent = settle(vals);
+      result.replaceChildren(...settle(vals));
       root.dataset.state = 'done';
     };
     /** Calm path: everything in flight stops now; the static badge is the whole beat. */
@@ -97,7 +109,11 @@ export const bespoke3dEngine: GimmickEngine = {
             if (destroyed || isStill(ctx)) return;
             const throwFrom = propText(props, 'throwFrom', 'right');
             const from = throwFrom === 'left' || throwFrom === 'bottom' ? throwFrom : 'right';
-            running = m.playDiceHigh(ctx, { count, values: fixed, material, holdSeconds, throwFrom: from, sound }, land);
+            running = m.playDiceHigh(
+              ctx,
+              { count, values: fixed, material, holdSeconds, throwFrom: from, sound },
+              land,
+            );
           } else {
             const m = await import('./zippo/high.ts');
             if (destroyed || isStill(ctx)) return;

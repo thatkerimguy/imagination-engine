@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { ModuleBlockT } from '../editor/block-types.ts';
 import { useI18n } from '../i18n/I18nProvider.tsx';
+import type { StringKey } from '../i18n/i18n.ts';
 import { MIN_TOUCH } from '../ui/a11y.ts';
 import { Glyph } from '../ui/Glyph.tsx';
 import { tapFeedback } from '../ui/haptics.ts';
@@ -41,7 +42,11 @@ export function CuePill(p: { block: ModuleBlockT; onOpen(): void }): ReactNode {
             {title}
           </Txt>
           <Txt variant="caption" color="inkSecondary" numberOfLines={1}>
-            {(bp?.tier === 'pro' ? t('catalog.pro') : p.block.moduleId).toUpperCase()}
+            {bp?.tier === 'pro'
+              ? t('catalog.pro').toUpperCase()
+              : bp
+                ? t(`engine.${bp.engine}` as StringKey)
+                : p.block.moduleId}
           </Txt>
         </View>
         <Txt variant="meta" color="inkSecondary" numberOfLines={2}>

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import type { BlueprintRecord } from '@kn/core/gimmicks';
+import { renderTemplate, type BlueprintRecord } from '@kn/core/gimmicks';
 import { describe, expect, it } from 'vitest';
-import { setup } from './batch-c-setup.ts';
+import { bpOf, setup } from './batch-c-setup.ts';
 
 const key = (n: HTMLElement, k: string): void => {
   n.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
@@ -180,5 +180,39 @@ describe('screen-fx', () => {
     expect(ov.dataset.fx).toBe('sepia-flash');
     expect(ov.style.getPropertyValue('--fx-i')).toBe('0.85');
     expect(ov.style.getPropertyValue('--fx-dur')).toBe('1500ms');
+  });
+});
+
+describe('spatial-layout optional labels (04A)', () => {
+  const heads = (root: HTMLElement): string[] =>
+    [...root.querySelectorAll('.kn-e-spatial-layout__head > span')].map((s) => s.textContent ?? '');
+  it('renders no header when both labels are blank and only the given one otherwise', () => {
+    const none = setup('dual-pov-split', 'high', { leftLabel: '', rightLabel: '' });
+    expect(none.root.querySelector('.kn-e-spatial-layout__head')).toBeNull();
+    expect(none.root.textContent).not.toContain(' / ');
+    const left = setup('dual-pov-split', 'high', { leftLabel: 'Alpha', rightLabel: '' });
+    expect(heads(left.root)).toEqual(['Alpha']);
+    expect(left.root.textContent).not.toContain(' / ');
+    const right = setup('dual-pov-split', 'high', { leftLabel: '', rightLabel: 'Beta' });
+    expect(heads(right.root)).toEqual(['Beta']);
+    expect(right.root.textContent).not.toContain(' / ');
+  });
+
+  it('export templates drop the separator when a label is omitted', () => {
+    const bp = bpOf('dual-pov-split');
+    const t = (s: string, p: Record<string, string>): string => renderTemplate(s, p, false);
+    const ex = bp.exports;
+    expect(t(ex.transcript, { leftLabel: 'A', rightLabel: 'B' })).toContain('A / B');
+    for (const p of [
+      { leftLabel: 'A' } as Record<string, string>,
+      { rightLabel: 'B' } as Record<string, string>,
+      {},
+    ]) {
+      for (const tpl of [ex.transcript, ex.summary, ex.epubXhtml, ex.royalRoadHtml]) {
+        const out = t(tpl, p);
+        expect(out).not.toContain(' / ');
+        expect(out).not.toContain(' and ');
+      }
+    }
   });
 });

@@ -14,12 +14,15 @@ import { createOrnamentLayer, surfaceTile } from '@kn/engines/shared';
 import { playStinger, type StingerHandle } from '@kn/engines/shared/stingers';
 import { isAppActive, LIFECYCLE_EVENT } from './runtime/lifecycle.ts';
 import { createScheduler } from './runtime/scheduler.ts';
+import { DNA_EVENT, type DnaChange } from './runtime/dna-bus.ts';
 import { TIER_EVENT, type TierChange } from './runtime/tier-bus.ts';
 
 export interface RuntimeOptions {
   tier: EngineTier;
   calm: boolean;
   dna: ResolvedVisualDna;
+  /** The reading root whose DNA this block follows (`kn:dna-change` events for other roots are ignored). */
+  dnaRoot?: HTMLElement;
   audio: AudioBusAccess | null;
 }
 
@@ -49,6 +52,8 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
   const pauseCbs = new Set<() => void>();
   const resumeCbs = new Set<() => void>();
   const tierCbs = new Set<(t: EngineTier) => void>();
+  const dnaCbs = new Set<(d: ResolvedVisualDna) => void>();
+  let dna = opts.dna;
   const stingers = new Set<StingerHandle>();
   const graphs = new Set<{ out: GainNode; closed: boolean }>();
   let counted = 0;
@@ -73,7 +78,7 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
     return () => void set.delete(cb);
   };
   const bus = (): AudioBusAccess | null =>
-    opts.audio?.context && opts.audio.sfx && opts.dna.sonic.timbre !== 'silent' ? opts.audio : null;
+    opts.audio?.context && opts.audio.sfx && dna.sonic.timbre !== 'silent' ? opts.audio : null;
 
   // Host-side kill switch for procedural graphs: a 50 ms ramp to silence, then disconnect.
   const closeGraphs = (): void => {
@@ -101,8 +106,8 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
     stinger(patch: Parameters<EngineRuntimeContext['audio']['stinger']>[0], options = {}) {
       const b = bus();
       if (still() || signal.aborted || !b?.context || !b.sfx) return;
-      const opt = { ...options, dnaGain: opts.dna.sonic.gain };
-      const h = playStinger(patch, opts.dna.sonic.timbre, opt, { ctx: b.context, out: b.sfx });
+      const opt = { ...options, dnaGain: dna.sonic.gain };
+      const h = playStinger(patch, dna.sonic.timbre, opt, { ctx: b.context, out: b.sfx });
       if (!h) return;
       stingers.add(h);
       recount();
@@ -113,7 +118,7 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
       const dest = kind === 'bed' ? (b?.ambience ?? b?.sfx) : b?.sfx;
       if (still() || signal.aborted || !b?.context || !dest) return null;
       const out = b.context.createGain();
-      out.gain.value = opts.dna.sonic.gain > 0 ? 1 : 0;
+      out.gain.value = dna.sonic.gain > 0 ? 1 : 0;
       out.connect(dest);
       const g = { out, closed: false };
       graphs.add(g);
@@ -139,10 +144,13 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
       return paused;
     },
     signal,
-    dna: opts.dna,
+    get dna() {
+      return dna;
+    },
     onPause: (cb: () => void) => sub(pauseCbs, cb),
     onResume: (cb: () => void) => sub(resumeCbs, cb),
     onTierChange: (cb: (t: EngineTier) => void) => sub(tierCbs, cb),
+    onDnaChange: (cb: (d: ResolvedVisualDna) => void) => sub(dnaCbs, cb),
     raf: sched.raf,
     timeout: sched.timeout,
     interval: sched.interval,
@@ -156,9 +164,9 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
       }
     },
     surfaceTile: (material: Parameters<EngineRuntimeContext['surfaceTile']>[0]) =>
-      surfaceTile(material, opts.dna.theme, opts.dna.surface.grainIntensity),
+      surfaceTile(material, dna.theme, dna.surface.grainIntensity),
     ornamentSvg: (grammar: Parameters<EngineRuntimeContext['ornamentSvg']>[0]) =>
-      createOrnamentLayer(grammar, Number.parseFloat(opts.dna.tokens['--dna-stroke'] ?? '1.5')),
+      createOrnamentLayer(grammar, Number.parseFloat(dna.tokens['--dna-stroke'] ?? '1.5')),
   });
 
   const setPaused = (next: boolean): void => {
@@ -185,6 +193,16 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
     (e) => {
       const d = (e as CustomEvent<TierChange>).detail;
       setTier(d.tier, d.calm);
+    },
+    on,
+  );
+  addEventListener(
+    DNA_EVENT,
+    (e) => {
+      const d = (e as CustomEvent<DnaChange>).detail;
+      if ((opts.dnaRoot && d.root !== opts.dnaRoot) || d.dna === dna) return;
+      dna = d.dna;
+      for (const cb of [...dnaCbs]) run(() => cb(dna));
     },
     on,
   );
@@ -216,6 +234,7 @@ export function createEngineRuntimeContext(opts: RuntimeOptions): RuntimeHandle 
       pauseCbs.clear();
       resumeCbs.clear();
       tierCbs.clear();
+      dnaCbs.clear();
       recount();
     },
   };

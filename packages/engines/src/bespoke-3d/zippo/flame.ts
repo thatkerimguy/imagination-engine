@@ -24,8 +24,22 @@ export function paintFlame(g: CanvasRenderingContext2D, t: number, level: number
     const tipY = base - Math.cos(a) * height;
     g.beginPath();
     g.moveTo(cx, base);
-    g.bezierCurveTo(cx - halfW * 1.3, base - height * 0.1, cx - halfW * 0.7, base - height * 0.6, tipX, tipY);
-    g.bezierCurveTo(cx + halfW * 0.7, base - height * 0.6, cx + halfW * 1.3, base - height * 0.1, cx, base);
+    g.bezierCurveTo(
+      cx - halfW * 1.3,
+      base - height * 0.1,
+      cx - halfW * 0.7,
+      base - height * 0.6,
+      tipX,
+      tipY,
+    );
+    g.bezierCurveTo(
+      cx + halfW * 0.7,
+      base - height * 0.6,
+      cx + halfW * 1.3,
+      base - height * 0.1,
+      cx,
+      base,
+    );
     g.globalAlpha = alpha;
     g.fillStyle = color;
     g.fill();

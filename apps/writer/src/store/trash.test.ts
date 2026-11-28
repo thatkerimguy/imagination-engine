@@ -134,7 +134,9 @@ describe('30-day Trash', () => {
     await updateItemMeta(repo, c1, { tags: ['x'] });
     await moveToTrash(repo, { kind: 'novel', novelId: n }, T0);
     await permanentlyDeleteItem(repo, n);
-    expect(await adapter.listNodes({ kinds: ['book', 'season', 'chapter'], includeDeleted: true })).toEqual([]);
+    expect(
+      await adapter.listNodes({ kinds: ['book', 'season', 'chapter'], includeDeleted: true }),
+    ).toEqual([]);
     expect(await adapter.listSettingKeys('meta/item/')).toEqual([]);
     expect(await adapter.integrity()).toMatchObject({ orphanBodies: 0, orphanGrowth: 0 });
     await createDoc(repo, null, { title: 'X' });

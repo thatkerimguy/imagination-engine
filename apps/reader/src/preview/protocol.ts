@@ -32,7 +32,9 @@ export type HostControl =
   /** 9:16 Record Mode: hide the reader's own chrome so only the chapter is captured. */
   | { type: 'record'; on: boolean }
   /** Live tier / Calm Mode switch: engines downgrade in place, no reload (OVERHAUL-03). */
-  | { type: 'tier'; tier: TierPreference; calmMode: boolean };
+  | { type: 'tier'; tier: TierPreference; calmMode: boolean }
+  /** Live Visual DNA (archetype id or 7-axis object): restyles in place, engines get onDnaChange. */
+  | { type: 'dna'; dna: unknown };
 
 const TIERS: readonly TierPreference[] = ['auto', 'high', 'lite', 'reduced'];
 
@@ -57,6 +59,8 @@ export function parseHostControl(raw: unknown): HostControl | null {
   if (msg.type === 'a11y' && typeof msg.reducedMotion === 'boolean')
     return { type: 'a11y', reducedMotion: msg.reducedMotion };
   if (msg.type === 'record' && typeof msg.on === 'boolean') return { type: 'record', on: msg.on };
+  if (msg.type === 'dna' && msg.dna !== undefined && msg.dna !== null)
+    return { type: 'dna', dna: msg.dna };
   if (msg.type === 'tier' && typeof msg.calmMode === 'boolean') {
     const tier = TIERS.find((t) => t === msg.tier);
     if (tier) return { type: 'tier', tier, calmMode: msg.calmMode };

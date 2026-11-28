@@ -81,9 +81,9 @@ Smaller calls:
 
 | Check                          | Result                     | Evidence                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| G4-1 Cover `C2t`               | PASS                       | The 4200×6300 PNG went in via Photo Picker → crop. `files/covers/<id>.jpg` is 1200×1800 and `.thumb.jpg` is 240×360, both `ffd8ff`. Document Doctor was **not run**                                                                                                                                                                                                                                     |
+| G4-1 Cover `C2t`               | PASS                       | The 4200×6300 PNG went in via Photo Picker → crop. `files/covers/<id>.jpg` is 1200×1800 and `.thumb.jpg` is 240×360, both `ffd8ff`. Document Doctor on device not run (web gate "Document Doctor v2 reports All clear" ✅)                                                                                                                                                                              |
 | G4-2 Widget + landscape        | PASS                       | Typed 3 words, and `kn_writer_widget.xml` reads `3 words today`. In landscape: `mFullscreenMode=false`, no extract box, ribbon collapsed ("Show metrics"), prose visible                                                                                                                                                                                                                                |
-| G4-3 Editor / tabs / back      | PARTIAL                    | Single tap gives `mInputShown=true` on the prose view. B+I round-trip is lossless (`***harbour***`, no doubled markers). Underline was not exercised (automation mis-tap). Pager Library→Notes→Search works, and edge-back from x=5 goes to Library. Backlinks, Classic Novel hiding and KeyboardAwareScrollView were **not run**                                                                       |
+| G4-3 Editor / tabs / back      | PARTIAL                    | Single tap gives `mInputShown=true` on the prose view. B+I round-trip is lossless (`***harbour***`, no doubled markers). Underline was not exercised (automation mis-tap). Pager Library→Notes→Search works, and edge-back from x=5 goes to Library. On device, Backlinks, Classic-Novel hiding and KeyboardAwareScrollView were not run. Classic-Novel hiding and one-tap focus pass in the web gates  |
 | G4-4 `KnReaderWebView` + Calm  | FIXED+PASS / FALLBACK (3D) | 1st run: `/reader/index.html` **404** (fixed, §4). Now logs `KnReaderWebView: loaded https://appassets.androidplatform.net/reader/index.html?preview=1` with 0 console warnings/errors apart from the WebGL line. audio-bed + KESTREL-9 render. Reduced → unclipped `[1, 1]` + "Snake eyes". 3D dice: `[stage] WebGL context lost; the spectacle finishes without drawing`, scripted result still lands |
 | G4-5 tactile vs scroll + audio | PASS                       | A swipe started on the biometric card text scrolled the page 280 px. A 3.5 s hold on the scanner gave "ACCESS GRANTED", with the page static during the hold. Barroom bed crossfading, no WebAudio errors                                                                                                                                                                                               |
 | G4-6 DNA + Royal Road          | FIXED+PASS                 | 1 active chip per row (Clean sans prose, Typewriter unfilled). DNA reverted on Novel-settings Save (fixed, §4). Holographic System renders chamfered corners + cobalt live. Export `.html` holds the exact `#0c2340`/`#3b82f6` table, 0 `<script>`/`<style>`, plus a clipboard toast                                                                                                                    |
@@ -132,10 +132,13 @@ Smaller calls:
   (incl. `template-if.test.ts` 9, `royal-road.test.ts`, `blueprint-resolver.test.ts`, `dna-choice.test.ts`, `dna-bus.test.ts`, i18n parity).
 - `pnpm build`: **PASS**. Reader initial JS **11.3 KB gz** (target 16.0, cap 20.0; brief cap 13.0 ✓). zod: none.
   three/cannon (`dice-mesh` 133.8 KB gz, `high` 25.3 KB gz) imported only by `bespoke-3d`.
-- `node scripts/smoke.mjs` and `writer-shots.mjs --shots qa-shots-overhaul04a`: **NOT RUN**. Playwright is not installed in
-  this environment ("Cannot find module 'playwright'"), and I did not install it without approval. `pnpm writer:export` passed.
-  So the 42/42 smoke matrix and the phone/tablet/smoke-publish shot gates are **unverified this pass**. The 5 PNGs below are
-  device captures from Gate 4, not Playwright shots.
+- `node scripts/smoke.mjs` (global Playwright via `NODE_PATH="$(npm root -g)"`): **PASS**. v2 engines ×20 × 3 tiers
+  **42/42 clean, 0 leaks**. bespoke-3d ×20 High keeps 1 shared WebGL context (leases 0, geo 0). Card sheets have 0 overflow at 360 px,
+  with **0 console errors**.
+- `pnpm writer:export` + `writer-shots.mjs --shots qa-shots-overhaul04a`: **178/178 ✅, 0 ❌**. This covers the phone, smoke-publish
+  and tablet packs, with zero console/page errors in every pack. The first run failed 1 gate, the 07-era assertion expecting the
+  old `<blockquote>` System box. It now asserts the cobalt table (`writer-shots-dir07.mjs`).
+- The 5 PNGs below are Android 16 device captures from Gate 4. The Playwright shots sit beside them in the same folder.
 
 | PNG                                       | Scrutinize                                                                                 |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -157,5 +160,5 @@ blueprints will lean on, and they are now locked and tested. Three calls first:
 3. **bespoke-3d no-WebGL path.** Approve "context lost before first frame → lite dice". Factory 3D blueprints would otherwise
    show a blank card on WebGL-less devices.
 
-Not done here: Document Doctor (G4-1), Backlinks / Classic-Novel / KeyboardAwareScrollView (G4-3), live-3D Calm teardown
-on device, and an ember-storm light screenshot.
+Not done on device: Document Doctor, Backlinks, KeyboardAwareScrollView and Underline (web gates cover Doctor + Classic Novel),
+live-3D Calm teardown, and an ember-storm light screenshot.
